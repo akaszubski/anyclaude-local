@@ -7,11 +7,13 @@ import {
 import { debug, isDebugEnabled, isVerboseDebugEnabled } from "./debug";
 
 export function convertToAnthropicStream(
-  stream: ReadableStream<TextStreamPart<Record<string, Tool>>>
+  stream: ReadableStream<TextStreamPart<Record<string, Tool>>>,
+  skipFirstMessageStart = false
 ): ReadableStream<AnthropicStreamChunk> {
   let index = 0; // content block index within the current message
   let reasoningBuffer = ""; // Buffer for accumulating reasoning text
   let chunkCount = 0; // Track chunks for debugging
+  let messageStartSkipped = false; // Track if we've skipped the first message_start
 
   const transform = new TransformStream<
     TextStreamPart<Record<string, Tool>>,
@@ -37,6 +39,13 @@ export function convertToAnthropicStream(
 
       switch (chunk.type) {
         case "start-step": {
+          // Skip first message_start if we already sent one manually
+          if (skipFirstMessageStart && !messageStartSkipped) {
+            messageStartSkipped = true;
+            debug(2, `[Stream Conversion] Skipping duplicate message_start (already sent manually)`);
+            break;
+          }
+
           controller.enqueue({
             type: "message_start",
             message: {

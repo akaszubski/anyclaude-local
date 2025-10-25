@@ -375,12 +375,32 @@ export const createAnthropicProxy = ({
           Connection: "keep-alive",
         });
 
-        // Send immediate ping to prevent client timeout while LMStudio processes prompt
-        // This is crucial for large prompts that take time to process
-        res.write(`: keepalive\n\n`);
+        // Send immediate message_start event to prevent client timeout
+        // LMStudio can take 30-60s to process large prompts before generating tokens
+        // Claude Code will disconnect if it doesn't receive events within ~30s
+        const messageId = "msg_" + Date.now();
+        res.write(`event: message_start\n`);
+        res.write(`data: ${JSON.stringify({
+          type: "message_start",
+          message: {
+            id: messageId,
+            type: "message",
+            role: "assistant",
+            content: [],
+            model: body.model,
+            stop_reason: null,
+            stop_sequence: null,
+            usage: {
+              input_tokens: 0,
+              output_tokens: 0,
+              cache_creation_input_tokens: 0,
+              cache_read_input_tokens: 0,
+            },
+          },
+        })}\n\n`);
 
         try {
-          await convertToAnthropicStream(stream.fullStream).pipeTo(
+          await convertToAnthropicStream(stream.fullStream, true).pipeTo(
             new WritableStream({
               write(chunk) {
                 if (isVerboseDebugEnabled()) {
