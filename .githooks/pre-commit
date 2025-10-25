@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-commit hook: Run regression tests to prevent timeout bugs
+
+echo "🔍 Running timeout regression tests..."
+
+npm test
+
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed! Fix issues before committing."
+  exit 1
+fi
+
+echo "✅ Tests passed!"
+exit 0
