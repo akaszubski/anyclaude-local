@@ -357,8 +357,64 @@ export ANYCLAUDE_DEBUG=1  # Basic debug info
 # or
 export ANYCLAUDE_DEBUG=2  # Verbose debug info
 
+# Context window management (NEW!)
+export LMSTUDIO_CONTEXT_LENGTH=32768  # Override auto-detected context limit
+# Useful if your model supports larger context than the default
+
 # Proxy-only mode (for testing)
 export PROXY_ONLY=true
+```
+
+### Context Window Management
+
+**NEW**: anyclaude now automatically manages context windows for local models!
+
+**What it does:**
+- **Auto-detects** model context limits (8K-128K depending on model)
+- **Counts tokens** in real-time using tiktoken
+- **Warns you** when approaching 75% capacity
+- **Truncates automatically** when exceeding limit (keeps recent messages + system prompt + tools)
+- **Logs clearly** when truncation happens
+
+**Example output when context fills up:**
+```
+⚠️  Context limit exceeded! Truncated 15 older messages.
+   Original: 25 messages (35,420 tokens)
+   Truncated: 10 messages
+   Model limit: 26,214 tokens
+   Tip: Start a new conversation or set LMSTUDIO_CONTEXT_LENGTH higher
+```
+
+**Supported models** (auto-detected):
+- gpt-oss-20b: 8K tokens
+- deepseek-coder-v2-lite: 16K tokens
+- deepseek-coder-33b: 16K tokens
+- qwen2.5-coder-7b/32b: 32K tokens
+- mistral-7b: 32K tokens
+- Default (unknown models): 8K tokens (conservative)
+
+**Override detection:**
+```bash
+# Your model has 128K context but wasn't detected?
+export LMSTUDIO_CONTEXT_LENGTH=131072
+anyclaude
+```
+
+**How it compares to Claude Code 2:**
+
+| Feature | Claude Sonnet 4.5 | Local Models (anyclaude) |
+|---------|------------------|--------------------------|
+| Context Window | 200K tokens | 8K-128K tokens |
+| Auto-compression | ✅ Extended thinking | ❌ Not supported |
+| Prompt Caching | ✅ Cached prompts | ❌ Not supported |
+| Truncation | ✅ Smart summarization | ✅ Sliding window (recent messages) |
+| Warning System | ❌ None needed | ✅ Warns at 75%, 90% |
+
+**Best Practices:**
+1. **Start new conversations** when you see the 90% warning
+2. **Use models with larger context** for long coding sessions (32K+ recommended)
+3. **Set LMSTUDIO_CONTEXT_LENGTH** if you know your model's limit
+4. **Monitor warnings** - truncation loses older context
 ```
 
 ---

@@ -19,6 +19,11 @@ import {
   isVerboseDebugEnabled,
   debug,
 } from "./debug";
+import {
+  calculateContextStats,
+  truncateMessages,
+  logContextWarning,
+} from "./context-manager";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -163,7 +168,6 @@ export const createAnthropicProxy = ({
           throw new Error(`Provider not configured: ${providerName}`);
         }
 
-        const coreMessages = convertFromAnthropicMessages(body.messages);
         let system: string | undefined;
         if (body.system && body.system.length > 0) {
           system = body.system.map((s) => s.text).join("\n");
@@ -181,6 +185,42 @@ export const createAnthropicProxy = ({
           },
           {} as Record<string, Tool>
         );
+
+        // Check context window and truncate if needed
+        const contextStats = calculateContextStats(
+          body.messages,
+          body.system,
+          body.tools,
+          model
+        );
+
+        // Log warning if approaching limit
+        logContextWarning(contextStats);
+
+        // Truncate messages if exceeding limit
+        let messagesToSend = body.messages;
+        if (contextStats.exceedsLimit) {
+          const result = truncateMessages(
+            body.messages,
+            body.system,
+            body.tools,
+            model
+          );
+          messagesToSend = result.messages;
+
+          if (result.truncated) {
+            console.error(
+              `\n⚠️  Context limit exceeded! Truncated ${result.removedCount} older messages.\n` +
+              `   Original: ${body.messages.length} messages (${contextStats.totalTokens} tokens)\n` +
+              `   Truncated: ${messagesToSend.length} messages\n` +
+              `   Model limit: ${contextStats.contextLimit} tokens\n` +
+              `   Tip: Start a new conversation or set LMSTUDIO_CONTEXT_LENGTH higher\n`
+            );
+          }
+        }
+
+        // Convert truncated messages for LMStudio
+        const coreMessages = convertFromAnthropicMessages(messagesToSend);
 
         // Track timing for debugging
         const requestStartTime = Date.now();
