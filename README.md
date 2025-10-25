@@ -30,6 +30,16 @@ A simplified fork of [anyclaude](https://github.com/coder/anyclaude) focused exc
 
 > **Note**: Bun is required for building, but the built CLI runs on standard Node.js
 
+### Dependencies
+
+Runtime dependencies (automatically installed):
+- `dotenv` - Environment variable management (.env file support)
+- `@ai-sdk/openai` - AI SDK for OpenAI-compatible APIs
+- `ai` - Vercel AI SDK core
+
+Development dependencies:
+- TypeScript types and tooling
+
 ### Installation
 
 ```bash
@@ -202,6 +212,29 @@ Debug logs include:
 - Message conversion details
 - Stream chunk processing
 - Error details with temp file dumps
+
+### Run Regression Tests
+
+```bash
+# Run timeout regression tests
+npm test
+
+# Tests verify:
+# - Model detection has 5s timeout
+# - Fallback endpoints have 5s timeout
+# - LMStudio requests have 120s timeout
+# - All timeouts properly cleaned up
+
+# Output:
+# ✓ main.ts should have timeout on detectLoadedModel
+# ✓ main.ts should have timeout on getModelName fallback
+# ✓ main.ts LMStudio fetch wrapper should have timeout
+# ✓ all AbortControllers should have clearTimeout cleanup
+#
+# 4 passed, 0 failed (< 1 second)
+```
+
+**Pre-commit Hook**: Tests run automatically before every commit to prevent timeout bugs from recurring.
 
 ---
 
