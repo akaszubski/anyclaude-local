@@ -211,15 +211,26 @@ export const createAnthropicProxy = ({
 
         let stream;
         try {
-          stream = await streamText({
-            model: provider.languageModel(model),
-            system,
-            tools,
-            messages: coreMessages,
-            maxOutputTokens: body.max_tokens,
-            temperature: body.temperature,
+          // Create AbortController for timeout protection
+          const abortController = new AbortController();
+          const timeout = setTimeout(() => {
+            debug(1, `[Timeout] Request to ${providerName}/${model} exceeded 120 seconds`);
+            abortController.abort();
+          }, 120000); // 120 second timeout
 
-            onFinish: ({ response, usage, finishReason }) => {
+          try {
+            stream = await streamText({
+              model: provider.languageModel(model),
+              system,
+              tools,
+              messages: coreMessages,
+              maxOutputTokens: body.max_tokens,
+              temperature: body.temperature,
+              abortSignal: abortController.signal,
+
+              onFinish: ({ response, usage, finishReason }) => {
+                // Clear timeout on successful completion
+                clearTimeout(timeout);
               // If the body is already being streamed,
               // we don't need to do any conversion here.
               if (body.stream) {
@@ -261,6 +272,8 @@ export const createAnthropicProxy = ({
               );
             },
             onError: ({ error }) => {
+              // Clear timeout on error
+              clearTimeout(timeout);
               debug(1, `Error for ${providerName}/${model}:`, error);
 
               // Write comprehensive debug info to temp file
@@ -310,6 +323,11 @@ export const createAnthropicProxy = ({
                 );
             },
           });
+          } catch (innerError) {
+            // Clear timeout on inner error
+            clearTimeout(timeout);
+            throw innerError; // Re-throw to outer catch
+          }
         } catch (error) {
           debug(1, `Connection error for ${providerName}/${model}:`, error);
 
