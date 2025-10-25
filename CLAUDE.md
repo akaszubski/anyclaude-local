@@ -4,26 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-anyclaude is a proxy wrapper for Claude Code that enables using alternative LLM providers (OpenAI, Google, xAI, Azure) through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the Vercel AI SDK format for the specified provider.
+anyclaude is a proxy wrapper for Claude Code that enables using LMStudio local models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for LMStudio.
 
 ## Architecture
 
 The proxy works by:
 
 1. Spawning a local HTTP server that mimics the Anthropic API
-2. Intercepting `/v1/messages` requests containing `<provider>/<model>` format
-3. Converting Anthropic message format to AI SDK format
-4. Routing to the appropriate provider (OpenAI, Google, xAI, Azure)
+2. Intercepting `/v1/messages` requests
+3. Converting Anthropic message format to OpenAI Chat Completions format
+4. Routing to LMStudio (via OpenAI SDK with `compatibility: 'legacy'`)
 5. Converting responses back to Anthropic format
 6. Setting `ANTHROPIC_BASE_URL` to point Claude Code at the proxy
 
 Key components:
 
-- `src/main.ts`: Entry point that sets up providers and spawns Claude with proxy
+- `src/main.ts`: Entry point that configures LMStudio provider and spawns Claude with proxy
 - `src/anthropic-proxy.ts`: HTTP server that handles request/response translation
 - `src/convert-anthropic-messages.ts`: Bidirectional message format conversion
 - `src/convert-to-anthropic-stream.ts`: Stream response conversion
-- `src/json-schema.ts`: Schema adaptation for different providers
+- `src/json-schema.ts`: Schema adaptation for LMStudio
 
 ## Development Commands
 
@@ -50,23 +50,77 @@ Test the proxy manually:
 # Run in proxy-only mode to get the URL
 PROXY_ONLY=true bun run src/main.ts
 
-# Test with a provider
-OPENAI_API_KEY=your-key bun run src/main.ts --model openai/gpt-5-mini
+# Test with debug logging
+ANYCLAUDE_DEBUG=1 bun run src/main.ts
+
+# Test with verbose debug logging
+ANYCLAUDE_DEBUG=2 bun run src/main.ts
 ```
 
 ## Environment Variables
 
-Required for each provider:
+**LMStudio Configuration:**
 
-- `OPENAI_API_KEY` + optional `OPENAI_API_URL` for OpenAI/OpenRouter
-- `GOOGLE_API_KEY` + optional `GOOGLE_API_URL` for Google
-- `XAI_API_KEY` + optional `XAI_API_URL` for xAI
-- `AZURE_API_KEY` + optional `AZURE_API_URL` for Azure
-- `ANTHROPIC_API_KEY` + optional `ANTHROPIC_API_URL` for Anthropic passthrough
+- `LMSTUDIO_URL`: LMStudio server URL (default: `http://localhost:1234/v1`)
+- `LMSTUDIO_MODEL`: Model name to use (default: `current-model`)
+  - Note: LMStudio serves whatever model is currently loaded, regardless of the model name
+  - You can switch models in LMStudio without restarting anyclaude
+- `LMSTUDIO_API_KEY`: API key for LMStudio (default: `lm-studio`)
 
-Special modes:
+**Debug:**
 
-- `PROXY_ONLY=true`: Run proxy server without spawning Claude Code
-- `ANYCLAUDE_DEBUG=1|2`: Enable debug logging (1=basic, 2=verbose)
+- `ANYCLAUDE_DEBUG`: Enable debug logging (1=basic, 2=verbose)
+- `PROXY_ONLY`: Run proxy server without spawning Claude Code
 
-- OpenAI's gpt-5 was released in August 2025
+## Implementation Notes
+
+**LMStudio Compatibility:**
+
+The proxy uses `compatibility: 'legacy'` in the OpenAI SDK to ensure compatibility with LMStudio's Chat Completions API. This means:
+
+- Uses `max_tokens` instead of `max_completion_tokens`
+- Removes unsupported parameters (`reasoning`, `service_tier`)
+- Disables parallel tool calls for better compatibility
+- Standard OpenAI Chat Completions format
+
+See `src/main.ts:12-38` for the LMStudio provider configuration.
+
+**Message Format Conversion:**
+
+The proxy converts between two formats:
+
+1. **Anthropic Messages API** (Claude Code format):
+   - System prompts as separate field
+   - Content blocks with types
+   - Tool use with specific format
+
+2. **OpenAI Chat Completions** (LMStudio format):
+   - System as first message
+   - Simple message format
+   - Standard tool calling
+
+See `src/convert-anthropic-messages.ts` for conversion logic.
+
+**Streaming:**
+
+The proxy handles Server-Sent Events (SSE) streaming:
+- Converts AI SDK stream chunks to Anthropic SSE format
+- Maps event types (`text-start` → `content_block_start`, etc.)
+- Handles tool calls and reasoning blocks
+
+See `src/convert-to-anthropic-stream.ts` for stream conversion.
+
+## Usage
+
+```bash
+# Basic usage (uses whatever model is loaded in LMStudio)
+anyclaude
+
+# With debug logging
+ANYCLAUDE_DEBUG=1 anyclaude
+
+# Test proxy only (doesn't spawn Claude Code)
+PROXY_ONLY=true anyclaude
+```
+
+**Model Switching**: You can freely switch models in LMStudio's server tab without restarting anyclaude. The proxy always routes to whichever model is currently loaded.

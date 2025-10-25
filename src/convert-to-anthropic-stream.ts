@@ -4,18 +4,37 @@ import {
   mapAnthropicStopReason,
   type AnthropicStreamChunk,
 } from "./anthropic-api-types";
+import { debug, isDebugEnabled, isVerboseDebugEnabled } from "./debug";
 
 export function convertToAnthropicStream(
   stream: ReadableStream<TextStreamPart<Record<string, Tool>>>
 ): ReadableStream<AnthropicStreamChunk> {
   let index = 0; // content block index within the current message
   let reasoningBuffer = ""; // Buffer for accumulating reasoning text
+  let chunkCount = 0; // Track chunks for debugging
 
   const transform = new TransformStream<
     TextStreamPart<Record<string, Tool>>,
     AnthropicStreamChunk
   >({
     transform(chunk, controller) {
+      chunkCount++;
+
+      // Log raw chunks from AI SDK to help debug LMStudio responses
+      // Log first 10 chunks at level 1, then all chunks at verbose level 2
+      if (isDebugEnabled() && chunkCount <= 10) {
+        debug(1, `[Stream Conversion] Raw chunk ${chunkCount}:`, {
+          type: chunk.type,
+          // Log chunk details without overwhelming the console
+          ...(isVerboseDebugEnabled() ? { fullChunk: chunk } : {}),
+        });
+      } else if (isVerboseDebugEnabled()) {
+        debug(2, `[Stream Conversion] Raw chunk ${chunkCount}:`, {
+          type: chunk.type,
+          fullChunk: chunk,
+        });
+      }
+
       switch (chunk.type) {
         case "start-step": {
           controller.enqueue({
@@ -173,15 +192,43 @@ export function convertToAnthropicStream(
         case "source":
         case "file":
           // ignore for Anthropic stream mapping
+          if (isVerboseDebugEnabled()) {
+            debug(2, `[Stream Conversion] Ignoring chunk type: ${chunk.type}`);
+          }
           break;
         default: {
-          controller.error(new Error(`Unhandled chunk type: ${chunk.type}`));
+          const unknownChunk = chunk as any;
+          debug(1, `[Stream Conversion] ⚠️  Unhandled chunk type: ${unknownChunk.type}`, {
+            chunkNumber: chunkCount,
+            chunk: unknownChunk,
+          });
+          const error = new Error(`Unhandled chunk type: ${unknownChunk.type} (chunk ${chunkCount})`);
+          debug(1, `[Stream Conversion] Terminating stream due to unhandled chunk`);
+          controller.error(error);
         }
       }
     },
+    flush(controller) {
+      if (isDebugEnabled()) {
+        debug(1, `[Stream Conversion] Stream complete. Total chunks: ${chunkCount}`);
+      }
+    },
   });
-  stream.pipeTo(transform.writable).catch(() => {
-    // swallow propagation; error already forwarded via 'error' chunk
+  stream.pipeTo(transform.writable).catch((error) => {
+    // Log ALL pipeline errors, even empty ones - they indicate problems
+    const hasErrorContent = error && (Object.keys(error).length > 0 || error.message);
+
+    if (hasErrorContent) {
+      debug(1, `[Stream Conversion] Pipeline error:`, error);
+    } else {
+      // Empty errors {} are NOT normal - they indicate stream cancellation/abort
+      debug(1, `[Stream Conversion] ⚠️  Pipeline aborted with empty error - stream may have been cancelled or sent invalid data`);
+      debug(1, `[Stream Conversion] Last processed chunk count: ${chunkCount}`);
+    }
+
+    // Note: We swallow the error here because streaming errors should be
+    // sent as error chunks in the stream itself. However, empty errors indicate
+    // a problem with the stream format or connection.
   });
   return transform.readable;
 }

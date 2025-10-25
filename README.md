@@ -1,61 +1,154 @@
-# anyclaude
+# anyclaude-lmstudio
 
-[![NPM Version](https://img.shields.io/npm/v/anyclaude)](https://www.npmjs.com/package/anyclaude)
+A simplified fork of [anyclaude](https://github.com/coder/anyclaude) focused exclusively on LMStudio local models.
 
-Use Claude Code with OpenAI, Google, xAI, and other providers.
+Use Claude Code with LMStudio and local models.
 
-- Extremely simple setup - just a basic command wrapper
-- Uses the AI SDK for simple support of new providers
-- Works with Claude Code GitHub Actions
-- Optimized for OpenAI's gpt-5 series
-
-<img src="./demo.png" width="65%">
+- Extremely simple setup - just run anyclaude
+- Uses the AI SDK for LMStudio compatibility
+- Works with any LMStudio-compatible local model
+- No cloud API keys required
 
 ## Get Started
 
 ```sh
-# Use your favorite package manager (bun, pnpm, and npm are supported)
-$ pnpm install -g anyclaude
+# Install anyclaude
+$ npm install -g anyclaude
 
-# anyclaude is a wrapper for the Claude CLI
-# `openai/`, `google/`, `xai/`, and `anthropic/` are supported
-$ anyclaude --model openai/gpt-5-mini
+# Start LMStudio and load a model first
+# Then run anyclaude (it's a wrapper for the Claude CLI)
+$ anyclaude
 ```
 
-Switch models in the Claude UI with `/model openai/gpt-5-mini`.
+## Setup
 
-### GPT-5 Support
+1. **Install LMStudio**: Download from [lmstudio.ai](https://lmstudio.ai)
 
-Use --reasoning-effort (alias: -e) to control OpenAI reasoning.effort. Allowed values: minimal, low, medium, high.
+2. **Load a Model**:
+   - Open LMStudio
+   - Download a model (e.g., Mistral, Llama, DeepSeek)
+   - Load the model in the server tab
 
-```sh
-anyclaude --model openai/gpt-5-mini -e high
+3. **Start LMStudio Server**:
+   - Go to "Server" tab in LMStudio
+   - Click "Start Server" (default: http://localhost:1234)
+
+4. **Run anyclaude**:
+   ```bash
+   anyclaude
+   ```
+
+## Configuration
+
+Configure via environment variables:
+
+```bash
+# LMStudio endpoint (default: http://localhost:1234/v1)
+export LMSTUDIO_URL=http://localhost:1234/v1
+
+# Model name (default: current-model)
+# Note: LMStudio serves whatever model is currently loaded,
+# regardless of the model name sent in the API request
+export LMSTUDIO_MODEL=current-model
+
+# API key for LMStudio (default: lm-studio)
+export LMSTUDIO_API_KEY=lm-studio
 ```
 
-Use --service-tier (alias: -t) to control OpenAI service tier. Allowed values: flex, priority.
+**Important**: You can freely switch models in LMStudio without restarting anyclaude. LMStudio automatically serves whichever model is currently loaded in its server tab.
 
-```sh
-anyclaude --model openai/gpt-5-mini -t priority
+## How It Works
+
+Claude Code supports customizing the Anthropic endpoint with `ANTHROPIC_BASE_URL`.
+
+anyclaude spawns a local HTTP server that translates between:
+- **Anthropic's API format** (what Claude Code uses)
+- **OpenAI Chat Completions format** (what LMStudio expects)
+
+This allows Claude Code to work seamlessly with local models without modification.
+
+## Debugging
+
+Enable debug logging:
+
+```bash
+# Basic debug info
+ANYCLAUDE_DEBUG=1 anyclaude
+
+# Verbose debug info (includes full request/response details)
+ANYCLAUDE_DEBUG=2 anyclaude
 ```
 
-Note these flags may be extended to other providers in the future.
+## Testing Model Switching
 
-## FAQ
+To verify that model switching works without restarting anyclaude:
 
-### What providers are supported?
+1. **Start LMStudio and load a model** (e.g., Mistral 7B)
+2. **Start anyclaude in one terminal**:
+   ```bash
+   anyclaude
+   ```
 
-See [the providers](./src/main.ts#L17) for the implementation.
+3. **Ask Claude a question** to verify it responds
 
-- `GOOGLE_API_KEY` supports `google/*` models.
-- `OPENAI_API_KEY` supports `openai/*` models.
-- `XAI_API_KEY` supports `xai/*` models.
+4. **In LMStudio, switch to a different model** (e.g., DeepSeek Coder)
+   - Stop the current model
+   - Load the new model
+   - Keep the server running
 
-Set a custom OpenAI endpoint with `OPENAI_API_URL` to use OpenRouter
+5. **Ask Claude another question** - it should now use the new model without restarting anyclaude
 
-`ANTHROPIC_MODEL` and `ANTHROPIC_SMALL_MODEL` are supported with the `<provider>/` syntax.
+6. **Verify which model responded** by asking: "What model are you?"
 
-### How does this work?
+### Quick Test with curl
 
-Claude Code has added support for customizing the Anthropic endpoint with `ANTHROPIC_BASE_URL`.
+Test the proxy directly to see model switching:
 
-anyclaude spawns a simple HTTP server that translates between Anthropic's format and the [AI SDK](https://github.com/vercel/ai) format, enabling support for any [AI SDK](https://github.com/vercel/ai) provider (e.g., Google, OpenAI, etc.)
+```bash
+# Terminal 1: Start proxy only
+PROXY_ONLY=true anyclaude
+
+# Terminal 2: Send test request (replace PORT with the port from Terminal 1)
+curl -X POST http://localhost:PORT/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "claude-3-5-sonnet-20241022",
+    "max_tokens": 100,
+    "messages": [{"role": "user", "content": "Say hello"}]
+  }'
+
+# Now switch models in LMStudio and run the same curl command again
+# You should see responses from different models
+```
+
+## Proxy Only Mode
+
+Run the proxy without spawning Claude Code (useful for testing):
+
+```bash
+PROXY_ONLY=true anyclaude
+```
+
+## Credits
+
+This project is a simplified fork of [anyclaude](https://github.com/coder/anyclaude) by [Coder](https://coder.com).
+
+**Original anyclaude features:**
+- Multi-provider support (OpenAI, Google, xAI, Azure, Anthropic)
+- Advanced failover and circuit breaker patterns
+- GPT-5 reasoning effort controls
+- OpenRouter integration
+
+**This fork:**
+- Stripped down to LMStudio-only support
+- Removed cloud provider dependencies
+- Simplified codebase for local-first usage
+- Focused on ease of setup and maintenance
+
+All credit for the original concept and implementation goes to the anyclaude team at Coder.
+
+## License
+
+MIT (same as original anyclaude project)
