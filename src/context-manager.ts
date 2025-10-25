@@ -5,10 +5,14 @@ import { debug, isDebugEnabled } from "./debug";
 // Context window sizes for common models
 const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   // Conservative defaults for unknown models
-  "current-model": 8192, // LMStudio default, very conservative
+  "current-model": 32768, // LMStudio default, conservative but reasonable
 
   // Known MLX models (Apple Silicon)
-  "gpt-oss-20b": 8192,
+  // NOTE: GPT-OSS has known issues with context overflow around 32K
+  // despite native 128K support. Use with caution.
+  "gpt-oss-20b": 131072,  // Native 128K support (RoPE + YaRN)
+  "gpt-oss-120b": 131072, // Native 128K support
+
   "deepseek-coder-v2-lite": 16384,
   "deepseek-coder-33b": 16384,
   "qwen2.5-coder-7b": 32768,

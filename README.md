@@ -386,12 +386,15 @@ export PROXY_ONLY=true
 ```
 
 **Supported models** (auto-detected):
-- gpt-oss-20b: 8K tokens
+- gpt-oss-20b/120b: 131K tokens (128K native via RoPE + YaRN)
 - deepseek-coder-v2-lite: 16K tokens
 - deepseek-coder-33b: 16K tokens
 - qwen2.5-coder-7b/32b: 32K tokens
 - mistral-7b: 32K tokens
-- Default (unknown models): 8K tokens (conservative)
+- Default (unknown models): 32K tokens (conservative)
+
+**Note**: GPT-OSS models have a known bug with context overflow around 32K tokens
+despite 128K native support. Monitor for mid-generation failures.
 
 **Override detection:**
 ```bash
