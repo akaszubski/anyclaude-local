@@ -23,9 +23,12 @@ A simplified fork of [anyclaude](https://github.com/coder/anyclaude) focused exc
 ### Prerequisites
 
 - **Git** - For cloning the repository
-- **Node.js** 18+ or Bun - Runtime environment
+- **Bun** ([download here](https://bun.sh)) - Required for building (faster alternative to npm)
+- **Node.js** 18+ - Runtime environment (for running the built CLI)
 - **LMStudio** ([download here](https://lmstudio.ai)) - Local model server
 - **Claude Code** 2.0+ ([download here](https://claude.com/claude-code)) - AI coding assistant
+
+> **Note**: Bun is required for building, but the built CLI runs on standard Node.js
 
 ### Installation
 
@@ -35,18 +38,12 @@ git clone https://github.com/akaszubski/anyclaude-lmstudio.git
 cd anyclaude-lmstudio
 
 # 2. Install dependencies
-npm install
-# or with bun
 bun install
 
 # 3. Build the project
-npm run build
-# or with bun
 bun run build
 
 # 4. Install globally (makes 'anyclaude' command available)
-npm run install:global
-# or with bun
 bun run install:global
 ```
 
