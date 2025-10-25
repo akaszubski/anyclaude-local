@@ -1,6 +1,5 @@
 # anyclaude-lmstudio
 
-[![npm version](https://img.shields.io/npm/v/anyclaude-lmstudio)](https://www.npmjs.com/package/anyclaude-lmstudio)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/stars/akaszubski/anyclaude-lmstudio?style=social)](https://github.com/akaszubski/anyclaude-lmstudio)
 
@@ -23,26 +22,41 @@ A simplified fork of [anyclaude](https://github.com/coder/anyclaude) focused exc
 
 ### Prerequisites
 
-- **Node.js** 18+ or Bun
-- **LMStudio** ([download here](https://lmstudio.ai))
-- **Claude Code** 2.0+ ([download here](https://claude.com/claude-code))
+- **Git** - For cloning the repository
+- **Node.js** 18+ or Bun - Runtime environment
+- **LMStudio** ([download here](https://lmstudio.ai)) - Local model server
+- **Claude Code** 2.0+ ([download here](https://claude.com/claude-code)) - AI coding assistant
 
 ### Installation
 
 ```bash
-# Install globally
-npm install -g anyclaude-lmstudio
+# 1. Clone the repository
+git clone https://github.com/akaszubski/anyclaude-lmstudio.git
+cd anyclaude-lmstudio
 
-# Or with bun
-bun install -g anyclaude-lmstudio
+# 2. Install dependencies
+npm install
+# or with bun
+bun install
+
+# 3. Build the project
+npm run build
+# or with bun
+bun run build
+
+# 4. Install globally (makes 'anyclaude' command available)
+npm run install:global
+# or with bun
+bun run install:global
 ```
 
-### Setup
+### Setup & Run
 
 1. **Start LMStudio**
    - Open LMStudio
    - Download a model (e.g., Mistral 7B, Llama 3, DeepSeek Coder)
-   - Load the model in the "Server" tab
+   - Go to "Server" tab
+   - Load the model
    - Click "Start Server" (default: http://localhost:1234)
 
 2. **Run anyclaude**
@@ -51,6 +65,16 @@ bun install -g anyclaude-lmstudio
    ```
 
 3. **Start using Claude Code with your local model!** 🎉
+
+### Alternative: Run Without Installing Globally
+
+```bash
+# After building, run directly
+node dist/main.js
+
+# Or with debug logging
+ANYCLAUDE_DEBUG=1 node dist/main.js
+```
 
 ---
 
@@ -357,10 +381,10 @@ If anyclaude-lmstudio helps you build with local AI models, please:
 ### Roadmap
 - [ ] Automated testing (unit tests for converters)
 - [ ] GitHub Actions CI/CD
-- [ ] npm package publication
 - [ ] Support for additional local model servers (Ollama, LocalAI)
 - [ ] Performance optimizations
 - [ ] Enhanced error messages
+- [ ] npm package publication (when ready for wider distribution)
 
 ### Contributing
 
