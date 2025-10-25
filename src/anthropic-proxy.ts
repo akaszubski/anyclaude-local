@@ -210,11 +210,25 @@ export const createAnthropicProxy = ({
 
           if (result.truncated) {
             console.error(
-              `\n⚠️  Context limit exceeded! Truncated ${result.removedCount} older messages.\n` +
-              `   Original: ${body.messages.length} messages (${contextStats.totalTokens} tokens)\n` +
-              `   Truncated: ${messagesToSend.length} messages\n` +
-              `   Model limit: ${contextStats.contextLimit} tokens\n` +
-              `   Tip: Start a new conversation or set LMSTUDIO_CONTEXT_LENGTH higher\n`
+              `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚠️  CONTEXT LIMIT EXCEEDED - MESSAGES TRUNCATED\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `\n` +
+              `Removed ${result.removedCount} older messages to fit within model's context.\n` +
+              `\n` +
+              `  Before: ${body.messages.length} messages (${contextStats.totalTokens} tokens)\n` +
+              `  After:  ${messagesToSend.length} messages\n` +
+              `  Limit:  ${contextStats.contextLimit} tokens (80% of ${model})\n` +
+              `\n` +
+              `⚠️  IMPORTANT - LOCAL MODEL LIMITATION:\n` +
+              `  Claude Sonnet 4.5 auto-compresses context while preserving\n` +
+              `  key information. Local models cannot do this - old messages\n` +
+              `  are simply discarded, which may affect response quality.\n` +
+              `\n` +
+              `RECOMMENDED: Start a new Claude Code conversation to avoid\n` +
+              `           losing important context from earlier in the session.\n` +
+              `\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
             );
           }
         }

@@ -228,13 +228,20 @@ export function logContextWarning(stats: ContextStats): void {
     console.error(
       `\n⚠️  WARNING: Context usage at ${stats.percentUsed.toFixed(1)}%\n` +
       `   Total: ${stats.totalTokens} / ${stats.contextLimit} tokens\n` +
-      `   Approaching model's context limit!\n` +
-      `   Consider: Starting a new conversation or increasing LMSTUDIO_CONTEXT_LENGTH\n`
+      `   \n` +
+      `   ⚠️  LOCAL MODEL LIMITATION:\n` +
+      `   Unlike Claude Sonnet 4.5 which auto-compresses context,\n` +
+      `   local models will truncate older messages when limit is exceeded.\n` +
+      `   \n` +
+      `   RECOMMENDED ACTION:\n` +
+      `   1. Save your work and start a new Claude Code conversation\n` +
+      `   2. Or: Use a model with larger context (32K+ recommended)\n` +
+      `   3. Or: Set LMSTUDIO_CONTEXT_LENGTH higher if your model supports it\n`
     );
   } else if (stats.percentUsed > 75) {
     debug(
       1,
-      `Context usage: ${stats.percentUsed.toFixed(1)}% (${stats.totalTokens} / ${stats.contextLimit} tokens)`
+      `[Context] ${stats.percentUsed.toFixed(1)}% used (${stats.totalTokens} / ${stats.contextLimit} tokens) - Consider starting new conversation soon`
     );
   }
 }
