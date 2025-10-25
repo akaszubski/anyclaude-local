@@ -59,8 +59,8 @@
   },
   "scripts": {
     "build": "bun build --target node --format cjs --outfile dist/main.cjs ./src/main.ts && node -e \"const fs=require('fs');const f='dist/main.cjs';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(/import\\.meta\\.url/g,'__filename'));fs.writeFileSync('dist/main.js','#!/usr/bin/env node\\nrequire(\\\"./main.cjs\\\");\\n');fs.chmodSync('dist/main.js',0o755)\"",
-    "test": "node tests/regression/test_timeout_regression.js",
-    "test:regression": "node tests/regression/test_timeout_regression.js",
+    "test": "node tests/regression/test_structure_regression.js",
+    "test:regression": "node tests/regression/test_structure_regression.js",
     "typecheck": "tsc --noEmit",
     "fmt": "prettier --write .",
     "install:global": "bun run build && npm pack --silent && npm install -g anyclaude-*.tgz"
