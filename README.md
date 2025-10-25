@@ -150,53 +150,115 @@ When you see these in Claude Code, **everything is working correctly**:
 
 Based on testing with Claude Code's complex prompts and tool usage:
 
+#### 🍎 Best for Apple Silicon (M2/M3/M4 Max/Ultra with 64GB+ RAM)
+```
+Model: gpt-oss-20b-MLX-8bit
+Size: ~12GB
+Speed: Fast with MLX optimization (10-20s prompt, 3-5 tokens/sec)
+Quality: Excellent code understanding, very good with tools
+Hardware: M2/M3/M4 Max with 32GB+ RAM recommended
+Use: Daily development on high-end Apple Silicon
+
+Alternative: DeepSeek-Coder-33B-Instruct-Q4
+Size: ~20GB
+Speed: Good (15-30s prompt, 2-4 tokens/sec)
+Quality: Superior code understanding, best tool usage
+Hardware: M3/M4 Max with 64GB+ RAM, or M4 Ultra
+Use: Complex refactoring, architecture design, production code
+```
+
+**Why MLX models for Apple Silicon?**
+- MLX is Apple's ML framework optimized for Metal GPU
+- 8-bit quantization maintains quality while being GPU-friendly
+- Up to 2-3x faster than GGUF on M-series chips
+- Better memory efficiency with unified RAM architecture
+
 #### Best for Speed (Recommended Starting Point)
 ```
 Model: Qwen2.5-Coder-7B-Instruct (Quantized Q4 or Q5)
 Size: ~4GB
 Speed: Fast prompt processing (10-20s), decent generation
 Quality: Good for coding tasks, handles tools well
+Hardware: Any modern GPU with 8GB+ VRAM
 Use: Daily development, quick iterations
 ```
 
-#### Best for Quality
+#### Best for Quality (High-VRAM GPUs)
 ```
 Model: DeepSeek-Coder-33B-Instruct (Quantized Q4)
 Size: ~20GB
 Speed: Slower prompt processing (30-60s), slower generation
 Quality: Excellent code understanding, better tool usage
+Hardware: NVIDIA RTX 3090/4090 with 24GB+ VRAM
 Use: Complex refactoring, architecture design
 ```
 
-#### Best Balance
+#### Best Balance (General Use)
 ```
 Model: Mistral-7B-Instruct-v0.3 (Quantized Q4)
 Size: ~4GB
 Speed: Good prompt processing (15-30s), good generation
 Quality: Solid general-purpose, decent with tools
+Hardware: Any modern GPU with 8GB+ VRAM
 Use: General coding assistance
 ```
 
-#### Small/Fast (Testing Only)
+### 🚀 For Power Users (M4 Max/Ultra with 128GB+ RAM)
+
+With your hardware specs (M4 Max, 40 GPU cores, 128GB RAM), you can run **much larger models** for superior quality:
+
 ```
-Model: Qwen2.5-VL-7B-Instruct (bf16)
-Size: ~14GB (unquantized)
-Speed: Variable (depends on GPU)
-Quality: Vision-language model, NOT optimized for coding
-Use: Testing proxy functionality only
+🏆 BEST OPTION - DeepSeek-Coder-V2-Lite-Instruct-MLX-6bit
+Size: ~11GB
+Speed: Very fast (MLX optimized, 5-10s prompt, 5-8 tokens/sec)
+Quality: State-of-the-art code understanding, excellent tool usage
+Hardware: M3/M4 Max/Ultra with 64GB+ RAM
+Use: Professional development, production code, complex projects
+
+💪 MAXIMUM QUALITY - Qwen2.5-Coder-32B-Instruct-MLX-4bit
+Size: ~20GB
+Speed: Fast for size (15-25s prompt, 3-5 tokens/sec)
+Quality: Exceptional reasoning, best-in-class for coding
+Hardware: M4 Max/Ultra with 96GB+ RAM
+Use: Critical production code, system architecture, security reviews
+
+⚡ SPEED DEMON - gpt-oss-20b-MLX-8bit (Your current choice!)
+Size: ~12GB
+Speed: Very fast (10-20s prompt, 3-5 tokens/sec)
+Quality: Excellent, well-balanced
+Hardware: M2/M3/M4 Max with 32GB+ RAM
+Use: Daily development, fast iterations
 ```
+
+**Your M4 Max setup can handle all of these simultaneously!**
+- With 96GB available for GPU, you could even run two models at once
+- Switch between them for different tasks without closing LMStudio
+- The 40 GPU cores will keep inference fast even with 32B models
+
+**Where to find MLX models:**
+- LMStudio → Search for models with "MLX" in the name
+- HuggingFace → Look for repos with `mlx-community/` prefix
+- Example: `mlx-community/Qwen2.5-Coder-32B-Instruct-4bit`
 
 ### Performance Tips
 
-**1. Use Quantized Models**
-- Q4 or Q5 quantization reduces size by 4-8x with minimal quality loss
-- Example: `Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf` instead of full bf16
-- Download from HuggingFace models with `-GGUF` in the name
+**1. Use Quantized Models (Especially MLX on Apple Silicon)**
+- **Apple Silicon**: Use MLX models (4-bit, 6-bit, 8-bit) for 2-3x better performance
+  - Example: `gpt-oss-20b-MLX-8bit` instead of GGUF versions
+  - MLX uses Metal GPU natively, GGUF requires translation layer
+  - Download from LMStudio or HuggingFace `mlx-community/` repos
+- **NVIDIA/AMD**: Use GGUF Q4/Q5 quantization
+  - Example: `Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf`
+  - Reduces size by 4-8x with minimal quality loss
+  - Download from HuggingFace models with `-GGUF` in the name
 
 **2. Enable GPU Acceleration**
-- LMStudio Settings → GPU Offload → Set to maximum layers
-- Check GPU usage (Activity Monitor on Mac, Task Manager on Windows)
-- If GPU not detected, reinstall LMStudio or check drivers
+- **Apple Silicon**: Models automatically use Metal GPU, verify in Activity Monitor
+  - Check "GPU" column shows usage during inference
+  - No special configuration needed with MLX models
+- **NVIDIA/AMD**: LMStudio Settings → GPU Offload → Set to maximum layers
+  - Check GPU usage (Task Manager on Windows, nvidia-smi on Linux)
+  - If GPU not detected, reinstall LMStudio or check drivers
 
 **3. Adjust Context Length**
 - Claude Code sends large prompts (10K+ tokens)
