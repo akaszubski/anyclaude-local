@@ -1,0 +1,68 @@
+# Source files (not needed in published package)
+src/
+tsconfig.json
+.prettierrc
+.eslintrc*
+
+# Development files
+*.test.ts
+*.spec.ts
+__tests__/
+tests/
+.vscode/
+.idea/
+
+# Build config
+bun.lock
+flake.nix
+flake.lock
+.direnv
+.envrc
+
+# Documentation (keep README, LICENSE, CHANGELOG)
+CONTRIBUTING.md
+PROJECT.md
+CLAUDE.md
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Logs and temp files
+*.log
+debug-logs/
+logs/
+*.tsbuildinfo
+.cache/
+
+# Environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package files
+*.tgz
+
+# Only include dist/ in the package
+# Everything else is excluded by default
+!dist/main.js
+!dist/main.cjs
+!README.md
+!LICENSE
+!CHANGELOG.md
+!package.json

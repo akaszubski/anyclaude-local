@@ -2,9 +2,15 @@
   "name": "anyclaude-lmstudio",
   "version": "1.0.0",
   "author": {
-    "name": "Fork maintainer",
-    "email": ""
+    "name": "akaszubski",
+    "url": "https://github.com/akaszubski"
   },
+  "contributors": [
+    {
+      "name": "Coder Technologies Inc. (Original anyclaude)",
+      "url": "https://github.com/coder/anyclaude"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/akaszubski/anyclaude-lmstudio"
@@ -27,8 +33,30 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "description": "Run Claude Code with LMStudio local models.",
+  "description": "Run Claude Code with LMStudio local models. Simplified fork of anyclaude for local-first AI development.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "lmstudio",
+    "local-llm",
+    "anthropic",
+    "ai",
+    "llm",
+    "proxy",
+    "mistral",
+    "llama",
+    "deepseek",
+    "local-ai",
+    "privacy"
+  ],
+  "homepage": "https://github.com/akaszubski/anyclaude-lmstudio#readme",
+  "bugs": {
+    "url": "https://github.com/akaszubski/anyclaude-lmstudio/issues"
+  },
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "build": "bun build --target node --format cjs --outfile dist/main.cjs ./src/main.ts && node -e \"const fs=require('fs');const f='dist/main.cjs';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(/import\\.meta\\.url/g,'__filename'))\" && printf '#!/usr/bin/env node\\nrequire(\"./main.cjs\");\\n' > dist/main.js && chmod +x dist/main.js",
     "test": "bun test",
