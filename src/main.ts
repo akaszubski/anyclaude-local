@@ -131,7 +131,7 @@ async function main() {
   const proxyURL = createAnthropicProxy({
     providers,
     defaultProvider: "lmstudio",
-    defaultModel: getModel,
+    defaultModel: initialModel,
   });
 
   console.log(`[anyclaude] LMStudio proxy: ${proxyURL}`);
