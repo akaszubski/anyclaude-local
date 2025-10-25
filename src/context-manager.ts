@@ -57,27 +57,52 @@ function estimateTokens(text: string): number {
 
 /**
  * Get context limit for a model
- * Can be overridden via environment variable
+ * Priority:
+ * 1. Environment variable override (LMSTUDIO_CONTEXT_LENGTH)
+ * 2. LMStudio API query (loaded_context_length)
+ * 3. Known model table lookup
+ * 4. Conservative default (32K)
  */
-export function getContextLimit(modelName: string): number {
-  // Check for environment variable override
+export function getContextLimit(
+  modelName: string,
+  lmstudioContextLength?: number
+): number {
+  // 1. Check for environment variable override (highest priority)
   const envLimit = process.env.LMSTUDIO_CONTEXT_LENGTH;
   if (envLimit) {
     const limit = parseInt(envLimit, 10);
     if (!isNaN(limit) && limit > 0) {
+      debug(1, `[Context] Using env override: ${limit} tokens`);
       return limit;
     }
   }
 
-  // Check known models (case-insensitive, partial match)
+  // 2. Use LMStudio API value if provided (queried from LMStudio)
+  if (lmstudioContextLength && lmstudioContextLength > 0) {
+    debug(
+      1,
+      `[Context] Using LMStudio reported context: ${lmstudioContextLength} tokens`
+    );
+    return lmstudioContextLength;
+  }
+
+  // 3. Check known models (case-insensitive, partial match)
   const lowerModel = modelName.toLowerCase();
   for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
     if (lowerModel.includes(key.toLowerCase())) {
+      debug(
+        1,
+        `[Context] Using model table lookup (${key}): ${limit} tokens`
+      );
       return limit;
     }
   }
 
-  // Conservative default
+  // 4. Conservative default
+  debug(
+    1,
+    `[Context] Using conservative default: ${MODEL_CONTEXT_LIMITS["current-model"]} tokens`
+  );
   return MODEL_CONTEXT_LIMITS["current-model"];
 }
 
@@ -134,14 +159,15 @@ export function calculateContextStats(
   messages: AnthropicMessage[],
   system?: { text: string }[],
   tools?: any[],
-  modelName: string = "current-model"
+  modelName: string = "current-model",
+  lmstudioContextLength?: number
 ): ContextStats {
   const systemTokens = countSystemTokens(system);
   const messageTokens = countMessageTokens(messages);
   const toolTokens = countToolTokens(tools);
   const totalTokens = systemTokens + messageTokens + toolTokens;
 
-  const contextLimit = getContextLimit(modelName);
+  const contextLimit = getContextLimit(modelName, lmstudioContextLength);
   const safeLimit = Math.floor(contextLimit * SAFETY_MARGIN);
   const percentUsed = (totalTokens / safeLimit) * 100;
   const exceedsLimit = totalTokens > safeLimit;
@@ -165,9 +191,10 @@ export function truncateMessages(
   messages: AnthropicMessage[],
   system: { text: string }[] | undefined,
   tools: any[] | undefined,
-  modelName: string = "current-model"
+  modelName: string = "current-model",
+  lmstudioContextLength?: number
 ): { messages: AnthropicMessage[]; truncated: boolean; removedCount: number } {
-  const stats = calculateContextStats(messages, system, tools, modelName);
+  const stats = calculateContextStats(messages, system, tools, modelName, lmstudioContextLength);
 
   if (!stats.exceedsLimit) {
     return { messages, truncated: false, removedCount: 0 };

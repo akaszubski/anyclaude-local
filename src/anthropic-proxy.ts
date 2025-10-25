@@ -24,6 +24,7 @@ import {
   truncateMessages,
   logContextWarning,
 } from "./context-manager";
+import { getModelContextLength } from "./lmstudio-info";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -44,6 +45,10 @@ export const createAnthropicProxy = ({
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
+
+  // Cache for LMStudio context length (queried on first request)
+  let cachedContextLength: number | null = null;
+  let contextLengthQueried = false;
 
   const proxy = http
     .createServer((req, res) => {
@@ -186,12 +191,28 @@ export const createAnthropicProxy = ({
           {} as Record<string, Tool>
         );
 
+        // Query LMStudio for context length on first request (await it!)
+        if (!contextLengthQueried) {
+          contextLengthQueried = true;
+          const lmstudioUrl = process.env.LMSTUDIO_URL || "http://localhost:1234/v1";
+          try {
+            const contextLength = await getModelContextLength(lmstudioUrl);
+            if (contextLength) {
+              cachedContextLength = contextLength;
+              debug(1, `[Context] Cached LMStudio context length: ${contextLength} tokens`);
+            }
+          } catch (error) {
+            debug(1, `[Context] Failed to query LMStudio context length:`, error);
+          }
+        }
+
         // Check context window and truncate if needed
         const contextStats = calculateContextStats(
           body.messages,
           body.system,
           body.tools,
-          model
+          model,
+          cachedContextLength ?? undefined
         );
 
         // Log warning if approaching limit
@@ -204,7 +225,8 @@ export const createAnthropicProxy = ({
             body.messages,
             body.system,
             body.tools,
-            model
+            model,
+            cachedContextLength ?? undefined
           );
           messagesToSend = result.messages;
 
