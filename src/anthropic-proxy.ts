@@ -375,6 +375,10 @@ export const createAnthropicProxy = ({
           Connection: "keep-alive",
         });
 
+        // Send immediate ping to prevent client timeout while LMStudio processes prompt
+        // This is crucial for large prompts that take time to process
+        res.write(`: keepalive\n\n`);
+
         try {
           await convertToAnthropicStream(stream.fullStream).pipeTo(
             new WritableStream({
