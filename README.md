@@ -115,6 +115,166 @@ ANYCLAUDE_DEBUG=1 node dist/main.js
 
 ---
 
+## ⚡ Performance & Model Selection
+
+### Expected Response Times
+
+Local models take time to process and generate responses. This is **normal behavior**, not a bug:
+
+| Operation | Typical Duration | What's Happening |
+|-----------|-----------------|------------------|
+| **Initial Startup** | 2-5 seconds | Loading proxy server |
+| **Prompt Processing** | 5-60 seconds | LMStudio analyzing request (depends on prompt size) |
+| **Token Generation** | 1-5 tokens/sec | Model generating response (depends on model size & GPU) |
+| **Claude Code System Prompt** | 30-90 seconds | Processing 10K+ token system prompt with tool descriptions |
+
+**Why So Slow?**
+- Claude Code sends **large system prompts** (10,000+ tokens) with all tool descriptions
+- Local models process tokens sequentially on your GPU
+- Larger models (13B+) are slower but more capable
+- Smaller models (7B) are faster but less capable
+
+### Visual Indicators
+
+When you see these in Claude Code, **everything is working correctly**:
+
+```
+⏺ Thinking...      ← Model is generating response
+· Ionizing...      ← Processing large prompt (30-60s is normal)
+✢ Synthesizing...  ← Streaming tokens back to you
+```
+
+**Don't panic if it takes 30-60 seconds!** The proxy sends keep-alive events to prevent timeout while LMStudio processes.
+
+### Recommended Models for Claude Code
+
+Based on testing with Claude Code's complex prompts and tool usage:
+
+#### Best for Speed (Recommended Starting Point)
+```
+Model: Qwen2.5-Coder-7B-Instruct (Quantized Q4 or Q5)
+Size: ~4GB
+Speed: Fast prompt processing (10-20s), decent generation
+Quality: Good for coding tasks, handles tools well
+Use: Daily development, quick iterations
+```
+
+#### Best for Quality
+```
+Model: DeepSeek-Coder-33B-Instruct (Quantized Q4)
+Size: ~20GB
+Speed: Slower prompt processing (30-60s), slower generation
+Quality: Excellent code understanding, better tool usage
+Use: Complex refactoring, architecture design
+```
+
+#### Best Balance
+```
+Model: Mistral-7B-Instruct-v0.3 (Quantized Q4)
+Size: ~4GB
+Speed: Good prompt processing (15-30s), good generation
+Quality: Solid general-purpose, decent with tools
+Use: General coding assistance
+```
+
+#### Small/Fast (Testing Only)
+```
+Model: Qwen2.5-VL-7B-Instruct (bf16)
+Size: ~14GB (unquantized)
+Speed: Variable (depends on GPU)
+Quality: Vision-language model, NOT optimized for coding
+Use: Testing proxy functionality only
+```
+
+### Performance Tips
+
+**1. Use Quantized Models**
+- Q4 or Q5 quantization reduces size by 4-8x with minimal quality loss
+- Example: `Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf` instead of full bf16
+- Download from HuggingFace models with `-GGUF` in the name
+
+**2. Enable GPU Acceleration**
+- LMStudio Settings → GPU Offload → Set to maximum layers
+- Check GPU usage (Activity Monitor on Mac, Task Manager on Windows)
+- If GPU not detected, reinstall LMStudio or check drivers
+
+**3. Adjust Context Length**
+- Claude Code sends large prompts (10K+ tokens)
+- Set LMStudio context to **16,384** or **32,768** tokens minimum
+- Found in: LMStudio Server tab → Advanced → Context Length
+
+**4. Optimize LMStudio Settings**
+```
+Server Settings (LMStudio → Server → Advanced):
+- Context Length: 32768
+- GPU Layers: Maximum (offload all to GPU)
+- Threads: Match your CPU cores
+- Batch Size: 512 (higher = faster prompt processing)
+- Flash Attention: ON (if supported by model)
+```
+
+**5. Test Model Performance**
+```bash
+# Start proxy with debug to see timing
+ANYCLAUDE_DEBUG=1 anyclaude
+
+# In Claude Code, ask simple question:
+"hi"
+
+# Check debug output for timing:
+[ANYCLAUDE DEBUG] [Request Complete] lmstudio/current-model: 2500ms
+                                                              ^^^^^
+                                                              This should be < 5s for simple prompts
+```
+
+### Model Switching for Different Tasks
+
+You can **hot-swap models** without restarting anyclaude:
+
+```bash
+# Terminal 1: Keep anyclaude running
+anyclaude
+
+# Switch models in LMStudio for different tasks:
+
+# Fast iterations → Qwen2.5-Coder-7B-Q4
+# Stop current model, load Qwen2.5-Coder-7B-Q4, Start server
+
+# Complex refactoring → DeepSeek-Coder-33B-Q4
+# Stop current model, load DeepSeek-33B, Start server
+
+# General coding → Mistral-7B-Instruct-Q4
+# Stop current model, load Mistral-7B, Start server
+```
+
+### Troubleshooting Slow Performance
+
+**Symptom**: "It's been 2+ minutes and still 'Ionizing...'"
+
+**Possible Causes**:
+1. **Model too large for GPU** → Check GPU memory usage
+2. **CPU-only mode** → Enable GPU offload in LMStudio
+3. **Low batch size** → Increase to 512 in LMStudio settings
+4. **Context overflow** → Model can't handle prompt size, increase context length
+
+**Quick Fix**:
+```bash
+# 1. Stop LMStudio server
+# 2. Load a smaller quantized model (Q4)
+# 3. Enable GPU offload (max layers)
+# 4. Set context length to 32768
+# 5. Restart LMStudio server
+# 6. Try again in Claude Code
+```
+
+**Still slow?** Try:
+- Close other GPU-intensive apps
+- Use smaller model (7B instead of 13B+)
+- Check LMStudio console for errors
+- Verify GPU is being used (check Activity Monitor/Task Manager)
+
+---
+
 ## ⚙️ Configuration
 
 Configure via environment variables (all optional):
@@ -250,14 +410,19 @@ npm test
 4. Click "Start Server"
 5. Verify it shows "Server running on http://localhost:1234"
 
-### Models respond slowly or timeout
+### Models respond slowly or take 30-60 seconds
 
-**Cause**: Model is too large for your hardware
+**This is normal!** See the [Performance & Model Selection](#-performance--model-selection) section for:
+- Expected response times (30-60s for large prompts is normal)
+- Recommended models for different use cases
+- Performance optimization tips
+- Troubleshooting slow performance
 
-**Fix**:
-- Use a smaller model (e.g., 7B instead of 70B)
+**Quick tips**:
 - Use quantized models (Q4, Q5 versions)
-- Ensure LMStudio is using GPU acceleration
+- Enable GPU offload in LMStudio (max layers)
+- Try smaller models (7B instead of 13B+)
+- Increase batch size to 512 in LMStudio settings
 
 ### "Port already in use"
 
