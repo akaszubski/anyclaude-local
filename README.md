@@ -33,8 +33,7 @@ A simplified fork of [anyclaude](https://github.com/coder/anyclaude) focused exc
 ### Dependencies
 
 Runtime dependencies (automatically installed):
-- `dotenv` - Environment variable management (.env file support)
-- `@ai-sdk/openai` - AI SDK for OpenAI-compatible APIs
+- `@ai-sdk/openai-compatible` - AI SDK for OpenAI-compatible servers (LMStudio)
 - `ai` - Vercel AI SDK core
 
 Development dependencies:
@@ -374,8 +373,9 @@ The original anyclaude is excellent for multi-provider usage, but many users wan
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
 - **[CLAUDE.md](CLAUDE.md)** - Developer documentation
-- **[PROJECT.md](PROJECT.md)** - Strategic direction and architecture
+- **[.claude/PROJECT.md](.claude/PROJECT.md)** - Strategic direction and architecture
 - **[LICENSE](LICENSE)** - MIT License
+- **[docs/](docs/)** - Detailed guides (debugging, testing, failover patterns)
 
 ---
 

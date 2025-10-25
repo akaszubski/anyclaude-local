@@ -76,14 +76,14 @@ ANYCLAUDE_DEBUG=2 bun run src/main.ts
 
 **LMStudio Compatibility:**
 
-The proxy uses `compatibility: 'legacy'` in the OpenAI SDK to ensure compatibility with LMStudio's Chat Completions API. This means:
+The proxy uses the `@ai-sdk/openai-compatible` package, which is specifically designed for OpenAI-compatible servers like LMStudio. This package:
 
-- Uses `max_tokens` instead of `max_completion_tokens`
-- Removes unsupported parameters (`reasoning`, `service_tier`)
-- Disables parallel tool calls for better compatibility
-- Standard OpenAI Chat Completions format
+- Properly handles LMStudio's streaming format
+- Automatically manages parameter compatibility
+- Uses standard OpenAI Chat Completions format
+- Supports Server-Sent Events (SSE) streaming
 
-See `src/main.ts:12-38` for the LMStudio provider configuration.
+See `src/main.ts:12-17` for the LMStudio provider configuration.
 
 **Message Format Conversion:**
 
