@@ -118,7 +118,7 @@ start_mlx_lm() {
 # Start AnyClaude
 start_anyclaude() {
   echo ""
-  echo -e "${BLUE}[AnyClaude]${NC} Starting AnyClaude..."
+  echo -e "${BLUE}[AnyClaude]${NC} Starting AnyClaude...\n"
 
   export ANYCLAUDE_MODE=mlx-lm
   export ANYCLAUDE_DEBUG
@@ -127,15 +127,13 @@ start_anyclaude() {
   if [ "$PROXY_ONLY" = "true" ]; then
     echo -e "${BLUE}[AnyClaude]${NC} Running in proxy-only mode (no Claude Code spawned)"
     export PROXY_ONLY=true
+    "$SCRIPT_DIR/dist/main-cli.js"
   else
-    echo -e "${BLUE}[AnyClaude]${NC} Spawning Claude Code..."
+    echo -e "${BLUE}[AnyClaude]${NC} Spawning Claude Code...\n"
+    # Use exec to pass control directly to Claude Code process
+    # This preserves stdin/stdout/stderr so Claude Code can use raw terminal mode
+    exec "$SCRIPT_DIR/dist/main-cli.js"
   fi
-
-  "$SCRIPT_DIR/dist/main-cli.js" &
-  ANYCLAUDE_PID=$!
-  echo "$ANYCLAUDE_PID" >> "$PIDS_FILE"
-
-  echo -e "${GREEN}[AnyClaude]${NC} Started (PID: $ANYCLAUDE_PID)"
 }
 
 # Show status
@@ -172,12 +170,17 @@ main() {
 
   check_venv_exists
   start_mlx_lm
-  start_anyclaude
 
-  show_status
-
-  # Wait for processes
-  wait
+  # Only show status if running in proxy-only mode
+  # Otherwise, control transfers to Claude Code via exec
+  if [ "$PROXY_ONLY" = "true" ]; then
+    show_status
+    wait
+  else
+    show_status
+    start_anyclaude
+    # Note: start_anyclaude uses exec, so we never reach this point
+  fi
 }
 
 main "$@"
