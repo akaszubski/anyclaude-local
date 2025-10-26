@@ -7,8 +7,33 @@
 
 set -e
 
-MODE=${1:-mlx-omni}  # Default: MLX-Omni (recommended)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load configuration from .anyclauderc (if it exists)
+# Order of precedence: project .anyclauderc → home ~/.anyclauderc → defaults
+load_config() {
+  # Check project directory first
+  if [ -f "$SCRIPT_DIR/.anyclauderc" ]; then
+    # shellcheck disable=SC1090
+    source "$SCRIPT_DIR/.anyclauderc"
+    echo "[Config] Loaded .anyclauderc from project directory" >&2
+  fi
+
+  # Then check home directory (overrides project config)
+  if [ -f "$HOME/.anyclauderc" ]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.anyclauderc"
+    echo "[Config] Loaded .anyclauderc from home directory" >&2
+  fi
+
+  # Environment variables override config files (highest priority)
+  # These are already set in the environment if user exports them
+}
+
+load_config
+
+# Command line args override everything
+MODE=${1:-${ANYCLAUDE_MODE:-mlx-omni}}  # Default: MLX-Omni (recommended)
 
 # Cleanup
 cleanup() {

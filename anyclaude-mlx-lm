@@ -14,6 +14,29 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load configuration from .anyclauderc (if it exists)
+# Order of precedence: project .anyclauderc → home ~/.anyclauderc → defaults
+load_config() {
+  # Check project directory first
+  if [ -f "$SCRIPT_DIR/.anyclauderc" ]; then
+    # shellcheck disable=SC1090
+    source "$SCRIPT_DIR/.anyclauderc"
+  fi
+
+  # Then check home directory (overrides project config)
+  if [ -f "$HOME/.anyclauderc" ]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.anyclauderc"
+  fi
+
+  # Environment variables override config files (highest priority)
+  # These are already set in the environment if user exports them
+}
+
+load_config
+
+# Apply defaults if not set by config
 MLX_LM_PORT=${MLX_LM_PORT:-8081}
 MLX_MODEL=${MLX_MODEL:-"mlx-community/Qwen2.5-1.5B-Instruct-4bit"}
 ANYCLAUDE_DEBUG=${ANYCLAUDE_DEBUG:-0}
