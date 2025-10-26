@@ -11,11 +11,13 @@
 # ============================================================================
 # Options: mlx-omni, mlx-lm
 #
-# mlx-omni: RECOMMENDED for HuggingFace models with 30x faster follow-ups via KV cache
-#   - Only works with HuggingFace model IDs (mlx-community/...)
+# mlx-omni: For 30x faster follow-ups via KV cache (requires pre-loaded model)
+#   - ARCHITECTURAL LIMITATION: Does NOT accept --model parameter
+#   - Model must be pre-configured in MLX-Omni environment before running
 #   - Native Anthropic API format
 #   - Performance: 1st question ~30-40s, follow-ups <1s (via KV cache)
-#   - Example: ./anyclaude mlx-omni
+#   - For local model files, use mlx-lm instead (has config file control)
+#   - Example: ./anyclaude mlx-omni (requires model pre-loaded)
 #
 # mlx-lm: Use when you have local model files or want HuggingFace model IDs
 #   - Supports local paths AND HuggingFace IDs
@@ -23,9 +25,9 @@
 #   - Performance: Consistent ~25-40s per request (no KV cache)
 #   - Example: ./anyclaude mlx-lm
 #
-# Set to mlx-omni to use KV cache for 30x faster follow-ups
-# Set to mlx-lm if you need OpenAI-compatible format (no KV cache)
-ANYCLAUDE_MODE=mlx-omni
+# Set to mlx-lm to use with your local model (supports model parameter)
+# Note: mlx-omni doesn't accept --model parameter, so use mlx-lm for now
+ANYCLAUDE_MODE=mlx-lm
 
 # ============================================================================
 # Model Configuration

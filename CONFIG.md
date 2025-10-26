@@ -91,23 +91,25 @@ ANYCLAUDE_MODE=mlx-lm
 
 ### MLX-Omni Configuration
 
-**Model Control**: The `.anyclauderc` config file controls which model MLX-Omni-Server loads on startup.
+**Important Architecture Note**: MLX-Omni-Server **does NOT** accept `--model` parameter at startup. Model selection must be configured outside of AnyClaude (pre-loaded in the MLX-Omni environment).
 
-- MLX-Omni-Server accepts the `--model` parameter and will load the specified model
-- The launcher reads `MLX_OMNI_MODEL` from `.anyclauderc` (or environment variables)
-- Supports both HuggingFace IDs and local model file paths
-- The configuration precedence is: Environment variables > ~/.anyclauderc > .anyclauderc > defaults
+- MLX-Omni-Server loads whatever model is pre-configured in its environment
+- The launcher does NOT read `MLX_OMNI_MODEL` from config (it's informational only)
+- To use a different model with MLX-Omni, configure it in the MLX-Omni-Server environment before running AnyClaude
+- The recommended approach for local models is to use **MLX-LM** instead, which accepts `--model` parameter
 
 ### When to Use MLX-Omni vs MLX-LM
 
 | Feature | MLX-Omni | MLX-LM |
 |---------|----------|--------|
-| **Local Model Files** | ✅ Yes | ✅ Yes |
-| **Config File Controls Model** | ✅ Yes | ✅ Yes |
-| **HuggingFace IDs** | ✅ Yes | ✅ Yes |
+| **Local Model Files** | ⚠️ Pre-load only | ✅ Yes |
+| **Config File Controls Model** | ❌ No | ✅ Yes |
+| **HuggingFace IDs** | ⚠️ Pre-load only | ✅ Yes |
 | **KV Cache (Fast Follow-ups)** | ✅ Yes (~30s → <1s) | ❌ No |
-| **Qwen3-Coder-30B (local)** | ✅ Yes | ✅ Yes |
+| **Qwen3-Coder-30B (local)** | ⚠️ Pre-load required | ✅ Yes (from config) |
 | **Small HuggingFace models** | ✅ Faster with cache | ✅ Works |
+
+**Recommendation**: Use **MLX-LM** for local model files. It provides config file control and proper model loading.
 
 #### MLX_MODEL
 **Type**: String (file path or HuggingFace ID)
@@ -115,14 +117,15 @@ ANYCLAUDE_MODE=mlx-lm
 
 Specifies which model to use:
 
-**For MLX-Omni** (HuggingFace IDs only):
+**For MLX-Omni** (MUST be pre-loaded, not from config):
 ```bash
-MLX_MODEL=mlx-community/Qwen2.5-1.5B-Instruct-4bit
-MLX_MODEL=mlx-community/Llama-3.2-1B-Instruct-4bit
-MLX_MODEL=mlx-community/Qwen2.5-3B-Instruct-4bit
+# MLX-Omni does NOT accept --model parameter
+# Pre-load your model in MLX-Omni before running anyclaude
+export MLX_MODEL="/path/to/model"
+./anyclaude mlx-omni
 ```
 
-**For MLX-LM** (local paths or HuggingFace IDs):
+**For MLX-LM** (loaded from config):
 ```bash
 # Local path (preferred for large models)
 MLX_MODEL=/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
