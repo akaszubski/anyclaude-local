@@ -117,37 +117,37 @@ ANYCLAUDE_DEBUG=1 node dist/main.js
 
 ## ⚡ Hybrid Mode: Fast Analysis + Full Features
 
-AnyClaude now supports hybrid mode for optimal performance and features:
+AnyClaude now supports 3 modes for optimal performance and features:
 
-### Quick Start (2 modes, same setup)
+### Quick Start (3 modes available)
 
 ```bash
-# Terminal 1: Start both servers
+# Terminal 1: Start MLX-Omni (RECOMMENDED - has both KV cache + tools!)
+export MLX_MODEL="/path/to/Qwen3-Coder-30B"
+mlx-omni-server --port 8080
+
+# Terminal 2: Run AnyClaude with MLX-Omni
+ANYCLAUDE_MODE=mlx-omni ./dist/main-cli.js
+
+# Alternative: Use MLX-LM (fast analysis only, no tools)
 source ~/.venv-mlx/bin/activate
-python3 -m mlx_lm server --port 8081 &  # Fast mode (KV cache)
+python3 -m mlx_lm server --port 8081 &
+MLX_LM_URL="http://localhost:8081/v1" ANYCLAUDE_MODE=mlx-lm anyclaude
 
+# Alternative: Use LMStudio (full features, slower)
 # LMStudio should be running (start in app)
-
-# Terminal 2: Choose your mode
-# For analysis work (fast):
-MLX_LM_URL="http://localhost:8081/v1" \
-ANYCLAUDE_MODE=mlx-lm \
-anyclaude
-
-# OR for editing work (full features):
-LMSTUDIO_URL="http://localhost:1234/v1" \
-ANYCLAUDE_MODE=lmstudio \
-anyclaude
+LMSTUDIO_URL="http://localhost:1234/v1" ANYCLAUDE_MODE=lmstudio anyclaude
 ```
 
 ### Performance Comparison
 
-| Mode | Speed | Tools | Best For |
-|------|-------|-------|----------|
-| **MLX-LM** | 0.3s follow-ups* | ❌ No | Analysis, review, Q&A |
-| **LMStudio** | 30s all requests | ✅ Yes | Editing, git, tools |
+| Mode | Speed | Tools | KV Cache | Best For |
+|------|-------|-------|----------|----------|
+| **MLX-Omni** ⭐ | <1s follow-ups | ✅ Yes | ✅ Yes | **Analysis + Tools** |
+| **MLX-LM** | <1s follow-ups* | ❌ No | ✅ Yes | Analysis only |
+| **LMStudio** | 30s all requests | ✅ Yes | ❌ No | Editing, git |
 
-*0.3 seconds after first 30s request (100x faster due to KV cache)
+*0.3-1s after first 30s request (100x faster due to KV cache)*
 
 ### Real-World Example
 

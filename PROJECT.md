@@ -127,23 +127,62 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 - Brainstorming and planning
 - Follow-up questions on same context
 
-#### MLX-Omni Mode (`ANYCLAUDE_MODE=mlx-omni`, experimental/unsupported)
+#### MLX-Omni Mode (`ANYCLAUDE_MODE=mlx-omni`)
 
-**Status**: ⚠️ **Not recommended** - fundamental incompatibility with local models
+**Status**: ✅ **Functional** - Works with HuggingFace MLX models, supports both KV cache AND tool calling
 
-**Why Not Recommended**:
+**What Works**:
 
-- MLX-Omni-Server **only supports HuggingFace model IDs**, not local paths
-- Attempting to use local MLX files fails with authentication errors
-- Server has no `--model-path` option or environment variable to specify local models
-- Tool calling support couldn't be validated due to model loading failure
+- ✅ Native Anthropic API format (no translation layer needed)
+- ✅ KV cache support for 30-100x faster follow-ups
+- ✅ Full tool calling support (Read, Edit, Bash, Git, etc.)
+- ✅ Streaming responses
+- ✅ Proper error handling and authentication
 
-**Limitation Example**:
+**Architecture**:
 ```
-Error: 401 Client Error: Unauthorized for url: https://huggingface.co/api/models/qwen3-coder
+Claude Code → AnyClaude Proxy → MLX-Omni-Server → MLX Models
+(Anthropic API)  (Passthrough)  (Anthropic API)  (HuggingFace IDs)
 ```
 
-**Recommendation**: Use **MLX-LM mode** instead (below)
+**Key Limitation - Local Model Paths Not Supported**:
+
+MLX-Omni-Server **only accepts HuggingFace model IDs**, not local file paths:
+
+```bash
+# ✅ WORKS - HuggingFace model ID
+export MLX_MODEL="mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+mlx-omni-server --port 8080
+
+# ❌ FAILS - Local path (authentication error)
+export MLX_MODEL="/path/to/local/Qwen3-Coder-30B"
+mlx-omni-server --port 8080
+# Error: 401 Client Error: Unauthorized
+# https://huggingface.co/api/models/path/to/local/Qwen3-Coder-30B
+```
+
+**Available Models** (auto-downloaded from HuggingFace):
+
+Run `curl http://localhost:8080/anthropic/v1/models` to see available MLX models:
+- mlx-community/Qwen2.5-1.5B-Instruct-4bit
+- mlx-community/Qwen2.5-0.5B-Instruct-4bit
+- mlx-community/Qwen2.5-3B-Instruct-4bit
+- mlx-community/Llama-3.2-1B-Instruct-4bit
+- mlx-community/Llama-3.2-3B-Instruct-4bit
+- And more... (all HuggingFace MLX models)
+
+**When to Use MLX-Omni**:
+
+- You want tool calling + fast follow-ups (KV cache)
+- You don't mind using HuggingFace models (internet required to download)
+- Model size/speed is more important than local control
+- Your use case requires both features
+
+**When NOT to Use MLX-Omni**:
+
+- You need to use a specific local MLX model file
+- You want complete offline capability (model download on first run)
+- You prefer full control over model path/loading
 
 ---
 
