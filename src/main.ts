@@ -170,8 +170,49 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     }) as typeof fetch,
   }),
   "mlx-lm": createOpenAI({
-    baseURL: process.env.MLX_LM_URL || "http://localhost:8080/v1",
+    baseURL: process.env.MLX_LM_URL || "http://localhost:8081/v1",
     apiKey: process.env.MLX_LM_API_KEY || "mlx-lm",
+    fetch: (async (url, init) => {
+      if (init?.body && typeof init.body === "string") {
+        const body = JSON.parse(init.body);
+
+        // Remove model field for MLX-LM (always uses the loaded model)
+        // MLX-LM server validates model names against HuggingFace, which fails for "current-model"
+        delete body.model;
+
+        // Map max_tokens for compatibility
+        const maxTokens = body.max_tokens;
+        delete body.max_tokens;
+        if (typeof maxTokens !== "undefined") {
+          body.max_completion_tokens = maxTokens;
+        }
+
+        // Remove parameters that MLX-LM doesn't support
+        delete body.reasoning;
+        delete body.service_tier;
+
+        // Clean system prompt: MLX-LM's server has strict JSON validation
+        // Normalize newlines in system prompt to avoid JSON parsing errors
+        // This handles both "system" role messages and message content
+        if (body.messages && Array.isArray(body.messages)) {
+          for (const msg of body.messages) {
+            // Clean system role messages
+            if (msg.role === "system" && msg.content && typeof msg.content === "string") {
+              msg.content = msg.content.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+            }
+            // Also clean user messages that might contain newlines
+            if (msg.role === "user" && msg.content && typeof msg.content === "string") {
+              // User messages can have newlines, but let's ensure proper formatting
+              msg.content = msg.content.replace(/\r\n/g, "\n");
+            }
+          }
+        }
+
+        init.body = JSON.stringify(body);
+      }
+
+      return globalThis.fetch(url, init);
+    }) as typeof fetch,
   }),
   "mlx-omni": createAnthropic({
     baseURL: process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic",

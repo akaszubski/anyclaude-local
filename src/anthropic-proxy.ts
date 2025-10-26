@@ -325,6 +325,12 @@ export const createAnthropicProxy = ({
           system = body.system.map((s) => s.text).join("\n");
         }
 
+        // MLX-LM specific: normalize system prompt to avoid JSON parsing errors
+        // MLX-LM's server has stricter JSON validation and rejects newlines in strings
+        if (system && providerName === "mlx-lm") {
+          system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+        }
+
         // Log Claude Code's original tool schemas (TRACE level)
         if (isTraceDebugEnabled() && body.tools) {
           debug(3, `[Tools] Claude Code sent ${body.tools.length} tool(s):`);
