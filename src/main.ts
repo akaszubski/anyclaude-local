@@ -191,8 +191,8 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         delete body.reasoning;
         delete body.service_tier;
 
-        // Disable streaming for MLX-LM - use non-streaming mode for reliability
-        body.stream = false;
+        // Keep streaming enabled (don't set body.stream = false)
+        // MLX-LM handles streaming responses properly
 
         // Clean system prompt: MLX-LM's server has strict JSON validation
         // Normalize newlines in system prompt to avoid JSON parsing errors
