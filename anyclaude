@@ -33,7 +33,7 @@ load_config() {
 load_config
 
 # Command line args override everything
-MODE=${1:-${ANYCLAUDE_MODE:-mlx-omni}}  # Default: MLX-Omni (recommended)
+MODE=${1:-${ANYCLAUDE_MODE:-mlx-omni-local}}  # Default: MLX-Omni-Local (KV cache + local models)
 
 # Cleanup
 cleanup() {
@@ -85,6 +85,14 @@ case "$MODE" in
   help)
     show_help
     exit 0
+    ;;
+  mlx-omni-local)
+    # MLX-Omni with local model pre-loading (RECOMMENDED - KV cache + local models)
+    if [ ! -f "$SCRIPT_DIR/anyclaude-omni-local" ]; then
+      echo "Error: anyclaude-omni-local launcher not found!"
+      exit 1
+    fi
+    exec "$SCRIPT_DIR/anyclaude-omni-local"
     ;;
   mlx-omni|"")
     # For mlx-omni, we need to verify the script exists first

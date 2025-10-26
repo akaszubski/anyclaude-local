@@ -25,9 +25,10 @@
 #   - Performance: Consistent ~25-40s per request (no KV cache)
 #   - Example: ./anyclaude mlx-lm
 #
-# Set to mlx-lm to use with your local model (supports model parameter)
-# Note: mlx-omni doesn't accept --model parameter, so use mlx-lm for now
-ANYCLAUDE_MODE=mlx-lm
+# Use mlx-omni-local for KV cache with local models
+# This script pre-loads your model, then launches MLX-Omni for fast follow-ups
+# Alternative: mlx-lm (config file control, no KV cache)
+ANYCLAUDE_MODE=mlx-omni-local
 
 # ============================================================================
 # Model Configuration
