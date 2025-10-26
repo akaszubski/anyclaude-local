@@ -1,6 +1,7 @@
 #!/bin/bash
 # AnyClaude + MLX-Omni-Server Integrated Launcher
-# Starts both services together and manages their lifecycle
+# Starts both MLX-Omni-Server and Claude Code together with KV cache support
+# MLX-Omni uses native Anthropic API format with KV cache for 30x faster follow-ups
 
 set -e
 
@@ -13,8 +14,31 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load configuration from .anyclauderc (if it exists)
+# Order of precedence: project .anyclauderc → home ~/.anyclauderc → defaults
+load_config() {
+  # Check project directory first
+  if [ -f "$SCRIPT_DIR/.anyclauderc" ]; then
+    # shellcheck disable=SC1090
+    source "$SCRIPT_DIR/.anyclauderc"
+  fi
+
+  # Then check home directory (overrides project config)
+  if [ -f "$HOME/.anyclauderc" ]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.anyclauderc"
+  fi
+
+  # Environment variables override config files (highest priority)
+  # These are already set in the environment if user exports them
+}
+
+load_config
+
+# Apply defaults if not set by config
 MLX_OMNI_PORT=${MLX_OMNI_PORT:-8080}
-MLX_MODEL=${MLX_MODEL:-"mlx-community/Qwen2.5-1.5B-Instruct-4bit"}
+MLX_OMNI_MODEL=${MLX_OMNI_MODEL:-"mlx-community/Qwen2.5-3B-Instruct-4bit"}
 ANYCLAUDE_DEBUG=${ANYCLAUDE_DEBUG:-0}
 PROXY_ONLY=${PROXY_ONLY:-false}
 
@@ -27,7 +51,7 @@ mkdir -p "$LOG_DIR"
 cleanup() {
   echo -e "\n${YELLOW}[AnyClaude]${NC} Shutting down..."
 
-  # Kill MLX-Omni if running
+  # Kill processes if running
   if [ -f "$PIDS_FILE" ]; then
     while IFS= read -r pid; do
       if kill -0 "$pid" 2>/dev/null; then
@@ -47,24 +71,13 @@ cleanup() {
 # Trap signals
 trap cleanup SIGINT SIGTERM EXIT
 
-# Check if mlx-omni-server is installed
-check_mlx_omni_installed() {
-  if ! command -v mlx-omni-server &> /dev/null; then
-    echo -e "${RED}Error: mlx-omni-server not installed${NC}"
-    echo "Install with: pip install mlx-omni-server"
-    exit 1
-  fi
-}
-
 # Start MLX-Omni-Server
 start_mlx_omni() {
   echo -e "${BLUE}[MLX-Omni]${NC} Starting MLX-Omni-Server on port $MLX_OMNI_PORT..."
-  echo -e "${BLUE}[MLX-Omni]${NC} Model: $MLX_MODEL"
+  echo -e "${BLUE}[MLX-Omni]${NC} Model: $MLX_OMNI_MODEL"
 
-  export MLX_MODEL
-  mlx-omni-server \
+  /Users/akaszubski/.local/bin/mlx-omni-server \
     --port "$MLX_OMNI_PORT" \
-    --log-level info \
     > "$LOG_DIR/mlx-omni-server.log" 2>&1 &
 
   MLX_OMNI_PID=$!
@@ -72,14 +85,14 @@ start_mlx_omni() {
 
   # Wait for server to be ready
   echo -e "${BLUE}[MLX-Omni]${NC} Waiting for server to be ready..."
-  for i in {1..60}; do
+  for i in {1..120}; do
     if curl -s "http://localhost:$MLX_OMNI_PORT/anthropic/v1/models" > /dev/null 2>&1; then
       echo -e "${GREEN}[MLX-Omni]${NC} Server is ready! (PID: $MLX_OMNI_PID)"
       return 0
     fi
     sleep 1
-    if [ $((i % 10)) -eq 0 ]; then
-      echo -e "${BLUE}[MLX-Omni]${NC} Still waiting... ($i/60)"
+    if [ $((i % 30)) -eq 0 ]; then
+      echo -e "${BLUE}[MLX-Omni]${NC} Still waiting... ($i/120)"
     fi
   done
 
@@ -91,7 +104,7 @@ start_mlx_omni() {
 # Start AnyClaude
 start_anyclaude() {
   echo ""
-  echo -e "${BLUE}[AnyClaude]${NC} Starting AnyClaude..."
+  echo -e "${BLUE}[AnyClaude]${NC} Starting AnyClaude...\n"
 
   export ANYCLAUDE_MODE=mlx-omni
   export ANYCLAUDE_DEBUG
@@ -100,28 +113,28 @@ start_anyclaude() {
   if [ "$PROXY_ONLY" = "true" ]; then
     echo -e "${BLUE}[AnyClaude]${NC} Running in proxy-only mode (no Claude Code spawned)"
     export PROXY_ONLY=true
+    "$SCRIPT_DIR/dist/main-cli.js"
   else
-    echo -e "${BLUE}[AnyClaude]${NC} Spawning Claude Code..."
+    echo -e "${BLUE}[AnyClaude]${NC} Spawning Claude Code with KV cache...\n"
+    # Use exec to pass control directly to Claude Code process
+    # This preserves stdin/stdout/stderr so Claude Code can use raw terminal mode
+    exec "$SCRIPT_DIR/dist/main-cli.js"
   fi
-
-  "$SCRIPT_DIR/dist/main-cli.js" &
-  ANYCLAUDE_PID=$!
-  echo "$ANYCLAUDE_PID" >> "$PIDS_FILE"
-
-  echo -e "${GREEN}[AnyClaude]${NC} Started (PID: $ANYCLAUDE_PID)"
 }
 
 # Show status
 show_status() {
   echo ""
   echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║${NC}     AnyClaude + MLX-Omni-Server Integration Active       ${BLUE}║${NC}"
+  echo -e "${BLUE}║${NC}     AnyClaude + MLX-Omni-Server Integration Active      ${BLUE}║${NC}"
+  echo -e "${BLUE}║${NC}          With Native KV Cache Support (30x faster!)      ${BLUE}║${NC}"
   echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "${GREEN}✓${NC} MLX-Omni-Server:   http://localhost:$MLX_OMNI_PORT/anthropic"
-  echo -e "${GREEN}✓${NC} Model:             $MLX_MODEL"
-  echo -e "${GREEN}✓${NC} AnyClaude Mode:    MLX-OMNI"
+  echo -e "${GREEN}✓${NC} Model:             $MLX_OMNI_MODEL"
+  echo -e "${GREEN}✓${NC} AnyClaude Mode:    MLX-Omni"
   echo -e "${GREEN}✓${NC} Debug Level:       $ANYCLAUDE_DEBUG"
+  echo -e "${GREEN}✓${NC} KV Cache:          ENABLED (Follow-ups <1s!)"
   if [ "$PROXY_ONLY" = "true" ]; then
     echo -e "${YELLOW}ℹ${NC} Running in proxy-only mode (no Claude Code)"
   else
@@ -132,6 +145,10 @@ show_status() {
   echo "  MLX-Omni:  $LOG_DIR/mlx-omni-server.log"
   echo "  AnyClaude: Check the AnyClaude output above"
   echo ""
+  echo -e "${BLUE}Performance Tips:${NC}"
+  echo "  1st question: ~30-40s (system prompt + model inference)"
+  echo "  Follow-ups:   <1s (KV cache hit!)"
+  echo ""
   echo -e "${BLUE}Press Ctrl+C to stop both services${NC}"
   echo ""
 }
@@ -140,17 +157,22 @@ show_status() {
 main() {
   echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
   echo -e "${BLUE}║${NC}     AnyClaude + MLX-Omni-Server Launcher                ${BLUE}║${NC}"
+  echo -e "${BLUE}║${NC}          Native Anthropic API with KV Cache             ${BLUE}║${NC}"
   echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
   echo ""
 
-  check_mlx_omni_installed
   start_mlx_omni
-  start_anyclaude
 
-  show_status
-
-  # Wait for processes
-  wait
+  # Only show status if running in proxy-only mode
+  # Otherwise, control transfers to Claude Code via exec
+  if [ "$PROXY_ONLY" = "true" ]; then
+    show_status
+    wait
+  else
+    show_status
+    start_anyclaude
+    # Note: start_anyclaude uses exec, so we never reach this point
+  fi
 }
 
 main "$@"

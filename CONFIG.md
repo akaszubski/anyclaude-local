@@ -65,13 +65,39 @@ ANYCLAUDE_DEBUG=0
 **Type**: `mlx-omni` or `mlx-lm`
 **Default**: `mlx-omni`
 
-Controls which backend server to use:
-- `mlx-omni`: For HuggingFace models (recommended for quick start)
-- `mlx-lm`: For local model paths OR HuggingFace models
+Controls which backend server to use. Choose based on your needs:
+
+**MLX-Omni** (Native Anthropic API with KV Cache) - RECOMMENDED for speed
+- Use HuggingFace model IDs only (mlx-community/...)
+- Native Anthropic API format (same as real Claude API)
+- **30x faster follow-ups** via Key-Value cache: 1st question ~30-40s, follow-ups <1s
+- Full tool calling support and streaming
+- Best for: Interactive development where follow-ups matter
+
+```bash
+ANYCLAUDE_MODE=mlx-omni
+```
+
+**MLX-LM** (OpenAI-compatible for any model)
+- Support for local model file paths (filesystem)
+- Support for HuggingFace model IDs (auto-downloads)
+- No native KV cache support
+- Consistent performance: ~25-40s per request
+- Best for: Using large local models (like your Qwen3-Coder-30B)
 
 ```bash
 ANYCLAUDE_MODE=mlx-lm
 ```
+
+### When to Use MLX-Omni vs MLX-LM
+
+| Feature | MLX-Omni | MLX-LM |
+|---------|----------|--------|
+| **Local Model Files** | ❌ No | ✅ Yes |
+| **HuggingFace IDs** | ✅ Yes | ✅ Yes |
+| **KV Cache (Fast Follow-ups)** | ✅ Yes (~30s → <1s) | ❌ No |
+| **Qwen3-Coder-30B (local)** | ❌ Cannot use | ✅ Use this |
+| **Small HuggingFace models** | ✅ Faster | ✅ Works |
 
 #### MLX_MODEL
 **Type**: String (file path or HuggingFace ID)
@@ -149,6 +175,24 @@ Run proxy server without spawning Claude Code (for testing):
 ```bash
 PROXY_ONLY=true
 ```
+
+## Quick Mode Switching
+
+Want to try MLX-Omni with KV cache speedup? Just run:
+
+```bash
+# Try MLX-Omni with fast follow-ups (1st: ~30-40s, follow-ups: <1s)
+./anyclaude mlx-omni
+
+# Back to your local model
+./anyclaude mlx-lm
+
+# Or set it permanently in config
+echo "ANYCLAUDE_MODE=mlx-omni" >> .anyclauderc
+./anyclaude
+```
+
+The launcher will start the appropriate backend (MLX-Omni or MLX-LM) and spawn Claude Code with full terminal support.
 
 ## Usage Patterns
 

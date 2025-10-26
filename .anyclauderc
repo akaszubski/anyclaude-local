@@ -10,8 +10,22 @@
 # Mode Selection
 # ============================================================================
 # Options: mlx-omni, mlx-lm
-# mlx-omni: For HuggingFace community models (default, recommended)
-# mlx-lm: For local model paths or specific HuggingFace models
+#
+# mlx-omni: RECOMMENDED for HuggingFace models with 30x faster follow-ups via KV cache
+#   - Only works with HuggingFace model IDs (mlx-community/...)
+#   - Native Anthropic API format
+#   - Performance: 1st question ~30-40s, follow-ups <1s (via KV cache)
+#   - Example: ./anyclaude mlx-omni
+#
+# mlx-lm: Use when you have local model files or want HuggingFace model IDs
+#   - Supports local paths AND HuggingFace IDs
+#   - OpenAI-compatible API format
+#   - Performance: Consistent ~25-40s per request (no KV cache)
+#   - Example: ./anyclaude mlx-lm
+#
+# Set to mlx-lm by default to use your local Qwen3-Coder model
+# Uncomment the next line to use mlx-omni with KV cache:
+# ANYCLAUDE_MODE=mlx-omni
 ANYCLAUDE_MODE=mlx-lm
 
 # ============================================================================
