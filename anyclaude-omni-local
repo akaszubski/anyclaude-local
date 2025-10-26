@@ -74,39 +74,12 @@ check_venv_exists() {
   fi
 }
 
-# Load model into MLX-Omni using MLX_LM
-# This pre-loads the model so MLX-Omni can use it with KV cache
-load_model_into_omni() {
-  echo -e "${BLUE}[MLX-Omni]${NC} Pre-loading model into MLX-Omni environment..."
-  echo -e "${BLUE}[MLX-Omni]${NC} Model: $MLX_MODEL"
-  echo ""
-  echo "This may take 1-2 minutes on first load. Model will be cached after."
-  echo ""
-
-  source "$VENV_PATH/bin/activate"
-
-  # Use python directly to load the model via MLX_LM
-  # This ensures the model is loaded and cached
-  python3 << 'PYTHON_SCRIPT'
-import sys
-import os
-
-model_path = os.environ.get('MLX_MODEL', 'mlx-community/Qwen2.5-3B-Instruct-4bit')
-
-try:
-    print(f"Loading model: {model_path}")
-    from mlx_lm.models import get_model_and_tokenizer
-
-    # This loads the model and caches it
-    model, tokenizer = get_model_and_tokenizer(model_path)
-    print(f"✓ Model loaded successfully!")
-    print(f"  Config: {model.config}")
-except Exception as e:
-    print(f"✗ Error loading model: {e}", file=sys.stderr)
-    sys.exit(1)
-PYTHON_SCRIPT
-
-  deactivate || true
+# Note: Model loading is handled by MLX-Omni-Server directly
+# MLX-Omni loads the model from the HF_HOME cache or downloads it
+skip_model_loading() {
+  # This is now a no-op since MLX-Omni handles model loading
+  # Just for clarity in the flow
+  return 0
 }
 
 # Start MLX-Omni-Server
@@ -192,13 +165,12 @@ show_status() {
 # Main
 main() {
   echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║${NC}     AnyClaude + MLX-Omni with Local Model Loader        ${BLUE}║${NC}"
-  echo -e "${BLUE}║${NC}          Pre-loads model, then uses KV cache            ${BLUE}║${NC}"
+  echo -e "${BLUE}║${NC}     AnyClaude + MLX-Omni Server (Native KV Cache)       ${BLUE}║${NC}"
+  echo -e "${BLUE}║${NC}          Anthropic API + 30x Faster Follow-ups          ${BLUE}║${NC}"
   echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
   echo ""
 
   check_venv_exists
-  load_model_into_omni
   start_mlx_omni
 
   if [ "$PROXY_ONLY" = "true" ]; then
