@@ -13,8 +13,9 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 - 🚀 **Simple Setup** - Running in under 5 minutes
 - 🔒 **Privacy First** - Your code never leaves your machine
 - 🧩 **Works with LMStudio Models** - Tested with Qwen Coder, Mistral, Llama, DeepSeek (performance depends on your hardware: GPU, VRAM, RAM)
+- ⚡ **MLX Support (Apple Silicon)** - 4.4x faster with native KV cache on M-series chips
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
-- 🎯 **Dual Mode** - Switch between local LMStudio models and real Claude API
+- 🎯 **Triple Mode** - Switch between local LMStudio, mlx-lm, and real Claude API
 
 ---
 
@@ -426,11 +427,12 @@ export PROXY_ONLY=true
 
 ### Mode Switching
 
-**NEW**: anyclaude now supports two modes for different use cases!
+**NEW**: anyclaude now supports three modes for different use cases!
 
 **Modes:**
 
 - **`lmstudio` mode** (default): Use local LMStudio models (privacy-first, zero cloud dependency)
+- **`mlx-lm` mode**: Use mlx-lm server with native KV cache (4.4x faster on Apple Silicon)
 - **`claude` mode**: Use real Anthropic API with trace logging for reverse engineering
 
 **Why use Claude mode?**
@@ -444,15 +446,90 @@ export PROXY_ONLY=true
 
 ```bash
 # Method 1: Environment variable
-export ANYCLAUDE_MODE=claude
+export ANYCLAUDE_MODE=mlx-lm  # or lmstudio, or claude
 anyclaude
 
 # Method 2: CLI flag (takes priority over env var)
-anyclaude --mode=claude
+anyclaude --mode=mlx-lm
 
 # Method 3: Default (no configuration)
 anyclaude  # Uses lmstudio mode
 ```
+
+### MLX-LM Mode (Apple Silicon Only)
+
+**Why use mlx-lm mode?**
+
+- **4.4x faster performance** with native KV cache (21s → 4.9s on subsequent requests)
+- **Native Apple Silicon optimization** via MLX framework
+- **Better memory efficiency** on M-series chips
+- **Automatic prompt caching** without custom implementation
+
+**Performance Comparison:**
+
+| Backend  | First Request | Second Request | Speedup |
+|----------|--------------|----------------|---------|
+| LMStudio | 50s          | 44s            | 1.1x    |
+| mlx-lm   | 21.6s        | 4.9s           | 4.4x    |
+
+**Setup mlx-lm server:**
+
+```bash
+# Install via Homebrew (macOS only)
+brew install mlx-lm
+
+# Start server with KV cache enabled (--use-cache is default)
+mlx_lm.server \
+  --model /path/to/your/mlx-model \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --max-tokens 4096
+
+# Example with Qwen3-Coder-30B
+mlx_lm.server \
+  --model /Users/you/models/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit \
+  --port 8080
+```
+
+**Configure anyclaude for mlx-lm:**
+
+```bash
+# Set mode to mlx-lm
+export ANYCLAUDE_MODE=mlx-lm
+
+# Configure mlx-lm endpoint (optional, defaults shown)
+export MLX_LM_URL=http://localhost:8080/v1
+export MLX_LM_API_KEY=mlx-lm
+
+# Set model name (use full path or model ID from server)
+export MLX_LM_MODEL="mlx-community/Qwen2.5-3B-Instruct-4bit"
+# or
+export MLX_LM_MODEL="/Users/you/models/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit"
+
+# Run anyclaude
+anyclaude --mode=mlx-lm
+```
+
+**Recommended MLX models:**
+
+```bash
+# Fast & Small (2-4GB, good for testing)
+mlx-community/Qwen2.5-3B-Instruct-4bit
+
+# Balanced (10-15GB, daily development)
+mlx-community/Qwen2.5-7B-Instruct-4bit
+
+# Best Quality (20-30GB, requires M3/M4 Max with 64GB+ RAM)
+/path/to/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
+```
+
+**Where to get MLX models:**
+
+- **HuggingFace**: Search for `mlx-community/` prefix
+- **LMStudio**: Filter by "MLX" in model search
+- **Convert GGUF to MLX**: Use `mlx-lm.convert` tool
+
+**Note**: mlx-lm only works on Apple Silicon (M1/M2/M3/M4). For Intel/AMD, use `lmstudio` mode.
 
 **Claude mode requirements:**
 

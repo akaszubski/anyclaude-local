@@ -17,11 +17,11 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
   for (const arg of args) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (mode === "claude" || mode === "lmstudio") {
-        return mode;
+      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm") {
+        return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude' or 'lmstudio'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'mlx-lm'.`
       );
       process.exit(1);
     }
@@ -68,8 +68,8 @@ function detectMode(): AnyclaudeMode {
 
   // Check environment variable
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
-  if (envMode === "claude" || envMode === "lmstudio") {
-    return envMode;
+  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm") {
+    return envMode as AnyclaudeMode;
   }
 
   // Default to lmstudio for backwards compatibility
@@ -169,6 +169,10 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
+  "mlx-lm": createOpenAI({
+    baseURL: process.env.MLX_LM_URL || "http://localhost:8080/v1",
+    apiKey: process.env.MLX_LM_API_KEY || "mlx-lm",
+  }),
   claude: createAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY || "",
   }) as any,
@@ -180,7 +184,9 @@ const proxyURL = createAnthropicProxy({
   defaultModel:
     mode === "claude"
       ? "claude-3-5-sonnet-20241022"
-      : process.env.LMSTUDIO_MODEL || "current-model",
+      : mode === "mlx-lm"
+        ? process.env.MLX_LM_MODEL || "current-model"
+        : process.env.LMSTUDIO_MODEL || "current-model",
   mode,
 });
 
@@ -193,6 +199,13 @@ if (mode === "lmstudio") {
   );
   console.log(
     `[anyclaude] Model: ${process.env.LMSTUDIO_MODEL || "current-model"} (uses whatever is loaded in LMStudio)`
+  );
+} else if (mode === "mlx-lm") {
+  console.log(
+    `[anyclaude] MLX-LM endpoint: ${process.env.MLX_LM_URL || "http://localhost:8080/v1"}`
+  );
+  console.log(
+    `[anyclaude] Model: ${process.env.MLX_LM_MODEL || "current-model"} (with native KV cache)`
   );
 } else if (mode === "claude") {
   console.log(`[anyclaude] Using real Anthropic API`);

@@ -493,8 +493,13 @@ export const createAnthropicProxy = ({
           }, 600000); // 600 second (10 minute) timeout - needed for large models like qwen3-coder-30b
 
           try {
+            // Use .chat() for OpenAI providers (lmstudio, mlx-lm) and .languageModel() for Anthropic
+            const languageModel = (providerName === "lmstudio" || providerName === "mlx-lm")
+              ? (provider as any).chat(model)
+              : provider.languageModel(model);
+
             stream = await streamText({
-              model: provider.languageModel(model),
+              model: languageModel,
               system,
               tools,
               messages: coreMessages,
