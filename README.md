@@ -531,6 +531,93 @@ mlx-community/Qwen2.5-7B-Instruct-4bit
 
 **Note**: mlx-lm only works on Apple Silicon (M1/M2/M3/M4). For Intel/AMD, use `lmstudio` mode.
 
+---
+
+### Why mlx-lm Over LMStudio?
+
+**The Problem with LMStudio:**
+
+Claude Code sends **massive system prompts** on every request:
+- System Prompt: ~2,300 tokens (Claude Code instructions)
+- Tool Definitions: ~12,600 tokens (16 tools with full schemas)
+- User Messages: ~3,500 tokens (your actual request + context)
+- **Total: ~18,500 tokens per request**
+
+**LMStudio has no native prompt caching**, so it must reprocess all 18,500 tokens every single time:
+
+```
+Request 1: Process 18,500 tokens → 50 seconds
+Request 2: Process 18,500 tokens → 44 seconds
+Request 3: Process 18,500 tokens → 40 seconds
+...still slow even after "warmup"
+```
+
+**The mlx-lm Solution:**
+
+mlx-lm has **native KV (Key-Value) cache** built into the server:
+
+```
+Request 1: Process 18,500 tokens → 21.6 seconds (initial cache build)
+Request 2: Reuse cached 14,900 tokens → 4.9 seconds (9x faster!)
+Request 3+: Reuse cache → ~4-5 seconds consistently
+```
+
+**Performance Comparison (Same Model, Same Hardware):**
+
+| Metric              | LMStudio      | mlx-lm       | Improvement |
+|---------------------|---------------|--------------|-------------|
+| First Request       | 50s           | 21.6s        | 2.3x faster |
+| Second Request      | 44s           | 4.9s         | **9x faster** |
+| Subsequent Requests | 40s+ (varies) | 4-5s (stable)| **8-10x faster** |
+| Cache Reuse         | ❌ None       | ✅ Automatic | Critical    |
+
+**Why This Matters:**
+
+1. **Claude Code's design assumes prompt caching** - Real Claude API caches system prompts automatically
+2. **LMStudio wasn't built for this use case** - It's designed for single-turn completions, not multi-turn agent workflows
+3. **Every Claude Code request includes 12,622 tokens of tool definitions** - Without caching, this is reprocessed 100+ times per session
+4. **mlx-lm makes Claude Code feel responsive** - 4-5 second responses vs 40-50 second waits
+
+**When to Use LMStudio:**
+
+- ✅ You're on Intel/AMD (mlx-lm requires Apple Silicon)
+- ✅ You're doing single-turn completions (not agent workflows)
+- ✅ You need a GUI for model management
+- ⚠️ You have patience for 40-50 second responses
+
+**When to Use mlx-lm:**
+
+- ✅ You're on Apple Silicon (M1/M2/M3/M4)
+- ✅ You want Claude Code to feel fast and responsive
+- ✅ You're doing multi-turn agent workflows
+- ✅ You value performance over GUI convenience
+
+**The Technical Details:**
+
+Claude Code sends this on **every single request**:
+
+```json
+{
+  "system": "You are Claude Code... [2,300 tokens]",
+  "tools": [
+    {"name": "Bash", "description": "...", "input_schema": {...}},      // 2,571 tokens
+    {"name": "TodoWrite", "description": "...", "input_schema": {...}}, // 2,242 tokens
+    {"name": "SlashCommand", "description": "...", ...},                // 2,126 tokens
+    {"name": "Task", ...},                                              // 1,237 tokens
+    {"name": "Grep", ...},                                              //   729 tokens
+    // ... 11 more tools
+  ],
+  "messages": [...]  // Your actual conversation
+}
+```
+
+**Without KV cache** (LMStudio): All 18,490 tokens reprocessed every time
+**With KV cache** (mlx-lm): System + tools cached, only new messages processed
+
+This is why mlx-lm is **9x faster** - it's not magic, it's just proper caching.
+
+---
+
 **Claude mode requirements:**
 
 - Set `ANTHROPIC_API_KEY` environment variable with your Anthropic API key
