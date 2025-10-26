@@ -1,6 +1,6 @@
 {
   "name": "anyclaude-lmstudio",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "author": {
     "name": "akaszubski",
     "url": "https://github.com/akaszubski"
@@ -16,13 +16,18 @@
     "url": "https://github.com/akaszubski/anyclaude-lmstudio"
   },
   "bin": {
-    "anyclaude": "./dist/main.js"
+    "anyclaude": "./dist/main-cli.js"
   },
   "files": [
+    "dist/main-cli.js",
     "dist/main.js",
-    "dist/main.cjs"
+    "dist/main.cjs",
+    "dist/trace-logger.js",
+    "dist/trace-logger.cjs",
+    "dist/**/*.js"
   ],
   "devDependencies": {
+    "@ai-sdk/anthropic": "^1.2.12",
     "@ai-sdk/openai": "^2.0.6",
     "@types/bun": "latest",
     "@types/json-schema": "^7.0.15",
@@ -58,12 +63,13 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "bun build --target node --format cjs --outfile dist/main.cjs ./src/main.ts && node -e \"const fs=require('fs');const f='dist/main.cjs';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(/import\\.meta\\.url/g,'__filename'));fs.writeFileSync('dist/main.js','#!/usr/bin/env node\\nrequire(\\\"./main.cjs\\\");\\n');fs.chmodSync('dist/main.js',0o755)\"",
-    "test": "node tests/regression/test_structure_regression.js",
+    "build": "tsc --project tsconfig.build.json && node -e \"const fs=require('fs');fs.writeFileSync('dist/main-cli.js','#!/usr/bin/env node\\nrequire(\\\"./main.js\\\");\\n');fs.chmodSync('dist/main-cli.js',0o755);fs.cpSync('dist/main.js','dist/main.cjs');fs.cpSync('dist/trace-logger.js','dist/trace-logger.cjs');\"",
+    "test": "npm run build && npm run test:unit && npm run test:regression",
+    "test:unit": "node tests/run_all_tests.js",
     "test:regression": "node tests/regression/test_structure_regression.js",
     "typecheck": "tsc --noEmit",
     "fmt": "prettier --write .",
-    "install:global": "bun run build && npm pack --silent && npm install -g anyclaude-*.tgz"
+    "install:global": "npm run build && npm pack --silent && npm install -g anyclaude-*.tgz"
   },
   "dependencies": {
     "json-schema": "^0.4.0",

@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-10-26
+
+### Fixed
+- **🎉 Tool calling completely fixed!** - Resolved all "Error reading file" and tool execution failures
+  - Implemented proper streaming tool parameter handling via `input_json_delta` events
+  - Track streamed tool IDs to prevent duplicates from AI SDK's redundant events
+  - Aligned with original [coder/anyclaude](https://github.com/coder/anyclaude) streaming approach
+  - **Result**: 0 errors - tool calls work perfectly with all LMStudio models
+  - Verified with Qwen3 Coder 30B, GPT-OSS-20B, and multiple tool types
+  - See [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) for complete investigation
+
+### Changed
+- **Major architectural documentation update** - PROJECT.md now emphasizes translation layer concept
+  - Updated tool calling solution with correct streaming implementation
+  - Added 5-layer architecture diagram showing translation flow
+  - Documented key translation challenges and solutions
+  - Emphasized "Active Translation, Not Simple Passthrough" principle
+- **Documentation reorganization** - Moved from root clutter to organized structure
+  - Created `docs/` directory with categorized subdirectories
+  - `docs/guides/` - User guides (authentication, mode switching, installation)
+  - `docs/development/` - Development and testing guides
+  - `docs/debugging/` - Debugging tools and tool calling investigation
+  - `docs/architecture/` - Architectural documentation
+  - `docs/reference/` - Technical references
+  - Added `docs/README.md` as comprehensive documentation index
+  - **Root now clean**: Only essential files (README, CHANGELOG, LICENSE, etc.)
+- **README.md messaging updated** - Changed from "simplified fork" to "intelligent translation layer"
+  - Accurately reflects project's architectural complexity
+  - Matches PROJECT.md's positioning as Claude Code 2.0 port
+  - Added links to organized documentation structure
+
+### Added
+- **Mode switching**: Toggle between LMStudio (local models) and Claude (real Anthropic API) modes
+  - `ANYCLAUDE_MODE=claude|lmstudio` environment variable
+  - `--mode=claude|lmstudio` CLI flag (takes priority over env var)
+  - Default mode: `lmstudio` (backwards compatible)
+- **Trace logging**: Automatic request/response logging in Claude mode
+  - Saves full tool schemas, requests, and responses
+  - Stored in `~/.anyclaude/traces/claude/` directory
+  - Timestamped JSON format for easy parsing
+  - API keys automatically redacted from traces
+  - Restrictive file permissions (0600) for security
+- **TRACE debug level (3)** - Enhanced debugging for tool call investigation
+  - Logs all tool-input-start/delta/end events
+  - Shows complete tool call parameters
+  - Tracks streaming vs atomic tool call handling
+- **Anthropic provider integration**: Real Claude API support in Claude mode
+  - Passthrough mode (no format conversion)
+  - Full compatibility with Claude Code
+  - Uses `@ai-sdk/anthropic` package
+- **Unit tests**: Comprehensive test coverage for trace logging
+  - Directory creation and permissions
+  - File writing and reading
+  - API key sanitization
+  - Trace file management
+
+### Security
+- API keys redacted from all trace files
+- Trace files created with 0600 permissions (read/write by owner only)
+- Trace directories created with 0700 permissions (full access by owner only)
+- Sensitive headers (x-api-key, Authorization, etc.) automatically sanitized
+
+### Documentation
+- **NEW**: [docs/README.md](docs/README.md) - Complete documentation index
+- **NEW**: [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) - Tool calling investigation
+- **UPDATED**: PROJECT.md - Corrected tool calling section, emphasized translation layer
+- **UPDATED**: README.md - Changed messaging to match architectural reality
+- Added organized documentation structure (guides, development, debugging, architecture, reference)
+- Added example workflow for reverse engineering tool schemas
+- Added security best practices for trace files
+
+### BREAKING CHANGES
+- **Version bump to 2.0.0** due to:
+  - Complete rewrite of tool calling mechanism (architectural change)
+  - Dual-mode architecture (claude vs lmstudio)
+  - Documentation reorganization (file paths changed)
+  - While backward compatible in usage, represents major architectural evolution
+
 ## [1.0.0] - 2025-10-25
 
 ### Added

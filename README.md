@@ -5,7 +5,7 @@
 
 **Run Claude Code with local LMStudio models - zero cloud dependency, full privacy**
 
-A simplified fork of [anyclaude](https://github.com/coder/anyclaude) focused exclusively on LMStudio local models.
+An intelligent translation layer ported from [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of local LMStudio models as if they were the real Claude API.
 
 ## ✨ Features
 
@@ -365,6 +365,90 @@ export LMSTUDIO_CONTEXT_LENGTH=32768  # Override auto-detected context limit
 export PROXY_ONLY=true
 ```
 
+### Mode Switching
+
+**NEW**: anyclaude now supports two modes for different use cases!
+
+**Modes:**
+- **`lmstudio` mode** (default): Use local LMStudio models (privacy-first, zero cloud dependency)
+- **`claude` mode**: Use real Anthropic API with trace logging for reverse engineering
+
+**Why use Claude mode?**
+- **Reverse engineer tool schemas**: See exactly how Claude Code formats tool calls
+- **Compare responses**: Understand differences between Claude API and local models
+- **Improve LMStudio adapter**: Use traces to fix conversion bugs
+- **Learn API format**: Study real Anthropic API requests/responses
+
+**How to switch modes:**
+
+```bash
+# Method 1: Environment variable
+export ANYCLAUDE_MODE=claude
+anyclaude
+
+# Method 2: CLI flag (takes priority over env var)
+anyclaude --mode=claude
+
+# Method 3: Default (no configuration)
+anyclaude  # Uses lmstudio mode
+```
+
+**Claude mode requirements:**
+- Set `ANTHROPIC_API_KEY` environment variable with your Anthropic API key
+- Requests will be sent to real Anthropic API (costs apply!)
+- All requests/responses are logged to `~/.anyclaude/traces/claude/`
+
+**Trace logging in Claude mode:**
+
+```bash
+# Enable trace logging (automatic in Claude mode)
+ANYCLAUDE_MODE=claude ANTHROPIC_API_KEY=sk-ant-... anyclaude
+
+# View trace directory
+ls ~/.anyclaude/traces/claude/
+
+# Example trace file: 2025-10-26T14-30-45-123Z.json
+{
+  "timestamp": "2025-10-26T14:30:45.123Z",
+  "mode": "claude",
+  "request": {
+    "method": "POST",
+    "url": "/v1/messages",
+    "headers": { ... },  // API keys redacted
+    "body": { ... }      // Full Anthropic request
+  },
+  "response": {
+    "statusCode": 200,
+    "headers": { ... },
+    "body": { ... }      // Full Anthropic response
+  }
+}
+```
+
+**Security:**
+- API keys are automatically redacted from trace files
+- Trace files have restrictive permissions (0600 - read/write by owner only)
+- Trace directory has restrictive permissions (0700 - full access by owner only)
+- Never commit trace files to version control
+
+**Example workflow:**
+
+```bash
+# 1. Run in Claude mode to capture tool schemas
+ANYCLAUDE_MODE=claude ANTHROPIC_API_KEY=sk-ant-... anyclaude
+
+# 2. In Claude Code, ask to use a specific tool
+# Example: "List all files in the current directory"
+
+# 3. Check the trace file
+cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1)
+
+# 4. Compare with LMStudio mode behavior
+ANYCLAUDE_MODE=lmstudio anyclaude
+
+# 5. Use differences to improve the LMStudio adapter
+```
+
 ### Context Window Management
 
 **NEW**: anyclaude now automatically manages context windows for local models!
@@ -656,12 +740,19 @@ The original anyclaude is excellent for multi-provider usage, but many users wan
 
 ## 📖 Documentation
 
+### Core Documentation
+- **[PROJECT.md](PROJECT.md)** - Complete architectural deep-dive and translation layer design
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
-- **[CLAUDE.md](CLAUDE.md)** - Developer documentation
-- **[.claude/PROJECT.md](.claude/PROJECT.md)** - Strategic direction and architecture
-- **[LICENSE](LICENSE)** - MIT License
-- **[docs/](docs/)** - Detailed guides (debugging, testing, failover patterns)
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code-specific instructions
+
+### Organized Guides
+- **[docs/](docs/)** - Complete documentation index
+  - **[Guides](docs/guides/)** - Installation, authentication, mode switching, debugging
+  - **[Development](docs/development/)** - Testing, contributing, model testing
+  - **[Debugging](docs/debugging/)** - Tool calling fix, trace analysis, troubleshooting
+  - **[Architecture](docs/architecture/)** - Model adapters, tool enhancements
+  - **[Reference](docs/reference/)** - Technical references, GitHub issues
 
 ---
 
