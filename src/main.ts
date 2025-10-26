@@ -191,6 +191,9 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         delete body.reasoning;
         delete body.service_tier;
 
+        // Disable streaming for MLX-LM - use non-streaming mode for reliability
+        body.stream = false;
+
         // Clean system prompt: MLX-LM's server has strict JSON validation
         // Normalize newlines in system prompt to avoid JSON parsing errors
         // This handles both "system" role messages and message content
@@ -211,7 +214,14 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         init.body = JSON.stringify(body);
       }
 
-      return globalThis.fetch(url, init);
+      const response = await globalThis.fetch(url, init);
+
+      // Log MLX-LM responses when debugging
+      if (isDebugEnabled() && response.body && response.ok) {
+        debug(1, `[MLX-LM → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`);
+      }
+
+      return response;
     }) as typeof fetch,
   }),
   "mlx-omni": createAnthropic({

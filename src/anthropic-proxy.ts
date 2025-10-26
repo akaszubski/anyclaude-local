@@ -321,8 +321,13 @@ export const createAnthropicProxy = ({
         }
 
         let system: string | undefined;
-        if (body.system && body.system.length > 0) {
-          system = body.system.map((s) => s.text).join("\n");
+        if (body.system) {
+          // Handle both string and array formats for system prompt
+          if (typeof body.system === "string") {
+            system = body.system;
+          } else if (Array.isArray(body.system) && body.system.length > 0) {
+            system = body.system.map((s) => (typeof s === "string" ? s : s.text)).join("\n");
+          }
         }
 
         // MLX-LM specific: normalize system prompt to avoid JSON parsing errors
