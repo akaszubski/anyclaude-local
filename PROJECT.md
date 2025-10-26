@@ -285,16 +285,22 @@ case "tool-call": {
 - Prevents client timeout while model thinks
 - Cleared once actual streaming begins
 
-### 5. Hot Model Switching
+### 5. Hardware-Dependent Performance
 
-**Problem**: Traditional proxies require restart when changing models
+**Reality**: Model performance varies based on your hardware
 
-**Solution**:
-- LMStudio serves whatever model is currently loaded
-- Model name in request is informational only
-- Switch models in LMStudio UI anytime
-- No anyclaude restart needed
-- Automatic context length re-detection
+**Factors**:
+- GPU type and VRAM (most critical for large models)
+- RAM amount (affects context window size)
+- CPU speed (for CPU-only inference)
+- Model size vs available VRAM (quantization may be needed)
+
+**Tested Models**:
+- Qwen Coder 30B - Works well with adequate VRAM
+- GPT-OSS 20B - Good balance of size/performance
+- Mistral, Llama, DeepSeek - Compatibility varies by model variant
+
+**Note**: Tool calling requires model support. Not all LMStudio-compatible models support the OpenAI tool calling format.
 
 ## Translation Components
 

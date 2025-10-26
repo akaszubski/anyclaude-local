@@ -10,11 +10,35 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 ## ✨ Features
 
 - 🏠 **100% Local** - No cloud API keys required
-- 🔄 **Hot Model Switching** - Change models in LMStudio without restarting
 - 🚀 **Simple Setup** - Running in under 5 minutes
 - 🔒 **Privacy First** - Your code never leaves your machine
-- 🧩 **Universal Compatibility** - Works with any LMStudio-compatible model (Mistral, Llama, DeepSeek, etc.)
+- 🧩 **Works with LMStudio Models** - Tested with Qwen Coder, Mistral, Llama, DeepSeek (performance depends on your hardware: GPU, VRAM, RAM)
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
+- 🎯 **Dual Mode** - Switch between local LMStudio models and real Claude API
+
+---
+
+## 🧪 Tested Configuration
+
+**This project was developed and tested with:**
+
+**Hardware:**
+- MacBook Pro M1/M2/M3 (Apple Silicon)
+- 16GB+ RAM recommended for 30B models
+- 8GB+ RAM minimum for smaller models (<7B)
+
+**Models Verified Working:**
+- ✅ Qwen3 Coder 30B (excellent for coding tasks)
+- ✅ GPT-OSS 20B (good general purpose)
+- ✅ DeepSeek Coder (various sizes)
+- ✅ Mistral variants (with tool calling support)
+
+**LMStudio:**
+- Version 0.2.x+ (latest recommended)
+- Models must support tool/function calling
+- OpenAI Chat Completions API compatibility required
+
+**Your Mileage May Vary:** Performance depends heavily on your specific hardware. Models requiring more VRAM than available will need quantization or won't run at all.
 
 ---
 
