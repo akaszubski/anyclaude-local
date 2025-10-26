@@ -23,9 +23,9 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 **This project was developed and tested with:**
 
 **Hardware:**
-- MacBook Pro M1/M2/M3 (Apple Silicon)
-- 16GB+ RAM recommended for 30B models
-- 8GB+ RAM minimum for smaller models (<7B)
+- MacBook Pro M4 Max (Apple Silicon)
+- 40 GPU cores, 16 CPU cores
+- 128GB unified memory
 
 **Models Verified Working:**
 - ✅ Qwen3 Coder 30B (excellent for coding tasks)
@@ -141,22 +141,32 @@ ANYCLAUDE_DEBUG=1 node dist/main.js
 
 ## ⚡ Performance & Model Selection
 
-### Expected Response Times
+### Performance Expectations
 
-Local models take time to process and generate responses. This is **normal behavior**, not a bug:
+Local models take time to process and generate responses. This is **normal behavior**, not a bug.
 
-| Operation | Typical Duration | What's Happening |
-|-----------|-----------------|------------------|
-| **Initial Startup** | 2-5 seconds | Loading proxy server |
-| **Prompt Processing** | 5-60 seconds | LMStudio analyzing request (depends on prompt size) |
-| **Token Generation** | 1-5 tokens/sec | Model generating response (depends on model size & GPU) |
-| **Claude Code System Prompt** | 30-90 seconds | Processing 10K+ token system prompt with tool descriptions |
+**What affects performance:**
+- **Hardware**: GPU type, VRAM, CPU cores, RAM
+- **Model size**: 7B vs 13B vs 30B+ parameters
+- **Quantization**: Q4 (fastest) vs Q8 vs FP16 (slowest)
+- **Context length**: Empty conversation vs 10K+ tokens already loaded
+- **Prompt complexity**: Simple questions vs complex tool-calling requests
 
-**Why So Slow?**
+**Why can it feel slow?**
 - Claude Code sends **large system prompts** (10,000+ tokens) with all tool descriptions
-- Local models process tokens sequentially on your GPU
-- Larger models (13B+) are slower but more capable
-- Smaller models (7B) are faster but less capable
+- Local models process tokens sequentially (not parallel like cloud APIs)
+- Larger models are more capable but slower
+- First response includes processing the entire system prompt
+
+**Enable debug mode to see actual timings:**
+```bash
+ANYCLAUDE_DEBUG=1 anyclaude
+```
+
+This will show you real measurements like:
+- `[Request Complete] lmstudio/model: 3542ms`
+- `[First Chunk] after 150ms`
+- Token generation speed
 
 ### Visual Indicators
 
