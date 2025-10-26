@@ -89,15 +89,27 @@ ANYCLAUDE_MODE=mlx-omni
 ANYCLAUDE_MODE=mlx-lm
 ```
 
+### MLX-Omni Architectural Notes
+
+**Important**: MLX-Omni-Server does **NOT** accept model parameters on startup!
+
+- MLX-Omni uses whatever model is **already loaded** in memory
+- You must pre-load the model using: `mlx-omni-server --model mlx-community/Qwen2.5-1.5B-Instruct-4bit`
+- Or use `MLX_MODEL` environment variable BEFORE starting the launcher
+- The `.anyclauderc` config file is **loaded for reference only** - it doesn't affect MLX-Omni startup
+
+**Why?** MLX-Omni-Server is designed for persistent model loading. Once a model is loaded, AnyClaude just connects to it.
+
 ### When to Use MLX-Omni vs MLX-LM
 
 | Feature | MLX-Omni | MLX-LM |
 |---------|----------|--------|
-| **Local Model Files** | ❌ No | ✅ Yes |
+| **Local Model Files** | ❌ No (HuggingFace IDs only) | ✅ Yes |
+| **Config File Controls Model** | ❌ No (pre-load required) | ✅ Yes |
 | **HuggingFace IDs** | ✅ Yes | ✅ Yes |
 | **KV Cache (Fast Follow-ups)** | ✅ Yes (~30s → <1s) | ❌ No |
 | **Qwen3-Coder-30B (local)** | ❌ Cannot use | ✅ Use this |
-| **Small HuggingFace models** | ✅ Faster | ✅ Works |
+| **Small HuggingFace models** | ✅ Faster with cache | ✅ Works |
 
 #### MLX_MODEL
 **Type**: String (file path or HuggingFace ID)
@@ -178,21 +190,40 @@ PROXY_ONLY=true
 
 ## Quick Mode Switching
 
-Want to try MLX-Omni with KV cache speedup? Just run:
+### MLX-LM (Uses config file - Recommended for local models)
+
+Simply run - it loads the model from config:
 
 ```bash
-# Try MLX-Omni with fast follow-ups (1st: ~30-40s, follow-ups: <1s)
-./anyclaude mlx-omni
-
-# Back to your local model
 ./anyclaude mlx-lm
-
-# Or set it permanently in config
-echo "ANYCLAUDE_MODE=mlx-omni" >> .anyclauderc
-./anyclaude
+# Loads MLX_MODEL from .anyclauderc or ~/.anyclauderc
 ```
 
-The launcher will start the appropriate backend (MLX-Omni or MLX-LM) and spawn Claude Code with full terminal support.
+### MLX-Omni (Pre-load model separately - KV cache enabled)
+
+**Important**: You must pre-load the model BEFORE running AnyClaude:
+
+```bash
+# In one terminal: Start MLX-Omni with the model
+mlx-omni-server --model mlx-community/Qwen2.5-1.5B-Instruct-4bit
+# Wait for it to be ready (shows "Serving models...")
+
+# In another terminal: Run AnyClaude
+./anyclaude mlx-omni
+# Now AnyClaude connects to the pre-loaded model with KV cache
+```
+
+Or in one command with environment variable:
+
+```bash
+# Start server with model and immediately run AnyClaude
+export MLX_MODEL=mlx-community/Qwen2.5-1.5B-Instruct-4bit
+mlx-omni-server --model "$MLX_MODEL" &
+sleep 15  # Wait for startup
+./anyclaude mlx-omni
+```
+
+The launcher will connect to the appropriate backend (MLX-Omni or MLX-LM) and spawn Claude Code with full terminal support.
 
 ## Usage Patterns
 
