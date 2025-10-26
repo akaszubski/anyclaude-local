@@ -17,6 +17,7 @@ import {
   displayDebugStartup,
   isDebugEnabled,
   isVerboseDebugEnabled,
+  isTraceDebugEnabled,
   debug,
 } from "./debug";
 import {
@@ -25,23 +26,26 @@ import {
   logContextWarning,
 } from "./context-manager";
 import { getModelContextLength } from "./lmstudio-info";
+import { logTrace, type AnyclaudeMode } from "./trace-logger";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
   port?: number;
   defaultProvider: string;
   defaultModel: string;
+  mode: AnyclaudeMode;
 };
 
 // createAnthropicProxy creates a proxy server that accepts
 // Anthropic Message API requests and proxies them through
-// LMStudio - converting the results back to the Anthropic
-// Message API format.
+// LMStudio (or real Anthropic API in Claude mode) - converting
+// the results back to the Anthropic Message API format.
 export const createAnthropicProxy = ({
   port,
   providers,
   defaultProvider,
   defaultModel,
+  mode,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -71,6 +75,16 @@ export const createAnthropicProxy = ({
         const chunks: Buffer[] = [];
         const responseChunks: Buffer[] = [];
 
+        // Log trace for Claude mode
+        if (mode === "claude" && body) {
+          logTrace(mode, {
+            method: req.method,
+            url: req.url,
+            headers: req.headers,
+            body: body,
+          });
+        }
+
         const proxy = https.request(
           {
             host: "api.anthropic.com",
@@ -84,9 +98,64 @@ export const createAnthropicProxy = ({
             // Collect response data for debugging
             proxiedRes.on("data", (chunk) => {
               responseChunks.push(chunk);
+
+              // In Claude mode with TRACE debug, parse and log SSE events to see tool calls
+              if (mode === "claude" && isTraceDebugEnabled()) {
+                const chunkStr = chunk.toString();
+                const lines = chunkStr.split('\n');
+
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    try {
+                      const data = JSON.parse(line.substring(6));
+
+                      // Log tool_use events from Claude API
+                      if (data.type === "content_block_start" && data.content_block?.type === "tool_use") {
+                        debug(3, `[Claude API → Tool Call] Tool use from real Claude:`, {
+                          tool_name: data.content_block.name,
+                          tool_id: data.content_block.id,
+                          input: data.content_block.input,
+                        });
+                      }
+                    } catch (e) {
+                      // Ignore parse errors for non-JSON data lines
+                    }
+                  }
+                }
+              }
             });
 
             proxiedRes.on("end", () => {
+              const responseBody = Buffer.concat(responseChunks).toString();
+
+              // Log trace for Claude mode (successful responses)
+              if (mode === "claude" && body && statusCode >= 200 && statusCode < 400) {
+                try {
+                  logTrace(mode, {
+                    method: req.method,
+                    url: req.url,
+                    headers: req.headers,
+                    body: body,
+                  }, {
+                    statusCode,
+                    headers: proxiedRes.headers,
+                    body: JSON.parse(responseBody),
+                  });
+                } catch (error) {
+                  // If response isn't JSON, log as string
+                  logTrace(mode, {
+                    method: req.method,
+                    url: req.url,
+                    headers: req.headers,
+                    body: body,
+                  }, {
+                    statusCode,
+                    headers: proxiedRes.headers,
+                    body: responseBody,
+                  });
+                }
+              }
+
               // Write debug info to temp file for 4xx errors (except 429)
               if (statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
                 const requestBodyToLog = requestBody
@@ -101,7 +170,6 @@ export const createAnthropicProxy = ({
                       })()
                     : null;
 
-                const responseBody = Buffer.concat(responseChunks).toString();
                 const debugFile = writeDebugToTempFile(
                   statusCode,
                   {
@@ -143,11 +211,63 @@ export const createAnthropicProxy = ({
         }
       };
 
+      // In Claude mode, passthrough all requests to api.anthropic.com
+      if (mode === "claude") {
+        if (!req.url.startsWith("/v1/messages")) {
+          proxyToAnthropic();
+          return;
+        }
+
+        // For /v1/messages in Claude mode, parse body and passthrough with trace
+        (async () => {
+          const body = await new Promise<AnthropicMessagesRequest>(
+            (resolve, reject) => {
+              let body = "";
+              req.on("data", (chunk) => {
+                body += chunk;
+              });
+              req.on("end", () => {
+                resolve(JSON.parse(body));
+              });
+              req.on("error", (err) => {
+                reject(err);
+              });
+            }
+          );
+
+          // Log tool schemas in Claude mode for comparison
+          if (isTraceDebugEnabled() && body.tools) {
+            debug(3, `[Claude Mode] Claude Code sent ${body.tools.length} tools in request`);
+            body.tools.forEach((tool, idx) => {
+              debug(3, `[Claude Mode Tool ${idx + 1}/${body.tools!.length}] ${tool.name}`, {
+                description_length: tool.description?.length ?? 0,
+                input_schema: tool.input_schema,
+              });
+            });
+          }
+
+          proxyToAnthropic(body);
+        })().catch((err) => {
+          res.writeHead(500, {
+            "Content-Type": "application/json",
+          });
+          res.end(
+            JSON.stringify({
+              error: "Internal server error: " + err.message,
+            })
+          );
+        });
+
+        return;
+      }
+
+      // LMStudio mode: non-messages endpoints go to Anthropic
       if (!req.url.startsWith("/v1/messages")) {
         proxyToAnthropic();
         return;
       }
 
+      // LMStudio mode: convert messages and route through LMStudio
       (async () => {
         const body = await new Promise<AnthropicMessagesRequest>(
           (resolve, reject) => {
@@ -178,13 +298,38 @@ export const createAnthropicProxy = ({
           system = body.system.map((s) => s.text).join("\n");
         }
 
+        // Log Claude Code's original tool schemas (TRACE level)
+        if (isTraceDebugEnabled() && body.tools) {
+          debug(3, `[Tools] Claude Code sent ${body.tools.length} tool(s):`);
+          body.tools.forEach((tool, idx) => {
+            debug(3, `[Tool ${idx + 1}/${body.tools!.length}] ${tool.name}`, {
+              description: tool.description,
+              input_schema: tool.input_schema,
+            });
+          });
+        }
+
         const tools = body.tools?.reduce(
           (acc, tool) => {
+            const originalSchema = tool.input_schema;
+            const providerizedSchema = providerizeSchema(providerName, originalSchema);
+
+            // Log schema transformation (TRACE level)
+            if (isTraceDebugEnabled()) {
+              const schemasMatch = JSON.stringify(originalSchema) === JSON.stringify(providerizedSchema);
+              if (!schemasMatch) {
+                debug(3, `[Tool Schema Transform] ${tool.name}`, {
+                  original: originalSchema,
+                  providerized: providerizedSchema,
+                });
+              } else {
+                debug(3, `[Tool Schema] ${tool.name} - No changes needed`);
+              }
+            }
+
             acc[tool.name] = {
               description: tool.description || tool.name,
-              inputSchema: jsonSchema(
-                providerizeSchema(providerName, tool.input_schema)
-              ),
+              inputSchema: jsonSchema(providerizedSchema),
             };
             return acc;
           },
@@ -475,12 +620,41 @@ export const createAnthropicProxy = ({
           },
         })}\n\n`);
 
+        // Start keepalive interval to prevent Claude Code timeout during slow prompt processing
+        // Some models (glm-4.5-air-mlx, Qwen3-30B) can take 60+ seconds to process prompts
+        // Send SSE comment every 10 seconds to keep connection alive
+        let keepaliveCount = 0;
+        const keepaliveInterval = setInterval(() => {
+          if (!res.writableEnded) {
+            keepaliveCount++;
+            res.write(`: keepalive ${keepaliveCount}\n\n`);
+            debug(2, `[Keepalive] Sent keepalive #${keepaliveCount} (waiting for LMStudio)`);
+          }
+        }, 10000); // 10 second interval
+
         try {
           await convertToAnthropicStream(stream.fullStream, true).pipeTo(
             new WritableStream({
               write(chunk) {
+                // Clear keepalive on first chunk (stream has started)
+                if (keepaliveInterval) {
+                  clearInterval(keepaliveInterval);
+                  debug(2, `[Keepalive] Cleared (stream started after ${keepaliveCount} keepalives)`);
+                }
+
                 if (isVerboseDebugEnabled()) {
                   debug(2, `[Stream Chunk]`, chunk);
+                }
+
+                // Log tool_use events at trace level
+                if (isTraceDebugEnabled() && chunk.type === "content_block_start" && (chunk as any).content_block?.type === "tool_use") {
+                  debug(3, `[SSE → Claude Code] Writing tool_use event:`, {
+                    event: chunk.type,
+                    index: (chunk as any).index,
+                    tool_name: (chunk as any).content_block.name,
+                    tool_id: (chunk as any).content_block.id,
+                    input: (chunk as any).content_block.input,
+                  });
                 }
 
                 // Write chunk to stream
@@ -489,6 +663,10 @@ export const createAnthropicProxy = ({
                 );
               },
               close() {
+                // Clear keepalive on completion
+                if (keepaliveInterval) {
+                  clearInterval(keepaliveInterval);
+                }
                 const totalDuration = Date.now() - requestStartTime;
                 debug(
                   1,
@@ -499,6 +677,10 @@ export const createAnthropicProxy = ({
             })
           );
         } catch (error) {
+          // Clear keepalive on error
+          if (keepaliveInterval) {
+            clearInterval(keepaliveInterval);
+          }
           debug(1, `Error in stream processing for ${providerName}/${model}:`, error);
 
           // If we haven't started writing the response yet, send a proper error

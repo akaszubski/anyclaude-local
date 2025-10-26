@@ -82,6 +82,7 @@ export class FailoverManager {
         apiKey: this.config.lmstudioApiKey,
         // CRITICAL: Use legacy chat completions format for LMStudio compatibility
         // LMStudio expects the standard OpenAI Chat Completions API, not the new Responses API
+        // @ts-ignore - compatibility is valid but not in TypeScript types
         compatibility: 'legacy',
         fetch: (async (url, init) => {
           if (init?.body && typeof init.body === 'string') {

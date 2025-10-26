@@ -145,7 +145,7 @@ export function displayDebugStartup(): void {
  */
 /**
  * Get the debug level from ANYCLAUDE_DEBUG environment variable
- * Returns 0 if not set, 1 for basic debug, 2 for verbose debug
+ * Returns 0 if not set, 1 for basic debug, 2 for verbose debug, 3 for trace (tool schemas)
  * Defaults to 1 if unrecognized string is passed
  */
 export function getDebugLevel(): number {
@@ -155,7 +155,7 @@ export function getDebugLevel(): number {
   const level = parseInt(debugValue, 10);
   if (isNaN(level)) return 1; // Default to level 1 for any non-numeric value
 
-  return Math.max(0, Math.min(2, level)); // Clamp to 0-2 range
+  return Math.max(0, Math.min(3, level)); // Clamp to 0-3 range
 }
 
 export function isDebugEnabled(): boolean {
@@ -170,19 +170,31 @@ export function isVerboseDebugEnabled(): boolean {
 }
 
 /**
+ * Check if trace debug mode (level 3) is enabled
+ * This logs EVERYTHING including full tool schemas
+ */
+export function isTraceDebugEnabled(): boolean {
+  return getDebugLevel() >= 3;
+}
+
+/**
  * Log a debug message at the specified level
- * @param level - Minimum debug level required to show this message (1 or 2)
+ * @param level - Minimum debug level required to show this message (1, 2, or 3)
  * @param message - The message to log
  * @param data - Optional data to append to the message
  */
-export function debug(level: 1 | 2, message: string, data?: any): void {
+export function debug(level: 1 | 2 | 3, message: string, data?: any): void {
   if (getDebugLevel() >= level) {
     const prefix = "[ANYCLAUDE DEBUG]";
     if (data !== undefined) {
-      // For objects/errors, stringify with a length limit
+      // For level 3 (trace), show full objects without truncation
+      // For levels 1-2, limit output length
       const dataStr =
         typeof data === "object"
-          ? JSON.stringify(data).substring(0, 200)
+          ? JSON.stringify(data, null, level >= 3 ? 2 : 0).substring(
+              0,
+              level >= 3 ? Infinity : 200
+            )
           : String(data);
       console.error(`${prefix} ${message}`, dataStr);
     } else {
