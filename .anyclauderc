@@ -23,10 +23,9 @@
 #   - Performance: Consistent ~25-40s per request (no KV cache)
 #   - Example: ./anyclaude mlx-lm
 #
-# Set to mlx-lm by default to use your local Qwen3-Coder model
-# Uncomment the next line to use mlx-omni with KV cache:
-# ANYCLAUDE_MODE=mlx-omni
-ANYCLAUDE_MODE=mlx-lm
+# Set to mlx-omni to use KV cache for 30x faster follow-ups
+# Set to mlx-lm if you need OpenAI-compatible format (no KV cache)
+ANYCLAUDE_MODE=mlx-omni
 
 # ============================================================================
 # Model Configuration
@@ -45,7 +44,9 @@ ANYCLAUDE_MODE=mlx-lm
 #     /Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
 #     mlx-community/Qwen2.5-1.5B-Instruct-4bit
 
+# Set the model for both MLX-LM and MLX-Omni
 MLX_MODEL=/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
+MLX_OMNI_MODEL=/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
 
 # ============================================================================
 # Debug Logging
