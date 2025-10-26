@@ -4,7 +4,7 @@ import {
   mapAnthropicStopReason,
   type AnthropicStreamChunk,
 } from "./anthropic-api-types";
-import { debug, isDebugEnabled, isVerboseDebugEnabled } from "./debug";
+import { debug, isDebugEnabled, isVerboseDebugEnabled, isTraceDebugEnabled } from "./debug";
 
 export function convertToAnthropicStream(
   stream: ReadableStream<TextStreamPart<Record<string, Tool>>>,
@@ -14,6 +14,7 @@ export function convertToAnthropicStream(
   let reasoningBuffer = ""; // Buffer for accumulating reasoning text
   let chunkCount = 0; // Track chunks for debugging
   let messageStartSkipped = false; // Track if we've skipped the first message_start
+  const streamedToolIds = new Set<string>(); // Track tool IDs we've already sent via streaming
 
   const transform = new TransformStream<
     TextStreamPart<Record<string, Tool>>,
@@ -89,8 +90,9 @@ export function convertToAnthropicStream(
         }
         case "finish": {
           controller.enqueue({ type: "message_stop" });
-          // reset index for next message
+          // reset index and streamed tools for next message
           index = 0;
+          streamedToolIds.clear();
           break;
         }
         case "text-start": {
@@ -115,6 +117,9 @@ export function convertToAnthropicStream(
           break;
         }
         case "tool-input-start": {
+          // Send streaming tool parameters as Anthropic's input_json_delta format
+          // This is how the original anyclaude handles it
+          streamedToolIds.add(chunk.id); // Mark this tool as streamed
           controller.enqueue({
             type: "content_block_start",
             index,
@@ -125,22 +130,53 @@ export function convertToAnthropicStream(
               input: {},
             },
           });
+          if (isTraceDebugEnabled()) {
+            debug(3, `[Tool Input] Started streaming tool: ${chunk.toolName}`, {
+              id: chunk.id,
+            });
+          }
           break;
         }
         case "tool-input-delta": {
+          // Stream tool parameters incrementally via input_json_delta
           controller.enqueue({
             type: "content_block_delta",
             index,
             delta: { type: "input_json_delta", partial_json: chunk.delta },
           });
+          if (isTraceDebugEnabled()) {
+            debug(3, `[Tool Input] Delta: ${chunk.delta}`);
+          }
           break;
         }
         case "tool-input-end": {
+          // End the streaming tool input
           controller.enqueue({ type: "content_block_stop", index });
           index += 1;
+          if (isTraceDebugEnabled()) {
+            debug(3, `[Tool Input] Completed streaming tool input`);
+          }
           break;
         }
         case "tool-call": {
+          // Skip if we already sent this tool via streaming events
+          if (streamedToolIds.has(chunk.toolCallId)) {
+            if (isTraceDebugEnabled()) {
+              debug(3, `[Tool Call] Skipping duplicate tool-call (already streamed): ${chunk.toolName}`);
+            }
+            break;
+          }
+
+          // Handle atomic (non-streaming) tool calls
+          // Some models might send this instead of streaming events
+          if (isTraceDebugEnabled()) {
+            debug(3, `[Tool Call] Atomic tool call: ${chunk.toolName}`, {
+              toolCallId: chunk.toolCallId,
+              toolName: chunk.toolName,
+              input: (chunk as any).input,
+            });
+          }
+
           controller.enqueue({
             type: "content_block_start",
             index,
