@@ -1,9 +1,9 @@
 #!/bin/bash
 # AnyClaude - Unified Launcher (Simplified)
 # Single entry point that manages everything
-# Usage: ./anyclaude                    # Start with MLX-Omni (recommended)
-#        ./anyclaude mlx-lm             # Start with MLX-LM (analysis only)
-#        ./anyclaude lmstudio           # Start with LMStudio
+# Usage: ./anyclaude                      # Start with MLX-Omni (recommended - HuggingFace models)
+#        ./anyclaude mlx-lm               # Start with MLX-LM (local model paths)
+#        ./anyclaude mlx-lm /path/to/model # Start with MLX-LM using specific model
 
 set -e
 
@@ -20,23 +20,37 @@ cleanup() {
 show_help() {
   echo "AnyClaude - Local Claude Code with MLX"
   echo ""
-  echo "Usage: ./anyclaude [MODE]"
+  echo "Usage: ./anyclaude [MODE] [OPTIONS]"
   echo ""
   echo "Modes:"
-  echo "  (default)   Start MLX-Omni - RECOMMENDED (fastest + full features)"
-  echo "  mlx-omni    Same as default"
-  echo "  mlx-lm      Use MLX-LM (analysis only, no tools)"
-  echo "  lmstudio    Use LMStudio (if running locally)"
-  echo "  help        Show this message"
+  echo "  (default)              Start MLX-Omni (RECOMMENDED for HuggingFace models)"
+  echo "  mlx-omni               Same as default - loads HuggingFace model IDs"
+  echo "  mlx-lm                 Use MLX-LM - loads local model paths OR HuggingFace IDs"
+  echo "  help                   Show this message"
   echo ""
   echo "Examples:"
-  echo "  ./anyclaude                    # Start with MLX-Omni"
-  echo "  ./anyclaude mlx-lm             # Start with MLX-LM"
-  echo "  ./anyclaude help               # Show this message"
+  echo "  ./anyclaude                                # Start with MLX-Omni (default)"
+  echo "  ./anyclaude mlx-lm                         # Start with MLX-LM (HuggingFace ID)"
+  echo "  ./anyclaude mlx-lm /path/to/local/model    # Start with MLX-LM (local model)"
+  echo "  ./anyclaude help                           # Show this message"
   echo ""
-  echo "Environment variables:"
-  echo "  MLX_MODEL        Model ID (default: mlx-community/Qwen2.5-1.5B-Instruct-4bit)"
+  echo "Environment variables (all modes):"
+  echo "  MLX_MODEL        HuggingFace model ID or local path"
   echo "  ANYCLAUDE_DEBUG  Debug level (0=none, 1=basic, 2=verbose, 3=trace)"
+  echo "  VENV_PATH        Path to MLX venv (default: ~/.venv-mlx)"
+  echo ""
+  echo "Key Differences:"
+  echo "  MLX-Omni:  ✓ HuggingFace models only (mlx-community/...)"
+  echo "             ✓ Native Anthropic API format"
+  echo "             ✓ Full tool support and streaming"
+  echo ""
+  echo "  MLX-LM:    ✓ Local model paths (filesystem)"
+  echo "             ✓ HuggingFace model IDs (auto-downloads)"
+  echo "             ✓ OpenAI-compatible API format"
+  echo ""
+  echo "To use your local Qwen3-Coder-30B model:"
+  echo "  export MLX_MODEL=\"/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit\""
+  echo "  ./anyclaude mlx-lm"
 }
 
 # Main
@@ -54,6 +68,18 @@ case "$MODE" in
       exit 1
     fi
     exec "$SCRIPT_DIR/anyclaude-mlx-omni"
+    ;;
+  mlx-lm)
+    # For mlx-lm, we need to verify the script exists first
+    if [ ! -f "$SCRIPT_DIR/anyclaude-mlx-lm" ]; then
+      echo "Error: anyclaude-mlx-lm launcher not found!"
+      exit 1
+    fi
+    # If a model path was provided as argument, use it
+    if [ -n "$2" ]; then
+      export MLX_MODEL="$2"
+    fi
+    exec "$SCRIPT_DIR/anyclaude-mlx-lm"
     ;;
   *)
     echo "Unknown mode: $MODE"

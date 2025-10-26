@@ -1,0 +1,160 @@
+#!/bin/bash
+# AnyClaude + MLX-LM-Server Integrated Launcher
+# Starts both services together and manages their lifecycle
+# Supports local model paths (unlike MLX-Omni which only supports HuggingFace IDs)
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MLX_LM_PORT=${MLX_LM_PORT:-8081}
+MLX_MODEL=${MLX_MODEL:-"mlx-community/Qwen2.5-1.5B-Instruct-4bit"}
+ANYCLAUDE_DEBUG=${ANYCLAUDE_DEBUG:-0}
+PROXY_ONLY=${PROXY_ONLY:-false}
+VENV_PATH=${VENV_PATH:-"$HOME/.venv-mlx"}
+
+# State files
+PIDS_FILE="/tmp/anyclaude-mlx-lm.pids"
+LOG_DIR="/tmp/anyclaude-mlx-lm-logs"
+mkdir -p "$LOG_DIR"
+
+# Cleanup function
+cleanup() {
+  echo -e "\n${YELLOW}[AnyClaude]${NC} Shutting down..."
+
+  # Kill processes if running
+  if [ -f "$PIDS_FILE" ]; then
+    while IFS= read -r pid; do
+      if kill -0 "$pid" 2>/dev/null; then
+        echo -e "${YELLOW}[AnyClaude]${NC} Stopping process $pid..."
+        kill "$pid" 2>/dev/null || true
+        sleep 1
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done < "$PIDS_FILE"
+    rm "$PIDS_FILE"
+  fi
+
+  echo -e "${GREEN}[AnyClaude]${NC} Shutdown complete"
+  exit 0
+}
+
+# Trap signals
+trap cleanup SIGINT SIGTERM EXIT
+
+# Check if virtual environment exists
+check_venv_exists() {
+  if [ ! -d "$VENV_PATH" ]; then
+    echo -e "${RED}Error: Virtual environment not found at $VENV_PATH${NC}"
+    echo "Create it with: python3 -m venv $VENV_PATH"
+    exit 1
+  fi
+}
+
+# Start MLX-LM-Server
+start_mlx_lm() {
+  echo -e "${BLUE}[MLX-LM]${NC} Starting MLX-LM-Server on port $MLX_LM_PORT..."
+  echo -e "${BLUE}[MLX-LM]${NC} Model: $MLX_MODEL"
+
+  # Activate venv and start server
+  source "$VENV_PATH/bin/activate"
+
+  python3 -m mlx_lm server \
+    --model "$MLX_MODEL" \
+    --port "$MLX_LM_PORT" \
+    > "$LOG_DIR/mlx-lm-server.log" 2>&1 &
+
+  MLX_LM_PID=$!
+  echo "$MLX_LM_PID" >> "$PIDS_FILE"
+
+  # Wait for server to be ready
+  echo -e "${BLUE}[MLX-LM]${NC} Waiting for server to be ready..."
+  for i in {1..120}; do
+    if curl -s "http://localhost:$MLX_LM_PORT/v1/models" > /dev/null 2>&1; then
+      echo -e "${GREEN}[MLX-LM]${NC} Server is ready! (PID: $MLX_LM_PID)"
+      return 0
+    fi
+    sleep 1
+    if [ $((i % 30)) -eq 0 ]; then
+      echo -e "${BLUE}[MLX-LM]${NC} Still waiting... ($i/120)"
+    fi
+  done
+
+  echo -e "${RED}[MLX-LM]${NC} Server failed to start"
+  echo "Check logs: tail -f $LOG_DIR/mlx-lm-server.log"
+  exit 1
+}
+
+# Start AnyClaude
+start_anyclaude() {
+  echo ""
+  echo -e "${BLUE}[AnyClaude]${NC} Starting AnyClaude..."
+
+  export ANYCLAUDE_MODE=mlx-lm
+  export ANYCLAUDE_DEBUG
+  export MLX_LM_URL="http://localhost:$MLX_LM_PORT/v1"
+
+  if [ "$PROXY_ONLY" = "true" ]; then
+    echo -e "${BLUE}[AnyClaude]${NC} Running in proxy-only mode (no Claude Code spawned)"
+    export PROXY_ONLY=true
+  else
+    echo -e "${BLUE}[AnyClaude]${NC} Spawning Claude Code..."
+  fi
+
+  "$SCRIPT_DIR/dist/main-cli.js" &
+  ANYCLAUDE_PID=$!
+  echo "$ANYCLAUDE_PID" >> "$PIDS_FILE"
+
+  echo -e "${GREEN}[AnyClaude]${NC} Started (PID: $ANYCLAUDE_PID)"
+}
+
+# Show status
+show_status() {
+  echo ""
+  echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${BLUE}║${NC}     AnyClaude + MLX-LM-Server Integration Active        ${BLUE}║${NC}"
+  echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo -e "${GREEN}✓${NC} MLX-LM-Server:     http://localhost:$MLX_LM_PORT/v1"
+  echo -e "${GREEN}✓${NC} Model:             $MLX_MODEL"
+  echo -e "${GREEN}✓${NC} AnyClaude Mode:    MLX-LM"
+  echo -e "${GREEN}✓${NC} Debug Level:       $ANYCLAUDE_DEBUG"
+  if [ "$PROXY_ONLY" = "true" ]; then
+    echo -e "${YELLOW}ℹ${NC} Running in proxy-only mode (no Claude Code)"
+  else
+    echo -e "${GREEN}✓${NC} Claude Code:       Running"
+  fi
+  echo ""
+  echo -e "${BLUE}Logs:${NC}"
+  echo "  MLX-LM:    $LOG_DIR/mlx-lm-server.log"
+  echo "  AnyClaude: Check the AnyClaude output above"
+  echo ""
+  echo -e "${BLUE}Press Ctrl+C to stop both services${NC}"
+  echo ""
+}
+
+# Main
+main() {
+  echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${BLUE}║${NC}     AnyClaude + MLX-LM-Server Launcher                 ${BLUE}║${NC}"
+  echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+
+  check_venv_exists
+  start_mlx_lm
+  start_anyclaude
+
+  show_status
+
+  # Wait for processes
+  wait
+}
+
+main "$@"
