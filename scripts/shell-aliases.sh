@@ -1,28 +1,79 @@
-# anyclaude Shell Aliases
-# Add these to your ~/.zshrc or ~/.bashrc for easy access
+#!/bin/bash
+# anyclaude Development Aliases
+# Add these to your ~/.zshrc or ~/.bashrc
 
-# Alias to start Claude Code with LMStudio backend
-alias claude-local='/Users/akaszubski/Documents/GitHub/anyclaude/start-local.sh'
+# Core development commands
+alias anyclaude-build='cd /Users/akaszubski/Documents/GitHub/anyclaude && npm run build'
+alias anyclaude-dev='anyclaude'
+alias anyclaude-test='cd /Users/akaszubski/Documents/GitHub/anyclaude && npm test'
 
-# Alternative: Quick start with just environment variables
-alias claude-lm='cd /Users/akaszubski/Documents/GitHub/anyclaude && source .env.lmstudio && bun run src/main.ts'
+# Mode switching
+alias anyclaude-lm='anyclaude'                              # LMStudio mode (default)
+alias anyclaude-claude='ANYCLAUDE_MODE=claude anyclaude'    # Claude mode
 
-# Helper to check LMStudio status
-alias lm-status='curl -s http://localhost:1234/v1/models | grep -o "\"id\":\"[^\"]*\"" | sed "s/\"id\":\"/  - /" | sed "s/\"$//"'
+# Debug levels
+alias anyclaude-debug='ANYCLAUDE_DEBUG=1 anyclaude'         # Basic debug
+alias anyclaude-verbose='ANYCLAUDE_DEBUG=2 anyclaude'       # Verbose debug
+alias anyclaude-trace='ANYCLAUDE_DEBUG=3 anyclaude'         # Trace level (full schemas)
 
-# Helper to test LMStudio connection
-alias lm-test='curl -s http://localhost:1234/v1/models > /dev/null && echo "✓ LMStudio is running" || echo "✗ LMStudio is not running"'
+# Proxy only (for testing)
+alias anyclaude-proxy='PROXY_ONLY=true anyclaude'          # LMStudio proxy only
+alias anyclaude-proxy-claude='ANYCLAUDE_MODE=claude PROXY_ONLY=true anyclaude'  # Claude proxy only
 
-# ===========================================
-# To install these aliases:
-# ===========================================
-# 1. Add to your shell config:
-#    echo 'source /Users/akaszubski/Documents/GitHub/anyclaude/shell-aliases.sh' >> ~/.zshrc
-#
-# 2. Reload your shell:
-#    source ~/.zshrc
-#
-# 3. Use the aliases:
-#    claude-local     # Start Claude with LMStudio
-#    lm-status        # Check which models are loaded
-#    lm-test          # Test LMStudio connection
+# Combined shortcuts
+alias anyclaude-trace-claude='ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=3 PROXY_ONLY=true anyclaude'  # Trace Claude API calls
+alias anyclaude-trace-lm='ANYCLAUDE_DEBUG=3 PROXY_ONLY=true anyclaude'                             # Trace LMStudio calls
+
+# Trace viewing
+alias anyclaude-traces='ls -lth ~/.anyclaude/traces/claude/ | head -10'                  # List recent traces
+alias anyclaude-latest-trace='cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | jq .'  # View latest trace
+alias anyclaude-clean-traces='rm -rf ~/.anyclaude/traces/claude/* && echo "Traces cleaned"'       # Clear all traces
+
+# Version checking
+alias anyclaude-which='readlink -f $(which anyclaude)'      # Show actual path
+alias anyclaude-version='ls -la $(which anyclaude)'         # Show symlink
+
+# Quick workflow
+alias anyclaude-rb='cd /Users/akaszubski/Documents/GitHub/anyclaude && npm run build && anyclaude'  # Rebuild and run
+
+# Usage examples
+cat << 'EOF'
+
+anyclaude Development Aliases Loaded!
+
+Quick Start:
+  anyclaude-build         → Rebuild project
+  anyclaude-dev           → Run local version (LMStudio)
+  anyclaude-claude        → Run in Claude mode
+  anyclaude-trace-claude  → Capture Claude API traces
+
+Debug Levels:
+  anyclaude-debug         → Basic debug (level 1)
+  anyclaude-verbose       → Verbose debug (level 2)
+  anyclaude-trace         → Full traces (level 3)
+
+Trace Management:
+  anyclaude-traces        → List recent traces
+  anyclaude-latest-trace  → View latest trace (JSON)
+  anyclaude-clean-traces  → Delete all traces
+
+Workflow:
+  1. Make changes to src/
+  2. anyclaude-rb         → Rebuild and run
+  3. Test your changes
+  4. anyclaude-test       → Run tests
+
+Examples:
+  # Rebuild and test
+  anyclaude-build && anyclaude-test
+
+  # Capture Claude traces
+  anyclaude-trace-claude 2> claude.log &
+
+  # Compare with LMStudio
+  anyclaude-trace-lm 2> lmstudio.log &
+
+  # View latest trace
+  anyclaude-latest-trace
+
+EOF

@@ -82,7 +82,7 @@ This forces the AI SDK to use the standard OpenAI Chat Completions API format th
 
 ### 3. Enhanced Debug Script
 
-Created `./debug-local.sh` with:
+Created `./scripts/debug/debug-local.sh` with:
 - Maximum debug verbosity (`ANYCLAUDE_DEBUG=2`)
 - Log file capture in `debug-logs/`
 - Clear status messages
@@ -93,7 +93,7 @@ Created `./debug-local.sh` with:
 ### Run Enhanced Debug Mode
 
 ```bash
-./debug-local.sh
+./scripts/debug/debug-local.sh
 ```
 
 This will:
@@ -177,7 +177,7 @@ LMStudio might be closing the connection before sending `finish-step` and `finis
 ### Step 1: Run Debug Script
 
 ```bash
-./debug-local.sh
+./scripts/debug/debug-local.sh
 ```
 
 Ask a simple question like "what is 2+2" and capture the full output.
@@ -285,7 +285,7 @@ Based on your LMStudio models, here are my recommendations:
 ## Contact
 
 If the debug output is very long, you can:
-1. Save it to a file: `./debug-local.sh > debug.txt 2>&1`
+1. Save it to a file: `./scripts/debug/debug-local.sh > debug.txt 2>&1`
 2. Share just the chunk sequence (look for "Raw chunk" lines)
 3. Share the error message (look for "⚠️" or "Pipeline error")
 

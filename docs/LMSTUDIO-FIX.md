@@ -106,7 +106,7 @@ You should now see:
 
 If you encounter issues after the fix:
 
-1. **Enhanced Debug Script**: `./debug-local.sh`
+1. **Enhanced Debug Script**: `./scripts/debug/debug-local.sh`
    - Captures full verbose output
    - Saves logs to `debug-logs/`
    - Shows all stream chunks

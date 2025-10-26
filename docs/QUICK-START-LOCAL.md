@@ -14,7 +14,7 @@ Your anyclaude is now configured to use LMStudio permanently instead of Claude s
 
 ```bash
 cd /Users/akaszubski/Documents/GitHub/anyclaude
-./start-local.sh
+./scripts/debug/start-local.sh
 ```
 
 This will:
@@ -161,7 +161,7 @@ bun run src/main.ts  # Uses Claude servers normally
 ## 🎯 Next Steps
 
 1. **Start LMStudio** (if not already running)
-2. **Run the script**: `./start-local.sh`
+2. **Run the script**: `./scripts/debug/start-local.sh`
 3. **Use Claude Code** normally - it's now powered by your local model!
 
 ## 💡 Tips

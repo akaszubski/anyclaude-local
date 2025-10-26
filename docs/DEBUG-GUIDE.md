@@ -36,7 +36,7 @@ The codebase now includes comprehensive debugging to help diagnose authenticatio
 Already enabled in your setup:
 
 ```bash
-ANYCLAUDE_DEBUG=1 ./start-local.sh
+ANYCLAUDE_DEBUG=1 ./scripts/debug/start-local.sh
 ```
 
 **What you'll see:**
@@ -52,7 +52,7 @@ ANYCLAUDE_DEBUG=1 ./start-local.sh
 For maximum detail:
 
 ```bash
-ANYCLAUDE_DEBUG=2 ./start-local.sh
+ANYCLAUDE_DEBUG=2 ./scripts/debug/start-local.sh
 ```
 
 **Additional output:**
@@ -156,7 +156,7 @@ Common chunk types you should see:
 
 ## Next Steps
 
-1. **Run with debug enabled:** `./start-local.sh`
+1. **Run with debug enabled:** `./scripts/debug/start-local.sh`
 2. **Try a simple prompt:** "hello"
 3. **Check the output** for the patterns above
 4. **Share the debug output** - Look for these key lines:
