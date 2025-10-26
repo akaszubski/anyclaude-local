@@ -5,12 +5,14 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 ## Quick Start
 
 🚀 **New Users**: Start here
+
 - [Installation Guide](guides/installation-local.md) - Get up and running in 5 minutes
 - [Debug Quick Start](guides/debug-quick-start.md) - Troubleshooting basics
 
 ## Architecture & Design
 
 📐 **Understanding How It Works**
+
 - [PROJECT.md](../PROJECT.md) - Complete architectural deep-dive
 - [Model Adapters](architecture/model-adapters.md) - Model-specific handling
 - [Tool Calling Enhancement](architecture/tool-calling-enhancement.md) - Tool system improvements
@@ -18,13 +20,16 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 ## User Guides
 
 📚 **Using anyclaude**
+
 - [Authentication Guide](guides/authentication.md) - Claude Max vs API auth
 - [Mode Switching](guides/mode-switching.md) - Claude vs LMStudio modes
 - [Installation (Local)](guides/installation-local.md) - Local setup details
+- **[Trace Analysis & Benchmarking](guides/trace-analysis-guide.md)** - ⭐ NEW: Analyze requests and benchmark models
 
 ## Development
 
 🛠️ **Contributing & Testing**
+
 - [Development Guide](development/DEVELOPMENT.md) - Setup for contributors
 - [Testing Guide](development/testing-guide.md) - Running and writing tests
 - [Automated Testing](development/automated-testing.md) - CI/CD setup
@@ -33,6 +38,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 ## Debugging & Troubleshooting
 
 🐛 **Fixing Issues**
+
 - [Tool Calling Fix](debugging/tool-calling-fix.md) - Complete investigation of streaming tool parameters
 - [Tool Call Debug](debugging/tool-call-debug.md) - Debugging tool execution
 - [Trace Analysis](debugging/trace-analysis.md) - Using trace files
@@ -43,6 +49,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 ## Reference
 
 📖 **Technical Reference**
+
 - [Claude Code Auth](reference/claude-code-auth.md) - Authentication details
 - [GitHub Issues Summary](reference/github-issues-summary.md) - Known issues
 - [Path Setup](reference/path-setup-complete.md) - Environment configuration
@@ -60,6 +67,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 ## Debug Logs & Research
 
 Historical debugging artifacts in `docs/` root:
+
 - `AGENTS.md`, `DEBUG_LOG.md`, `DEBUG-GUIDE.md`, `DEBUG-LMSTUDIO.md`
 - `FAILOVER.md`, `LMSTUDIO-FIX.md`, `QUICK-START-LOCAL.md`
 - `TEST_RESULTS.md`, `TESTING.md`

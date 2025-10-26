@@ -102,20 +102,27 @@ export const createAnthropicProxy = ({
               // In Claude mode with TRACE debug, parse and log SSE events to see tool calls
               if (mode === "claude" && isTraceDebugEnabled()) {
                 const chunkStr = chunk.toString();
-                const lines = chunkStr.split('\n');
+                const lines = chunkStr.split("\n");
 
                 for (const line of lines) {
-                  if (line.startsWith('data: ')) {
+                  if (line.startsWith("data: ")) {
                     try {
                       const data = JSON.parse(line.substring(6));
 
                       // Log tool_use events from Claude API
-                      if (data.type === "content_block_start" && data.content_block?.type === "tool_use") {
-                        debug(3, `[Claude API → Tool Call] Tool use from real Claude:`, {
-                          tool_name: data.content_block.name,
-                          tool_id: data.content_block.id,
-                          input: data.content_block.input,
-                        });
+                      if (
+                        data.type === "content_block_start" &&
+                        data.content_block?.type === "tool_use"
+                      ) {
+                        debug(
+                          3,
+                          `[Claude API → Tool Call] Tool use from real Claude:`,
+                          {
+                            tool_name: data.content_block.name,
+                            tool_id: data.content_block.id,
+                            input: data.content_block.input,
+                          }
+                        );
                       }
                     } catch (e) {
                       // Ignore parse errors for non-JSON data lines
@@ -129,30 +136,43 @@ export const createAnthropicProxy = ({
               const responseBody = Buffer.concat(responseChunks).toString();
 
               // Log trace for Claude mode (successful responses)
-              if (mode === "claude" && body && statusCode >= 200 && statusCode < 400) {
+              if (
+                mode === "claude" &&
+                body &&
+                statusCode >= 200 &&
+                statusCode < 400
+              ) {
                 try {
-                  logTrace(mode, {
-                    method: req.method,
-                    url: req.url,
-                    headers: req.headers,
-                    body: body,
-                  }, {
-                    statusCode,
-                    headers: proxiedRes.headers,
-                    body: JSON.parse(responseBody),
-                  });
+                  logTrace(
+                    mode,
+                    {
+                      method: req.method,
+                      url: req.url,
+                      headers: req.headers,
+                      body: body,
+                    },
+                    {
+                      statusCode,
+                      headers: proxiedRes.headers,
+                      body: JSON.parse(responseBody),
+                    }
+                  );
                 } catch (error) {
                   // If response isn't JSON, log as string
-                  logTrace(mode, {
-                    method: req.method,
-                    url: req.url,
-                    headers: req.headers,
-                    body: body,
-                  }, {
-                    statusCode,
-                    headers: proxiedRes.headers,
-                    body: responseBody,
-                  });
+                  logTrace(
+                    mode,
+                    {
+                      method: req.method,
+                      url: req.url,
+                      headers: req.headers,
+                      body: body,
+                    },
+                    {
+                      statusCode,
+                      headers: proxiedRes.headers,
+                      body: responseBody,
+                    }
+                  );
                 }
               }
 
@@ -237,12 +257,19 @@ export const createAnthropicProxy = ({
 
           // Log tool schemas in Claude mode for comparison
           if (isTraceDebugEnabled() && body.tools) {
-            debug(3, `[Claude Mode] Claude Code sent ${body.tools.length} tools in request`);
+            debug(
+              3,
+              `[Claude Mode] Claude Code sent ${body.tools.length} tools in request`
+            );
             body.tools.forEach((tool, idx) => {
-              debug(3, `[Claude Mode Tool ${idx + 1}/${body.tools!.length}] ${tool.name}`, {
-                description_length: tool.description?.length ?? 0,
-                input_schema: tool.input_schema,
-              });
+              debug(
+                3,
+                `[Claude Mode Tool ${idx + 1}/${body.tools!.length}] ${tool.name}`,
+                {
+                  description_length: tool.description?.length ?? 0,
+                  input_schema: tool.input_schema,
+                }
+              );
             });
           }
 
@@ -312,11 +339,16 @@ export const createAnthropicProxy = ({
         const tools = body.tools?.reduce(
           (acc, tool) => {
             const originalSchema = tool.input_schema;
-            const providerizedSchema = providerizeSchema(providerName, originalSchema);
+            const providerizedSchema = providerizeSchema(
+              providerName,
+              originalSchema
+            );
 
             // Log schema transformation (TRACE level)
             if (isTraceDebugEnabled()) {
-              const schemasMatch = JSON.stringify(originalSchema) === JSON.stringify(providerizedSchema);
+              const schemasMatch =
+                JSON.stringify(originalSchema) ===
+                JSON.stringify(providerizedSchema);
               if (!schemasMatch) {
                 debug(3, `[Tool Schema Transform] ${tool.name}`, {
                   original: originalSchema,
@@ -339,15 +371,23 @@ export const createAnthropicProxy = ({
         // Query LMStudio for context length on first request (await it!)
         if (!contextLengthQueried) {
           contextLengthQueried = true;
-          const lmstudioUrl = process.env.LMSTUDIO_URL || "http://localhost:1234/v1";
+          const lmstudioUrl =
+            process.env.LMSTUDIO_URL || "http://localhost:1234/v1";
           try {
             const contextLength = await getModelContextLength(lmstudioUrl);
             if (contextLength) {
               cachedContextLength = contextLength;
-              debug(1, `[Context] Cached LMStudio context length: ${contextLength} tokens`);
+              debug(
+                1,
+                `[Context] Cached LMStudio context length: ${contextLength} tokens`
+              );
             }
           } catch (error) {
-            debug(1, `[Context] Failed to query LMStudio context length:`, error);
+            debug(
+              1,
+              `[Context] Failed to query LMStudio context length:`,
+              error
+            );
           }
         }
 
@@ -378,24 +418,24 @@ export const createAnthropicProxy = ({
           if (result.truncated) {
             console.error(
               `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⚠️  CONTEXT LIMIT EXCEEDED - MESSAGES TRUNCATED\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `\n` +
-              `Removed ${result.removedCount} older messages to fit within model's context.\n` +
-              `\n` +
-              `  Before: ${body.messages.length} messages (${contextStats.totalTokens} tokens)\n` +
-              `  After:  ${messagesToSend.length} messages\n` +
-              `  Limit:  ${contextStats.contextLimit} tokens (80% of ${model})\n` +
-              `\n` +
-              `⚠️  IMPORTANT - LOCAL MODEL LIMITATION:\n` +
-              `  Claude Sonnet 4.5 auto-compresses context while preserving\n` +
-              `  key information. Local models cannot do this - old messages\n` +
-              `  are simply discarded, which may affect response quality.\n` +
-              `\n` +
-              `RECOMMENDED: Start a new Claude Code conversation to avoid\n` +
-              `           losing important context from earlier in the session.\n` +
-              `\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+                `⚠️  CONTEXT LIMIT EXCEEDED - MESSAGES TRUNCATED\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `\n` +
+                `Removed ${result.removedCount} older messages to fit within model's context.\n` +
+                `\n` +
+                `  Before: ${body.messages.length} messages (${contextStats.totalTokens} tokens)\n` +
+                `  After:  ${messagesToSend.length} messages\n` +
+                `  Limit:  ${contextStats.contextLimit} tokens (80% of ${model})\n` +
+                `\n` +
+                `⚠️  IMPORTANT - LOCAL MODEL LIMITATION:\n` +
+                `  Claude Sonnet 4.5 auto-compresses context while preserving\n` +
+                `  key information. Local models cannot do this - old messages\n` +
+                `  are simply discarded, which may affect response quality.\n` +
+                `\n` +
+                `RECOMMENDED: Start a new Claude Code conversation to avoid\n` +
+                `           losing important context from earlier in the session.\n` +
+                `\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
             );
           }
         }
@@ -432,12 +472,25 @@ export const createAnthropicProxy = ({
 
         let stream;
         try {
+          // Log trace for lmstudio mode (before making request)
+          if (isDebugEnabled()) {
+            logTrace(mode, {
+              method: req.method,
+              url: req.url,
+              headers: req.headers,
+              body: body,
+            });
+          }
+
           // Create AbortController for timeout protection
           const abortController = new AbortController();
           const timeout = setTimeout(() => {
-            debug(1, `[Timeout] Request to ${providerName}/${model} exceeded 120 seconds`);
+            debug(
+              1,
+              `[Timeout] Request to ${providerName}/${model} exceeded 600 seconds (10 minutes)`
+            );
             abortController.abort();
-          }, 120000); // 120 second timeout
+          }, 600000); // 600 second (10 minute) timeout - needed for large models like qwen3-coder-30b
 
           try {
             stream = await streamText({
@@ -452,98 +505,98 @@ export const createAnthropicProxy = ({
               onFinish: ({ response, usage, finishReason }) => {
                 // Clear timeout on successful completion
                 clearTimeout(timeout);
-              // If the body is already being streamed,
-              // we don't need to do any conversion here.
-              if (body.stream) {
-                return;
-              }
-
-              // There should only be one message.
-              const message = response.messages[0];
-              if (!message) {
-                throw new Error("No message found");
-              }
-
-              const prompt = convertToAnthropicMessagesPrompt({
-                prompt: [convertToLanguageModelMessage(message, {})],
-                sendReasoning: true,
-                warnings: [],
-              });
-              const promptMessage = prompt.prompt.messages[0];
-              if (!promptMessage) {
-                throw new Error("No prompt message found");
-              }
-
-              res.writeHead(200, { "Content-Type": "application/json" }).end(
-                JSON.stringify({
-                  id: "msg_" + Date.now(),
-                  type: "message",
-                  role: promptMessage.role,
-                  content: promptMessage.content,
-                  model: body.model,
-                  stop_reason: mapAnthropicStopReason(finishReason),
-                  stop_sequence: null,
-                  usage: {
-                    input_tokens: usage.inputTokens,
-                    output_tokens: usage.outputTokens,
-                    cache_creation_input_tokens: 0,
-                    cache_read_input_tokens: 0,
-                  },
-                })
-              );
-            },
-            onError: ({ error }) => {
-              // Clear timeout on error
-              clearTimeout(timeout);
-              debug(1, `Error for ${providerName}/${model}:`, error);
-
-              // Write comprehensive debug info to temp file
-              const debugFile = writeDebugToTempFile(
-                400,
-                {
-                  method: "POST",
-                  url: req.url,
-                  headers: req.headers,
-                  body: body,
-                },
-                {
-                  statusCode: 400,
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    provider: providerName,
-                    model: model,
-                    error:
-                      error instanceof Error
-                        ? {
-                            message: error.message,
-                            stack: error.stack,
-                            name: error.name,
-                          }
-                        : error,
-                  }),
+                // If the body is already being streamed,
+                // we don't need to do any conversion here.
+                if (body.stream) {
+                  return;
                 }
-              );
 
-              if (debugFile) {
-                logDebugError("Provider", 400, debugFile, {
-                  provider: providerName,
-                  model,
+                // There should only be one message.
+                const message = response.messages[0];
+                if (!message) {
+                  throw new Error("No message found");
+                }
+
+                const prompt = convertToAnthropicMessagesPrompt({
+                  prompt: [convertToLanguageModelMessage(message, {})],
+                  sendReasoning: true,
+                  warnings: [],
                 });
-              }
+                const promptMessage = prompt.prompt.messages[0];
+                if (!promptMessage) {
+                  throw new Error("No prompt message found");
+                }
 
-              res
-                .writeHead(400, {
-                  "Content-Type": "application/json",
-                })
-                .end(
+                res.writeHead(200, { "Content-Type": "application/json" }).end(
                   JSON.stringify({
-                    type: "error",
-                    error:
-                      error instanceof Error ? error.message : String(error),
+                    id: "msg_" + Date.now(),
+                    type: "message",
+                    role: promptMessage.role,
+                    content: promptMessage.content,
+                    model: body.model,
+                    stop_reason: mapAnthropicStopReason(finishReason),
+                    stop_sequence: null,
+                    usage: {
+                      input_tokens: usage.inputTokens,
+                      output_tokens: usage.outputTokens,
+                      cache_creation_input_tokens: 0,
+                      cache_read_input_tokens: 0,
+                    },
                   })
                 );
-            },
-          });
+              },
+              onError: ({ error }) => {
+                // Clear timeout on error
+                clearTimeout(timeout);
+                debug(1, `Error for ${providerName}/${model}:`, error);
+
+                // Write comprehensive debug info to temp file
+                const debugFile = writeDebugToTempFile(
+                  400,
+                  {
+                    method: "POST",
+                    url: req.url,
+                    headers: req.headers,
+                    body: body,
+                  },
+                  {
+                    statusCode: 400,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      provider: providerName,
+                      model: model,
+                      error:
+                        error instanceof Error
+                          ? {
+                              message: error.message,
+                              stack: error.stack,
+                              name: error.name,
+                            }
+                          : error,
+                    }),
+                  }
+                );
+
+                if (debugFile) {
+                  logDebugError("Provider", 400, debugFile, {
+                    provider: providerName,
+                    model,
+                  });
+                }
+
+                res
+                  .writeHead(400, {
+                    "Content-Type": "application/json",
+                  })
+                  .end(
+                    JSON.stringify({
+                      type: "error",
+                      error:
+                        error instanceof Error ? error.message : String(error),
+                    })
+                  );
+              },
+            });
           } catch (innerError) {
             // Clear timeout on inner error
             clearTimeout(timeout);
@@ -570,7 +623,11 @@ export const createAnthropicProxy = ({
           try {
             await stream.consumeStream();
           } catch (error) {
-            debug(1, `Error consuming stream for ${providerName}/${model}:`, error);
+            debug(
+              1,
+              `Error consuming stream for ${providerName}/${model}:`,
+              error
+            );
             res.writeHead(503, { "Content-Type": "application/json" });
             res.end(
               JSON.stringify({
@@ -601,24 +658,26 @@ export const createAnthropicProxy = ({
         // Claude Code will disconnect if it doesn't receive events within ~30s
         const messageId = "msg_" + Date.now();
         res.write(`event: message_start\n`);
-        res.write(`data: ${JSON.stringify({
-          type: "message_start",
-          message: {
-            id: messageId,
-            type: "message",
-            role: "assistant",
-            content: [],
-            model: body.model,
-            stop_reason: null,
-            stop_sequence: null,
-            usage: {
-              input_tokens: 0,
-              output_tokens: 0,
-              cache_creation_input_tokens: 0,
-              cache_read_input_tokens: 0,
+        res.write(
+          `data: ${JSON.stringify({
+            type: "message_start",
+            message: {
+              id: messageId,
+              type: "message",
+              role: "assistant",
+              content: [],
+              model: body.model,
+              stop_reason: null,
+              stop_sequence: null,
+              usage: {
+                input_tokens: 0,
+                output_tokens: 0,
+                cache_creation_input_tokens: 0,
+                cache_read_input_tokens: 0,
+              },
             },
-          },
-        })}\n\n`);
+          })}\n\n`
+        );
 
         // Start keepalive interval to prevent Claude Code timeout during slow prompt processing
         // Some models (glm-4.5-air-mlx, Qwen3-30B) can take 60+ seconds to process prompts
@@ -628,7 +687,10 @@ export const createAnthropicProxy = ({
           if (!res.writableEnded) {
             keepaliveCount++;
             res.write(`: keepalive ${keepaliveCount}\n\n`);
-            debug(2, `[Keepalive] Sent keepalive #${keepaliveCount} (waiting for LMStudio)`);
+            debug(
+              2,
+              `[Keepalive] Sent keepalive #${keepaliveCount} (waiting for LMStudio)`
+            );
           }
         }, 10000); // 10 second interval
 
@@ -639,7 +701,10 @@ export const createAnthropicProxy = ({
                 // Clear keepalive on first chunk (stream has started)
                 if (keepaliveInterval) {
                   clearInterval(keepaliveInterval);
-                  debug(2, `[Keepalive] Cleared (stream started after ${keepaliveCount} keepalives)`);
+                  debug(
+                    2,
+                    `[Keepalive] Cleared (stream started after ${keepaliveCount} keepalives)`
+                  );
                 }
 
                 if (isVerboseDebugEnabled()) {
@@ -647,7 +712,11 @@ export const createAnthropicProxy = ({
                 }
 
                 // Log tool_use events at trace level
-                if (isTraceDebugEnabled() && chunk.type === "content_block_start" && (chunk as any).content_block?.type === "tool_use") {
+                if (
+                  isTraceDebugEnabled() &&
+                  chunk.type === "content_block_start" &&
+                  (chunk as any).content_block?.type === "tool_use"
+                ) {
                   debug(3, `[SSE → Claude Code] Writing tool_use event:`, {
                     event: chunk.type,
                     index: (chunk as any).index,
@@ -681,7 +750,11 @@ export const createAnthropicProxy = ({
           if (keepaliveInterval) {
             clearInterval(keepaliveInterval);
           }
-          debug(1, `Error in stream processing for ${providerName}/${model}:`, error);
+          debug(
+            1,
+            `Error in stream processing for ${providerName}/${model}:`,
+            error
+          );
 
           // If we haven't started writing the response yet, send a proper error
           if (!res.headersSent) {

@@ -23,17 +23,20 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 **This project was developed and tested with:**
 
 **Hardware:**
+
 - MacBook Pro M4 Max (Apple Silicon)
 - 40 GPU cores, 16 CPU cores
 - 128GB unified memory
 
 **Models Verified Working:**
+
 - ✅ Qwen3 Coder 30B (excellent for coding tasks)
 - ✅ GPT-OSS 20B (good general purpose)
 - ✅ DeepSeek Coder (various sizes)
 - ✅ Mistral variants (with tool calling support)
 
 **LMStudio:**
+
 - Version 0.2.x+ (latest recommended)
 - Models must support tool/function calling
 - OpenAI Chat Completions API compatibility required
@@ -57,10 +60,12 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 ### Dependencies
 
 Runtime dependencies (automatically installed):
+
 - `@ai-sdk/openai-compatible` - AI SDK for OpenAI-compatible servers (LMStudio)
 - `ai` - Vercel AI SDK core
 
 Development dependencies:
+
 - TypeScript types and tooling
 
 ### Installation
@@ -90,6 +95,7 @@ bun run install:global
    - Click "Start Server" (default: http://localhost:1234)
 
 2. **Run anyclaude**
+
    ```bash
    anyclaude
    ```
@@ -146,6 +152,7 @@ ANYCLAUDE_DEBUG=1 node dist/main.js
 Local models take time to process and generate responses. This is **normal behavior**, not a bug.
 
 **What affects performance:**
+
 - **Hardware**: GPU type, VRAM, CPU cores, RAM
 - **Model size**: 7B vs 13B vs 30B+ parameters
 - **Quantization**: Q4 (fastest) vs Q8 vs FP16 (slowest)
@@ -153,17 +160,20 @@ Local models take time to process and generate responses. This is **normal behav
 - **Prompt complexity**: Simple questions vs complex tool-calling requests
 
 **Why can it feel slow?**
+
 - Claude Code sends **large system prompts** (10,000+ tokens) with all tool descriptions
 - Local models process tokens sequentially (not parallel like cloud APIs)
 - Larger models are more capable but slower
 - First response includes processing the entire system prompt
 
 **Enable debug mode to see actual timings:**
+
 ```bash
 ANYCLAUDE_DEBUG=1 anyclaude
 ```
 
 This will show you real measurements like:
+
 - `[Request Complete] lmstudio/model: 3542ms`
 - `[First Chunk] after 150ms`
 - Token generation speed
@@ -185,6 +195,7 @@ When you see these in Claude Code, **everything is working correctly**:
 Based on testing with Claude Code's complex prompts and tool usage:
 
 #### 🍎 Best for Apple Silicon (M2/M3/M4 Max/Ultra with 64GB+ RAM)
+
 ```
 Model: gpt-oss-20b-MLX-8bit
 Size: ~12GB
@@ -202,12 +213,14 @@ Use: Complex refactoring, architecture design, production code
 ```
 
 **Why MLX models for Apple Silicon?**
+
 - MLX is Apple's ML framework optimized for Metal GPU
 - 8-bit quantization maintains quality while being GPU-friendly
 - Up to 2-3x faster than GGUF on M-series chips
 - Better memory efficiency with unified RAM architecture
 
 #### Best for Speed (Recommended Starting Point)
+
 ```
 Model: Qwen2.5-Coder-7B-Instruct (Quantized Q4 or Q5)
 Size: ~4GB
@@ -218,6 +231,7 @@ Use: Daily development, quick iterations
 ```
 
 #### Best for Quality (High-VRAM GPUs)
+
 ```
 Model: DeepSeek-Coder-33B-Instruct (Quantized Q4)
 Size: ~20GB
@@ -228,6 +242,7 @@ Use: Complex refactoring, architecture design
 ```
 
 #### Best Balance (General Use)
+
 ```
 Model: Mistral-7B-Instruct-v0.3 (Quantized Q4)
 Size: ~4GB
@@ -265,11 +280,13 @@ Use: Daily development, fast iterations
 ```
 
 **Your M4 Max setup can handle all of these simultaneously!**
+
 - With 96GB available for GPU, you could even run two models at once
 - Switch between them for different tasks without closing LMStudio
 - The 40 GPU cores will keep inference fast even with 32B models
 
 **Where to find MLX models:**
+
 - LMStudio → Search for models with "MLX" in the name
 - HuggingFace → Look for repos with `mlx-community/` prefix
 - Example: `mlx-community/Qwen2.5-Coder-32B-Instruct-4bit`
@@ -277,6 +294,7 @@ Use: Daily development, fast iterations
 ### Performance Tips
 
 **1. Use Quantized Models (Especially MLX on Apple Silicon)**
+
 - **Apple Silicon**: Use MLX models (4-bit, 6-bit, 8-bit) for 2-3x better performance
   - Example: `gpt-oss-20b-MLX-8bit` instead of GGUF versions
   - MLX uses Metal GPU natively, GGUF requires translation layer
@@ -287,6 +305,7 @@ Use: Daily development, fast iterations
   - Download from HuggingFace models with `-GGUF` in the name
 
 **2. Enable GPU Acceleration**
+
 - **Apple Silicon**: Models automatically use Metal GPU, verify in Activity Monitor
   - Check "GPU" column shows usage during inference
   - No special configuration needed with MLX models
@@ -295,11 +314,13 @@ Use: Daily development, fast iterations
   - If GPU not detected, reinstall LMStudio or check drivers
 
 **3. Adjust Context Length**
+
 - Claude Code sends large prompts (10K+ tokens)
 - Set LMStudio context to **16,384** or **32,768** tokens minimum
 - Found in: LMStudio Server tab → Advanced → Context Length
 
 **4. Optimize LMStudio Settings**
+
 ```
 Server Settings (LMStudio → Server → Advanced):
 - Context Length: 32768
@@ -310,6 +331,7 @@ Server Settings (LMStudio → Server → Advanced):
 ```
 
 **5. Test Model Performance**
+
 ```bash
 # Start proxy with debug to see timing
 ANYCLAUDE_DEBUG=1 anyclaude
@@ -348,12 +370,14 @@ anyclaude
 **Symptom**: "It's been 2+ minutes and still 'Ionizing...'"
 
 **Possible Causes**:
+
 1. **Model too large for GPU** → Check GPU memory usage
 2. **CPU-only mode** → Enable GPU offload in LMStudio
 3. **Low batch size** → Increase to 512 in LMStudio settings
 4. **Context overflow** → Model can't handle prompt size, increase context length
 
 **Quick Fix**:
+
 ```bash
 # 1. Stop LMStudio server
 # 2. Load a smaller quantized model (Q4)
@@ -364,6 +388,7 @@ anyclaude
 ```
 
 **Still slow?** Try:
+
 - Close other GPU-intensive apps
 - Use smaller model (7B instead of 13B+)
 - Check LMStudio console for errors
@@ -404,10 +429,12 @@ export PROXY_ONLY=true
 **NEW**: anyclaude now supports two modes for different use cases!
 
 **Modes:**
+
 - **`lmstudio` mode** (default): Use local LMStudio models (privacy-first, zero cloud dependency)
 - **`claude` mode**: Use real Anthropic API with trace logging for reverse engineering
 
 **Why use Claude mode?**
+
 - **Reverse engineer tool schemas**: See exactly how Claude Code formats tool calls
 - **Compare responses**: Understand differences between Claude API and local models
 - **Improve LMStudio adapter**: Use traces to fix conversion bugs
@@ -428,6 +455,7 @@ anyclaude  # Uses lmstudio mode
 ```
 
 **Claude mode requirements:**
+
 - Set `ANTHROPIC_API_KEY` environment variable with your Anthropic API key
 - Requests will be sent to real Anthropic API (costs apply!)
 - All requests/responses are logged to `~/.anyclaude/traces/claude/`
@@ -460,6 +488,7 @@ ls ~/.anyclaude/traces/claude/
 ```
 
 **Security:**
+
 - API keys are automatically redacted from trace files
 - Trace files have restrictive permissions (0600 - read/write by owner only)
 - Trace directory has restrictive permissions (0700 - full access by owner only)
@@ -488,6 +517,7 @@ ANYCLAUDE_MODE=lmstudio anyclaude
 **NEW**: anyclaude now automatically manages context windows for local models!
 
 **What it does:**
+
 - **Auto-detects** model context limits (8K-128K depending on model)
 - **Counts tokens** in real-time using tiktoken
 - **Warns you** when approaching 75% capacity
@@ -495,6 +525,7 @@ ANYCLAUDE_MODE=lmstudio anyclaude
 - **Logs clearly** when truncation happens
 
 **Example output when context fills up:**
+
 ```
 ⚠️  Context limit exceeded! Truncated 15 older messages.
    Original: 25 messages (35,420 tokens)
@@ -504,6 +535,7 @@ ANYCLAUDE_MODE=lmstudio anyclaude
 ```
 
 **Supported models** (auto-detected):
+
 - gpt-oss-20b/120b: 131K tokens (128K native via RoPE + YaRN)
 - deepseek-coder-v2-lite: 16K tokens
 - deepseek-coder-33b: 16K tokens
@@ -515,6 +547,7 @@ ANYCLAUDE_MODE=lmstudio anyclaude
 despite 128K native support. Monitor for mid-generation failures.
 
 **Override detection:**
+
 ```bash
 # Your model has 128K context but wasn't detected?
 export LMSTUDIO_CONTEXT_LENGTH=131072
@@ -523,20 +556,22 @@ anyclaude
 
 **How it compares to Claude Code 2:**
 
-| Feature | Claude Sonnet 4.5 | Local Models (anyclaude) |
-|---------|------------------|--------------------------|
-| Context Window | 200K tokens | 8K-128K tokens |
-| Auto-compression | ✅ Extended thinking | ❌ Not supported |
-| Prompt Caching | ✅ Cached prompts | ❌ Not supported |
-| Truncation | ✅ Smart summarization | ✅ Sliding window (recent messages) |
-| Warning System | ❌ None needed | ✅ Warns at 75%, 90% |
+| Feature          | Claude Sonnet 4.5      | Local Models (anyclaude)            |
+| ---------------- | ---------------------- | ----------------------------------- |
+| Context Window   | 200K tokens            | 8K-128K tokens                      |
+| Auto-compression | ✅ Extended thinking   | ❌ Not supported                    |
+| Prompt Caching   | ✅ Cached prompts      | ❌ Not supported                    |
+| Truncation       | ✅ Smart summarization | ✅ Sliding window (recent messages) |
+| Warning System   | ❌ None needed         | ✅ Warns at 75%, 90%                |
 
 **Best Practices:**
+
 1. **Start new conversations** when you see the 90% warning
 2. **Use models with larger context** for long coding sessions (32K+ recommended)
 3. **Set LMSTUDIO_CONTEXT_LENGTH** if you know your model's limit
 4. **Monitor warnings** - truncation loses older context
-```
+
+````
 
 ---
 
@@ -570,7 +605,7 @@ anyclaude
 
 # In Claude Code: Ask "What model are you?" again
 # Response: Identifies as DeepSeek (new model)
-```
+````
 
 ---
 
@@ -606,6 +641,7 @@ ANYCLAUDE_DEBUG=2 anyclaude
 ```
 
 Debug logs include:
+
 - Request start/completion timing
 - Message conversion details
 - Stream chunk processing
@@ -643,6 +679,7 @@ npm test
 **Cause**: LMStudio server isn't running
 
 **Fix**:
+
 1. Open LMStudio
 2. Go to "Server" tab
 3. Load a model
@@ -652,12 +689,14 @@ npm test
 ### Models respond slowly or take 30-60 seconds
 
 **This is normal!** See the [Performance & Model Selection](#-performance--model-selection) section for:
+
 - Expected response times (30-60s for large prompts is normal)
 - Recommended models for different use cases
 - Performance optimization tips
 - Troubleshooting slow performance
 
 **Quick tips**:
+
 - Use quantized models (Q4, Q5 versions)
 - Enable GPU offload in LMStudio (max layers)
 - Try smaller models (7B instead of 13B+)
@@ -668,6 +707,7 @@ npm test
 **Cause**: Another anyclaude instance is running
 
 **Fix**:
+
 ```bash
 # Find and kill the process
 ps aux | grep anyclaude
@@ -683,6 +723,7 @@ anyclaude
 **Cause**: Environment variable not set
 
 **Fix**:
+
 ```bash
 # Make sure to export before running
 export ANYCLAUDE_DEBUG=1
@@ -691,6 +732,85 @@ anyclaude
 # Or inline
 ANYCLAUDE_DEBUG=1 anyclaude
 ```
+
+---
+
+## 📊 Trace Analysis & Model Benchmarking
+
+**NEW**: Understand what Claude Code sends and benchmark different models scientifically!
+
+anyclaude includes powerful tools for analyzing request overhead and comparing model performance:
+
+### Quick Example
+
+```bash
+# 1. Capture a trace (with debug mode)
+ANYCLAUDE_DEBUG=1 anyclaude
+You: Read README.md and summarize it
+# Exit after completion
+
+# 2. Analyze what was sent
+trace-analyzer analyze ~/.anyclaude/traces/lmstudio/latest.json
+
+# Output shows:
+# System Prompt:     15,432 tokens  (54%)
+# Tool Definitions:  12,821 tokens  (45%)
+# Messages:           1,200 tokens   (4%)
+# Total Input:       28,453 tokens
+
+# 3. Benchmark different models with the SAME request
+trace-replayer replay ~/.anyclaude/traces/lmstudio/latest.json
+# Switch model in LMStudio, replay again
+trace-replayer replay ~/.anyclaude/traces/lmstudio/latest.json
+
+# 4. Compare results
+trace-replayer compare ./trace-replays/
+
+# Output:
+# Model                   Prompt Proc  Generation  Total    Tok/sec
+# qwen3-30b@4bit             60.23s      25.18s    85.41s     5.00
+# llama-3.1-8b                2.41s       6.71s     8.12s    54.06  ← 10x faster!
+```
+
+### Why Use These Tools?
+
+- **Understand overhead**: Claude Code sends ~28K tokens per tool call (system prompt + 16 tool schemas)!
+- **Find bottlenecks**: Is slowness from prompt processing (30-60s) or generation (5-50 tok/sec)?
+- **Choose optimal model**: Compare models with real workloads, not synthetic benchmarks
+- **Debug issues**: See exactly what's being sent when things break
+
+### Available Commands
+
+```bash
+# List captured traces
+trace-analyzer list
+
+# Analyze a trace (shows token breakdown)
+trace-analyzer analyze <trace-file>
+
+# Analyze with full details (shows system prompt, all tools)
+trace-analyzer analyze <trace-file> -v
+
+# Compare multiple traces
+trace-analyzer compare <directory>
+
+# Replay trace to current LMStudio model
+trace-replayer replay <trace-file>
+
+# Compare replay results across models
+trace-replayer compare ./trace-replays/
+```
+
+### Complete Guide
+
+**📖 [Trace Analysis & Benchmarking Guide](docs/guides/trace-analysis-guide.md)**
+
+Complete workflow for:
+- Capturing representative traces
+- Understanding token overhead
+- Benchmarking models scientifically
+- Interpreting performance metrics
+- Choosing the optimal model for your hardware
 
 ---
 
@@ -732,15 +852,15 @@ CMD ["anyclaude"]
 
 This is a **simplified fork** of the original anyclaude project.
 
-| Feature | Original anyclaude | anyclaude-lmstudio |
-|---------|-------------------|-------------------|
-| **Cloud Providers** | ✅ OpenAI, Google, xAI, Azure, Anthropic | ❌ None (local only) |
-| **LMStudio Support** | ✅ Via failover | ✅ Primary focus |
-| **Failover Systems** | ✅ Circuit breaker, health checks | ❌ Removed for simplicity |
-| **GPT-5 Features** | ✅ Reasoning controls, service tiers | ❌ Not applicable |
-| **Codebase Size** | ~2,500 lines | ~1,000 lines |
-| **Setup Complexity** | Moderate (multiple providers) | Simple (one provider) |
-| **Use Case** | Multi-provider flexibility | Local-first privacy |
+| Feature              | Original anyclaude                       | anyclaude-lmstudio        |
+| -------------------- | ---------------------------------------- | ------------------------- |
+| **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ❌ None (local only)      |
+| **LMStudio Support** | ✅ Via failover                          | ✅ Primary focus          |
+| **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed for simplicity |
+| **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable         |
+| **Codebase Size**    | ~2,500 lines                             | ~1,000 lines              |
+| **Setup Complexity** | Moderate (multiple providers)            | Simple (one provider)     |
+| **Use Case**         | Multi-provider flexibility               | Local-first privacy       |
 
 **Choose Original anyclaude if**: You need cloud providers, failover, or GPT-5 features
 
@@ -753,12 +873,14 @@ This is a **simplified fork** of the original anyclaude project.
 This project is a simplified fork of [anyclaude](https://github.com/coder/anyclaude) by [Coder](https://coder.com).
 
 ### Original anyclaude Features
+
 - Multi-provider support (OpenAI, Google, xAI, Azure, Anthropic)
 - Advanced failover and circuit breaker patterns
 - GPT-5 reasoning effort controls
 - OpenRouter integration
 
 ### This Fork (anyclaude-lmstudio)
+
 - **Focused on**: LMStudio local models only
 - **Removed**: Cloud provider dependencies (~1,500 lines)
 - **Added**: Dynamic model switching without restart
@@ -775,12 +897,14 @@ The original anyclaude is excellent for multi-provider usage, but many users wan
 ## 📖 Documentation
 
 ### Core Documentation
+
 - **[PROJECT.md](PROJECT.md)** - Complete architectural deep-dive and translation layer design
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
 - **[CLAUDE.md](CLAUDE.md)** - Claude Code-specific instructions
 
 ### Organized Guides
+
 - **[docs/](docs/)** - Complete documentation index
   - **[Guides](docs/guides/)** - Installation, authentication, mode switching, debugging
   - **[Development](docs/development/)** - Testing, contributing, model testing
@@ -810,6 +934,7 @@ MIT License - see [LICENSE](LICENSE)
 ## 🌟 Show Your Support
 
 If anyclaude-lmstudio helps you build with local AI models, please:
+
 - ⭐ Star this repo on GitHub
 - ⭐ Star the [original anyclaude](https://github.com/coder/anyclaude) repo
 - 🐛 Report bugs or suggest features via Issues
@@ -820,6 +945,7 @@ If anyclaude-lmstudio helps you build with local AI models, please:
 ## 🚀 What's Next?
 
 ### Roadmap
+
 - [ ] Automated testing (unit tests for converters)
 - [ ] GitHub Actions CI/CD
 - [ ] Support for additional local model servers (Ollama, LocalAI)
@@ -830,6 +956,7 @@ If anyclaude-lmstudio helps you build with local AI models, please:
 ### Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
 - Development setup
 - Code standards
 - Pull request process
@@ -839,4 +966,4 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 **Built with ❤️ for the local AI community**
 
-*Making Claude Code work with your privacy-focused, local LLMs*
+_Making Claude Code work with your privacy-focused, local LLMs_

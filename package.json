@@ -16,7 +16,9 @@
     "url": "https://github.com/akaszubski/anyclaude-lmstudio"
   },
   "bin": {
-    "anyclaude": "./dist/main-cli.js"
+    "anyclaude": "./dist/main-cli.js",
+    "trace-analyzer": "./dist/trace-analyzer-cli.js",
+    "trace-replayer": "./dist/trace-replayer-cli.js"
   },
   "files": [
     "dist/main-cli.js",
@@ -63,7 +65,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && node -e \"const fs=require('fs');fs.writeFileSync('dist/main-cli.js','#!/usr/bin/env node\\nrequire(\\\"./main.js\\\");\\n');fs.chmodSync('dist/main-cli.js',0o755);fs.cpSync('dist/main.js','dist/main.cjs');fs.cpSync('dist/trace-logger.js','dist/trace-logger.cjs');\"",
+    "build": "tsc --project tsconfig.build.json && node -e \"const fs=require('fs');fs.writeFileSync('dist/main-cli.js','#!/usr/bin/env node\\nrequire(\\\"./main.js\\\");\\n');fs.chmodSync('dist/main-cli.js',0o755);fs.writeFileSync('dist/trace-analyzer-cli.js','#!/usr/bin/env node\\nrequire(\\\"./trace-analyzer.js\\\");\\n');fs.chmodSync('dist/trace-analyzer-cli.js',0o755);fs.writeFileSync('dist/trace-replayer-cli.js','#!/usr/bin/env node\\nrequire(\\\"./trace-replayer.js\\\");\\n');fs.chmodSync('dist/trace-replayer-cli.js',0o755);fs.cpSync('dist/main.js','dist/main.cjs');fs.cpSync('dist/trace-logger.js','dist/trace-logger.cjs');\"",
     "test": "npm run build && npm run test:unit && npm run test:regression",
     "test:unit": "node tests/run_all_tests.js",
     "test:regression": "node tests/regression/test_structure_regression.js",
