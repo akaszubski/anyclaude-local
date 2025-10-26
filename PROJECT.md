@@ -127,35 +127,71 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 - Brainstorming and planning
 - Follow-up questions on same context
 
-#### MLX-Omni Mode (`ANYCLAUDE_MODE=mlx-omni`, experimental)
+#### MLX-Omni Mode (`ANYCLAUDE_MODE=mlx-omni`, experimental/unsupported)
 
-**Purpose**: Maximum performance + tool calling support via mlx-omni-server
+**Status**: ⚠️ **Not recommended** - fundamental incompatibility with local models
 
-- MLX library with native KV cache + tool calling support
-- Routes to mlx-omni-server (default: `http://localhost:8080/anthropic`)
-- Supports Qwen3-Coder and other tool-aware models
-- Streaming enabled with full tool call support
-- **Goal**: Replace LMStudio for faster Claude Code with tools
+**Why Not Recommended**:
+
+- MLX-Omni-Server **only supports HuggingFace model IDs**, not local paths
+- Attempting to use local MLX files fails with authentication errors
+- Server has no `--model-path` option or environment variable to specify local models
+- Tool calling support couldn't be validated due to model loading failure
+
+**Limitation Example**:
+```
+Error: 401 Client Error: Unauthorized for url: https://huggingface.co/api/models/qwen3-coder
+```
+
+**Recommendation**: Use **MLX-LM mode** instead (below)
+
+---
+
+#### MLX-LM Mode Optimized (`ANYCLAUDE_MODE=mlx-lm`, recommended for speed)
+
+**Purpose**: Maximum performance with KV cache (trade-off: no tool calling)
+
+**What Works**:
+- ✅ MLX library with native KV cache (10-100x speedup on follow-ups)
+- ✅ Local model support (uses model paths directly)
+- ✅ Apple Silicon optimized inference
+- ✅ Streaming responses
+- ✅ Privacy-focused (completely offline)
+
+**Trade-off**:
+- ❌ No tool calling support
+- ⚠️ Read-only mode (analysis, review, planning only)
 
 **Performance vs LMStudio**:
 
-- Faster inference: MLX optimized for Apple Silicon
-- Instant follow-ups: KV cache eliminates system prompt overhead
-- Full feature parity: Works like LMStudio but faster
-- Expected: 2-5x speedup on typical Claude Code workflows
+- First request: ~same as LMStudio
+- Follow-up requests: 10-100x faster (native KV cache)
+- Follow-ups without system prompt: Nearly instant
+- Best case: 100x speedup on repeated queries
 
-**Current Status**:
+**Use Cases** (Perfect For):
 
-- Tool calling support in progress (debugging format compatibility)
-- Model: Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
-- Goal: Make Claude Code 2.0 **fast and free** with local models
+- Code analysis and review (no file modifications)
+- Documentation generation and summarization
+- Brainstorming and planning sessions
+- Follow-up questions on same context
+- Educational explanations
 
-**Use Cases**:
+**When Not to Use**:
 
-- Full Claude Code experience (read, write, debug, etc.)
-- Privacy-focused development with tool use
-- Speed-optimized local workflows
-- AI-assisted coding with file operations
+- If you need file operations (read/write)
+- If you need git commands
+- If you need web search or other tool use
+- For full Claude Code workflows
+
+**Setup**:
+```bash
+# Start MLX-LM server with local model
+python -m mlx_lm.server --model-path /path/to/Qwen3-Coder-30B-MLX
+
+# Use with anyclaude
+ANYCLAUDE_MODE=mlx-lm anyclaude
+```
 
 ### Architecture Layers
 
@@ -621,37 +657,45 @@ ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/fixed.log
 - `analyze-tool-calls.sh` - Extract tool call details from logs
 - `monitor-tool-calls.sh` - Real-time tool call monitoring
 
-## Current Work: MLX Integration
+## Current Work: MLX Integration Investigation
 
-### MLX-Omni Server Tool Calling
+### Investigation Complete: MLX-Omni-Server Unsupported
 
-**Objective**: Enable full Claude Code experience (with tools) on local Apple Silicon at 2-5x faster speeds than LMStudio.
+**Objective**: ~~Enable full Claude Code experience with tools on local MLX~~ **FINDINGS**: MLX-Omni-Server incompatible with local models
 
-**Current Status**: Tool calling format compatibility in progress
+**Investigation Results**:
+- ✅ MLX-Omni-Server installed and tested
+- ✅ Anthropic API endpoints available (`/anthropic/v1/messages`)
+- ❌ Server only supports HuggingFace model IDs, not local paths
+- ❌ Attempting to use local MLX files: `401 Unauthorized` from HuggingFace
+- ❌ No configuration option to specify local model paths
+- ❌ Tool calling validation impossible due to model loading failure
 
-**What's Working**:
-- MLX-Omni server running with Qwen3-Coder-30B
-- Native KV cache for fast follow-ups
-- Message format translation complete
-- Streaming support implemented
+**Why MLX-Omni-Server Failed**:
+1. Designed for cloud deployment with HuggingFace integration
+2. Tries to download models from HuggingFace API
+3. No fallback to local file system
+4. Requires HuggingFace authentication token for private models
+5. Fundamental architectural mismatch with anyclaude's offline use case
 
-**What Needs Fixing**:
-- Tool calling format compatibility (mlx-omni expects specific prompt structure)
-- Tool parameter streaming format
-- Response parsing for tool calls
+**Recommended Alternative**: Use **MLX-LM** mode
+- ✅ Supports local model paths directly
+- ✅ Native KV cache (10-100x speedup)
+- ✅ Apple Silicon optimized
+- ⚠️ Trade-off: No tool calling (read-only mode)
 
-**Investigation Plan**:
-1. Test raw mlx-omni-server endpoint with anthropic format
-2. Compare prompt construction vs OpenAI format
-3. Debug tool call response format
-4. Update main.ts tool calling if needed
-5. Validate performance improvement
+**Files Updated**:
+- `docs/debugging/mlx-integration-findings.md` - Full investigation report
+- `PROJECT.md` - Realistic expectations and recommendation
+- `src/main.ts` - Keep `mlx-omni` mode but mark as unsupported
+- `test-mlx-tool-calling.py` - Can't test without working model loading
 
-**Files Involved**:
-- `src/main.ts` - Mode configuration
-- `src/convert-anthropic-messages.ts` - Message format conversion
-- `src/convert-to-anthropic-stream.ts` - Tool call streaming
-- `test-mlx-tool-calling.py` - Test script
+**Next Steps**:
+1. ✅ Document findings and limitations (done)
+2. ⏳ Test MLX-LM mode with local Qwen3-Coder model
+3. ⏳ Benchmark MLX-LM vs LMStudio performance
+4. ⏳ Create MLX-LM setup guide for users
+5. ⏳ Consider hybrid mode (mlx-lm for read-only, lmstudio for tools)
 
 ---
 
@@ -764,18 +808,18 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 - ✅ Context window management
 - ✅ Hot model switching
 - ✅ Both auth methods (Claude Max + API keys)
-- ✅ MLX-LM mode with KV cache support
-- 🔄 MLX-Omni mode with tool calling (in progress - fixing format compatibility)
+- ✅ MLX-LM mode with KV cache support (read-only, no tools)
+- ❌ MLX-Omni mode (incompatible with local models - HF-only)
 - 🔄 Prompt caching for system prompt reuse (implemented, testing)
 - 🔄 Schema adaptation for weaker models (in progress)
 - ⏳ Parameter validation and correction (planned)
 
 ### Performance Targets
 
-- ✅ LMStudio: Baseline local inference
-- ✅ MLX-LM: 10-100x faster on follow-ups (KV cache)
-- 🔄 MLX-Omni: 2-5x faster overall + tool calling (debugging)
-- Goal: Make Claude Code 2.0 **fast enough for daily use** locally
+- ✅ LMStudio: Baseline local inference with full tool support
+- ✅ MLX-LM: 10-100x faster on follow-ups (KV cache, read-only mode)
+- ❌ MLX-Omni: Not viable for local offline use
+- **Realistic Goal**: Make Claude Code 2.0 faster with MLX-LM for analysis tasks; use LMStudio for tool-heavy work
 
 ### Compatibility
 

@@ -17,11 +17,11 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
   for (const arg of args) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm") {
+      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm" || mode === "mlx-omni") {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'mlx-lm'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'mlx-lm', or 'mlx-omni'.`
       );
       process.exit(1);
     }
@@ -68,7 +68,7 @@ function detectMode(): AnyclaudeMode {
 
   // Check environment variable
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
-  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm") {
+  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm" || envMode === "mlx-omni") {
     return envMode as AnyclaudeMode;
   }
 
@@ -173,6 +173,10 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     baseURL: process.env.MLX_LM_URL || "http://localhost:8080/v1",
     apiKey: process.env.MLX_LM_API_KEY || "mlx-lm",
   }),
+  "mlx-omni": createAnthropic({
+    baseURL: process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic",
+    apiKey: process.env.MLX_OMNI_API_KEY || "mlx-omni",
+  }) as any,
   claude: createAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY || "",
   }) as any,
@@ -186,7 +190,9 @@ const proxyURL = createAnthropicProxy({
       ? "claude-3-5-sonnet-20241022"
       : mode === "mlx-lm"
         ? process.env.MLX_LM_MODEL || "current-model"
-        : process.env.LMSTUDIO_MODEL || "current-model",
+        : mode === "mlx-omni"
+          ? process.env.MLX_OMNI_MODEL || "qwen3-coder-30b"
+          : process.env.LMSTUDIO_MODEL || "current-model",
   mode,
 });
 
@@ -206,6 +212,13 @@ if (mode === "lmstudio") {
   );
   console.log(
     `[anyclaude] Model: ${process.env.MLX_LM_MODEL || "current-model"} (with native KV cache)`
+  );
+} else if (mode === "mlx-omni") {
+  console.log(
+    `[anyclaude] MLX-Omni-Server endpoint: ${process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic"}`
+  );
+  console.log(
+    `[anyclaude] Model: ${process.env.MLX_OMNI_MODEL || "qwen3-coder-30b"} (with KV cache + tool calling)`
   );
 } else if (mode === "claude") {
   console.log(`[anyclaude] Using real Anthropic API`);

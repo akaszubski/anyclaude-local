@@ -45,9 +45,11 @@ async function replayTrace(
 
   try {
     // Query LMStudio for current model
-    const modelsResponse = await fetch(`${lmstudioUrl}/api/v0/models`);
+    // Note: lmstudioUrl includes /v1, but models API is at /api/v0/models (root level)
+    const baseUrl = lmstudioUrl.replace("/v1", "");
+    const modelsResponse = await fetch(`${baseUrl}/api/v0/models`);
     const modelsData: any = await modelsResponse.json();
-    const loadedModel = modelsData.data.find((m: any) => m.state === "loaded");
+    const loadedModel = modelsData.data?.find((m: any) => m.state === "loaded");
     const modelName = loadedModel?.id || "unknown";
 
     console.log(`\nReplaying trace to model: ${modelName}`);

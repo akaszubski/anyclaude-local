@@ -594,7 +594,12 @@ export {
   compareTraces,
 };
 
-// Run CLI if executed directly
-if (require.main === module || process.argv[1]?.endsWith("trace-analyzer.ts") || process.argv[1]?.endsWith("trace-analyzer.js")) {
+// Run CLI if executed directly or via CLI wrapper
+if (
+  require.main === module ||
+  process.argv[1]?.endsWith("trace-analyzer.ts") ||
+  process.argv[1]?.endsWith("trace-analyzer.js") ||
+  process.argv[1]?.endsWith("trace-analyzer-cli.js")
+) {
   main();
 }
