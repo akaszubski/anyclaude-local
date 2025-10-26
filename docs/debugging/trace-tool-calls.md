@@ -7,6 +7,7 @@ Capture exactly what Claude Code sends and what Qwen3 returns to understand why 
 ## Debug Levels
 
 **ANYCLAUDE_DEBUG** environment variable:
+
 - `0` - No debug logging (default)
 - `1` - Basic debug (context detection, request timing)
 - `2` - Verbose debug (stream chunks, keepalive)
@@ -19,6 +20,7 @@ ANYCLAUDE_DEBUG=3 anyclaude
 ```
 
 This will log:
+
 - ✅ Full Claude Code tool schemas (input_schema with all properties)
 - ✅ Schema transformations (original → providerized → LMStudio)
 - ✅ Tool calls from model (name, input, validation)
@@ -27,11 +29,13 @@ This will log:
 ## Step 2: Test Simple Command (Baseline)
 
 In Claude Code:
+
 ```
 > Run git status and show me the output
 ```
 
 **Expected in logs**:
+
 ```
 [ANYCLAUDE DEBUG] [Tools] Claude Code sent 1 tool(s):
 [ANYCLAUDE DEBUG] [Tool 1/1] Bash {
@@ -67,6 +71,7 @@ In Claude Code:
 ```
 
 **What to capture**:
+
 1. **Full input_schema** - Save to file for analysis
 2. **Schema transformation** - Did we modify it? How?
 3. **Tool call success** - Did model provide correct parameters?
@@ -74,11 +79,13 @@ In Claude Code:
 ## Step 3: Test Implicit Tool Use (Where it Fails)
 
 In Claude Code:
+
 ```
 > What files have changed in the repository?
 ```
 
 **Expected** (if working):
+
 ```
 [ANYCLAUDE DEBUG] [Tool Call] Model called tool: Bash {
   "toolName": "Bash",
@@ -89,12 +96,14 @@ In Claude Code:
 ```
 
 **Actual** (if failing):
+
 ```
 # No [Tool Call] log appears
 # Instead, model returns text or invalid tool_use
 ```
 
 **What to check**:
+
 - Does [Tool Call] appear in logs?
 - If yes: What input did model provide? Is it valid?
 - If no: Did model return text instead? Did it try and fail?
@@ -102,15 +111,18 @@ In Claude Code:
 ## Step 4: Test Complex Multi-Tool (Hardest Case)
 
 In Claude Code:
+
 ```
 > Read the README.md file and tell me what this project is about
 ```
 
 **Expected tools**:
+
 - Read tool (for file reading)
 - Maybe Bash tool (if model tries `cat README.md`)
 
 **What to capture**:
+
 1. How many tools did Claude Code send?
 2. What are their schemas? (especially Read tool)
 3. Which tool did model choose?
@@ -131,9 +143,11 @@ Then test all 3 scenarios above and save the complete log.
 ## What We're Looking For
 
 ### Pattern 1: Schema Complexity
+
 **Hypothesis**: Claude Code sends too many properties, model gets confused
 
 **Evidence**:
+
 ```json
 // Claude Code sends
 {
@@ -153,9 +167,11 @@ Then test all 3 scenarios above and save the complete log.
 **Solution**: Simplify schema to only required + 1-2 common optional params
 
 ### Pattern 2: Property Naming
+
 **Hypothesis**: camelCase vs snake_case confuses model
 
 **Evidence**:
+
 ```
 Model returns: {"run-in-background": true}
 Schema expects: {"run_in_background": true}
@@ -164,9 +180,11 @@ Schema expects: {"run_in_background": true}
 **Solution**: Normalize naming in schema
 
 ### Pattern 3: additionalProperties: false
+
 **Hypothesis**: Model adds extra fields, validation fails
 
 **Evidence**:
+
 ```
 Model returns: {"command": "git status", "cwd": "."}
 Schema has: "additionalProperties": false
@@ -176,9 +194,11 @@ Error: Unknown property 'cwd'
 **Solution**: Remove additionalProperties constraint for local models
 
 ### Pattern 4: Enum Constraints
+
 **Hypothesis**: Model doesn't respect enum values
 
 **Evidence**:
+
 ```
 Schema: {"type": {"enum": ["bash", "sh", "zsh"]}}
 Model: {"type": "shell"}  // Not in enum!
@@ -204,23 +224,26 @@ grep "\[Tool Call\]" tool-trace.log > calls.json
 ## Expected Findings
 
 Based on test with simplified schema (successful):
+
 ```json
 {
   "name": "Bash",
   "input_schema": {
     "type": "object",
     "properties": {
-      "command": {"type": "string"},
-      "description": {"type": "string"}
+      "command": { "type": "string" },
+      "description": { "type": "string" }
     },
     "required": ["command"],
     "additionalProperties": false
   }
 }
 ```
+
 **Result**: ✅ 95%+ success
 
 Claude Code's full schema (failed in your testing):
+
 ```json
 {
   "name": "Bash",
@@ -239,6 +262,7 @@ Claude Code's full schema (failed in your testing):
   }
 }
 ```
+
 **Result**: ❌ 30% success
 
 **Hypothesis**: 2 properties = 95% success, 5+ properties = 30% success

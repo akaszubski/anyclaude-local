@@ -15,10 +15,10 @@
  * 3. Recovery testing → Periodic attempts to Anthropic (HALF_OPEN state)
  */
 
-import { CircuitBreaker, CircuitState } from './circuit-breaker';
-import { HealthCheckService } from './health-check';
-import { createOpenAI } from '@ai-sdk/openai';
-import type { ProviderV2 } from '@ai-sdk/provider';
+import { CircuitBreaker, CircuitState } from "./circuit-breaker";
+import { HealthCheckService } from "./health-check";
+import { createOpenAI } from "@ai-sdk/openai";
+import type { ProviderV2 } from "@ai-sdk/provider";
 
 export interface FailoverConfig {
   enabled: boolean;
@@ -40,15 +40,30 @@ export class FailoverManager {
 
   constructor(config: Partial<FailoverConfig> = {}) {
     this.config = {
-      enabled: config.enabled ?? (process.env.FAILOVER_ENABLED !== 'false'),
-      forceLMStudio: config.forceLMStudio ?? (process.env.FORCE_LMSTUDIO === 'true'),
-      lmstudioUrl: config.lmstudioUrl ?? process.env.LMSTUDIO_URL ?? 'http://localhost:1234/v1',
-      lmstudioModel: config.lmstudioModel ?? process.env.LMSTUDIO_MODEL ?? 'local-model',
-      lmstudioApiKey: config.lmstudioApiKey ?? process.env.LMSTUDIO_API_KEY ?? 'lm-studio',
-      healthCheckInterval: config.healthCheckInterval ?? parseInt(process.env.HEALTH_CHECK_INTERVAL ?? '30000'),
-      circuitFailureThreshold: config.circuitFailureThreshold ?? parseInt(process.env.CIRCUIT_FAILURE_THRESHOLD ?? '3'),
-      requestTimeout: config.requestTimeout ?? parseInt(process.env.REQUEST_TIMEOUT ?? '5000'),
-      anthropicUrl: config.anthropicUrl ?? process.env.ANTHROPIC_API_URL ?? 'https://api.anthropic.com',
+      enabled: config.enabled ?? process.env.FAILOVER_ENABLED !== "false",
+      forceLMStudio:
+        config.forceLMStudio ?? process.env.FORCE_LMSTUDIO === "true",
+      lmstudioUrl:
+        config.lmstudioUrl ??
+        process.env.LMSTUDIO_URL ??
+        "http://localhost:1234/v1",
+      lmstudioModel:
+        config.lmstudioModel ?? process.env.LMSTUDIO_MODEL ?? "local-model",
+      lmstudioApiKey:
+        config.lmstudioApiKey ?? process.env.LMSTUDIO_API_KEY ?? "lm-studio",
+      healthCheckInterval:
+        config.healthCheckInterval ??
+        parseInt(process.env.HEALTH_CHECK_INTERVAL ?? "30000"),
+      circuitFailureThreshold:
+        config.circuitFailureThreshold ??
+        parseInt(process.env.CIRCUIT_FAILURE_THRESHOLD ?? "3"),
+      requestTimeout:
+        config.requestTimeout ??
+        parseInt(process.env.REQUEST_TIMEOUT ?? "5000"),
+      anthropicUrl:
+        config.anthropicUrl ??
+        process.env.ANTHROPIC_API_URL ??
+        "https://api.anthropic.com",
     };
 
     // Initialize circuit breaker
@@ -83,9 +98,9 @@ export class FailoverManager {
         // CRITICAL: Use legacy chat completions format for LMStudio compatibility
         // LMStudio expects the standard OpenAI Chat Completions API, not the new Responses API
         // @ts-ignore - compatibility is valid but not in TypeScript types
-        compatibility: 'legacy',
+        compatibility: "legacy",
         fetch: (async (url, init) => {
-          if (init?.body && typeof init.body === 'string') {
+          if (init?.body && typeof init.body === "string") {
             const body = JSON.parse(init.body);
             const originalBody = { ...body };
 
@@ -97,7 +112,7 @@ export class FailoverManager {
             // Map max_tokens to max_completion_tokens for OpenAI compatibility
             const maxTokens = body.max_tokens;
             delete body.max_tokens;
-            if (typeof maxTokens !== 'undefined') {
+            if (typeof maxTokens !== "undefined") {
               body.max_completion_tokens = maxTokens;
             }
 
@@ -111,15 +126,23 @@ export class FailoverManager {
 
             // Log what we're sending to LMStudio in debug mode
             if (process.env.ANYCLAUDE_DEBUG) {
-              console.log('[LMStudio Fetch] Request transformation:');
-              console.log('  - Removed:', Object.keys(originalBody).filter(k => !(k in body)).join(', '));
-              console.log('  - Model:', body.model);
-              console.log('  - Messages:', body.messages?.length || 0);
-              console.log('  - Tools:', body.tools?.length || 0);
-              console.log('  - Max tokens:', body.max_completion_tokens);
-              console.log('  - Stream:', body.stream);
+              console.log("[LMStudio Fetch] Request transformation:");
+              console.log(
+                "  - Removed:",
+                Object.keys(originalBody)
+                  .filter((k) => !(k in body))
+                  .join(", ")
+              );
+              console.log("  - Model:", body.model);
+              console.log("  - Messages:", body.messages?.length || 0);
+              console.log("  - Tools:", body.tools?.length || 0);
+              console.log("  - Max tokens:", body.max_completion_tokens);
+              console.log("  - Stream:", body.stream);
               if (parseInt(process.env.ANYCLAUDE_DEBUG!) >= 2) {
-                console.log('[LMStudio Fetch] Full body:', JSON.stringify(body, null, 2));
+                console.log(
+                  "[LMStudio Fetch] Full body:",
+                  JSON.stringify(body, null, 2)
+                );
               }
             }
 
@@ -133,7 +156,9 @@ export class FailoverManager {
     // Force open circuit if FORCE_LMSTUDIO is set
     if (this.config.forceLMStudio) {
       this.circuitBreaker.trip();
-      console.log('[Failover] FORCE_LMSTUDIO enabled - all requests will use LMStudio');
+      console.log(
+        "[Failover] FORCE_LMSTUDIO enabled - all requests will use LMStudio"
+      );
     }
   }
 
@@ -146,7 +171,7 @@ export class FailoverManager {
     }
 
     this.healthCheckService.start();
-    console.log('[Failover] Emergency failover system enabled');
+    console.log("[Failover] Emergency failover system enabled");
     console.log(`[Failover] LMStudio endpoint: ${this.config.lmstudioUrl}`);
     console.log(`[Failover] Default model: ${this.config.lmstudioModel}`);
   }
@@ -226,14 +251,23 @@ export class FailoverManager {
   private logStateChange(state: CircuitState): void {
     switch (state) {
       case CircuitState.OPEN:
-        console.error('[Failover] ⚠️  Circuit OPEN - Anthropic servers appear to be down');
-        console.error('[Failover] 🔄 Failing over to LMStudio at', this.config.lmstudioUrl);
+        console.error(
+          "[Failover] ⚠️  Circuit OPEN - Anthropic servers appear to be down"
+        );
+        console.error(
+          "[Failover] 🔄 Failing over to LMStudio at",
+          this.config.lmstudioUrl
+        );
         break;
       case CircuitState.HALF_OPEN:
-        console.log('[Failover] 🔍 Circuit HALF_OPEN - Testing Anthropic recovery...');
+        console.log(
+          "[Failover] 🔍 Circuit HALF_OPEN - Testing Anthropic recovery..."
+        );
         break;
       case CircuitState.CLOSED:
-        console.log('[Failover] ✅ Circuit CLOSED - Anthropic servers recovered, back to normal');
+        console.log(
+          "[Failover] ✅ Circuit CLOSED - Anthropic servers recovered, back to normal"
+        );
         break;
     }
   }

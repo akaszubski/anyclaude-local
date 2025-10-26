@@ -101,9 +101,7 @@ function sendStreamingRequest() {
       let streamEnded = false;
 
       console.log(`   Status: ${res.statusCode}`);
-      console.log(
-        `   Content-Type: ${res.headers["content-type"]}\n`
-      );
+      console.log(`   Content-Type: ${res.headers["content-type"]}\n`);
 
       if (!res.headers["content-type"]?.includes("text/event-stream")) {
         reject(
@@ -123,9 +121,7 @@ function sendStreamingRequest() {
           clearInterval(stallCheck);
           req.destroy();
           reject(
-            new Error(
-              `Stream stalled! No events for ${timeSinceLastEvent}ms`
-            )
+            new Error(`Stream stalled! No events for ${timeSinceLastEvent}ms`)
           );
         }
       }, 1000);
@@ -184,18 +180,14 @@ function sendStreamingRequest() {
 
         if (!streamEnded) {
           reject(
-            new Error(
-              "Stream ended without message_stop event (incomplete)"
-            )
+            new Error("Stream ended without message_stop event (incomplete)")
           );
           return;
         }
 
         console.log(`   ✓ Stream completed successfully`);
         console.log(`   ✓ Received ${eventCount} events`);
-        console.log(
-          `   ✓ Text: "${receivedText.trim()}"\n`
-        );
+        console.log(`   ✓ Text: "${receivedText.trim()}"\n`);
 
         resolve({
           eventCount,
@@ -235,9 +227,7 @@ async function run() {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("✅ STREAMING TEST PASSED");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(
-      `Events received: ${result.eventCount}`
-    );
+    console.log(`Events received: ${result.eventCount}`);
     console.log(`Stream ended cleanly: ${result.streamEnded}`);
     console.log(`Full response: "${result.receivedText}"`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");

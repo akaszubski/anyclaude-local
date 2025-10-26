@@ -9,21 +9,25 @@
 ## What Happened
 
 1. **Unlinked old version**:
+
    ```bash
    npm unlink -g anyclaude-lmstudio
    ```
 
 2. **Linked local version**:
+
    ```bash
    npm link
    ```
 
 3. **Rebuilt project**:
+
    ```bash
    npm run build
    ```
 
 4. **Verified it works**:
+
    ```bash
    # Claude mode:
    [anyclaude] Mode: CLAUDE
@@ -37,6 +41,7 @@
 ## How to Avoid This in Future
 
 **Always rebuild after making changes**:
+
 ```bash
 npm run build
 ```
@@ -71,13 +76,13 @@ ANYCLAUDE_MODE=claude PROXY_ONLY=true anyclaude 2>&1 | head -5
 
 ## Quick Reference
 
-| Command | Description |
-|---------|-------------|
-| `npm run build` | Rebuild after changes |
-| `anyclaude` | Run local version (LMStudio mode) |
-| `ANYCLAUDE_MODE=claude anyclaude` | Run in Claude mode |
-| `ANYCLAUDE_DEBUG=3 anyclaude` | Run with trace logging |
-| `readlink -f $(which anyclaude)` | Verify using local version |
+| Command                           | Description                       |
+| --------------------------------- | --------------------------------- |
+| `npm run build`                   | Rebuild after changes             |
+| `anyclaude`                       | Run local version (LMStudio mode) |
+| `ANYCLAUDE_MODE=claude anyclaude` | Run in Claude mode                |
+| `ANYCLAUDE_DEBUG=3 anyclaude`     | Run with trace logging            |
+| `readlink -f $(which anyclaude)`  | Verify using local version        |
 
 ## Next Steps
 
@@ -92,6 +97,7 @@ Now you can:
 ---
 
 **See Also**:
+
 - `DEVELOPMENT.md` - Complete development workflow guide
 - `MODE_SWITCHING_GUIDE.md` - How to use Claude vs LMStudio modes
 - `AUTHENTICATION_GUIDE.md` - API key vs session-based auth

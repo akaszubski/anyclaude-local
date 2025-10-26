@@ -3,7 +3,7 @@ name: Model Capability Detection and Validation
 about: Automatically detect and validate model capabilities (tool calling, context, streaming)
 title: "[FEATURE] Automatic model capability detection and validation"
 labels: enhancement, good-first-issue
-assignees: ''
+assignees: ""
 ---
 
 ## Summary
@@ -13,11 +13,13 @@ anyclaude should automatically detect what features each model supports (tool ca
 ## Current State
 
 **What Works**:
+
 - ✅ Context length detection via LMStudio API
 - ✅ Basic streaming support
 - ✅ Tool calling schema conversion
 
 **What's Missing**:
+
 - ❌ No validation that model can actually use tools
 - ❌ No capability reporting to user
 - ❌ No automatic fallback when features unsupported
@@ -36,7 +38,7 @@ interface ModelCapabilities {
   supportsToolCalling: boolean;
   supportsStreaming: boolean;
   supportsReasoning: boolean;
-  toolCallingAccuracy: 'high' | 'medium' | 'low' | 'none';
+  toolCallingAccuracy: "high" | "medium" | "low" | "none";
   tested: Date;
 }
 
@@ -48,12 +50,13 @@ async function detectModelCapabilities(
 
   return {
     model: modelInfo.id,
-    contextLength: modelInfo.loaded_context_length || modelInfo.max_context_length,
+    contextLength:
+      modelInfo.loaded_context_length || modelInfo.max_context_length,
     supportsToolCalling: await testToolCalling(lmstudioUrl),
     supportsStreaming: await testStreaming(lmstudioUrl),
     supportsReasoning: false, // Most local models don't support this
     toolCallingAccuracy: await assessToolAccuracy(lmstudioUrl),
-    tested: new Date()
+    tested: new Date(),
   };
 }
 ```
@@ -64,36 +67,39 @@ Maintain a community-sourced database of model capabilities:
 
 ```typescript
 // src/model-capabilities.ts
-export const KNOWN_MODEL_CAPABILITIES: Record<string, Partial<ModelCapabilities>> = {
+export const KNOWN_MODEL_CAPABILITIES: Record<
+  string,
+  Partial<ModelCapabilities>
+> = {
   "qwen3-coder-30b-a3b-instruct-mlx": {
     contextLength: 262144,
     supportsToolCalling: true,
-    toolCallingAccuracy: 'medium',
+    toolCallingAccuracy: "medium",
     supportsStreaming: true,
-    notes: "Good for code, struggles with complex tool schemas"
+    notes: "Good for code, struggles with complex tool schemas",
   },
   "gpt-oss-20b-mlx": {
     contextLength: 131072, // Reported, but use 32K in practice
     actualContextLength: 32768, // Real working limit
     supportsToolCalling: true,
-    toolCallingAccuracy: 'low',
+    toolCallingAccuracy: "low",
     supportsStreaming: true,
-    notes: "Context overflow around 32K despite 128K claim"
+    notes: "Context overflow around 32K despite 128K claim",
   },
   "deepseek-coder-v2-lite": {
     contextLength: 16384,
     supportsToolCalling: false,
-    toolCallingAccuracy: 'none',
+    toolCallingAccuracy: "none",
     supportsStreaming: true,
-    notes: "Better for pure conversation"
+    notes: "Better for pure conversation",
   },
   "mistral-7b": {
     contextLength: 32768,
     supportsToolCalling: false,
-    toolCallingAccuracy: 'none',
+    toolCallingAccuracy: "none",
     supportsStreaming: true,
-    notes: "Not trained for tool calling"
-  }
+    notes: "Not trained for tool calling",
+  },
 };
 ```
 
@@ -167,6 +173,7 @@ RECOMMENDATIONS:
 Add automated tests for different capabilities:
 
 ### Test 1: Simple Tool Calling
+
 ```javascript
 // tests/capabilities/test_simple_tool.js
 const result = await testSimpleTool({
@@ -175,8 +182,8 @@ const result = await testSimpleTool({
   input_schema: {
     type: "object",
     properties: {},
-    required: []
-  }
+    required: [],
+  },
 });
 
 // Pass: Model returns tool_use with correct name
@@ -184,6 +191,7 @@ const result = await testSimpleTool({
 ```
 
 ### Test 2: Complex Tool Calling
+
 ```javascript
 // tests/capabilities/test_complex_tool.js
 const result = await testComplexTool({
@@ -195,11 +203,11 @@ const result = await testComplexTool({
       command: { type: "string" },
       timeout: { type: "number" },
       description: { type: "string" },
-      cwd: { type: "string" }
+      cwd: { type: "string" },
     },
     required: ["command"],
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 });
 
 // Pass: Model provides required params, respects optional
@@ -207,17 +215,19 @@ const result = await testComplexTool({
 ```
 
 ### Test 3: Context Length Validation
+
 ```javascript
 // tests/capabilities/test_context_overflow.js
 const result = await testContextOverflow({
   reportedLimit: 131072,
-  testSizes: [8192, 16384, 32768, 65536, 131072]
+  testSizes: [8192, 16384, 32768, 65536, 131072],
 });
 
 // Returns actual working context limit
 ```
 
 ### Test 4: Streaming Validation
+
 ```javascript
 // tests/capabilities/test_streaming.js
 const result = await testStreaming();
@@ -258,7 +268,7 @@ interface ModelCapabilityEntry {
 
   // Performance
   performance: {
-    promptProcessing: 'fast' | 'medium' | 'slow' | 'very-slow';
+    promptProcessing: "fast" | "medium" | "slow" | "very-slow";
     tokenGeneration: number; // tokens/second (typical)
     firstTokenLatency: number; // milliseconds (typical)
   };
@@ -303,6 +313,7 @@ anyclaude --import-capabilities community-db.json
 ## GitHub Integration
 
 ### Issue Template: Report Model Capabilities
+
 ```markdown
 **Model**: qwen3-coder-30b-a3b-instruct-mlx
 **Context Length**: 262,144 tokens (tested: 262,144 works)
@@ -310,6 +321,7 @@ anyclaude --import-capabilities community-db.json
 **Streaming**: ✅ Works
 
 **Test Results**:
+
 - Simple tools: ✅ 95% success
 - Medium tools: ⚠️ 60% success
 - Complex tools: ❌ 30% success
@@ -324,21 +336,25 @@ anyclaude --import-capabilities community-db.json
 ## Implementation Phases
 
 ### Phase 1: Core Detection (Week 1)
+
 - [ ] Implement capability testing functions
 - [ ] Add warning system for unsupported features
 - [ ] Create basic model database
 
 ### Phase 2: CLI Integration (Week 2)
+
 - [ ] Add `--test` command
 - [ ] Add `--capabilities` command
 - [ ] Cache capability results
 
 ### Phase 3: Community Database (Week 3)
+
 - [ ] Create contribution workflow
 - [ ] Add issue templates
 - [ ] Implement database updates
 
 ### Phase 4: Advanced Features (Future)
+
 - [ ] Automatic fallbacks for unsupported features
 - [ ] Model recommendation based on use case
 - [ ] Integration with LMStudio model browser
@@ -366,10 +382,12 @@ anyclaude --import-capabilities community-db.json
 **Impact**: High (improves user experience significantly)
 
 **Dependencies**:
+
 - Context detection feature (completed)
 - Tool calling infrastructure (completed)
 
 **Nice to Have**:
+
 - Integration with LMStudio model browser
 - Automatic model recommendation
 - Cloud-based capability database

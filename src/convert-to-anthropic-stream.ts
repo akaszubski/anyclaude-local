@@ -4,7 +4,12 @@ import {
   mapAnthropicStopReason,
   type AnthropicStreamChunk,
 } from "./anthropic-api-types";
-import { debug, isDebugEnabled, isVerboseDebugEnabled, isTraceDebugEnabled } from "./debug";
+import {
+  debug,
+  isDebugEnabled,
+  isVerboseDebugEnabled,
+  isTraceDebugEnabled,
+} from "./debug";
 
 export function convertToAnthropicStream(
   stream: ReadableStream<TextStreamPart<Record<string, Tool>>>,
@@ -15,6 +20,8 @@ export function convertToAnthropicStream(
   let chunkCount = 0; // Track chunks for debugging
   let messageStartSkipped = false; // Track if we've skipped the first message_start
   const streamedToolIds = new Set<string>(); // Track tool IDs we've already sent via streaming
+  const toolsWithoutDeltas = new Map<string, { index: number; name: string }>(); // Track tools that got tool-input-end without deltas
+  let currentStreamingTool: { id: string; name: string; index: number; receivedDelta: boolean } | null = null; // Track current streaming tool
 
   const transform = new TransformStream<
     TextStreamPart<Record<string, Tool>>,
@@ -43,7 +50,10 @@ export function convertToAnthropicStream(
           // Skip first message_start if we already sent one manually
           if (skipFirstMessageStart && !messageStartSkipped) {
             messageStartSkipped = true;
-            debug(2, `[Stream Conversion] Skipping duplicate message_start (already sent manually)`);
+            debug(
+              2,
+              `[Stream Conversion] Skipping duplicate message_start (already sent manually)`
+            );
             break;
           }
 
@@ -117,6 +127,21 @@ export function convertToAnthropicStream(
           break;
         }
         case "tool-input-start": {
+          // DIAGNOSTIC: Log streaming tool start
+          debug(1, `[Tool Input Start Debug] Streaming tool detected:`, {
+            id: chunk.id,
+            toolName: chunk.toolName,
+            chunkKeys: Object.keys(chunk),
+          });
+
+          // Track this tool for delta detection
+          currentStreamingTool = {
+            id: chunk.id,
+            name: chunk.toolName,
+            index: index,
+            receivedDelta: false,
+          };
+
           // Send streaming tool parameters as Anthropic's input_json_delta format
           // This is how the original anyclaude handles it
           streamedToolIds.add(chunk.id); // Mark this tool as streamed
@@ -138,6 +163,19 @@ export function convertToAnthropicStream(
           break;
         }
         case "tool-input-delta": {
+          // DIAGNOSTIC: Log first few deltas
+          if (isDebugEnabled()) {
+            debug(1, `[Tool Input Delta Debug] Received delta:`, {
+              delta: chunk.delta.substring(0, 100),
+              deltaLength: chunk.delta.length,
+            });
+          }
+
+          // Mark that we received a delta for the current tool
+          if (currentStreamingTool) {
+            currentStreamingTool.receivedDelta = true;
+          }
+
           // Stream tool parameters incrementally via input_json_delta
           controller.enqueue({
             type: "content_block_delta",
@@ -150,30 +188,111 @@ export function convertToAnthropicStream(
           break;
         }
         case "tool-input-end": {
-          // End the streaming tool input
+          // Check if we received any deltas for this tool
+          if (currentStreamingTool && !currentStreamingTool.receivedDelta) {
+            // No deltas received! This means the tool parameters will come in the tool-call chunk.
+            // Save this tool to handle later.
+            debug(1, `[Tool Input End] No deltas received for ${currentStreamingTool.name}, waiting for tool-call chunk`);
+            toolsWithoutDeltas.set(currentStreamingTool.id, {
+              index: currentStreamingTool.index,
+              name: currentStreamingTool.name,
+            });
+            // Don't emit content_block_stop yet - we'll do it when we get the tool-call with actual input
+            currentStreamingTool = null;
+            break;
+          }
+
+          // Normal case: received deltas, close the block
           controller.enqueue({ type: "content_block_stop", index });
           index += 1;
+          currentStreamingTool = null;
           if (isTraceDebugEnabled()) {
             debug(3, `[Tool Input] Completed streaming tool input`);
           }
           break;
         }
         case "tool-call": {
+          // DIAGNOSTIC: Log the full chunk structure
+          debug(1, `[Tool Call Debug] Received tool-call chunk:`, {
+            toolCallId: chunk.toolCallId,
+            toolName: chunk.toolName,
+            hasInput: 'input' in (chunk as any),
+            inputType: typeof (chunk as any).input,
+            inputValue: (chunk as any).input,
+            fullChunkKeys: Object.keys(chunk),
+          });
+
+          // Check if this tool was started but never received deltas
+          const pendingTool = toolsWithoutDeltas.get(chunk.toolCallId);
+          if (pendingTool) {
+            // This tool was started but got tool-input-end without deltas!
+            // Now we have the actual input from the tool-call chunk.
+            debug(1, `[Tool Call] Completing tool ${chunk.toolName} that had no deltas`);
+
+            const toolInput = (chunk as any).input;
+            if (toolInput && typeof toolInput === 'object') {
+              // Send the complete input as a single delta
+              controller.enqueue({
+                type: "content_block_delta",
+                index: pendingTool.index,
+                delta: { type: "input_json_delta", partial_json: JSON.stringify(toolInput) },
+              });
+            }
+
+            // Now close the block
+            controller.enqueue({ type: "content_block_stop", index: pendingTool.index });
+            index = pendingTool.index + 1;
+
+            // Remove from pending and mark as streamed
+            toolsWithoutDeltas.delete(chunk.toolCallId);
+            streamedToolIds.add(chunk.toolCallId);
+            break;
+          }
+
           // Skip if we already sent this tool via streaming events
           if (streamedToolIds.has(chunk.toolCallId)) {
             if (isTraceDebugEnabled()) {
-              debug(3, `[Tool Call] Skipping duplicate tool-call (already streamed): ${chunk.toolName}`);
+              debug(
+                3,
+                `[Tool Call] Skipping duplicate tool-call (already streamed): ${chunk.toolName}`
+              );
             }
             break;
           }
 
           // Handle atomic (non-streaming) tool calls
           // Some models might send this instead of streaming events
+          const toolInput = (chunk as any).input;
+
+          // Defensive: Ensure input exists and is valid
+          if (!toolInput || typeof toolInput !== 'object') {
+            debug(1, `[Tool Call] ⚠️  Missing or invalid input for ${chunk.toolName}:`, {
+              toolCallId: chunk.toolCallId,
+              input: toolInput,
+              chunkType: typeof toolInput,
+              entireChunk: chunk,
+            });
+            // Use empty object as fallback
+            controller.enqueue({
+              type: "content_block_start",
+              index,
+              content_block: {
+                type: "tool_use",
+                id: chunk.toolCallId,
+                name: chunk.toolName,
+                input: {},
+              },
+            });
+            controller.enqueue({ type: "content_block_stop", index });
+            index += 1;
+            break;
+          }
+
           if (isTraceDebugEnabled()) {
             debug(3, `[Tool Call] Atomic tool call: ${chunk.toolName}`, {
               toolCallId: chunk.toolCallId,
               toolName: chunk.toolName,
-              input: (chunk as any).input,
+              input: toolInput,
             });
           }
 
@@ -184,7 +303,7 @@ export function convertToAnthropicStream(
               type: "tool_use",
               id: chunk.toolCallId,
               name: chunk.toolName,
-              input: (chunk as any).input,
+              input: toolInput,
             },
           });
           controller.enqueue({ type: "content_block_stop", index });
@@ -243,31 +362,47 @@ export function convertToAnthropicStream(
           break;
         default: {
           const unknownChunk = chunk as any;
-          debug(1, `[Stream Conversion] ⚠️  Unhandled chunk type: ${unknownChunk.type}`, {
-            chunkNumber: chunkCount,
-            chunk: unknownChunk,
-          });
-          const error = new Error(`Unhandled chunk type: ${unknownChunk.type} (chunk ${chunkCount})`);
-          debug(1, `[Stream Conversion] Terminating stream due to unhandled chunk`);
+          debug(
+            1,
+            `[Stream Conversion] ⚠️  Unhandled chunk type: ${unknownChunk.type}`,
+            {
+              chunkNumber: chunkCount,
+              chunk: unknownChunk,
+            }
+          );
+          const error = new Error(
+            `Unhandled chunk type: ${unknownChunk.type} (chunk ${chunkCount})`
+          );
+          debug(
+            1,
+            `[Stream Conversion] Terminating stream due to unhandled chunk`
+          );
           controller.error(error);
         }
       }
     },
     flush(controller) {
       if (isDebugEnabled()) {
-        debug(1, `[Stream Conversion] Stream complete. Total chunks: ${chunkCount}`);
+        debug(
+          1,
+          `[Stream Conversion] Stream complete. Total chunks: ${chunkCount}`
+        );
       }
     },
   });
   stream.pipeTo(transform.writable).catch((error) => {
     // Log ALL pipeline errors, even empty ones - they indicate problems
-    const hasErrorContent = error && (Object.keys(error).length > 0 || error.message);
+    const hasErrorContent =
+      error && (Object.keys(error).length > 0 || error.message);
 
     if (hasErrorContent) {
       debug(1, `[Stream Conversion] Pipeline error:`, error);
     } else {
       // Empty errors {} are NOT normal - they indicate stream cancellation/abort
-      debug(1, `[Stream Conversion] ⚠️  Pipeline aborted with empty error - stream may have been cancelled or sent invalid data`);
+      debug(
+        1,
+        `[Stream Conversion] ⚠️  Pipeline aborted with empty error - stream may have been cancelled or sent invalid data`
+      );
       debug(1, `[Stream Conversion] Last processed chunk count: ${chunkCount}`);
     }
 

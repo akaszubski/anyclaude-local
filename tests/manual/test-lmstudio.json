@@ -1,6 +1,6 @@
 {
   "model": "deepseek-r1-distill-qwen-32b-abliterated",
-  "messages": [{"role": "user", "content": "Say hello in 3 words"}],
+  "messages": [{ "role": "user", "content": "Say hello in 3 words" }],
   "max_tokens": 20,
   "stream": false
 }

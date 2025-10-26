@@ -22,6 +22,7 @@ This will generate a complete compatibility report with a score out of 100.
 ## What Gets Tested
 
 ### 1. **Speed to First Token (TTFT)** - 20 points
+
 **What**: Time from request to first response token
 **Why**: Affects perceived responsiveness
 **Good**: < 2 seconds
@@ -29,6 +30,7 @@ This will generate a complete compatibility report with a score out of 100.
 **Slow**: > 5 seconds
 
 ### 2. **Tokens Per Second (TPS)** - 20 points
+
 **What**: Generation speed
 **Why**: Affects overall response time
 **Excellent**: > 20 tokens/sec
@@ -36,6 +38,7 @@ This will generate a complete compatibility report with a score out of 100.
 **Slow**: < 10 tokens/sec
 
 ### 3. **Context Size** - 20 points
+
 **What**: Maximum tokens model can handle
 **Why**: Affects how much code/conversation history you can work with
 **Excellent**: >= 32K tokens
@@ -43,17 +46,21 @@ This will generate a complete compatibility report with a score out of 100.
 **Limited**: < 8K tokens
 
 ### 4. **Tool Calling** - 40 points (most important!)
+
 **What**: Can the model call tools correctly?
 **Tests**:
+
 - Basic tool calling (simple schema)
 - Complex tool calling (via anyclaude proxy)
 
 **Scoring**:
+
 - Both working: 40 points
 - Basic only: 25 points
 - Neither: 0 points
 
 ### 5. **System Resources**
+
 **What**: RAM available on your machine
 **Why**: Helps understand if you have enough resources
 **Note**: Informational only, doesn't affect score
@@ -140,19 +147,25 @@ Proxy running at: http://localhost:59123
 ## Score Interpretation
 
 ### Grade A (85-100)
+
 **Verdict**: ✅ **Production Ready**
+
 - Use immediately with confidence
 - No optimizations needed
 - Suitable for complex Claude Code workflows
 
 ### Grade B (70-84)
+
 **Verdict**: ⚠️ **Good for Most Cases**
+
 - Works well for typical use
 - May need minor optimizations for heavy workloads
 - Consider model adapters for edge cases
 
 ### Grade C (50-69)
+
 **Verdict**: ⚠️ **Usable with Limitations**
+
 - Basic functionality works
 - May struggle with complex tool calling
 - Consider:
@@ -161,7 +174,9 @@ Proxy running at: http://localhost:59123
   - Monitoring performance
 
 ### Grade D (< 50)
+
 **Verdict**: ❌ **Not Recommended**
+
 - Significant compatibility issues
 - Consider:
   - Different model
@@ -173,22 +188,25 @@ Proxy running at: http://localhost:59123
 ## Generated Reports
 
 ### JSON Report (`model-compatibility-report.json`)
+
 Machine-readable format for:
+
 - Programmatic analysis
 - Tracking over time
 - Comparing models
 
 **Structure**:
+
 ```json
 {
   "model_id": "qwen3-coder-30b-a3b-instruct-mlx",
   "test_date": "2025-10-26T17:30:00Z",
   "tests": {
-    "ttft": {"time_ms": 1850, "status": "excellent"},
-    "tps": {"tokens_per_second": 21.43, "status": "excellent"},
-    "context": {"max_tokens": 32768, "status": "excellent"},
-    "tool_calling": {"supported": true, "status": "supported"},
-    "complex_tool_calling": {"status": "working", "calls_made": 1}
+    "ttft": { "time_ms": 1850, "status": "excellent" },
+    "tps": { "tokens_per_second": 21.43, "status": "excellent" },
+    "context": { "max_tokens": 32768, "status": "excellent" },
+    "tool_calling": { "supported": true, "status": "supported" },
+    "complex_tool_calling": { "status": "working", "calls_made": 1 }
   },
   "system": {
     "total_memory_gb": 128,
@@ -203,7 +221,9 @@ Machine-readable format for:
 ```
 
 ### Markdown Report (`model-compatibility-report.md`)
+
 Human-readable format with:
+
 - Tables and formatting
 - Detailed recommendations
 - Next steps
@@ -213,6 +233,7 @@ Human-readable format with:
 ## Use Cases
 
 ### 1. Before Switching Models
+
 **Question**: "Will this new model work well?"
 
 ```bash
@@ -227,6 +248,7 @@ anyclaude --test-model
 ```
 
 ### 2. Troubleshooting Performance
+
 **Question**: "Why is anyclaude slow?"
 
 ```bash
@@ -239,6 +261,7 @@ anyclaude --test-model
 ```
 
 ### 3. Hardware Verification
+
 **Question**: "Can my machine handle this model?"
 
 ```bash
@@ -251,6 +274,7 @@ anyclaude --test-model
 ```
 
 ### 4. Model Comparison
+
 **Question**: "Which model is better?"
 
 ```bash
@@ -335,6 +359,7 @@ echo "All models passed compatibility tests"
 ## Troubleshooting
 
 ### "LMStudio is not running"
+
 ```bash
 # Start LMStudio
 # Enable server on port 1234
@@ -343,6 +368,7 @@ echo "All models passed compatibility tests"
 ```
 
 ### "Proxy failed to start"
+
 ```bash
 # Check if anyclaude is built:
 npm run build
@@ -355,12 +381,15 @@ chmod +x test-model-compatibility.sh
 ```
 
 ### "Tool calling shows 0 calls"
+
 This could mean:
+
 1. Model doesn't support tool calling
 2. Model needs special prompting
 3. Test timed out
 
 **Check the full report**:
+
 ```bash
 cat model-compatibility-report.md
 ```
@@ -421,11 +450,13 @@ jq -s 'map(.compatibility.score) | add / length' reports/run-*.json
 ## Summary
 
 **Quick Command**:
+
 ```bash
 anyclaude --test-model
 ```
 
 **What You Get**:
+
 - 🎯 Compatibility score (0-100)
 - 📊 Speed metrics (TTFT, TPS)
 - 🔧 Tool calling validation
@@ -433,12 +464,14 @@ anyclaude --test-model
 - 📝 Detailed recommendations
 
 **When to Use**:
+
 - ✅ Before switching models
 - ✅ Troubleshooting performance
 - ✅ Comparing model options
 - ✅ Validating hardware compatibility
 
 **Next Steps**:
+
 1. Run the test
 2. Check the score
 3. Read recommendations

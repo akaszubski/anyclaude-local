@@ -3,6 +3,7 @@
 ## One-Command Solution ✨
 
 I created a fully automated script that:
+
 1. Tests Claude API tool calling
 2. Tests Qwen3-Coder-30B tool calling
 3. Compares the results
@@ -44,6 +45,7 @@ That's it! The script will:
 The script generates:
 
 **Console Output**:
+
 ```
 ╔══════════════════════════════════════════════════════════════╗
 ║  Automated Tool Call Analysis: Claude vs Qwen3-Coder-30B    ║
@@ -81,6 +83,7 @@ Testing Claude with prompt 1............ done
 ```
 
 **Report File** (`tool-comparison-report.md`):
+
 - Complete comparison of Claude vs Qwen3 behavior
 - Specific tool calls made by each
 - Errors and issues detected
@@ -100,6 +103,7 @@ Testing Claude with prompt 1............ done
 **Solution**: Simplify schemas in `src/json-schema.ts`
 
 **Files to modify**:
+
 - `src/json-schema.ts` - Add model-specific schema simplification
 - `src/convert-anthropic-messages.ts` - Handle parameter mapping
 
@@ -111,12 +115,14 @@ Testing Claude with prompt 1............ done
 ### From Claude API
 
 **Trace files** in `~/.anyclaude/traces/claude/`:
+
 - Complete tool schemas (17 tools)
 - Tool calls with parameters
 - Tool results
 - Response format
 
 **Example**:
+
 ```json
 {
   "response": {
@@ -137,12 +143,14 @@ Testing Claude with prompt 1............ done
 ### From Qwen3-Coder-30B
 
 **Debug logs** in `/tmp/qwen3-tool-test-*.log`:
+
 - Tool schemas sent to LMStudio
 - Tool calls attempted (or failures)
 - Error messages
 - Response format
 
 **Example**:
+
 ```
 [TRACE] Tool Call: Read
 Input: {"file_path": "/path/to/README.md"}
@@ -182,6 +190,7 @@ cat tool-comparison-report.md
 ```
 
 Or on macOS (opens automatically):
+
 ```bash
 open tool-comparison-report.md
 ```
@@ -189,12 +198,14 @@ open tool-comparison-report.md
 ### 2. View Raw Data
 
 **Claude traces**:
+
 ```bash
 ls -lth ~/.anyclaude/traces/claude/
 cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | jq .
 ```
 
 **Qwen3 logs**:
+
 ```bash
 cat /tmp/qwen3-tool-test-1.log
 ```
@@ -245,6 +256,7 @@ curl http://localhost:1234/v1/models
 ### "No tool calls detected"
 
 Possible causes:
+
 1. Model not loaded in LMStudio
 2. Model doesn't support tool calling
 3. Prompt too simple (model gave text response instead)

@@ -584,4 +584,17 @@ EXAMPLES:
   }
 }
 
-main();
+// Export functions for testing
+export {
+  estimateTokens,
+  analyzeTokens,
+  validateTrace,
+  analyzeTrace,
+  listTraces,
+  compareTraces,
+};
+
+// Run CLI if executed directly
+if (require.main === module || process.argv[1]?.endsWith("trace-analyzer.ts") || process.argv[1]?.endsWith("trace-analyzer.js")) {
+  main();
+}

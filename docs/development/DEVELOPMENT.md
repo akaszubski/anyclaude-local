@@ -33,12 +33,14 @@ anyclaude              # Test immediately (uses local build)
 ```
 
 **Verify it worked**:
+
 ```bash
 ls -la /opt/homebrew/bin/anyclaude
 # Should show: -> /Users/akaszubski/Documents/GitHub/anyclaude/dist/main.js
 ```
 
 **Unlink when done**:
+
 ```bash
 npm unlink -g anyclaude-lmstudio
 ```
@@ -74,6 +76,7 @@ source ~/.zshrc
 ```
 
 **Available aliases**:
+
 ```bash
 # Core
 anyclaude-build         # Rebuild project
@@ -123,6 +126,7 @@ Already set up in `package.json`:
 ```
 
 Usage:
+
 ```bash
 npm run build             # Build the project
 npm run start             # Run local version
@@ -280,16 +284,16 @@ npm link
 
 ## Quick Reference
 
-| Task | Command |
-|------|---------|
-| **Setup** | `npm link` (one time) |
-| **Build** | `npm run build` |
-| **Test local** | `anyclaude` (after npm link) |
-| **Test directly** | `node dist/main.cjs` |
-| **Claude mode** | `ANYCLAUDE_MODE=claude anyclaude` |
-| **Trace mode** | `ANYCLAUDE_DEBUG=3 anyclaude` |
-| **Check version** | `ls -la $(which anyclaude)` |
-| **Unlink** | `npm unlink -g anyclaude-lmstudio` |
+| Task              | Command                            |
+| ----------------- | ---------------------------------- |
+| **Setup**         | `npm link` (one time)              |
+| **Build**         | `npm run build`                    |
+| **Test local**    | `anyclaude` (after npm link)       |
+| **Test directly** | `node dist/main.cjs`               |
+| **Claude mode**   | `ANYCLAUDE_MODE=claude anyclaude`  |
+| **Trace mode**    | `ANYCLAUDE_DEBUG=3 anyclaude`      |
+| **Check version** | `ls -la $(which anyclaude)`        |
+| **Unlink**        | `npm unlink -g anyclaude-lmstudio` |
 
 ## Summary
 
@@ -298,6 +302,7 @@ npm link
 **The Solution**: Use `npm link` to point the global command at your local development version
 
 **The Workflow**:
+
 1. `npm link` (once)
 2. `npm run build` (after changes)
 3. `anyclaude` (test immediately)
@@ -307,6 +312,7 @@ npm link
 ---
 
 **See Also**:
+
 - `INSTALL_LOCAL.md` - Detailed installation guide
 - `MODE_SWITCHING_GUIDE.md` - How to use Claude vs LMStudio mode
 - `AUTHENTICATION_GUIDE.md` - API key vs session-based auth

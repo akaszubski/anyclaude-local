@@ -3,6 +3,7 @@
 ## ✨ New Feature: Claude vs LMStudio Mode
 
 anyclaude now supports two modes:
+
 1. **LMStudio Mode** (default) - Use local models via LMStudio
 2. **Claude Mode** - Use real Anthropic API with trace logging for reverse engineering
 
@@ -27,6 +28,7 @@ anyclaude --mode=lmstudio
 ```
 
 **Output**:
+
 ```
 [anyclaude] Mode: LMSTUDIO
 [anyclaude] LMStudio endpoint: http://localhost:1234/v1
@@ -47,6 +49,7 @@ anyclaude --mode=claude
 ```
 
 **Output**:
+
 ```
 [anyclaude] Mode: CLAUDE
 [anyclaude] Using real Anthropic API
@@ -83,6 +86,7 @@ cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | 
 ```
 
 **Trace Format**:
+
 ```json
 {
   "timestamp": "2025-10-26T14:30:45.123Z",
@@ -176,11 +180,13 @@ diff <(jq . ~/.anyclaude/traces/claude/latest.json) \
 ## Security Notes
 
 **API Key Protection**: ✅ Automatically redacted in traces
+
 - Headers: `x-api-key`, `Authorization`, `api-key`, etc.
 - Body: Any field containing `api_key`, `apiKey`, `API_KEY`, etc.
 - Nested objects: Recursive sanitization
 
 **File Permissions**: ✅ Restrictive by default
+
 - Trace files: `0600` (rw-------)
 - Trace directories: `0700` (rwx------)
 
@@ -193,6 +199,7 @@ diff <(jq . ~/.anyclaude/traces/claude/latest.json) \
 **Problem**: Qwen3 fails to call tools, but simple test works
 
 **Solution**:
+
 1. Capture Claude's exact tool schema
 2. Compare with what we send to LMStudio
 3. Fix conversion in `src/json-schema.ts`
@@ -202,6 +209,7 @@ diff <(jq . ~/.anyclaude/traces/claude/latest.json) \
 **Problem**: Tool results not recognized by Claude Code
 
 **Solution**:
+
 1. Capture Claude's tool response format
 2. Compare with our conversion
 3. Fix in `src/convert-to-anthropic-stream.ts`
@@ -211,6 +219,7 @@ diff <(jq . ~/.anyclaude/traces/claude/latest.json) \
 **Problem**: Want to add new tool, don't know format
 
 **Solution**:
+
 1. Use Claude mode to see how tool is called
 2. Implement same format for LMStudio
 3. Test with both modes

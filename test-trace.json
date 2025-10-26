@@ -1,0 +1,55 @@
+{
+  "timestamp": "2025-10-26T10:00:00.000Z",
+  "mode": "lmstudio",
+  "request": {
+    "method": "POST",
+    "url": "/v1/messages",
+    "headers": {
+      "content-type": "application/json",
+      "x-api-key": "[REDACTED]"
+    },
+    "body": {
+      "model": "current-model",
+      "max_tokens": 4096,
+      "system": "You are Claude Code, Anthropic's official CLI for Claude.\nYou are an interactive CLI tool that helps users with software engineering tasks.",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Read the README.md file"
+        }
+      ],
+      "tools": [
+        {
+          "name": "Read",
+          "description": "Reads a file from the local filesystem.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "file_path": {
+                "type": "string",
+                "description": "The absolute path to the file to read"
+              }
+            },
+            "required": ["file_path"]
+          }
+        },
+        {
+          "name": "Write",
+          "description": "Writes a file to the local filesystem.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "file_path": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": ["file_path", "content"]
+          }
+        }
+      ]
+    }
+  }
+}

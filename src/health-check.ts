@@ -5,13 +5,13 @@
  * Uses both active (periodic pings) and passive (request monitoring) checks
  */
 
-import { CircuitBreaker } from './circuit-breaker';
+import { CircuitBreaker } from "./circuit-breaker";
 
 export interface HealthCheckConfig {
   enabled: boolean;
   interval: number; // milliseconds between checks
   endpoint: string; // Anthropic API endpoint to check
-  timeout: number;  // Health check request timeout
+  timeout: number; // Health check request timeout
 }
 
 export class HealthCheckService {
@@ -57,7 +57,7 @@ export class HealthCheckService {
    */
   private async performHealthCheck(): Promise<void> {
     // Skip if already checking or circuit is closed (service working normally)
-    if (this.isChecking || this.circuitBreaker.getState() === 'CLOSED') {
+    if (this.isChecking || this.circuitBreaker.getState() === "CLOSED") {
       return;
     }
 
@@ -71,15 +71,18 @@ export class HealthCheckService {
 
       // Wrap in Promise.race to ensure we don't hang even if fetch doesn't respect abort
       const fetchPromise = fetch(this.config.endpoint, {
-        method: 'GET',
+        method: "GET",
         signal: controller.signal,
         headers: {
-          'Accept': 'application/json',
+          Accept: "application/json",
         },
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Health check timeout')), this.config.timeout + 1000)
+        setTimeout(
+          () => reject(new Error("Health check timeout")),
+          this.config.timeout + 1000
+        )
       );
 
       const response = await Promise.race([fetchPromise, timeoutPromise]);

@@ -7,6 +7,7 @@
 ### Current Tests
 
 **Timeout Regression** (`tests/regression/test_timeout_regression.js`)
+
 - Bug: Network calls hang indefinitely without timeouts
 - Fixed: 2025-10-25
 - Prevents: Missing AbortController, missing clearTimeout
@@ -41,6 +42,7 @@ When you fix a bug:
 ### Test Philosophy
 
 Following Claude Code's testing-guide skill:
+
 - **Simple**: Plain Node.js, no complex frameworks
 - **Fast**: < 1 second to run
 - **Focused**: Tests actual code patterns
@@ -49,12 +51,14 @@ Following Claude Code's testing-guide skill:
 ## Best Practices
 
 ✅ **DO**:
+
 - Keep tests simple and fast
 - Test actual source code patterns
 - Document what bug was fixed
 - Run tests before committing
 
 ❌ **DON'T**:
+
 - Over-engineer test infrastructure
 - Add slow integration tests
 - Skip documenting bugs

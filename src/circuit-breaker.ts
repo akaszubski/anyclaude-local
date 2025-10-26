@@ -13,16 +13,16 @@
  */
 
 export enum CircuitState {
-  CLOSED = 'CLOSED',     // Normal - using Anthropic
-  OPEN = 'OPEN',         // Failover - using LMStudio
-  HALF_OPEN = 'HALF_OPEN' // Testing - trying Anthropic again
+  CLOSED = "CLOSED", // Normal - using Anthropic
+  OPEN = "OPEN", // Failover - using LMStudio
+  HALF_OPEN = "HALF_OPEN", // Testing - trying Anthropic again
 }
 
 export interface CircuitBreakerConfig {
-  failureThreshold: number;      // Failures before opening circuit
-  successThreshold: number;      // Successes in HALF_OPEN before closing
-  retryTimeout: number;          // Time before trying HALF_OPEN (ms)
-  requestTimeout: number;        // Max request time before considering failed (ms)
+  failureThreshold: number; // Failures before opening circuit
+  successThreshold: number; // Successes in HALF_OPEN before closing
+  retryTimeout: number; // Time before trying HALF_OPEN (ms)
+  requestTimeout: number; // Max request time before considering failed (ms)
 }
 
 export class CircuitBreaker {
@@ -142,7 +142,10 @@ export class CircuitBreaker {
       state: this.state,
       failureCount: this.failureCount,
       successCount: this.successCount,
-      nextAttempt: this.state === CircuitState.OPEN ? new Date(this.nextAttempt).toISOString() : null,
+      nextAttempt:
+        this.state === CircuitState.OPEN
+          ? new Date(this.nextAttempt).toISOString()
+          : null,
     };
   }
 

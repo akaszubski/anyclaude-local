@@ -36,6 +36,22 @@ async function runAllTests() {
       file: path.join(__dirname, "unit", "test_trace_logger.js"),
       description: "Trace Logger Unit Tests",
     },
+    {
+      file: path.join(__dirname, "unit", "test_json_schema.js"),
+      description: "JSON Schema Transformation Unit Tests",
+    },
+    {
+      file: path.join(__dirname, "unit", "test_trace_analyzer.js"),
+      description: "Trace Analyzer Unit Tests",
+    },
+    {
+      file: path.join(__dirname, "unit", "test_lmstudio_client.js"),
+      description: "LMStudio Client Unit Tests",
+    },
+    {
+      file: path.join(__dirname, "unit", "test_tool_calling.js"),
+      description: "Tool Calling Edge Cases Tests",
+    },
     // Note: Mode detection tests require spawning the proxy, which is slow
     // We'll skip them for now and rely on manual testing
     // {
@@ -46,7 +62,9 @@ async function runAllTests() {
 
   console.log("\n");
   console.log("╔" + "═".repeat(58) + "╗");
-  console.log("║" + " ".repeat(15) + "RUNNING ALL TESTS" + " ".repeat(26) + "║");
+  console.log(
+    "║" + " ".repeat(15) + "RUNNING ALL TESTS" + " ".repeat(26) + "║"
+  );
   console.log("╚" + "═".repeat(58) + "╝");
 
   let passed = 0;
@@ -67,12 +85,8 @@ async function runAllTests() {
   console.log("╔" + "═".repeat(58) + "╗");
   console.log("║" + " ".repeat(20) + "TEST SUMMARY" + " ".repeat(26) + "║");
   console.log("╠" + "═".repeat(58) + "╣");
-  console.log(
-    `║  Passed: ${passed.toString().padEnd(3)}${" ".repeat(48)}║`
-  );
-  console.log(
-    `║  Failed: ${failed.toString().padEnd(3)}${" ".repeat(48)}║`
-  );
+  console.log(`║  Passed: ${passed.toString().padEnd(3)}${" ".repeat(48)}║`);
+  console.log(`║  Failed: ${failed.toString().padEnd(3)}${" ".repeat(48)}║`);
   console.log("╚" + "═".repeat(58) + "╝");
   console.log("");
 

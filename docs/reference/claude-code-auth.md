@@ -7,11 +7,13 @@ Claude Code CLI (with Max plan) authenticates automatically without requiring `A
 ## Authentication Methods
 
 ### Traditional API (What Most Users Have)
+
 - Uses `x-api-key` header with API key from console.anthropic.com
 - Format: `x-api-key: sk-ant-api03-...`
 - This is what the trace logger expects
 
 ### Claude Code CLI (What You Have)
+
 - **Session-based authentication** via OAuth/session tokens
 - Stored in Claude Code's config directory
 - Automatically included in requests
@@ -44,7 +46,7 @@ const proxy = https.request({
   path: req.url,
   method: req.method,
   headers: req.headers, // ← Includes whatever auth Claude Code sent
-})
+});
 ```
 
 This already happens in our current implementation! ✅
@@ -83,6 +85,7 @@ cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | 
 ```
 
 **Look for**:
+
 - `authorization: Bearer ...`
 - `cookie: session=...`
 - `x-api-key: ...` (if present)
@@ -99,15 +102,18 @@ const proxyToAnthropic = (body?: AnthropicMessagesRequest) => {
   delete req.headers["host"]; // Remove only host header
 
   // Create proxy request with ALL original headers (including auth!)
-  const proxy = https.request({
-    host: "api.anthropic.com",
-    path: req.url,
-    method: req.method,
-    headers: req.headers, // ← Passthrough ALL headers
-  }, (proxiedRes) => {
-    // ... handle response
-  });
-}
+  const proxy = https.request(
+    {
+      host: "api.anthropic.com",
+      path: req.url,
+      method: req.method,
+      headers: req.headers, // ← Passthrough ALL headers
+    },
+    (proxiedRes) => {
+      // ... handle response
+    }
+  );
+};
 ```
 
 **This should already work** because we're passing through all headers!
@@ -137,6 +143,7 @@ function sanitizeApiKeys(obj: any): any {
 ### If Using Session/Bearer Auth
 
 **Request Headers** (as seen by Anthropic):
+
 ```json
 {
   "authorization": "Bearer eyJhbGc...",
@@ -147,6 +154,7 @@ function sanitizeApiKeys(obj: any): any {
 ```
 
 **Trace File** (redacted for security):
+
 ```json
 {
   "request": {
@@ -161,6 +169,7 @@ function sanitizeApiKeys(obj: any): any {
 ### If Using API Key
 
 **Request Headers**:
+
 ```json
 {
   "x-api-key": "sk-ant-api03-...",
@@ -169,6 +178,7 @@ function sanitizeApiKeys(obj: any): any {
 ```
 
 **Trace File** (redacted):
+
 ```json
 {
   "request": {
@@ -204,10 +214,10 @@ tail -f auth-debug.log | grep -i "auth\|api-key\|bearer\|cookie"
 ```typescript
 // Make sure we're NOT doing this:
 delete req.headers["authorization"]; // ❌ DON'T DELETE AUTH!
-delete req.headers["x-api-key"];     // ❌ DON'T DELETE AUTH!
+delete req.headers["x-api-key"]; // ❌ DON'T DELETE AUTH!
 
 // Only delete:
-delete req.headers["host"];          // ✅ OK to delete (proxy routing)
+delete req.headers["host"]; // ✅ OK to delete (proxy routing)
 ```
 
 ### Error: "Invalid API key"
@@ -219,12 +229,12 @@ delete req.headers["host"];          // ✅ OK to delete (proxy routing)
 ```typescript
 // ✅ CORRECT: Use original headers for proxy
 const proxy = https.request({
-  headers: req.headers  // Original, unsanitized
+  headers: req.headers, // Original, unsanitized
 });
 
 // Then separately log sanitized version
 logTrace(mode, {
-  headers: sanitizeApiKeys(req.headers)  // Sanitized for logs only
+  headers: sanitizeApiKeys(req.headers), // Sanitized for logs only
 });
 ```
 
@@ -233,6 +243,7 @@ logTrace(mode, {
 **Good News**: Our current implementation should already work! We passthrough all headers including auth.
 
 **To Verify**:
+
 1. Just run `ANYCLAUDE_MODE=claude anyclaude` (no API key needed)
 2. Use Claude Code normally
 3. Check if it works

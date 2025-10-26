@@ -19,10 +19,12 @@ This project is a **port of the original anyclaude** concept, reimagined specifi
 ### Why Claude Code 2.0?
 
 Claude Code represents Anthropic's vision for AI-powered development - sophisticated tool use, multi-step reasoning, and seamless integration with development workflows. However, it requires either:
+
 - **Claude Max subscription** ($20-200/month) with session-based auth, OR
 - **Claude API access** with pay-per-token pricing
 
 AnyClaude makes this premium experience accessible with:
+
 - **Free local models** via LMStudio (Qwen, DeepSeek, etc.)
 - **Complete privacy** - your code never leaves your machine
 - **No API costs** - run unlimited queries on your hardware
@@ -69,6 +71,7 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 ### Dual-Mode Design
 
 #### Claude Mode (`ANYCLAUDE_MODE=claude`)
+
 **Purpose**: Baseline comparison and debugging
 
 - Transparently passes through to `api.anthropic.com`
@@ -78,12 +81,14 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 - Used to identify translation gaps
 
 **Use Cases**:
+
 - Debugging: Compare local model behavior vs real Claude
 - Verification: Ensure our passthrough doesn't break anything
 - Learning: Understand how Claude uses tools
 - Testing: Validate authentication handling
 
 #### LMStudio Mode (`ANYCLAUDE_MODE=lmstudio`, default)
+
 **Purpose**: Production use with local models
 
 - Full translation layer with all adaptations
@@ -93,6 +98,7 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 - Hot-swappable: switch models in LMStudio without restarting anyclaude
 
 **Use Cases**:
+
 - Development: Privacy-focused coding with local models
 - Experimentation: Test different models easily
 - Cost savings: Unlimited queries without API charges
@@ -183,6 +189,7 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 **Problem**: "Error reading file" and tool execution failures with LMStudio models
 
 **Root Cause**:
+
 - AI SDK sends tool calls in TWO formats simultaneously:
   1. **Streaming**: `tool-input-start` → `tool-input-delta` (many) → `tool-input-end` → `tool-call`
   2. **Atomic**: `tool-call` (for backward compatibility)
@@ -191,6 +198,7 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 - Claude Code expects streaming format via `input_json_delta` events
 
 **Solution** (`src/convert-to-anthropic-stream.ts`):
+
 ```typescript
 // Track which tools we've sent via streaming to avoid duplicates
 const streamedToolIds = new Set<string>();
@@ -259,6 +267,7 @@ case "tool-call": {
 **Problem**: Local models have smaller context windows than Claude (8K-128K vs 200K)
 
 **Solution** (`src/context-manager.ts`):
+
 - Query model's actual context length via LMStudio API
 - Calculate token usage for messages and tools
 - Automatically truncate conversation history to fit
@@ -268,10 +277,12 @@ case "tool-call": {
 ### 3. Authentication Flexibility
 
 **Problem**: Claude Code uses two different auth methods:
+
 - Claude Max: Session-based Bearer tokens (no API key needed)
 - Claude API: Traditional API keys in headers
 
 **Solution** (`src/anthropic-proxy.ts:71-93`):
+
 - Transparent header passthrough in claude mode
 - No auth required for lmstudio mode (local server)
 - Works seamlessly with both subscription types
@@ -281,6 +292,7 @@ case "tool-call": {
 **Problem**: Local models can take 60+ seconds for complex requests, causing Claude Code to timeout
 
 **Solution** (`src/anthropic-proxy.ts`):
+
 - 10-second SSE keepalive pings during streaming
 - Prevents client timeout while model thinks
 - Cleared once actual streaming begins
@@ -290,12 +302,14 @@ case "tool-call": {
 **Reality**: Model performance varies based on your hardware
 
 **Factors**:
+
 - GPU type and VRAM (most critical for large models)
 - RAM amount (affects context window size)
 - CPU speed (for CPU-only inference)
 - Model size vs available VRAM (quantization may be needed)
 
 **Tested Models**:
+
 - Qwen Coder 30B - Works well with adequate VRAM
 - GPT-OSS 20B - Good balance of size/performance
 - Mistral, Llama, DeepSeek - Compatibility varies by model variant
@@ -307,6 +321,7 @@ case "tool-call": {
 ### Message Format Translation (`src/convert-anthropic-messages.ts`)
 
 **Anthropic → OpenAI**:
+
 ```typescript
 // Anthropic format
 {
@@ -331,6 +346,7 @@ case "tool-call": {
 ### Tool Schema Translation (`src/json-schema.ts`)
 
 **Anthropic → OpenAI**:
+
 ```typescript
 // Anthropic format
 {
@@ -361,6 +377,7 @@ case "tool-call": {
 ### Stream Event Translation (`src/convert-to-anthropic-stream.ts`)
 
 **AI SDK → Anthropic SSE**:
+
 ```typescript
 // AI SDK stream chunk
 {type: "text-start"}
@@ -385,18 +402,21 @@ data: {"type":"content_block_stop","index":0}
 Set `ANYCLAUDE_DEBUG=1|2|3` for increasing verbosity:
 
 **Level 1** (Basic):
+
 - Request/response summary
 - Errors and warnings
 - Tool call counts
 - Context truncation warnings
 
 **Level 2** (Verbose):
+
 - Full request/response bodies
 - Stream chunk details
 - Duplicate filtering info
 - SSE event details
 
 **Level 3** (TRACE):
+
 - Tool schemas sent by Claude Code
 - Individual tool call details with parameters
 - Stream conversion step-by-step
@@ -405,17 +425,20 @@ Set `ANYCLAUDE_DEBUG=1|2|3` for increasing verbosity:
 ### Debug Output
 
 **stderr**: Real-time logging
+
 ```bash
 ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/debug.log
 ```
 
 **Trace files**: Full request/response capture
+
 ```
 ~/.anyclaude/traces/claude/2025-10-26T00-37-59-155Z.json
 ~/.anyclaude/traces/lmstudio/2025-10-26T00-42-13-328Z.json
 ```
 
 **Error files**: Automatic capture of 4xx errors
+
 ```
 /var/folders/.../anyclaude-errors.log
 /var/folders/.../anyclaude-debug-*.json
@@ -424,22 +447,26 @@ ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/debug.log
 ### Comparison Testing
 
 **compare-modes.sh**: Side-by-side comparison of Claude vs LMStudio
+
 ```bash
 ./compare-modes.sh "Read the README.md file"
 ```
 
 Shows:
+
 - Tool schema differences (17 vs 17 tools)
 - Tool calls made (0 vs 3 for same prompt)
 - Parameter formats
 - Response differences
 
 **analyze-tool-calls.sh**: Extract tool call details from logs
+
 ```bash
 ./analyze-tool-calls.sh
 ```
 
 Displays:
+
 - Tool call count
 - Parameter details
 - SSE events sent to Claude Code
@@ -448,6 +475,7 @@ Displays:
 ## Development Workflow
 
 ### 1. Identify Issue
+
 ```bash
 # Run with debug logging
 ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/issue.log
@@ -458,6 +486,7 @@ grep -A 10 "ERROR\|Invalid" /tmp/issue.log
 ```
 
 ### 2. Compare with Real Claude
+
 ```bash
 # Test with real Claude API
 ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/claude.log
@@ -468,6 +497,7 @@ ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/claude.log
 ```
 
 ### 3. Identify Translation Gap
+
 ```bash
 # Extract tool calls from both modes
 grep -A 8 "\[Tool Call\]" /tmp/claude.log > /tmp/claude-tools.txt
@@ -478,13 +508,16 @@ diff -u /tmp/claude-tools.txt /tmp/lmstudio-tools.txt
 ```
 
 ### 4. Implement Translation
+
 Choose the appropriate layer:
+
 - **Message format issue** → `convert-anthropic-messages.ts`
 - **Tool schema issue** → `json-schema.ts` or `model-adapters.ts`
 - **Streaming issue** → `convert-to-anthropic-stream.ts`
 - **Request routing** → `anthropic-proxy.ts`
 
 ### 5. Test & Iterate
+
 ```bash
 # Rebuild
 npm run build
@@ -500,17 +533,17 @@ ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/fixed.log
 
 ### Core Files
 
-| File | Purpose | Lines | Complexity |
-|------|---------|-------|------------|
-| `src/main.ts` | Entry point, LMStudio provider setup | ~200 | Low |
-| `src/anthropic-proxy.ts` | HTTP proxy server, mode routing | ~650 | Medium |
-| `src/convert-anthropic-messages.ts` | Message format translation | ~300 | High |
-| `src/convert-to-anthropic-stream.ts` | Stream format translation | ~250 | High |
-| `src/json-schema.ts` | Tool schema conversion | ~150 | Medium |
-| `src/context-manager.ts` | Context window management | ~180 | Medium |
-| `src/model-adapters.ts` | Model-specific adaptations (planned) | ~120 | Low |
-| `src/debug.ts` | Multi-level debug logging | ~100 | Low |
-| `src/trace-logger.ts` | Request/response tracing | ~80 | Low |
+| File                                 | Purpose                              | Lines | Complexity |
+| ------------------------------------ | ------------------------------------ | ----- | ---------- |
+| `src/main.ts`                        | Entry point, LMStudio provider setup | ~200  | Low        |
+| `src/anthropic-proxy.ts`             | HTTP proxy server, mode routing      | ~650  | Medium     |
+| `src/convert-anthropic-messages.ts`  | Message format translation           | ~300  | High       |
+| `src/convert-to-anthropic-stream.ts` | Stream format translation            | ~250  | High       |
+| `src/json-schema.ts`                 | Tool schema conversion               | ~150  | Medium     |
+| `src/context-manager.ts`             | Context window management            | ~180  | Medium     |
+| `src/model-adapters.ts`              | Model-specific adaptations (planned) | ~120  | Low        |
+| `src/debug.ts`                       | Multi-level debug logging            | ~100  | Low        |
+| `src/trace-logger.ts`                | Request/response tracing             | ~80   | Low        |
 
 ### Configuration Files
 
@@ -536,60 +569,71 @@ ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/fixed.log
 ## Future Enhancements
 
 ### 1. Model Adapters (In Progress)
+
 **Goal**: Per-model schema and parameter adaptations
 
 Framework exists in `src/model-adapters.ts`, planned features:
+
 - **Schema simplification** for weaker models
 - **Parameter validation** and correction
 - **Tool selection guidance** (hints in descriptions)
 - **Model-specific prompts** for better tool use
 
 Example:
+
 ```typescript
 const MODEL_CONFIGS = {
-  "qwen": {
+  qwen: {
     simplifySchemas: true,
     maxToolsPerRequest: 10,
     requireAllParameters: true,
   },
-  "deepseek": {
+  deepseek: {
     simplifySchemas: false,
     enhanceDescriptions: true,
-  }
+  },
 };
 ```
 
 ### 2. Additional Providers
+
 **Goal**: Support beyond LMStudio
 
 Potential targets:
+
 - **Ollama** - Popular local model runner
 - **OpenRouter** - Proxy to multiple providers
 - **Azure OpenAI** - Enterprise deployments
 - **Custom endpoints** - Any OpenAI-compatible API
 
 ### 3. Response Quality Improvements
+
 **Goal**: Better handling of model quirks
 
 Ideas:
+
 - Detect and retry failed tool calls
 - Normalize stop sequences
 - Fix formatting inconsistencies
 - Handle models that ignore system prompts
 
 ### 4. Performance Optimizations
+
 **Goal**: Faster responses, lower latency
 
 Ideas:
+
 - Connection pooling to LMStudio
 - Request/response compression
 - Smarter context truncation (keep important messages)
 - Parallel tool calls where possible
 
 ### 5. Configuration UI
+
 **Goal**: Easier setup and model management
 
 Ideas:
+
 - Web UI for configuration
 - Model selection and testing
 - Real-time debug log viewer
@@ -598,26 +642,33 @@ Ideas:
 ## Design Principles
 
 ### 1. **Translation, Not Replacement**
+
 We don't try to replicate Claude's intelligence - we translate between formats so local models can use Claude Code's interface.
 
 ### 2. **Preserve Semantics**
+
 Format conversion should maintain meaning. A tool call in Anthropic format should behave identically when converted to OpenAI format.
 
 ### 3. **Graceful Degradation**
+
 When features aren't supported (e.g., thinking blocks for non-reasoning models), silently adapt rather than error.
 
 ### 4. **Transparent Debugging**
+
 Every translation step should be observable with appropriate debug levels. Users should understand what's happening.
 
 ### 5. **Privacy First**
+
 Local mode should never leak data. No analytics, no telemetry, no external calls except to user's own LMStudio server.
 
 ### 6. **Zero Config (But Configurable)**
+
 Work out-of-box with sensible defaults. But allow power users to tune everything.
 
 ## Success Metrics
 
 ### Functionality
+
 - ✅ Basic message translation (Anthropic ↔ OpenAI)
 - ✅ Streaming responses with SSE
 - ✅ Tool call translation (with fixes for duplicates)
@@ -628,6 +679,7 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 - ⏳ Parameter validation and correction (planned)
 
 ### Compatibility
+
 - ✅ Claude Code 2.0 (latest version)
 - ✅ LMStudio server
 - ✅ MacOS (primary platform)
@@ -635,6 +687,7 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 - ⏳ Windows (untested but should work)
 
 ### User Experience
+
 - ✅ Installation via npm
 - ✅ Single command to start (`anyclaude`)
 - ✅ Works with default LMStudio setup
@@ -647,24 +700,28 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 ### Common Issues
 
 **"Invalid tool parameters"**
+
 - See `DEBUG-QUICK-START.md` for step-by-step debugging
 - Run with `ANYCLAUDE_DEBUG=3` to see tool call details
 - Use `./analyze-tool-calls.sh` to extract parameters
 - Compare with Claude mode to see expected format
 
 **"Context too long"**
+
 - Models have smaller context than Claude
 - Check debug logs for truncation warnings
 - Use shorter prompts or fewer files
 - Consider models with larger context (32K+)
 
 **"Connection refused"**
+
 - Ensure LMStudio server is running
 - Default: `http://localhost:1234/v1`
 - Check `LMSTUDIO_URL` environment variable
 - Test with: `curl http://localhost:1234/v1/models`
 
 **"Authentication failed"** (Claude mode)
+
 - Claude Max: Ensure session is active
 - Claude API: Check API key is valid
 - Headers are passed through transparently
@@ -691,6 +748,7 @@ This is an open-source project. Contributions welcome:
 ## License & Credits
 
 AnyClaude is built on:
+
 - **Vercel AI SDK** - Unified interface for AI providers
 - **Claude Code** - Anthropic's official CLI tool
 - **LMStudio** - Local model serving

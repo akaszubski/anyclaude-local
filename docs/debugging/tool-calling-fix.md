@@ -1,8 +1,11 @@
-# Tool calling: 'Invalid tool parameters' error with LMStudio models
+# Tool calling: Error fixes with LMStudio models
 
 ## ✅ RESOLVED
 
-Tool calling now works perfectly with LMStudio models! The issue was our handling of streaming tool parameters.
+Tool calling now works with LMStudio models! Two major issues were fixed:
+
+1. Incorrect handling of streaming tool parameters
+2. JSON Schema union types causing "invalid_union" errors
 
 ## Issue Summary
 
@@ -11,9 +14,11 @@ When using LMStudio models with anyclaude, Claude Code showed "Error reading fil
 ## The Fix
 
 ### ✅ Root Cause: Incorrect Tool Streaming Approach
+
 **Problem**: Tool calls were being duplicated or malformed, causing "Error reading file" and similar issues.
 
 **Root Cause**: The AI SDK sends tool calls in TWO ways:
+
 1. **Streaming**: `tool-input-start` → `tool-input-delta` (many) → `tool-input-end` → `tool-call`
 2. **Complete**: `tool-call` only (for backward compatibility)
 
@@ -85,27 +90,35 @@ case "tool-call": {
 ## Key Learnings
 
 ### 1. AI SDK Sends Redundant Events
+
 The AI SDK sends **both** streaming tool inputs AND a final atomic `tool-call` event. We must handle one or the other, not both.
 
 ### 2. Claude Code Expects Streaming Format
+
 Claude Code works better with incremental `input_json_delta` events rather than atomic tool calls with complete parameters.
 
 ### 3. Original anyclaude Had It Right
+
 By comparing to [coder/anyclaude](https://github.com/coder/anyclaude), we found they properly handle streaming tool parameters. Our port had deviated from this approach.
 
 ### 4. Not Model-Specific
+
 Tested with multiple models (Qwen3 Coder 30B, GPT-OSS-20B) - all showed the same issue. The problem was our translation layer, not the models.
 
 ## Debug Tools Added
 
 ### 1. Enhanced Claude Mode Logging
+
 Added SSE parsing to Claude mode to log tool calls from real Claude API:
 
 ```typescript
 // In src/anthropic-proxy.ts
 if (mode === "claude" && isTraceDebugEnabled()) {
   // Parse SSE events and log tool_use blocks
-  if (data.type === "content_block_start" && data.content_block?.type === "tool_use") {
+  if (
+    data.type === "content_block_start" &&
+    data.content_block?.type === "tool_use"
+  ) {
     debug(3, `[Claude API → Tool Call] Tool use from real Claude:`, {
       tool_name: data.content_block.name,
       tool_id: data.content_block.id,
@@ -116,6 +129,7 @@ if (mode === "claude" && isTraceDebugEnabled()) {
 ```
 
 ### 2. Comparison Script
+
 Created `./compare-modes.sh` for side-by-side testing:
 
 ```bash
@@ -123,12 +137,14 @@ Created `./compare-modes.sh` for side-by-side testing:
 ```
 
 Shows:
+
 - Tool schema count (both have 17 tools)
 - Tool calls made (Claude: 0, LMStudio: 3)
 - Parameter format differences
 - Full debug logs for analysis
 
 ### 3. Analysis Script
+
 Enhanced `./analyze-tool-calls.sh` to extract tool call details:
 
 ```bash
@@ -136,6 +152,7 @@ Enhanced `./analyze-tool-calls.sh` to extract tool call details:
 ```
 
 Displays:
+
 - Tool call count
 - Complete parameters
 - SSE events sent to Claude Code
@@ -175,6 +192,7 @@ Displays:
 ## Testing the Fix
 
 ### Before (Broken)
+
 ```
 > Read the README.md file
 ⏺ Read(README.md)
@@ -183,6 +201,7 @@ Displays:
 ```
 
 ### After (Fixed)
+
 ```
 > Read the README.md file
 ⏺ Read(README.md)
@@ -191,9 +210,100 @@ Displays:
 ```
 
 ### Verified With
+
 - ✅ Qwen3 Coder 30B - Works perfectly
 - ✅ GPT-OSS-20B - Works perfectly
 - ✅ Multiple tool types (Read, Bash, Glob, etc.)
+
+## Fix #2: Union Type Schema Errors (2025-10-26)
+
+### ✅ Root Cause: Invalid JSON Schema Union Types
+
+**Problem**: Models like `tongyi-deepresearch-30b-a3b-mlx` and `gpt-oss-20b-mlx` failed with:
+
+```
+API Error: 400 {"type":"error","error":"Invalid type for 'input'."}
+Error code: "invalid_union"
+```
+
+**Root Cause**: LMStudio doesn't support JSON Schema union types (`oneOf`, `anyOf`, `allOf`). Claude Code sends complex tool schemas that use these union patterns, which LMStudio rejects.
+
+**Solution**: Enhanced `providerizeSchema()` in `src/json-schema.ts` to resolve union types:
+
+```typescript
+/**
+ * Helper function to resolve union types (oneOf, anyOf, allOf)
+ * LMStudio doesn't support JSON Schema union types, so we need to resolve them
+ * to a single, concrete schema.
+ */
+function resolveUnionType(schema: JSONSchema7): JSONSchema7 {
+  // Handle oneOf/anyOf: use the first non-null type
+  if (schema.oneOf && Array.isArray(schema.oneOf)) {
+    const firstSchema = schema.oneOf.find(
+      (s) => typeof s === "object" && s.type !== "null"
+    );
+    // ... remove oneOf and use the resolved schema
+  }
+
+  // Handle allOf: merge all schemas
+  if (schema.allOf && Array.isArray(schema.allOf)) {
+    // Merge properties, required fields, and types
+    // ... return merged schema
+  }
+
+  // Handle multi-type arrays: type: ['string', 'number']
+  if (Array.isArray(schema.type)) {
+    // Use first non-null type
+  }
+}
+```
+
+**Transformation Examples**:
+
+Before (Claude Code sends):
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "value": {
+      "oneOf": [{ "type": "string" }, { "type": "number" }]
+    }
+  }
+}
+```
+
+After (LMStudio receives):
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "value": { "type": "string" }
+  },
+  "additionalProperties": false
+}
+```
+
+**Affected Models**:
+
+- ✅ tongyi-deepresearch-30b-a3b-mlx - Now works
+- ✅ gpt-oss-20b-mlx - Now works
+- ✅ qwen3-coder-30b - Still works (backwards compatible)
+
+**Testing**:
+
+```bash
+# Run unit tests
+npm run test:unit
+
+# Manual schema transformation test
+node tests/manual/test_union_schema.js
+
+# Test with affected models
+ANYCLAUDE_DEBUG=3 anyclaude
+# Try complex tool calls like Explore agent
+```
 
 ## Debug Commands
 

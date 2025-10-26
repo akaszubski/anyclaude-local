@@ -94,11 +94,13 @@ Key files:
 ## Code Standards
 
 ### TypeScript
+
 - **Strict mode**: Always enabled
 - **Type safety**: Avoid `any` where possible
 - **Imports**: Use explicit imports (verbatimModuleSyntax)
 
 ### Formatting
+
 - **Prettier**: Run `npm run fmt` before committing
 - **Line length**: 80 characters max
 - **Quotes**: Double quotes
@@ -106,12 +108,14 @@ Key files:
 - **Trailing commas**: ES5 style
 
 ### Naming Conventions
+
 - **Files**: kebab-case (e.g., `convert-to-anthropic-stream.ts`)
 - **Variables/Functions**: camelCase
 - **Types/Classes**: PascalCase
 - **Constants**: UPPER_SNAKE_CASE
 
 ### Comments
+
 - Explain "why", not "what"
 - JSDoc for public APIs
 - Inline comments for complex logic
@@ -121,12 +125,14 @@ Key files:
 ### What We Accept
 
 ✅ **Bug fixes** - Especially related to:
+
 - LMStudio compatibility issues
 - Message format conversion bugs
 - Streaming errors
 - Debug logging improvements
 
 ✅ **Documentation improvements** - Including:
+
 - Setup instructions
 - Troubleshooting guides
 - Code comments
@@ -154,6 +160,7 @@ Key files:
 ### Pull Request Process
 
 1. **Fork and create a branch**
+
    ```bash
    git checkout -b fix/issue-description
    # or
@@ -166,6 +173,7 @@ Key files:
    - Update documentation
 
 3. **Commit with clear messages**
+
    ```bash
    git commit -m "Fix: Correct stream conversion for tool calls"
    # or
@@ -173,9 +181,11 @@ Key files:
    ```
 
 4. **Push and create PR**
+
    ```bash
    git push origin your-branch-name
    ```
+
    Then create a pull request on GitHub
 
 5. **PR description should include**:

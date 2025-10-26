@@ -7,6 +7,7 @@
 All templates located in `.github/ISSUE_TEMPLATE/`
 
 ### 1. Tool Calling Limitations ⚠️
+
 **File**: `tool-calling-limitations.md`
 **Priority**: High
 **Type**: Documentation, Enhancement
@@ -14,16 +15,19 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 **Summary**: Tool calling works with local models but reliability varies significantly. Qwen3-Coder-30B can call simple tools but struggles with Claude Code's complex schemas.
 
 **Key Findings**:
+
 - ✅ Simple tools work (60-95% success)
 - ❌ Complex Claude Code schemas fail (30% success)
 - Model-dependent capability
 
 **Test Results**:
+
 - Qwen3-Coder-30B: ⚠️ Partial support
 - GPT-OSS-20B: ⚠️ Partial support
 - DeepSeek/Mistral: ❌ Poor support
 
 **Recommendations**:
+
 1. Use text-based commands instead of tool inference
 2. Test model with `node tests/manual/test_bash_tool.js`
 3. Consider models trained for tool use (Command-R+, Qwen2.5-32B)
@@ -33,6 +37,7 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 ---
 
 ### 2. Context Window Detection ✅
+
 **File**: `context-detection.md`
 **Priority**: Medium
 **Type**: Feature, Documentation
@@ -41,6 +46,7 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 **Summary**: Automatic context detection from LMStudio API, with fallbacks and management features.
 
 **Features**:
+
 - ✅ Auto-detect context from LMStudio (`/api/v0/models`)
 - ✅ Environment variable override (`LMSTUDIO_CONTEXT_LENGTH`)
 - ✅ Model lookup table for known models
@@ -49,6 +55,7 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 - ✅ Auto-truncation with user notification
 
 **Tested With**:
+
 - Qwen3-Coder-30B: 262,144 tokens ✅
 - GPT-OSS-20B: 131,072 tokens (use 32K in practice)
 
@@ -64,6 +71,7 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 ---
 
 ### 3. Model Capability Detection 💡
+
 **File**: `model-capability-detection.md`
 **Priority**: High
 **Type**: Enhancement, Good First Issue
@@ -71,18 +79,21 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 **Summary**: Automatically detect what features each model supports and provide warnings/fallbacks.
 
 **Proposed Features**:
+
 1. **Auto-detection**: Test tool calling, streaming, reasoning
 2. **Community database**: Known capabilities for popular models
 3. **Warning system**: Alert when unsupported features requested
 4. **CLI command**: `anyclaude --test` to validate model
 
 **Capabilities to Detect**:
+
 - Tool calling (simple, medium, complex)
 - Context length (reported vs actual)
 - Streaming reliability
 - Performance metrics (tokens/sec, latency)
 
 **Database Example**:
+
 ```typescript
 {
   "qwen3-coder-30b-a3b-instruct-mlx": {
@@ -94,6 +105,7 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 ```
 
 **CLI Usage**:
+
 ```bash
 anyclaude --test            # Test current model
 anyclaude --capabilities    # Show known capabilities
@@ -105,6 +117,7 @@ anyclaude --export-test     # Share results with community
 ---
 
 ### 4. Slow Model Timeout Handling ✅
+
 **File**: `slow-model-timeout.md`
 **Priority**: High
 **Type**: Bug Fix
@@ -113,11 +126,13 @@ anyclaude --export-test     # Share results with community
 **Summary**: Claude Code timeout with slow models (60+ second prompt processing). Fixed with SSE keepalive.
 
 **Problem**:
+
 - Models like glm-4.5-air-mlx take 60+ seconds to process prompts
 - Claude Code HTTP client times out at ~30-40 seconds
 - Connection lost during prompt processing
 
 **Solution**: SSE keepalive every 10 seconds
+
 ```typescript
 setInterval(() => {
   res.write(`: keepalive ${count}\n\n`);
@@ -125,6 +140,7 @@ setInterval(() => {
 ```
 
 **Timeline**:
+
 ```
 t=0s:   message_start event
 t=10s:  keepalive 1
@@ -134,6 +150,7 @@ t=60s:  Stream starts → keepalive cleared
 ```
 
 **Affected Models**:
+
 - glm-4.5-air-mlx (60+ seconds)
 - Qwen3-Coder-30B with large context (30-60 seconds)
 - Large MoE models (Mixtral 8x22B, etc.)
@@ -143,6 +160,7 @@ t=60s:  Stream starts → keepalive cleared
 ---
 
 ### 5. Context Preservation 💡
+
 **File**: `context-preservation.md`
 **Priority**: High
 **Type**: Enhancement
@@ -151,6 +169,7 @@ t=60s:  Stream starts → keepalive cleared
 **Summary**: Save context to file before truncation, enable session continuation.
 
 **Problem**:
+
 - At 100% context, old messages are truncated and **lost forever**
 - No way to review or recover discarded messages
 - Long sessions become impossible
@@ -158,12 +177,14 @@ t=60s:  Stream starts → keepalive cleared
 **Proposed Solution**:
 
 **Phase 1: Auto-Save** (Quick Win, 1-2 days)
+
 ```
 ⚠️  Context usage at 90.2%
 📝 Context auto-saved to: ~/.anyclaude/sessions/feature-impl.json
 ```
 
 **Phase 2: Session Management** (Week 2)
+
 ```bash
 /save-context "design decisions"
 /list-contexts
@@ -171,15 +192,18 @@ t=60s:  Stream starts → keepalive cleared
 ```
 
 **Phase 3: Intelligent Truncation** (Week 3)
+
 - Archive truncated messages
 - Link to archived files in warnings
 
 **Phase 4: AI Summarization** (Future)
+
 - Summarize 5-10 old messages into 1 summary
 - Preserve recent messages full detail
 - Like Claude Sonnet 4.5 but explicit
 
 **Use Cases**:
+
 1. **Long sessions**: 2+ hour feature implementations
 2. **Crash recovery**: Restore session after disconnect
 3. **Manual management**: Save important context, clear rest
@@ -200,21 +224,25 @@ t=60s:  Stream starts → keepalive cleared
 ## Priority Roadmap
 
 ### Immediate (This Week)
+
 1. ✅ **SSE Keepalive** - Already implemented, needs user testing
 2. ✅ **Context Detection** - Working, documented
 3. 📝 **Create GitHub Issues** - Use `gh issue create` with these templates
 
 ### Short Term (Next 2 Weeks)
+
 4. 💡 **Context Preservation Phase 1** - Auto-save at 90% (high value, low effort)
 5. 💡 **Model Capability Detection** - Basic testing framework
 6. 📚 **Tool Calling Documentation** - Add to README with workarounds
 
 ### Medium Term (Next Month)
+
 7. 💡 **Session Management** - Full save/restore/export
 8. 💡 **Capability Database** - Community contributions
 9. 💡 **Intelligent Summarization** - AI-powered context compression
 
 ### Future
+
 10. 💡 **Advanced Exports** - Markdown, HTML, analytics
 11. 💡 **Multi-Model Support** - Auto-switch based on task
 12. 💡 **Cloud Sync** - Optional session cloud backup
@@ -224,6 +252,7 @@ t=60s:  Stream starts → keepalive cleared
 ## Quick Actions
 
 ### Create All Issues on GitHub
+
 ```bash
 # Authenticate first
 gh auth login
@@ -237,6 +266,7 @@ gh issue create --template context-preservation.md --label "enhancement"
 ```
 
 ### Test Current Implementation
+
 ```bash
 # Test SSE keepalive with slow model
 ANYCLAUDE_DEBUG=2 anyclaude

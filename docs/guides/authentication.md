@@ -12,6 +12,7 @@ anyclaude supports **both** authentication methods automatically:
 ## Method 1: Traditional API Key
 
 ### Who Uses This
+
 - Users with API access from console.anthropic.com
 - Developers testing with API keys
 - Users without Claude Max plan
@@ -27,12 +28,14 @@ ANYCLAUDE_MODE=claude anyclaude
 ```
 
 **Headers Sent to Anthropic**:
+
 ```http
 x-api-key: sk-ant-api03-your-key-here
 anthropic-version: 2023-06-01
 ```
 
 ### Where to Get API Key
+
 1. Go to https://console.anthropic.com/
 2. Navigate to "API Keys"
 3. Create new key
@@ -41,6 +44,7 @@ anthropic-version: 2023-06-01
 ## Method 2: Claude Max Plan (Session-Based)
 
 ### Who Uses This
+
 - Users with Claude.ai Max subscription
 - Users authenticated via `claude auth login`
 - Users with active Claude Code CLI session
@@ -62,6 +66,7 @@ ANYCLAUDE_MODE=claude anyclaude
 4. **anyclaude passes them through** to Anthropic without modification
 
 **Headers Sent to Anthropic** (likely):
+
 ```http
 Authorization: Bearer <session-token>
 Cookie: session=<session-cookie>
@@ -85,10 +90,11 @@ const proxyToAnthropic = (body) => {
     method: req.method,
     headers: req.headers, // ← ALL headers passed through!
   });
-}
+};
 ```
 
 **This means**:
+
 - ✅ If Claude Code sends `x-api-key` → We pass it through
 - ✅ If Claude Code sends `Authorization: Bearer` → We pass it through
 - ✅ If Claude Code sends session cookies → We pass it through
@@ -98,14 +104,14 @@ const proxyToAnthropic = (body) => {
 
 ## Comparison
 
-| Feature | API Key | Claude Max Plan |
-|---------|---------|----------------|
-| **Cost** | Pay per token | $20/month unlimited |
-| **Setup** | Export ANTHROPIC_API_KEY | Already logged in |
-| **Best For** | API development, automation | Interactive Claude Code use |
-| **Authentication** | x-api-key header | Bearer token / session |
-| **anyclaude Support** | ✅ Yes | ✅ Yes |
-| **Trace Logging** | ✅ Yes (redacted) | ✅ Yes (redacted) |
+| Feature               | API Key                     | Claude Max Plan             |
+| --------------------- | --------------------------- | --------------------------- |
+| **Cost**              | Pay per token               | $20/month unlimited         |
+| **Setup**             | Export ANTHROPIC_API_KEY    | Already logged in           |
+| **Best For**          | API development, automation | Interactive Claude Code use |
+| **Authentication**    | x-api-key header            | Bearer token / session      |
+| **anyclaude Support** | ✅ Yes                      | ✅ Yes                      |
+| **Trace Logging**     | ✅ Yes (redacted)           | ✅ Yes (redacted)           |
 
 ## Testing Both Methods
 
@@ -147,7 +153,7 @@ const AUTH_HEADER_PATTERNS = [
   "authorization",
   "auth-token",
   "bearer",
-  "cookie"
+  "cookie",
 ];
 
 // All these headers → "[REDACTED]" in trace files
@@ -156,6 +162,7 @@ const AUTH_HEADER_PATTERNS = [
 ### Trace File Example
 
 **Request with API Key**:
+
 ```json
 {
   "request": {
@@ -169,6 +176,7 @@ const AUTH_HEADER_PATTERNS = [
 ```
 
 **Request with Session Token**:
+
 ```json
 {
   "request": {
@@ -188,6 +196,7 @@ const AUTH_HEADER_PATTERNS = [
 ### For Reverse Engineering (Your Use Case)
 
 **Use Claude Max Plan** (session-based):
+
 ```bash
 # You're already logged in, just run:
 ANYCLAUDE_MODE=claude anyclaude
@@ -204,6 +213,7 @@ cat ~/.anyclaude/traces/claude/*.json | jq .
 ```
 
 **Benefits**:
+
 - ✅ No API key setup needed
 - ✅ Unlimited usage (Max plan)
 - ✅ Same auth Claude Code uses normally
@@ -212,12 +222,14 @@ cat ~/.anyclaude/traces/claude/*.json | jq .
 ### For API Development
 
 **Use API Key**:
+
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-your-key
 ANYCLAUDE_MODE=claude anyclaude
 ```
 
 **Benefits**:
+
 - ✅ Easier to automate
 - ✅ Works in CI/CD
 - ✅ Separate from personal account
@@ -227,12 +239,15 @@ ANYCLAUDE_MODE=claude anyclaude
 ### "Authentication failed" with Max Plan
 
 **Check**:
+
 1. Are you logged into Claude Code CLI?
+
    ```bash
    claude auth status
    ```
 
 2. Try logging in again:
+
    ```bash
    claude auth login
    ```
@@ -245,7 +260,9 @@ ANYCLAUDE_MODE=claude anyclaude
 ### "Invalid API key" with API Key Method
 
 **Check**:
+
 1. Is ANTHROPIC_API_KEY set?
+
    ```bash
    echo $ANTHROPIC_API_KEY
    ```
@@ -266,6 +283,7 @@ ANYCLAUDE_MODE=claude anyclaude
 **Cause**: Neither API key nor session auth available
 
 **Solution**:
+
 - **Option A**: Set API key (`export ANTHROPIC_API_KEY=...`)
 - **Option B**: Login to Claude Code (`claude auth login`)
 

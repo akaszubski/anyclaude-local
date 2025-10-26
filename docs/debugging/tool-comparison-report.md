@@ -10,15 +10,11 @@
 
 LOADED_MODEL="qwen3-coder-30b-a3b-instruct-mlx"
 
-
 ## Claude API Results
-
 
 **Traces captured**: 10
 
-
 ### Tool Calls Made by Claude
-
 
 ### Example Tool Schema (Bash)
 
@@ -49,23 +45,18 @@ LOADED_MODEL="qwen3-coder-30b-a3b-instruct-mlx"
         "description": "Set this to true to dangerously override sandbox mode and run commands without sandboxing."
       }
     },
-    "required": [
-      "command"
-    ],
+    "required": ["command"],
     "additionalProperties": false,
     "$schema": "http://json-schema.org/draft-07/schema#"
   }
 }
 ```
 
-
 ---
 
 ## Qwen3-Coder-30B Results
 
-
 **Logs captured**: 3
-
 
 ### Tool Calls Made by Qwen3
 
@@ -138,10 +129,10 @@ LOADED_MODEL="qwen3-coder-30b-a3b-instruct-mlx"
 [ANYCLAUDE DEBUG] [Keepalive] Cleared (stream started after 4 keepalives)
 ```
 
-
 ### Errors/Issues with Qwen3
 
 - **qwen3-tool-test-1.log**:
+
 ```
 Error log: /var/folders/7s/v055m81j7_1f5709y8xdfm_c0000gn/T/anyclaude-errors.log
   "description": "A powerful search tool built on ripgrep\n\n  Usage:\n  - ALWAYS use Grep for search tasks. NEVER invoke `grep` or `rg` as a Bash command. The Grep tool has been optimized for correct permissions and access.\n  - Supports full regex syntax (e.g., \"log.*Error\", \"function\\s+\\w+\")\n  - Filter files with glob parameter (e.g., \"*.js\", \"**/*.tsx\") or type parameter (e.g., \"js\", \"py\", \"rust\")\n  - Output modes: \"content\" shows matching lines, \"files_with_matches\" shows only file paths (default), \"count\" shows match counts\n  - Use Task tool for open-ended searches requiring multiple rounds\n  - Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use `interface\\{\\}` to find `interface{}` in Go code)\n  - Multiline matching: By default patterns match within single lines only. For cross-line patterns like `struct \\{[\\s\\S]*?field`, use `multiline: true`\n",
@@ -156,6 +147,7 @@ Error log: /var/folders/7s/v055m81j7_1f5709y8xdfm_c0000gn/T/anyclaude-errors.log
 ```
 
 - **qwen3-tool-test-2.log**:
+
 ```
 Error log: /var/folders/7s/v055m81j7_1f5709y8xdfm_c0000gn/T/anyclaude-errors.log
   "description": "A powerful search tool built on ripgrep\n\n  Usage:\n  - ALWAYS use Grep for search tasks. NEVER invoke `grep` or `rg` as a Bash command. The Grep tool has been optimized for correct permissions and access.\n  - Supports full regex syntax (e.g., \"log.*Error\", \"function\\s+\\w+\")\n  - Filter files with glob parameter (e.g., \"*.js\", \"**/*.tsx\") or type parameter (e.g., \"js\", \"py\", \"rust\")\n  - Output modes: \"content\" shows matching lines, \"files_with_matches\" shows only file paths (default), \"count\" shows match counts\n  - Use Task tool for open-ended searches requiring multiple rounds\n  - Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use `interface\\{\\}` to find `interface{}` in Go code)\n  - Multiline matching: By default patterns match within single lines only. For cross-line patterns like `struct \\{[\\s\\S]*?field`, use `multiline: true`\n",
@@ -170,6 +162,7 @@ Error log: /var/folders/7s/v055m81j7_1f5709y8xdfm_c0000gn/T/anyclaude-errors.log
 ```
 
 - **qwen3-tool-test-3.log**:
+
 ```
 Error log: /var/folders/7s/v055m81j7_1f5709y8xdfm_c0000gn/T/anyclaude-errors.log
   "description": "A powerful search tool built on ripgrep\n\n  Usage:\n  - ALWAYS use Grep for search tasks. NEVER invoke `grep` or `rg` as a Bash command. The Grep tool has been optimized for correct permissions and access.\n  - Supports full regex syntax (e.g., \"log.*Error\", \"function\\s+\\w+\")\n  - Filter files with glob parameter (e.g., \"*.js\", \"**/*.tsx\") or type parameter (e.g., \"js\", \"py\", \"rust\")\n  - Output modes: \"content\" shows matching lines, \"files_with_matches\" shows only file paths (default), \"count\" shows match counts\n  - Use Task tool for open-ended searches requiring multiple rounds\n  - Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use `interface\\{\\}` to find `interface{}` in Go code)\n  - Multiline matching: By default patterns match within single lines only. For cross-line patterns like `struct \\{[\\s\\S]*?field`, use `multiline: true`\n",
@@ -183,18 +176,16 @@ Error log: /var/folders/7s/v055m81j7_1f5709y8xdfm_c0000gn/T/anyclaude-errors.log
   "description": "A powerful search tool built on ripgrep\n\n  Usage:\n  - ALWAYS use Grep for search tasks. NEVER invoke `grep` or `rg` as a Bash command. The Grep tool has been optimized for correct permissions and access.\n  - Supports full regex syntax (e.g., \"log.*Error\", \"function\\s+\\w+\")\n  - Filter files with glob parameter (e.g., \"*.js\", \"**/*.tsx\") or type parameter (e.g., \"js\", \"py\", \"rust\")\n  - Output modes: \"content\" shows matching lines, \"files_with_matches\" shows only file paths (default), \"count\" shows match counts\n  - Use Task tool for open-ended searches requiring multiple rounds\n  - Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use `interface\\{\\}` to find `interface{}` in Go code)\n  - Multiline matching: By default patterns match within single lines only. For cross-line patterns like `struct \\{[\\s\\S]*?field`, use `multiline: true`\n",
 ```
 
-
 ---
 
 ## Analysis & Recommendations
 
 ### Key Differences
 
-
 **Tool Call Success**:
+
 - Claude API: 10 tool calls
 - Qwen3-Coder-30B: 28 tool calls
-
 
 ### Recommended Fixes
 
@@ -205,6 +196,7 @@ Based on the comparison, here are the issues to address:
 **Problem**: Qwen3 struggles with complex schemas (many optional parameters)
 
 **Solution**: Simplify schemas in `src/json-schema.ts`
+
 ```typescript
 // Before (too complex for Qwen3)
 {
@@ -223,6 +215,7 @@ Based on the comparison, here are the issues to address:
 ```
 
 **Files to modify**:
+
 - `src/json-schema.ts` - Add model-specific schema simplification
 - `src/convert-anthropic-messages.ts` - Handle parameter mapping
 
@@ -231,14 +224,15 @@ Based on the comparison, here are the issues to address:
 **Problem**: Long descriptions (8000+ chars) confuse smaller models
 
 **Solution**: Truncate descriptions for LMStudio mode
+
 ```typescript
 // In src/anthropic-proxy.ts or src/convert-anthropic-messages.ts
 const simplifyToolDescription = (desc: string, maxLength = 500) => {
   if (desc.length <= maxLength) return desc;
 
   // Extract just the first paragraph
-  const firstPara = desc.split('\n\n')[0];
-  return firstPara.substring(0, maxLength) + '...';
+  const firstPara = desc.split("\n\n")[0];
+  return firstPara.substring(0, maxLength) + "...";
 };
 ```
 
@@ -253,6 +247,7 @@ const simplifyToolDescription = (desc: string, maxLength = 500) => {
 **Problem**: Qwen3 gets confused when there are many optional parameters
 
 **Solution**: Make commonly-used optional params required, or remove them entirely
+
 ```typescript
 // Simplify Bash tool for Qwen3
 {
@@ -291,4 +286,3 @@ After implementing fixes:
 4. Measure success rate improvement
 
 **Target**: Increase Qwen3 success rate from ~30% to 90%
-

@@ -10,7 +10,7 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   // Known MLX models (Apple Silicon)
   // NOTE: GPT-OSS has known issues with context overflow around 32K
   // despite native 128K support. Use with caution.
-  "gpt-oss-20b": 131072,  // Native 128K support (RoPE + YaRN)
+  "gpt-oss-20b": 131072, // Native 128K support (RoPE + YaRN)
   "gpt-oss-120b": 131072, // Native 128K support
 
   "deepseek-coder-v2-lite": 16384,
@@ -90,10 +90,7 @@ export function getContextLimit(
   const lowerModel = modelName.toLowerCase();
   for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
     if (lowerModel.includes(key.toLowerCase())) {
-      debug(
-        1,
-        `[Context] Using model table lookup (${key}): ${limit} tokens`
-      );
+      debug(1, `[Context] Using model table lookup (${key}): ${limit} tokens`);
       return limit;
     }
   }
@@ -194,13 +191,22 @@ export function truncateMessages(
   modelName: string = "current-model",
   lmstudioContextLength?: number
 ): { messages: AnthropicMessage[]; truncated: boolean; removedCount: number } {
-  const stats = calculateContextStats(messages, system, tools, modelName, lmstudioContextLength);
+  const stats = calculateContextStats(
+    messages,
+    system,
+    tools,
+    modelName,
+    lmstudioContextLength
+  );
 
   if (!stats.exceedsLimit) {
     return { messages, truncated: false, removedCount: 0 };
   }
 
-  debug(1, `⚠️  Context limit exceeded: ${stats.totalTokens} tokens > ${stats.contextLimit} limit`);
+  debug(
+    1,
+    `⚠️  Context limit exceeded: ${stats.totalTokens} tokens > ${stats.contextLimit} limit`
+  );
 
   // Keep system and tools (they're essential)
   const fixedTokens = stats.systemTokens + stats.toolTokens;
@@ -209,7 +215,7 @@ export function truncateMessages(
   if (availableForMessages <= 0) {
     throw new Error(
       `System prompt and tools alone exceed context limit (${fixedTokens} > ${stats.contextLimit}). ` +
-      `Consider reducing tool count or increasing LMSTUDIO_CONTEXT_LENGTH.`
+        `Consider reducing tool count or increasing LMSTUDIO_CONTEXT_LENGTH.`
     );
   }
 
@@ -240,8 +246,14 @@ export function truncateMessages(
   const removedCount = messages.length - truncatedMessages.length;
 
   if (isDebugEnabled()) {
-    debug(1, `Truncated ${removedCount} messages (kept ${truncatedMessages.length})`);
-    debug(1, `Tokens after truncation: ${fixedTokens + currentTokens} / ${stats.contextLimit}`);
+    debug(
+      1,
+      `Truncated ${removedCount} messages (kept ${truncatedMessages.length})`
+    );
+    debug(
+      1,
+      `Tokens after truncation: ${fixedTokens + currentTokens} / ${stats.contextLimit}`
+    );
   }
 
   return {
@@ -258,16 +270,16 @@ export function logContextWarning(stats: ContextStats): void {
   if (stats.percentUsed > 90) {
     console.error(
       `\n⚠️  WARNING: Context usage at ${stats.percentUsed.toFixed(1)}%\n` +
-      `   Total: ${stats.totalTokens} / ${stats.contextLimit} tokens\n` +
-      `   \n` +
-      `   ⚠️  LOCAL MODEL LIMITATION:\n` +
-      `   Unlike Claude Sonnet 4.5 which auto-compresses context,\n` +
-      `   local models will truncate older messages when limit is exceeded.\n` +
-      `   \n` +
-      `   RECOMMENDED ACTION:\n` +
-      `   1. Save your work and start a new Claude Code conversation\n` +
-      `   2. Or: Use a model with larger context (32K+ recommended)\n` +
-      `   3. Or: Set LMSTUDIO_CONTEXT_LENGTH higher if your model supports it\n`
+        `   Total: ${stats.totalTokens} / ${stats.contextLimit} tokens\n` +
+        `   \n` +
+        `   ⚠️  LOCAL MODEL LIMITATION:\n` +
+        `   Unlike Claude Sonnet 4.5 which auto-compresses context,\n` +
+        `   local models will truncate older messages when limit is exceeded.\n` +
+        `   \n` +
+        `   RECOMMENDED ACTION:\n` +
+        `   1. Save your work and start a new Claude Code conversation\n` +
+        `   2. Or: Use a model with larger context (32K+ recommended)\n` +
+        `   3. Or: Set LMSTUDIO_CONTEXT_LENGTH higher if your model supports it\n`
     );
   } else if (stats.percentUsed > 75) {
     debug(

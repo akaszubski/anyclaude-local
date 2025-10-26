@@ -10,8 +10,10 @@ anyclaude is a translation layer for Claude Code 2.0 that enables using LMStudio
 
 **CRITICAL**: Follow these standards to keep the project organized over time.
 
-###  Root Directory (Keep Clean!)
+### Root Directory (Keep Clean!)
+
 **Only these files belong in root:**
+
 ```
 README.md              # Project overview
 CHANGELOG.md           # Version history
@@ -29,6 +31,7 @@ tsconfig.json / tsconfig.build.json  # TypeScript config
 **Everything else goes in subdirectories!**
 
 ### Documentation: `docs/`
+
 ```
 docs/
 ├── README.md                    # Documentation index
@@ -56,6 +59,7 @@ docs/
 ```
 
 ### Scripts: `scripts/`
+
 ```
 scripts/
 ├── debug/                       # Debugging scripts
@@ -73,6 +77,7 @@ scripts/
 ```
 
 ### Source Code: `src/`
+
 ```
 src/
 ├── main.ts                      # Entry point
@@ -86,6 +91,7 @@ src/
 ```
 
 ### Tests: `tests/`
+
 ```
 tests/
 ├── unit/                        # Unit tests
@@ -95,6 +101,7 @@ tests/
 ```
 
 ### Build Output: `dist/` (gitignored)
+
 ```
 dist/                            # Generated, never commit
 ```
@@ -119,20 +126,25 @@ dist/                            # Generated, never commit
 ### Internal References
 
 When linking between docs, use **relative paths**:
+
 ```markdown
 <!-- From docs/guides/authentication.md → PROJECT.md -->
+
 See [PROJECT.md](../../PROJECT.md) for architecture
 
 <!-- From README.md → docs/guides/authentication.md -->
+
 See [Authentication Guide](docs/guides/authentication.md)
 
 <!-- From docs/debugging/tool-calling-fix.md → docs/architecture/model-adapters.md -->
+
 See [Model Adapters](../architecture/model-adapters.md)
 ```
 
 ## 🔄 Keeping It Clean
 
 If you notice files out of place:
+
 1. Move to correct subdirectory
 2. Update all internal references
 3. Commit with message: `chore: organize files per standards`
@@ -242,6 +254,7 @@ See `src/convert-anthropic-messages.ts` for conversion logic.
 **Streaming:**
 
 The proxy handles Server-Sent Events (SSE) streaming:
+
 - Converts AI SDK stream chunks to Anthropic SSE format
 - Maps event types (`text-start` → `content_block_start`, etc.)
 - Handles tool calls via streaming `input_json_delta` events

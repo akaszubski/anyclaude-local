@@ -3,7 +3,7 @@ name: Slow Model Timeout Handling
 about: SSE keepalive mechanism for models with long prompt processing times
 title: "[FIXED] Claude Code timeout with slow models (60+ second prompt processing)"
 labels: bug, fixed
-assignees: ''
+assignees: ""
 ---
 
 ## Problem
@@ -23,21 +23,25 @@ Models like `glm-4.5-air-mlx` and large `Qwen3-Coder-30B` can take 60+ seconds t
 **User Input**: "test" (simple prompt)
 
 **LMStudio Logs**:
+
 ```
 2025-10-26 09:57:18  [INFO] [glm-4.5-air-mlx] Prompt processing progress: 64.5%
 2025-10-26 09:57:18  [INFO] [glm-4.5-air-mlx] Client disconnected. Stopping generation...
 ```
 
 **Claude Code Output**:
+
 ```
 > test
 
 ───────────────────────────────────────────────────────────
 >
 ```
+
 (No response, blank output)
 
 **Timing**:
+
 - 0-41s: Prompt processing (visible in LMStudio GPU activity)
 - 41s: Claude Code timeout, disconnects
 - 64.5%: Progress when disconnect occurred
@@ -65,12 +69,16 @@ const keepaliveInterval = setInterval(() => {
   if (!res.writableEnded) {
     keepaliveCount++;
     res.write(`: keepalive ${keepaliveCount}\n\n`);
-    debug(2, `[Keepalive] Sent keepalive #${keepaliveCount} (waiting for LMStudio)`);
+    debug(
+      2,
+      `[Keepalive] Sent keepalive #${keepaliveCount} (waiting for LMStudio)`
+    );
   }
 }, 10000); // 10 second interval
 ```
 
 **SSE Comment Format**:
+
 ```
 : keepalive 1
 
@@ -84,6 +92,7 @@ These are SSE protocol comments - they keep the HTTP connection alive but don't 
 ### Cleanup
 
 Interval automatically cleared when:
+
 - **First stream chunk arrives** (prompt processing complete)
 - **Stream closes** (generation complete)
 - **Any error occurs** (connection failed)
@@ -92,28 +101,35 @@ Interval automatically cleared when:
 // In stream write handler
 if (keepaliveInterval) {
   clearInterval(keepaliveInterval);
-  debug(2, `[Keepalive] Cleared (stream started after ${keepaliveCount} keepalives)`);
+  debug(
+    2,
+    `[Keepalive] Cleared (stream started after ${keepaliveCount} keepalives)`
+  );
 }
 ```
 
 ## Timeline of Fix
 
 ### Original Issue (Oct 25)
+
 - User: "i tried a bigger model and its not working -- glm-4.5-air-mlx"
 - Model takes 60+ seconds to process prompt
 - Claude Code disconnects at ~41 seconds
 - Same timeout issue as earlier but with slower model
 
 ### First Fix Attempt (Earlier)
+
 **Added**: 120-second timeout with AbortController
 **Result**: ❌ Didn't help - timeout was on LMStudio request, not client disconnect
 
 ### Second Fix Attempt (Earlier)
+
 **Added**: Immediate `message_start` event
 **Result**: ✅ Worked for 30-60s models (gpt-oss-20b)
 **Limitation**: ❌ Failed for 60+ second models (glm-4.5-air-mlx)
 
 ### Final Fix (Oct 26)
+
 **Added**: SSE keepalive every 10 seconds
 **Result**: ✅ Should work for models up to 2+ minutes prompt processing
 **Testing**: Pending user validation
@@ -134,6 +150,7 @@ t=60s:  LMStudio finishes prompt, sends first token
 ```
 
 **Claude Code sees**:
+
 - Continuous activity on the connection (no timeout)
 - Initial `message_start` event
 - Periodic keepalive comments (ignored by event parser)
@@ -142,17 +159,21 @@ t=60s:  LMStudio finishes prompt, sends first token
 ## Testing
 
 ### Enable Debug Logging
+
 ```bash
 ANYCLAUDE_DEBUG=2 anyclaude
 ```
 
 ### Send Complex Prompt
+
 Use a prompt that requires significant processing:
+
 ```
 > Create a comprehensive test suite for the anyclaude project including unit tests, integration tests, and end-to-end tests. Cover all edge cases and error conditions.
 ```
 
 ### Expected Debug Output
+
 ```
 [Keepalive] Sent keepalive #1 (waiting for LMStudio)
 [Keepalive] Sent keepalive #2 (waiting for LMStudio)
@@ -163,6 +184,7 @@ Use a prompt that requires significant processing:
 ```
 
 ### Validate Success
+
 - ✅ No "Client disconnected" in LMStudio logs
 - ✅ Claude Code shows streaming response
 - ✅ Response appears after 60+ seconds
@@ -171,16 +193,19 @@ Use a prompt that requires significant processing:
 ## Models Affected
 
 ### Very Slow (60+ seconds)
+
 - glm-4.5-air-mlx
 - Qwen3-Coder-30B (with large context/tools)
 - Large MoE models (Mixtral 8x22B, etc.)
 
 ### Moderately Slow (30-60 seconds)
+
 - gpt-oss-20b-MLX-8bit
 - DeepSeek-Coder-33B
 - Qwen2.5-Coder-32B
 
 ### Fast (< 30 seconds)
+
 - Most 7B models
 - Optimized quantized models
 - Models with small context
@@ -188,11 +213,13 @@ Use a prompt that requires significant processing:
 ## Performance Impact
 
 ### Minimal Overhead
+
 - **Network**: ~20 bytes every 10 seconds (negligible)
 - **CPU**: Single `setInterval` + `clearInterval` (negligible)
 - **Memory**: Single counter variable (negligible)
 
 ### Benefits
+
 - ✅ Prevents client disconnects for slow models
 - ✅ No impact on fast models (cleared immediately)
 - ✅ Works for prompts up to 2+ minutes processing time
@@ -229,6 +256,7 @@ Use a prompt that requires significant processing:
 ### For Users
 
 1. **Use debug mode** to see keepalive activity:
+
    ```bash
    ANYCLAUDE_DEBUG=2 anyclaude
    ```

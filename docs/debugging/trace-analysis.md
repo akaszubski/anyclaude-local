@@ -12,11 +12,13 @@ You just captured **6 complete request/response traces** from Claude Code! These
 ## What's in the Traces
 
 ### Location
+
 ```bash
 ~/.anyclaude/traces/claude/2025-10-25T23-53-*.json
 ```
 
 ### Tool List Captured
+
 1. Task (3 required params)
 2. Bash (1 required param: command)
 3. Glob (1 required param: pattern)
@@ -74,6 +76,7 @@ You just captured **6 complete request/response traces** from Claude Code! These
 ```
 
 **Key observations**:
+
 - ✅ Only 1 required parameter: `command`
 - ✅ 4 optional parameters (timeout, description, run_in_background, dangerouslyDisableSandbox)
 - ✅ `additionalProperties: false` (strict schema)
@@ -82,18 +85,21 @@ You just captured **6 complete request/response traces** from Claude Code! These
 ## How to Analyze the Traces
 
 ### View All Tool Names
+
 ```bash
 cat ~/.anyclaude/traces/claude/2025-10-25T23-53-51-947Z.json | \
   jq '.request.body.tools[].name'
 ```
 
 ### View a Specific Tool Schema
+
 ```bash
 cat ~/.anyclaude/traces/claude/2025-10-25T23-53-51-947Z.json | \
   jq '.request.body.tools[] | select(.name == "Bash")'
 ```
 
 ### Count Parameters by Tool
+
 ```bash
 cat ~/.anyclaude/traces/claude/2025-10-25T23-53-51-947Z.json | \
   jq '.request.body.tools[] | {
@@ -105,6 +111,7 @@ cat ~/.anyclaude/traces/claude/2025-10-25T23-53-51-947Z.json | \
 ```
 
 ### View Response Format
+
 ```bash
 cat ~/.anyclaude/traces/claude/2025-10-25T23-53-51-947Z.json | \
   jq '.response.body'
@@ -162,6 +169,7 @@ grep "Tool" lmstudio-trace.log
 ## Key Differences to Check
 
 ### Claude's Format (from traces)
+
 ```json
 {
   "name": "Bash",
@@ -175,7 +183,9 @@ grep "Tool" lmstudio-trace.log
 ```
 
 ### What We Send to LMStudio
+
 Check in `src/json-schema.ts` and `src/convert-anthropic-messages.ts`:
+
 - Do we preserve all properties?
 - Do we keep the same descriptions?
 - Do we maintain required vs optional distinction?
@@ -225,6 +235,7 @@ anyclaude-clean-traces  # Delete all traces
 ## What You Discovered
 
 From the trace, Claude Code's Bash tool has:
+
 - **5 total parameters** (1 required, 4 optional)
 - **Detailed description** (~8000 characters including examples)
 - **Strict schema** (additionalProperties: false)
@@ -235,6 +246,7 @@ Now compare this with what we send to LMStudio to find the discrepancies!
 ---
 
 **Files to Review**:
+
 - `src/json-schema.ts` - Schema conversion logic
 - `src/convert-anthropic-messages.ts` - Message format conversion
 - `src/anthropic-proxy.ts` - Tool schema logging (TRACE level)

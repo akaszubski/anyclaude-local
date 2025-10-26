@@ -7,15 +7,17 @@ The LMStudio failover was failing because the Vercel AI SDK v5.0+ uses OpenAI's 
 ### The Smoking Gun
 
 From your debug logs, the request was using:
+
 ```json
 {
   "model": "gpt-oss-20b-mlx",
-  "input": [                    // ❌ Should be "messages"
+  "input": [
+    // ❌ Should be "messages"
     {
       "role": "user",
       "content": [
         {
-          "type": "input_text",  // ❌ Should be "text"
+          "type": "input_text", // ❌ Should be "text"
           "text": "quota"
         }
       ]
@@ -25,6 +27,7 @@ From your debug logs, the request was using:
 ```
 
 And the provider was:
+
 ```json
 "provider": "openai.responses"   // ❌ Should be "openai"
 ```
@@ -53,6 +56,7 @@ this.lmstudioProvider = createOpenAI({
 ### Why It Works
 
 The `compatibility: 'legacy'` option tells the AI SDK to:
+
 - Use `messages` instead of `input`
 - Use `{"type": "text"}` instead of `{"type": "input_text"}`
 - Use the standard Chat Completions endpoint
@@ -82,6 +86,7 @@ ANYCLAUDE_DEBUG=2 FORCE_LMSTUDIO=true ./dist/main.js
 ```
 
 You should now see:
+
 ```
 [LMStudio Fetch] Full body: {
   "model": "gpt-oss-20b-mlx",
@@ -126,6 +131,7 @@ If you encounter issues after the fix:
 ### API Format Comparison
 
 **Responses API (doesn't work with LMStudio):**
+
 ```json
 {
   "input": [...],
@@ -134,6 +140,7 @@ If you encounter issues after the fix:
 ```
 
 **Chat Completions API (works with LMStudio):**
+
 ```json
 {
   "messages": [...],
@@ -144,11 +151,13 @@ If you encounter issues after the fix:
 ### Provider Comparison
 
 **Before Fix:**
+
 - Provider: `openai.responses`
 - Specification: v2 (Responses API)
 - Compatible: Only with OpenAI's new API
 
 **After Fix:**
+
 - Provider: `openai` (with legacy mode)
 - Specification: v1 (Chat Completions)
 - Compatible: LMStudio, OpenRouter, and all OpenAI-compatible servers

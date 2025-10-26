@@ -9,6 +9,7 @@ Tests that ensure fixed bugs never return.
 **Fixed**: 2025-10-25
 
 **Tests**:
+
 - `test_timeout_regression.test.ts` - Verifies all network calls have timeout protection
 
 ## Running Tests

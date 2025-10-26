@@ -8,6 +8,7 @@ import {
   type CreateAnthropicProxyOptions,
 } from "./anthropic-proxy";
 import type { AnyclaudeMode } from "./trace-logger";
+import { debug, isDebugEnabled } from "./debug";
 
 /**
  * Parse CLI arguments for --mode flag
@@ -111,7 +112,61 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
 
         init.body = JSON.stringify(body);
       }
-      return globalThis.fetch(url, init);
+
+      const response = await globalThis.fetch(url, init);
+
+      // Log raw LMStudio SSE stream when debugging tool calls
+      if (isDebugEnabled() && response.body && response.ok) {
+        const originalBody = response.body;
+        const [stream1, stream2] = originalBody.tee(); // Clone stream for both logging and AI SDK
+
+        // Log stream asynchronously
+        (async () => {
+          const reader = stream1.getReader();
+          const decoder = new TextDecoder();
+          let chunkCount = 0;
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              const text = decoder.decode(value, { stream: true });
+              const lines = text.split("\n");
+
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  try {
+                    const data = JSON.parse(line.substring(6));
+
+                    // Log tool call related chunks from LMStudio
+                    if (data.choices?.[0]?.delta?.tool_calls) {
+                      debug(
+                        1,
+                        `[LMStudio → Raw SSE] Chunk ${chunkCount++}:`,
+                        data.choices[0].delta.tool_calls
+                      );
+                    }
+                  } catch (e) {
+                    // Ignore parse errors
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            debug(1, `[LMStudio SSE Debug] Stream read error:`, err);
+          }
+        })();
+
+        // Return response with the second stream for AI SDK
+        return new Response(stream2, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+        });
+      }
+
+      return response;
     }) as typeof fetch,
   }),
   claude: createAnthropic({

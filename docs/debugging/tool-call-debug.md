@@ -9,6 +9,7 @@ This guide helps you debug "Invalid tool parameters" errors when using anyclaude
 ```
 
 This will:
+
 1. Start anyclaude with TRACE level logging (level 3)
 2. Capture all tool call details
 3. Show you exactly what's being sent to Claude Code
@@ -35,6 +36,7 @@ This will:
 ## Understanding the Output
 
 ### Successful Tool Call
+
 ```
 [ANYCLAUDE DEBUG] [Tool Call] Model called tool: Read {
   "toolCallId": "call_abc123",
@@ -73,18 +75,21 @@ This will:
 If you see "Invalid tool parameters" in Claude Code's UI, look for:
 
 1. **Missing required parameters**
+
    ```json
    // Schema requires file_path, but model sent:
    "input": {}
    ```
 
 2. **Wrong parameter types**
+
    ```json
    // Schema expects string, but model sent:
    "input": { "file_path": null }
    ```
 
 3. **Extra parameters not in schema**
+
    ```json
    // Schema doesn't have 'format', but model sent:
    "input": {
@@ -141,6 +146,7 @@ This will show you exactly what's different between a working (Claude) and faili
 ### Issue 1: Model Sends Empty Input
 
 **Symptom:**
+
 ```json
 "input": {}
 ```
@@ -148,6 +154,7 @@ This will show you exactly what's different between a working (Claude) and faili
 **Cause:** Model doesn't understand the tool schema
 
 **Fix:** Add model to `MODEL_CONFIGS` in `src/model-adapters.ts`:
+
 ```typescript
 'your-model-name': {
   maxParameters: 3,
@@ -159,6 +166,7 @@ This will show you exactly what's different between a working (Claude) and faili
 ### Issue 2: Model Sends Wrong Parameter Names
 
 **Symptom:**
+
 ```json
 // Schema has: file_path
 // Model sends: filePath
@@ -171,6 +179,7 @@ This will show you exactly what's different between a working (Claude) and faili
 ### Issue 3: Model Sends Extra Parameters
 
 **Symptom:**
+
 ```json
 "input": {
   "file_path": "/path",
@@ -192,6 +201,7 @@ ANYCLAUDE_DEBUG=3 anyclaude
 ```
 
 Check `~/.anyclaude/traces/lmstudio/` for JSON files containing:
+
 - Complete request body
 - Complete response body
 - All tool schemas
@@ -233,6 +243,7 @@ tar -czf tool-call-debug-$(date +%Y%m%d).tar.gz /tmp/tool-call-debug-*.log
 ```
 
 Include:
+
 - Model name and quantization
 - Exact prompt that triggered error
 - Screenshots of "Invalid tool parameters" error

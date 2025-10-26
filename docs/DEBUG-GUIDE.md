@@ -7,24 +7,28 @@ The codebase now includes comprehensive debugging to help diagnose authenticatio
 ## What's New
 
 ### 1. **Request Details Logging**
+
 - LMStudio endpoint and model configuration
 - Converted message format being sent to LMStudio
 - Tool names and parameters
 - System prompt preview
 
 ### 2. **Stream Conversion Logging**
+
 - Raw chunk types received from AI SDK
 - Chunk count and progression
 - Unhandled chunk type detection
 - Stream completion status
 
 ### 3. **Response Timing**
+
 - Time to first chunk
 - Time between chunks
 - Warnings for slow responses (>10s, >30s)
 - Stream stall detection (no chunks for >10s)
 
 ### 4. **Error Detection**
+
 - Unknown chunk types from LMStudio
 - Pipeline errors in stream conversion
 - Timeout warnings
@@ -40,6 +44,7 @@ ANYCLAUDE_DEBUG=1 ./scripts/debug/start-local.sh
 ```
 
 **What you'll see:**
+
 - `[LMStudio Config]` - Endpoint URL, model name, circuit state
 - `[Request Details]` - Message count, tools, tokens
 - `[First Chunk]` - Time to first response
@@ -56,6 +61,7 @@ ANYCLAUDE_DEBUG=2 ./scripts/debug/start-local.sh
 ```
 
 **Additional output:**
+
 - `[Full Request Body to Provider]` - Complete request sent to LMStudio
 - `[LMStudio Request Details]` - System prompt preview, tool details
 - `[Stream Conversion] Raw chunk N: fullChunk` - Complete chunk data
@@ -68,17 +74,21 @@ ANYCLAUDE_DEBUG=2 ./scripts/debug/start-local.sh
 **Look for:**
 
 1. **First chunk arrives but nothing after:**
+
    ```
    [First Chunk] lmstudio/model after 5ms
    [First Chunk Type] start
    ```
+
    - **Diagnosis:** LMStudio is responding but not sending actual content
    - **Check:** Is the model actually generating? Check LMStudio console
 
 2. **No first chunk:**
+
    ```
    ⚠️  [Waiting for Response] lmstudio/model - no response after 5000ms
    ```
+
    - **Diagnosis:** LMStudio not responding to requests
    - **Check:** LMStudio server logs, API endpoint accessibility
 
@@ -86,12 +96,14 @@ ANYCLAUDE_DEBUG=2 ./scripts/debug/start-local.sh
    ```
    [Stream Conversion] ⚠️  Unhandled chunk type: unknown-type
    ```
+
    - **Diagnosis:** LMStudio sending unexpected response format
    - **Check:** AI SDK compatibility, LMStudio version
 
 ### Issue: Authentication errors
 
 **Look for:**
+
 ```
 [LMStudio Config] {
   endpoint: 'http://localhost:1234/v1',
@@ -105,6 +117,7 @@ Then check error logs in `/var/folders/.../anyclaude-errors.log`
 ### Issue: Model not responding with tools
 
 **Look for:**
+
 ```
 [Request Details] {
   toolCount: 15,
@@ -128,6 +141,7 @@ Common chunk types you should see:
 7. `finish` - Stream complete
 
 **If you only see `start` and nothing else:**
+
 - LMStudio may not be generating tokens
 - Model may be stuck or waiting for something
 - Request format may be incompatible
@@ -169,6 +183,7 @@ Common chunk types you should see:
 ## Debug Log Files
 
 Errors are also logged to temp files:
+
 - Error log: `/var/folders/.../anyclaude-errors.log`
 - Debug dumps: `/var/folders/.../anyclaude-debug-*.json`
 

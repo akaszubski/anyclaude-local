@@ -7,6 +7,7 @@ The auth passthrough is working perfectly - you just saw it successfully authent
 ## Goal: Capture Tool Call Behavior
 
 Now you want to see:
+
 1. How Claude Code formats tool calls in requests
 2. How Claude responds with tool calls
 3. What parameters it actually uses
@@ -93,6 +94,7 @@ After you give a prompt, Claude will respond with tool calls. Look in the trace 
 ```
 
 **Key things**:
+
 - Tool call ID format
 - How parameters are formatted
 - Which parameters are included (required vs optional)
@@ -182,6 +184,7 @@ grep -A20 "Tool Call" qwen3-trace.log
 ```
 
 **Compare**:
+
 1. Does Qwen3 call the tool?
 2. Does it use the same parameters?
 3. Are the parameters formatted correctly?
@@ -190,6 +193,7 @@ grep -A20 "Tool Call" qwen3-trace.log
 ## Example Analysis
 
 ### Claude's Tool Call (from trace)
+
 ```json
 {
   "type": "tool_use",
@@ -203,6 +207,7 @@ grep -A20 "Tool Call" qwen3-trace.log
 ```
 
 ### Qwen3's Tool Call (from debug log)
+
 ```
 [TRACE] Model called tool: Bash
 Tool call input: {
@@ -236,19 +241,23 @@ cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | 
 ## What You're Looking For
 
 ### Schema Sent (Request)
+
 - Already captured ✅ (17 tools with full schemas)
 - Located in: `.request.body.tools[]`
 
 ### Tool Calls Made (Response)
+
 - How Claude calls the tools
 - What parameters it includes
 - Located in: `.response.body.content[] | select(.type == "tool_use")`
 
 ### Tool Results (Next Request)
+
 - How results are formatted
 - Located in: `.request.body.messages[].content[] | select(.type == "tool_result")`
 
 ### Model Response (After Tool Result)
+
 - Final answer using tool results
 - Located in: `.response.body.content[] | select(.type == "text")`
 
@@ -259,6 +268,7 @@ cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | 
 🔄 **Next step**: Capture tool CALLS by giving prompts that use tools
 
 **Recommended first test**:
+
 ```bash
 ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=3 anyclaude
 
@@ -268,6 +278,7 @@ ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=3 anyclaude
 ```
 
 Then check:
+
 ```bash
 cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | \
   jq '.response.body.content[] | select(.type == "tool_use")'

@@ -18,6 +18,7 @@ cd /Users/akaszubski/Documents/GitHub/anyclaude
 ```
 
 This will:
+
 1. ✅ Check LMStudio is running
 2. ✅ Show available models
 3. ✅ Load configuration
@@ -51,33 +52,39 @@ Your current model is: **deepseek-r1-distill-qwen-32b-abliterated**
 Edit `.env.lmstudio` and uncomment your preferred model:
 
 **Best for Coding:**
-- `deepseek-r1-distill-qwen-32b-abliterated` ← *Current*
+
+- `deepseek-r1-distill-qwen-32b-abliterated` ← _Current_
 - `mistralai/devstral-small-2505`
 - `qwen3-coder-30b-a3b-instruct-mlx`
 - `wizardlm-1.0-uncensored-codellama-34b`
 
 **Larger Models (Better quality):**
+
 - `openai/gpt-oss-120b`
 - `dolphin-2.9.2-qwen2-72b.quantized`
 - `cognitivecomputations_-_dolphin-2.9-llama3-70b`
 
 **Smaller/Faster:**
+
 - `glm-4.5-air-mlx`
 - `gpt-oss-20b-mlx`
 
 ### How to Change Model
 
 1. Edit the file:
+
    ```bash
    nano .env.lmstudio
    ```
 
 2. Find the line with your current model:
+
    ```bash
    export LMSTUDIO_MODEL=deepseek-r1-distill-qwen-32b-abliterated
    ```
 
 3. Comment it out and uncomment a different one:
+
    ```bash
    # export LMSTUDIO_MODEL=deepseek-r1-distill-qwen-32b-abliterated
    export LMSTUDIO_MODEL=mistralai/devstral-small-2505
@@ -142,11 +149,13 @@ lm-test
 ### Want to switch back to Claude servers?
 
 Edit `.env.lmstudio` and change:
+
 ```bash
 export FORCE_LMSTUDIO=false  # Will use Claude, fallback to LMStudio if offline
 ```
 
 Or just use the regular command without the config:
+
 ```bash
 bun run src/main.ts  # Uses Claude servers normally
 ```

@@ -70,10 +70,7 @@ async function test_env_var_mode_detection() {
     "Should detect CLAUDE from env var"
   );
 
-  const resultLmstudio = await runAnyclaude(
-    { ANYCLAUDE_MODE: "lmstudio" },
-    []
-  );
+  const resultLmstudio = await runAnyclaude({ ANYCLAUDE_MODE: "lmstudio" }, []);
   assert(
     resultLmstudio.stdout.includes("Mode: LMSTUDIO"),
     "Should detect LMSTUDIO from env var"
@@ -146,12 +143,11 @@ async function test_claude_mode_requires_api_key() {
   );
 
   // The proxy should still start but will fail when making requests
-  assert(
-    result.stdout.includes("Mode: CLAUDE"),
-    "Should start in CLAUDE mode"
-  );
+  assert(result.stdout.includes("Mode: CLAUDE"), "Should start in CLAUDE mode");
 
-  console.log("✓ Claude mode starts (API key validation happens at request time)");
+  console.log(
+    "✓ Claude mode starts (API key validation happens at request time)"
+  );
 }
 
 async function runTests() {

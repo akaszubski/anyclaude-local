@@ -3,6 +3,7 @@
 ## Problem
 
 The `anyclaude` command in your PATH points to an **old npm-installed version**:
+
 ```
 /opt/homebrew/bin/anyclaude -> ../lib/node_modules/anyclaude-lmstudio/dist/main.js
 ```
@@ -21,6 +22,7 @@ npm link
 ```
 
 **Test it worked**:
+
 ```bash
 which anyclaude
 # Should show: /opt/homebrew/bin/anyclaude
@@ -53,6 +55,7 @@ alias anyclaude-lm='ANYCLAUDE_MODE=lmstudio node /Users/akaszubski/Documents/Git
 ```
 
 Then reload:
+
 ```bash
 source ~/.zshrc
 

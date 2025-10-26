@@ -9,6 +9,7 @@ ANYCLAUDE_DEBUG=3 anyclaude
 ```
 
 That's it! The enhanced logging we added will now capture:
+
 - Tool schemas from Claude Code
 - Tool calls made by the model
 - Exact parameters sent to Claude Code
@@ -16,6 +17,7 @@ That's it! The enhanced logging we added will now capture:
 ## Usage
 
 1. **Start anyclaude with debug logging:**
+
    ```bash
    ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/tool-debug.log
    ```
@@ -30,11 +32,13 @@ That's it! The enhanced logging we added will now capture:
 3. **Analyze the logs**
 
    Open a new terminal and run:
+
    ```bash
    ./analyze-tool-calls.sh
    ```
 
    Or manually check:
+
    ```bash
    grep -A 10 "\[Tool Call\]" /tmp/tool-debug.log
    ```
@@ -42,6 +46,7 @@ That's it! The enhanced logging we added will now capture:
 ## What the Logs Show
 
 ### Tool Schema (what Claude Code expects)
+
 ```
 [ANYCLAUDE DEBUG] [Tool 1/16] Read {
   "description": "Reads a file...",
@@ -59,6 +64,7 @@ That's it! The enhanced logging we added will now capture:
 ```
 
 ### Tool Call (what the model sent)
+
 ```
 [ANYCLAUDE DEBUG] [Tool Call] Model called tool: Read {
   "toolCallId": "call_abc123",
@@ -70,6 +76,7 @@ That's it! The enhanced logging we added will now capture:
 ```
 
 ### SSE Event (what we sent to Claude Code)
+
 ```
 [ANYCLAUDE DEBUG] [SSE → Claude Code] Writing tool_use event: {
   "event": "content_block_start",
@@ -83,7 +90,9 @@ That's it! The enhanced logging we added will now capture:
 ## Common Issues
 
 ### Empty Input
+
 **Log shows:**
+
 ```json
 "input": {}
 ```
@@ -93,7 +102,9 @@ That's it! The enhanced logging we added will now capture:
 **Fix:** Configure model adapter in `src/model-adapters.ts`
 
 ### Wrong Parameter Names
+
 **Log shows:**
+
 ```json
 "input": { "filePath": "..." }  // Should be file_path
 ```
@@ -103,7 +114,9 @@ That's it! The enhanced logging we added will now capture:
 **Fix:** Model limitation - try different model
 
 ### Missing Required Parameters
+
 **Log shows:**
+
 ```json
 "input": { "offset": 10 }  // Missing required file_path
 ```
@@ -121,6 +134,7 @@ ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/tool-debug-$(date +%Y%m%d-%H%M%S).log
 ```
 
 Then analyze later:
+
 ```bash
 grep -A 10 "\[Tool Call\]" /tmp/tool-debug-*.log | less
 ```
@@ -130,18 +144,21 @@ grep -A 10 "\[Tool Call\]" /tmp/tool-debug-*.log | less
 Want to see how real Claude handles the same prompt?
 
 **Terminal 1: Real Claude**
+
 ```bash
 ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/claude-debug.log
 # Type your prompt
 ```
 
 **Terminal 2: LMStudio**
+
 ```bash
 ANYCLAUDE_MODE=lmstudio ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/lmstudio-debug.log
 # Type SAME prompt
 ```
 
 **Terminal 3: Compare**
+
 ```bash
 # Extract tool calls
 grep -A 10 "\[Tool Call\]" /tmp/claude-debug.log > /tmp/claude-calls.txt
@@ -156,6 +173,7 @@ This shows you EXACTLY what's different between working (Claude) and failing (LM
 ## Need Help?
 
 If you find a bug, capture:
+
 ```bash
 # Full debug log
 ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/bug-report.log

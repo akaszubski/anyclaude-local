@@ -91,17 +91,20 @@ The system provides real-time status logging:
 ### Failover Events
 
 **Circuit Opens** (Failover activated):
+
 ```
 [Failover] ⚠️  Circuit OPEN - Anthropic servers appear to be down
 [Failover] 🔄 Failing over to LMStudio at http://localhost:1234/v1
 ```
 
 **Testing Recovery**:
+
 ```
 [Failover] 🔍 Circuit HALF_OPEN - Testing Anthropic recovery...
 ```
 
 **Recovery Complete**:
+
 ```
 [Failover] ✅ Circuit CLOSED - Anthropic servers recovered, back to normal
 ```
@@ -113,12 +116,15 @@ The system provides real-time status logging:
 **Problem**: LMStudio not receiving requests during outage
 
 **Check**:
+
 1. Is LMStudio server running?
+
    ```bash
    curl http://localhost:1234/v1/models
    ```
 
 2. Is failover enabled?
+
    ```bash
    echo $FAILOVER_ENABLED  # Should be empty or "true"
    ```
@@ -133,6 +139,7 @@ The system provides real-time status logging:
 **Problem**: "LMStudio fallback not configured" error
 
 **Solution**:
+
 ```bash
 # Ensure LMStudio server is running on correct port
 export LMSTUDIO_URL=http://localhost:1234/v1
@@ -146,6 +153,7 @@ curl $LMSTUDIO_URL/v1/models
 **Problem**: Stuck in OPEN state even after Anthropic recovers
 
 **Solution**:
+
 - Wait for next health check (default: 30 seconds)
 - Or restart anyclaude to reset circuit breaker
 
@@ -154,6 +162,7 @@ curl $LMSTUDIO_URL/v1/models
 **Problem**: Circuit opens too quickly during temporary issues
 
 **Solution**:
+
 ```bash
 # Increase failure threshold
 export CIRCUIT_FAILURE_THRESHOLD=5
@@ -167,6 +176,7 @@ export REQUEST_TIMEOUT=10000
 ### 1. Always Run LMStudio in Background
 
 Keep LMStudio running with a model loaded:
+
 - Uses minimal resources when idle
 - Instant failover when needed
 - No "cold start" delays
@@ -174,6 +184,7 @@ Keep LMStudio running with a model loaded:
 ### 2. Choose an Appropriate Local Model
 
 Recommendations:
+
 - **Fast responses**: Mistral 7B, Llama 3.2 8B
 - **Better quality**: DeepSeek Coder 33B, Llama 3.1 70B
 - **Resource constrained**: Phi-3 Mini, TinyLlama
@@ -189,6 +200,7 @@ FORCE_LMSTUDIO=true bun run src/main.ts
 ### 4. Monitor Logs
 
 Watch for failover events:
+
 ```bash
 # Run with debug logging
 ANYCLAUDE_DEBUG=1 bun run src/main.ts | grep Failover
@@ -271,6 +283,7 @@ A: No - that's the point! LMStudio runs entirely offline, making it perfect for 
 
 **Q: How much disk space does LMStudio need?**
 A: Depends on model size:
+
 - Small models (7B): 4-8 GB
 - Medium models (13-33B): 8-20 GB
 - Large models (70B+): 40+ GB
@@ -284,6 +297,7 @@ A: It depends on your local model's capabilities. Most modern models support too
 ## Support
 
 For issues or questions:
+
 1. Check logs for failover status
 2. Test LMStudio connection directly
 3. Review configuration with `env | grep LMSTUDIO`

@@ -3,12 +3,13 @@ name: Intelligent Context Preservation
 about: Save context to file before truncation, enable session continuation
 title: "[FEATURE] Intelligent context preservation and session continuation"
 labels: enhancement, good-first-issue
-assignees: ''
+assignees: ""
 ---
 
 ## Problem
 
 When local models approach their context limit, anyclaude currently:
+
 1. Warns at 75%, 90%
 2. **Truncates old messages at 100%**
 3. Loses important conversation history
@@ -31,6 +32,7 @@ This is worse than Claude Sonnet 4.5 which intelligently compresses context whil
 ```
 
 **At 100%**:
+
 ```
 ⚠️  CONTEXT LIMIT EXCEEDED - MESSAGES TRUNCATED
 
@@ -54,10 +56,10 @@ Removed 5 older messages to fit within model's context.
 async function preserveContext(
   messages: AnthropicMessage[],
   metadata: {
-    model: string,
-    contextLimit: number,
-    currentUsage: number,
-    timestamp: Date
+    model: string;
+    contextLimit: number;
+    currentUsage: number;
+    timestamp: Date;
   }
 ): Promise<string> {
   const contextFile = `~/.anyclaude/sessions/${Date.now()}-context.json`;
@@ -67,7 +69,7 @@ async function preserveContext(
     messages,
     summary: await generateSummary(messages), // Optional AI summary
     created: new Date(),
-    anyclaudeVersion: packageVersion
+    anyclaudeVersion: packageVersion,
   };
 
   await writeFile(contextFile, JSON.stringify(preservation, null, 2));
@@ -77,6 +79,7 @@ async function preserveContext(
 ```
 
 **User notification**:
+
 ```
 ⚠️  WARNING: Context usage at 92.4%
    Total: 193,776 / 209,715 tokens
@@ -129,6 +132,7 @@ interface Session {
 ```
 
 **Auto-save every N messages**:
+
 ```typescript
 // Save session every 10 messages or 10 minutes
 const SESSION_SAVE_INTERVAL = 10; // messages
@@ -195,6 +199,7 @@ async function compressContext(
 ```
 
 **Strategy**:
+
 1. **Keep recent messages** (last 5-10 messages, full detail)
 2. **Summarize middle messages** (5-message batches → 1 summary)
 3. **Preserve critical messages** (user saves, tool results, errors)
@@ -207,6 +212,7 @@ async function compressContext(
 **Scenario**: User spends 2 hours implementing a feature with Claude Code
 
 **Context Growth**:
+
 - Start: 0 messages, 0 tokens
 - After 30 min: 50 messages, 80K tokens (38%)
 - After 60 min: 95 messages, 145K tokens (69%)
@@ -214,11 +220,13 @@ async function compressContext(
 - After 120 min: 165 messages, 225K tokens (**exceeds limit**)
 
 **Without This Feature**:
+
 - At 90%: Warning to start new session
 - At 100%: Truncate 30+ messages (lose context)
 - User loses earlier design decisions and context
 
 **With This Feature**:
+
 ```
 [90 min] ⚠️  Context usage at 90.2%
          📝 Context auto-saved to: ~/.anyclaude/sessions/feature-impl.json
@@ -234,11 +242,13 @@ async function compressContext(
 **Scenario**: User accidentally loses session (crash, network issue)
 
 **Without This Feature**:
+
 - All context lost
 - No way to recover
 - Must start from scratch
 
 **With This Feature**:
+
 ```bash
 # Restart anyclaude
 anyclaude
@@ -277,6 +287,7 @@ anyclaude
 ## File Format
 
 ### Context Save File
+
 ```json
 {
   "version": "1.0.0",
@@ -308,7 +319,7 @@ anyclaude
     {
       "role": "assistant",
       "content": [
-        {"type": "text", "text": "I'll help you implement authentication..."}
+        { "type": "text", "text": "I'll help you implement authentication..." }
       ],
       "timestamp": "2025-10-26T14:30:15Z",
       "tokens": 234
@@ -348,12 +359,14 @@ anyclaude --clean-contexts --older-than 30d
 ## Implementation Plan
 
 ### Phase 1: Basic Auto-Save (Week 1)
+
 - [ ] Create context save/load functions
 - [ ] Auto-save at 90% context usage
 - [ ] Save to `~/.anyclaude/sessions/`
 - [ ] Add user notification
 
 ### Phase 2: Session Management (Week 2)
+
 - [ ] Implement full session state
 - [ ] Add `/save-context` command
 - [ ] Add `/list-contexts` command
@@ -361,17 +374,20 @@ anyclaude --clean-contexts --older-than 30d
 - [ ] Auto-save every 10 messages
 
 ### Phase 3: Intelligent Truncation (Week 3)
+
 - [ ] Save truncated messages before removal
 - [ ] Add links to archived messages in warnings
 - [ ] Implement batch archiving
 
 ### Phase 4: AI Summarization (Future)
+
 - [ ] Integrate with LMStudio for summarization
 - [ ] Implement smart batch detection
 - [ ] Add `/compress-context` command
 - [ ] Preserve critical messages
 
 ### Phase 5: Export & Analysis (Future)
+
 - [ ] Export to Markdown, HTML, JSON
 - [ ] Search across saved contexts
 - [ ] Generate conversation analytics
@@ -403,6 +419,7 @@ anyclaude --clean-contexts --older-than 30d
 ## Benefits
 
 ### For Users
+
 - ✅ Never lose conversation history
 - ✅ Continue long sessions without fear
 - ✅ Review past decisions and context
@@ -410,6 +427,7 @@ anyclaude --clean-contexts --older-than 30d
 - ✅ Share sessions with team (export JSON/MD)
 
 ### For Developers
+
 - ✅ Debug conversation issues (full history saved)
 - ✅ Analyze context usage patterns
 - ✅ Understand model behavior over time
@@ -417,14 +435,14 @@ anyclaude --clean-contexts --older-than 30d
 
 ## Comparison with Claude Sonnet 4.5
 
-| Feature | Claude Sonnet 4.5 | anyclaude (Proposed) |
-|---------|------------------|---------------------|
-| Context Window | 200K tokens | Varies (8K - 262K) |
-| Auto-Compression | ✅ AI-powered | ⚠️ Truncation (Phase 1)<br>✅ AI-powered (Phase 4) |
-| Context Preservation | ❌ No save | ✅ Auto-save to disk |
-| Session Restore | ❌ No | ✅ Full restore |
-| Manual Control | `/compact`, `/clear` | Same + `/save-context`, `/restore-context` |
-| Export | ❌ No | ✅ Markdown, HTML, JSON |
+| Feature              | Claude Sonnet 4.5    | anyclaude (Proposed)                               |
+| -------------------- | -------------------- | -------------------------------------------------- |
+| Context Window       | 200K tokens          | Varies (8K - 262K)                                 |
+| Auto-Compression     | ✅ AI-powered        | ⚠️ Truncation (Phase 1)<br>✅ AI-powered (Phase 4) |
+| Context Preservation | ❌ No save           | ✅ Auto-save to disk                               |
+| Session Restore      | ❌ No                | ✅ Full restore                                    |
+| Manual Control       | `/compact`, `/clear` | Same + `/save-context`, `/restore-context`         |
+| Export               | ❌ No                | ✅ Markdown, HTML, JSON                            |
 
 ## Related Issues
 
@@ -449,6 +467,7 @@ anyclaude --clean-contexts --older-than 30d
 **Impact**: High (enables long-running sessions with local models)
 
 **Dependencies**:
+
 - Context detection (completed)
 - File system access (available)
 - Optional: AI summarization (Phase 4)

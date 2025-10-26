@@ -88,7 +88,11 @@ function test_trace_directory_creation() {
   // Check permissions (0700 = rwx------)
   const stats = fs.statSync(traceDir);
   const mode = stats.mode & 0o777;
-  assert.strictEqual(mode, 0o700, "Trace directory should have 0700 permissions");
+  assert.strictEqual(
+    mode,
+    0o700,
+    "Trace directory should have 0700 permissions"
+  );
 
   console.log("✓ Trace directory creation works");
 }
@@ -136,7 +140,7 @@ function test_api_key_sanitization() {
     headers: {
       "x-api-key": "sk-ant-very-secret-key",
       "content-type": "application/json",
-      "Authorization": "Bearer secret-token",
+      Authorization: "Bearer secret-token",
     },
     body: {
       model: "claude-3-5-sonnet-20241022",
@@ -225,7 +229,7 @@ async function test_get_trace_files() {
       body: { index: i },
     });
     // Small delay to ensure unique millisecond timestamps
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 
   const files = getTraceFiles(testMode);
@@ -256,7 +260,7 @@ async function test_clear_traces() {
       headers: {},
       body: { index: i },
     });
-    await new Promise(resolve => setTimeout(resolve, 5));
+    await new Promise((resolve) => setTimeout(resolve, 5));
   }
 
   const filesBefore = getTraceFiles(testMode);

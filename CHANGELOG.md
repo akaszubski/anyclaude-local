@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **JSON Schema union type compatibility** - Fixed "invalid_union" errors with tongyi-deepresearch and gpt-oss-20b models
+  - Enhanced `providerizeSchema()` to resolve `oneOf`, `anyOf`, `allOf` union types
+  - Transforms multi-type arrays (`type: ['string', 'number']`) to single types
+  - LMStudio doesn't support JSON Schema union types, so we resolve to first non-null type
+  - `allOf` schemas are merged (properties, required fields, types)
+  - Added comprehensive unit tests for all union type patterns
+  - **Result**: Complex Claude Code tool schemas now work with all LMStudio models
+  - See [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) for details
+
 ## [2.0.0] - 2025-10-26
 
 ### Fixed
+
 - **🎉 Tool calling completely fixed!** - Resolved all "Error reading file" and tool execution failures
   - Implemented proper streaming tool parameter handling via `input_json_delta` events
   - Track streamed tool IDs to prevent duplicates from AI SDK's redundant events
@@ -19,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - See [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) for complete investigation
 
 ### Changed
+
 - **Major architectural documentation update** - PROJECT.md now emphasizes translation layer concept
   - Updated tool calling solution with correct streaming implementation
   - Added 5-layer architecture diagram showing translation flow
@@ -39,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added links to organized documentation structure
 
 ### Added
+
 - **Mode switching**: Toggle between LMStudio (local models) and Claude (real Anthropic API) modes
   - `ANYCLAUDE_MODE=claude|lmstudio` environment variable
   - `--mode=claude|lmstudio` CLI flag (takes priority over env var)
@@ -64,12 +78,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Trace file management
 
 ### Security
+
 - API keys redacted from all trace files
 - Trace files created with 0600 permissions (read/write by owner only)
 - Trace directories created with 0700 permissions (full access by owner only)
 - Sensitive headers (x-api-key, Authorization, etc.) automatically sanitized
 
 ### Documentation
+
 - **NEW**: [docs/README.md](docs/README.md) - Complete documentation index
 - **NEW**: [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) - Tool calling investigation
 - **UPDATED**: PROJECT.md - Corrected tool calling section, emphasized translation layer
@@ -79,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added security best practices for trace files
 
 ### BREAKING CHANGES
+
 - **Version bump to 2.0.0** due to:
   - Complete rewrite of tool calling mechanism (architectural change)
   - Dual-mode architecture (claude vs lmstudio)
@@ -88,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-10-25
 
 ### Added
+
 - **Initial fork from anyclaude v1.2.1** by Coder Technologies Inc.
 - **LMStudio-only support** - Simplified to focus exclusively on local models
 - **Dynamic model switching** - Use generic "current-model" name to switch LMStudio models without restart
@@ -97,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Testing guides** - Instructions for verifying model switching works
 
 ### Removed
+
 - **Cloud provider support** - Removed OpenAI, Google, xAI, Azure, and cloud Anthropic providers (~1500 lines)
 - **Failover systems** - Removed circuit breaker, health checks, and automatic failover logic
 - **Advanced features** - Removed GPT-5 reasoning controls, service tier management
@@ -105,6 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dependencies** - Removed @ai-sdk/anthropic, @ai-sdk/azure, @ai-sdk/google, @ai-sdk/xai, yargs-parser
 
 ### Changed
+
 - **Package name** - Renamed from "anyclaude" to "anyclaude-lmstudio"
 - **Default model** - Changed from "local-model" to "current-model" for clarity
 - **Repository URL** - https://github.com/akaszubski/anyclaude-lmstudio
@@ -113,6 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **anthropic-proxy.ts** - Reduced from 900 lines to 433 lines
 
 ### Documentation
+
 - Updated README.md with LMStudio-only setup instructions
 - Updated CLAUDE.md with simplified architecture documentation
 - Added LICENSE with dual copyright attribution
@@ -120,6 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created PROJECT.md for autonomous development workflow
 
 ### Attribution
+
 - Forked from: https://github.com/coder/anyclaude
 - Original authors: Coder Technologies Inc.
 - Original license: MIT
@@ -130,12 +152,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This project is a **simplified fork** of the original anyclaude project:
 
 **Original Project**: [anyclaude](https://github.com/coder/anyclaude) by [Coder](https://coder.com)
+
 - Multi-provider support (OpenAI, Google, xAI, Azure, Anthropic)
 - Advanced failover and circuit breaker patterns
 - GPT-5 reasoning effort controls
 - OpenRouter integration
 
 **This Fork**: anyclaude-lmstudio
+
 - **Focused on**: LMStudio local models only
 - **Removed**: Cloud provider dependencies and complexity
 - **Added**: Dynamic model switching without restart

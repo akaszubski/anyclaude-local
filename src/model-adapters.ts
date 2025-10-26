@@ -38,7 +38,6 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
   //   removeOptionalParams: true,
   //   toolCallingHint: '\n\nUse the provided tools to complete tasks.'
   // },
-
   // Add more models as needed:
   // 'llama-3-8b-instruct': { ... },
   // 'mistral-7b-instruct': { ... },
@@ -76,10 +75,7 @@ export function getModelConfig(modelId: string): ModelConfig {
  * @param modelId - The model identifier
  * @returns Simplified schema (or original if no simplification needed)
  */
-export function simplifySchemaForModel(
-  schema: any,
-  modelId: string
-): any {
+export function simplifySchemaForModel(schema: any, modelId: string): any {
   const config = getModelConfig(modelId);
 
   // No simplification needed
@@ -104,21 +100,25 @@ export function simplifySchemaForModel(
     if (keys.length > config.maxParameters) {
       // Keep required params first, then first N optional params
       const requiredKeys = required.filter((key: string) => keys.includes(key));
-      const optionalKeys = keys.filter((key: string) => !required.includes(key));
+      const optionalKeys = keys.filter(
+        (key: string) => !required.includes(key)
+      );
       const keepKeys = [
         ...requiredKeys,
-        ...optionalKeys.slice(0, config.maxParameters - requiredKeys.length)
+        ...optionalKeys.slice(0, config.maxParameters - requiredKeys.length),
       ];
 
       filteredProperties = Object.fromEntries(
-        Object.entries(filteredProperties).filter(([key]) => keepKeys.includes(key))
+        Object.entries(filteredProperties).filter(([key]) =>
+          keepKeys.includes(key)
+        )
       );
     }
   }
 
   return {
     ...schema,
-    properties: filteredProperties
+    properties: filteredProperties,
   };
 }
 
@@ -135,19 +135,22 @@ export function simplifyDescriptionForModel(
 ): string {
   const config = getModelConfig(modelId);
 
-  if (!config.maxDescriptionLength || description.length <= config.maxDescriptionLength) {
+  if (
+    !config.maxDescriptionLength ||
+    description.length <= config.maxDescriptionLength
+  ) {
     return description;
   }
 
   // Extract first paragraph or first N characters
-  const firstParagraph = description.split('\n\n')[0];
+  const firstParagraph = description.split("\n\n")[0];
 
   if (firstParagraph.length <= config.maxDescriptionLength) {
     return firstParagraph;
   }
 
   // Truncate and add ellipsis
-  return description.substring(0, config.maxDescriptionLength) + '...';
+  return description.substring(0, config.maxDescriptionLength) + "...";
 }
 
 /**
@@ -158,7 +161,7 @@ export function simplifyDescriptionForModel(
  */
 export function getToolCallingHint(modelId: string): string {
   const config = getModelConfig(modelId);
-  return config.toolCallingHint || '';
+  return config.toolCallingHint || "";
 }
 
 /**
@@ -168,10 +171,7 @@ export function getToolCallingHint(modelId: string): string {
  * @param modelId - The model identifier
  * @returns Parsed tool call in standard format
  */
-export function parseToolCallForModel(
-  chunk: any,
-  modelId: string
-): any {
+export function parseToolCallForModel(chunk: any, modelId: string): any {
   const config = getModelConfig(modelId);
 
   if (config.parseToolCall) {
@@ -188,9 +188,7 @@ export function parseToolCallForModel(
  * @param lmstudioUrl - The LMStudio server URL
  * @returns The model identifier, or 'unknown' if detection fails
  */
-export async function detectCurrentModel(
-  lmstudioUrl: string
-): Promise<string> {
+export async function detectCurrentModel(lmstudioUrl: string): Promise<string> {
   try {
     const response = await fetch(`${lmstudioUrl}/models`);
     const data: any = await response.json();
@@ -202,5 +200,5 @@ export async function detectCurrentModel(
     // Silently fail - will use default behavior
   }
 
-  return 'unknown';
+  return "unknown";
 }

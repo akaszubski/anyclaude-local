@@ -22,6 +22,7 @@ LMStudio was connecting successfully but the stream conversion was failing becau
 **The Core Issue:** Vercel AI SDK v5+ uses OpenAI's new Responses API by default, which LMStudio doesn't support.
 
 **The Solution:**
+
 ```typescript
 this.lmstudioProvider = createOpenAI({
   baseURL: this.config.lmstudioUrl,
@@ -35,26 +36,30 @@ this.lmstudioProvider = createOpenAI({
 This forces the AI SDK to use the standard OpenAI Chat Completions API format that LMStudio expects.
 
 **Before Fix:**
+
 ```json
 {
   "model": "gpt-oss-20b-mlx",
-  "input": [  // ❌ Wrong! LMStudio doesn't understand this
+  "input": [
+    // ❌ Wrong! LMStudio doesn't understand this
     {
       "role": "user",
-      "content": [{"type": "input_text", "text": "hello"}]  // ❌ Wrong type!
+      "content": [{ "type": "input_text", "text": "hello" }] // ❌ Wrong type!
     }
   ]
 }
 ```
 
 **After Fix:**
+
 ```json
 {
   "model": "gpt-oss-20b-mlx",
-  "messages": [  // ✅ Correct! Standard Chat Completions format
+  "messages": [
+    // ✅ Correct! Standard Chat Completions format
     {
       "role": "user",
-      "content": [{"type": "text", "text": "hello"}]  // ✅ Correct type!
+      "content": [{ "type": "text", "text": "hello" }] // ✅ Correct type!
     }
   ]
 }
@@ -76,6 +81,7 @@ This forces the AI SDK to use the standard OpenAI Chat Completions API format th
 
 **Before:** Only first 10 chunks logged at debug level 1
 **After:**
+
 - First 10 chunks at debug level 1
 - ALL chunks at debug level 2 (verbose)
 - Better error messages for unhandled chunk types
@@ -83,6 +89,7 @@ This forces the AI SDK to use the standard OpenAI Chat Completions API format th
 ### 3. Enhanced Debug Script
 
 Created `./scripts/debug/debug-local.sh` with:
+
 - Maximum debug verbosity (`ANYCLAUDE_DEBUG=2`)
 - Log file capture in `debug-logs/`
 - Clear status messages
@@ -97,6 +104,7 @@ Created `./scripts/debug/debug-local.sh` with:
 ```
 
 This will:
+
 1. ✓ Check LMStudio is running
 2. ✓ Auto-detect your loaded model
 3. ✓ Enable maximum debug verbosity
@@ -108,6 +116,7 @@ This will:
 #### 1. Chunk Sequence
 
 Look for the pattern of chunks being received:
+
 ```
 [Stream Conversion] Raw chunk 1: {"type":"start"}
 [Stream Conversion] Raw chunk 2: {"type":"start-step"}
@@ -123,6 +132,7 @@ Look for the pattern of chunks being received:
 #### 2. Unhandled Chunk Types
 
 Look for messages like:
+
 ```
 [Stream Conversion] ⚠️  Unhandled chunk type: SOME_TYPE
 [Stream Conversion] Terminating stream due to unhandled chunk
@@ -133,6 +143,7 @@ This tells us exactly which chunk type the converter doesn't know how to handle.
 #### 3. Pipeline Abortion
 
 Look for:
+
 ```
 [Stream Conversion] ⚠️  Pipeline aborted with empty error
 [Stream Conversion] Last processed chunk count: N
@@ -151,6 +162,7 @@ Notice chunk 3 is missing in your output - it jumps from chunk 2 to chunk 4. If 
 ### Theory 2: Unexpected chunk after `text-delta`
 
 LMStudio might be sending a chunk type we don't handle, such as:
+
 - `step-finish` (some providers use this)
 - `text-done` (some use this instead of `text-end`)
 - A custom LMStudio-specific chunk type
@@ -160,6 +172,7 @@ LMStudio might be sending a chunk type we don't handle, such as:
 ### Theory 3: Malformed chunk
 
 LMStudio might be sending a chunk with:
+
 - Missing `type` field
 - Undefined or null `type`
 - A chunk that doesn't match the expected format
@@ -214,6 +227,7 @@ export PROXY_ONLY=true
 ```
 
 Then in another terminal:
+
 ```bash
 # Get the proxy URL from the output (e.g., http://localhost:52385)
 PROXY_URL=http://localhost:XXXXX
@@ -259,19 +273,25 @@ Based on your LMStudio models, here are my recommendations:
 ## Common Issues
 
 ### Issue: "No models loaded in LMStudio"
+
 **Fix:** Load a model in LMStudio's UI first
 
 ### Issue: "LMStudio server is NOT running"
+
 **Fix:** Start the server in LMStudio (Server tab → Start Server)
 
 ### Issue: Model loads but streams are slow
+
 **Fix:**
+
 - Check your Mac's Activity Monitor - is the model using GPU?
 - Try a smaller model
 - Reduce context length in LMStudio settings
 
 ### Issue: Streams start then hang forever
+
 **Fix:**
+
 - Check LMStudio's console for errors
 - Try a different model
 - Restart LMStudio
@@ -285,6 +305,7 @@ Based on your LMStudio models, here are my recommendations:
 ## Contact
 
 If the debug output is very long, you can:
+
 1. Save it to a file: `./scripts/debug/debug-local.sh > debug.txt 2>&1`
 2. Share just the chunk sequence (look for "Raw chunk" lines)
 3. Share the error message (look for "⚠️" or "Pipeline error")

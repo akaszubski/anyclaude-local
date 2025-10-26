@@ -27,10 +27,10 @@ function test_api_key_redaction_in_headers() {
     "x-api-key": "sk-ant-api03-very-secret-key-12345",
     "X-API-KEY": "ANOTHER-SECRET-KEY",
     "api-key": "secret-key-123",
-    "API_KEY": "secret-key-456",
-    "apikey": "secret-key-789",
-    "Authorization": "Bearer secret-token-xyz",
-    "authorization": "Bearer another-secret",
+    API_KEY: "secret-key-456",
+    apikey: "secret-key-789",
+    Authorization: "Bearer secret-token-xyz",
+    authorization: "Bearer another-secret",
     "content-type": "application/json", // Should NOT be redacted
   };
 
@@ -61,10 +61,7 @@ function test_api_key_redaction_in_headers() {
   assert.strictEqual(trace.request.headers["authorization"], "[REDACTED]");
 
   // Check non-sensitive headers are preserved
-  assert.strictEqual(
-    trace.request.headers["content-type"],
-    "application/json"
-  );
+  assert.strictEqual(trace.request.headers["content-type"], "application/json");
 
   // Verify no actual secrets in the trace file
   const fileContent = fs.readFileSync(filepath, "utf8");
@@ -72,8 +69,14 @@ function test_api_key_redaction_in_headers() {
     !fileContent.includes("sk-ant-api03"),
     "Real API key found in trace file!"
   );
-  assert(!fileContent.includes("ANOTHER-SECRET"), "Secret found in trace file!");
-  assert(!fileContent.includes("secret-token"), "Secret token found in trace file!");
+  assert(
+    !fileContent.includes("ANOTHER-SECRET"),
+    "Secret found in trace file!"
+  );
+  assert(
+    !fileContent.includes("secret-token"),
+    "Secret token found in trace file!"
+  );
 
   clearTraces(mode);
   console.log("✓ API keys in headers are properly redacted");
@@ -121,10 +124,7 @@ function test_api_key_redaction_in_body() {
   assert.strictEqual(trace.request.body.API_KEY, "[REDACTED]");
 
   // Check non-sensitive fields are preserved
-  assert.strictEqual(
-    trace.request.body.model,
-    "claude-3-5-sonnet-20241022"
-  );
+  assert.strictEqual(trace.request.body.model, "claude-3-5-sonnet-20241022");
   assert.strictEqual(
     trace.request.body.messages[0].content,
     "This should be preserved"
@@ -262,14 +262,24 @@ function runSecurityTests() {
     test_file_permissions();
     test_directory_permissions();
 
-    console.log("\n╔══════════════════════════════════════════════════════════╗");
+    console.log(
+      "\n╔══════════════════════════════════════════════════════════╗"
+    );
     console.log("║               ✅ ALL SECURITY TESTS PASSED               ║");
-    console.log("╚══════════════════════════════════════════════════════════╝\n");
+    console.log(
+      "╚══════════════════════════════════════════════════════════╝\n"
+    );
     process.exit(0);
   } catch (error) {
-    console.error("\n╔══════════════════════════════════════════════════════════╗");
-    console.error("║               ❌ SECURITY TEST FAILED!                   ║");
-    console.error("╚══════════════════════════════════════════════════════════╝\n");
+    console.error(
+      "\n╔══════════════════════════════════════════════════════════╗"
+    );
+    console.error(
+      "║               ❌ SECURITY TEST FAILED!                   ║"
+    );
+    console.error(
+      "╚══════════════════════════════════════════════════════════╝\n"
+    );
     console.error("Error:", error.message);
     console.error(error.stack);
     process.exit(1);
