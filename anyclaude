@@ -1,0 +1,63 @@
+#!/bin/bash
+# AnyClaude - Unified Launcher (Simplified)
+# Single entry point that manages everything
+# Usage: ./anyclaude                    # Start with MLX-Omni (recommended)
+#        ./anyclaude mlx-lm             # Start with MLX-LM (analysis only)
+#        ./anyclaude lmstudio           # Start with LMStudio
+
+set -e
+
+MODE=${1:-mlx-omni}  # Default: MLX-Omni (recommended)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Cleanup
+cleanup() {
+  pkill -f "mlx-omni-server\|mlx_lm\|bun.*main\|node.*main" 2>/dev/null || true
+  rm -f /tmp/anyclaude-*.pids 2>/dev/null || true
+}
+
+# Show help
+show_help() {
+  echo "AnyClaude - Local Claude Code with MLX"
+  echo ""
+  echo "Usage: ./anyclaude [MODE]"
+  echo ""
+  echo "Modes:"
+  echo "  (default)   Start MLX-Omni - RECOMMENDED (fastest + full features)"
+  echo "  mlx-omni    Same as default"
+  echo "  mlx-lm      Use MLX-LM (analysis only, no tools)"
+  echo "  lmstudio    Use LMStudio (if running locally)"
+  echo "  help        Show this message"
+  echo ""
+  echo "Examples:"
+  echo "  ./anyclaude                    # Start with MLX-Omni"
+  echo "  ./anyclaude mlx-lm             # Start with MLX-LM"
+  echo "  ./anyclaude help               # Show this message"
+  echo ""
+  echo "Environment variables:"
+  echo "  MLX_MODEL        Model ID (default: mlx-community/Qwen2.5-1.5B-Instruct-4bit)"
+  echo "  ANYCLAUDE_DEBUG  Debug level (0=none, 1=basic, 2=verbose, 3=trace)"
+}
+
+# Main
+trap cleanup EXIT
+
+case "$MODE" in
+  help)
+    show_help
+    exit 0
+    ;;
+  mlx-omni|"")
+    # For mlx-omni, we need to verify the script exists first
+    if [ ! -f "$SCRIPT_DIR/anyclaude-mlx-omni" ]; then
+      echo "Error: anyclaude-mlx-omni launcher not found!"
+      exit 1
+    fi
+    exec "$SCRIPT_DIR/anyclaude-mlx-omni"
+    ;;
+  *)
+    echo "Unknown mode: $MODE"
+    echo "Run './anyclaude help' for usage"
+    exit 1
+    ;;
+esac

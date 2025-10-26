@@ -1,0 +1,156 @@
+#!/bin/bash
+# AnyClaude + MLX-Omni-Server Integrated Launcher
+# Starts both services together and manages their lifecycle
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MLX_OMNI_PORT=${MLX_OMNI_PORT:-8080}
+MLX_MODEL=${MLX_MODEL:-"mlx-community/Qwen2.5-1.5B-Instruct-4bit"}
+ANYCLAUDE_DEBUG=${ANYCLAUDE_DEBUG:-0}
+PROXY_ONLY=${PROXY_ONLY:-false}
+
+# State files
+PIDS_FILE="/tmp/anyclaude-mlx-omni.pids"
+LOG_DIR="/tmp/anyclaude-mlx-omni-logs"
+mkdir -p "$LOG_DIR"
+
+# Cleanup function
+cleanup() {
+  echo -e "\n${YELLOW}[AnyClaude]${NC} Shutting down..."
+
+  # Kill MLX-Omni if running
+  if [ -f "$PIDS_FILE" ]; then
+    while IFS= read -r pid; do
+      if kill -0 "$pid" 2>/dev/null; then
+        echo -e "${YELLOW}[AnyClaude]${NC} Stopping process $pid..."
+        kill "$pid" 2>/dev/null || true
+        sleep 1
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done < "$PIDS_FILE"
+    rm "$PIDS_FILE"
+  fi
+
+  echo -e "${GREEN}[AnyClaude]${NC} Shutdown complete"
+  exit 0
+}
+
+# Trap signals
+trap cleanup SIGINT SIGTERM EXIT
+
+# Check if mlx-omni-server is installed
+check_mlx_omni_installed() {
+  if ! command -v mlx-omni-server &> /dev/null; then
+    echo -e "${RED}Error: mlx-omni-server not installed${NC}"
+    echo "Install with: pip install mlx-omni-server"
+    exit 1
+  fi
+}
+
+# Start MLX-Omni-Server
+start_mlx_omni() {
+  echo -e "${BLUE}[MLX-Omni]${NC} Starting MLX-Omni-Server on port $MLX_OMNI_PORT..."
+  echo -e "${BLUE}[MLX-Omni]${NC} Model: $MLX_MODEL"
+
+  export MLX_MODEL
+  mlx-omni-server \
+    --port "$MLX_OMNI_PORT" \
+    --log-level info \
+    > "$LOG_DIR/mlx-omni-server.log" 2>&1 &
+
+  MLX_OMNI_PID=$!
+  echo "$MLX_OMNI_PID" >> "$PIDS_FILE"
+
+  # Wait for server to be ready
+  echo -e "${BLUE}[MLX-Omni]${NC} Waiting for server to be ready..."
+  for i in {1..60}; do
+    if curl -s "http://localhost:$MLX_OMNI_PORT/anthropic/v1/models" > /dev/null 2>&1; then
+      echo -e "${GREEN}[MLX-Omni]${NC} Server is ready! (PID: $MLX_OMNI_PID)"
+      return 0
+    fi
+    sleep 1
+    if [ $((i % 10)) -eq 0 ]; then
+      echo -e "${BLUE}[MLX-Omni]${NC} Still waiting... ($i/60)"
+    fi
+  done
+
+  echo -e "${RED}[MLX-Omni]${NC} Server failed to start"
+  echo "Check logs: tail -f $LOG_DIR/mlx-omni-server.log"
+  exit 1
+}
+
+# Start AnyClaude
+start_anyclaude() {
+  echo ""
+  echo -e "${BLUE}[AnyClaude]${NC} Starting AnyClaude..."
+
+  export ANYCLAUDE_MODE=mlx-omni
+  export ANYCLAUDE_DEBUG
+  export MLX_OMNI_URL="http://localhost:$MLX_OMNI_PORT/anthropic"
+
+  if [ "$PROXY_ONLY" = "true" ]; then
+    echo -e "${BLUE}[AnyClaude]${NC} Running in proxy-only mode (no Claude Code spawned)"
+    export PROXY_ONLY=true
+  else
+    echo -e "${BLUE}[AnyClaude]${NC} Spawning Claude Code..."
+  fi
+
+  "$SCRIPT_DIR/dist/main-cli.js" &
+  ANYCLAUDE_PID=$!
+  echo "$ANYCLAUDE_PID" >> "$PIDS_FILE"
+
+  echo -e "${GREEN}[AnyClaude]${NC} Started (PID: $ANYCLAUDE_PID)"
+}
+
+# Show status
+show_status() {
+  echo ""
+  echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${BLUE}║${NC}     AnyClaude + MLX-Omni-Server Integration Active       ${BLUE}║${NC}"
+  echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo -e "${GREEN}✓${NC} MLX-Omni-Server:   http://localhost:$MLX_OMNI_PORT/anthropic"
+  echo -e "${GREEN}✓${NC} Model:             $MLX_MODEL"
+  echo -e "${GREEN}✓${NC} AnyClaude Mode:    MLX-OMNI"
+  echo -e "${GREEN}✓${NC} Debug Level:       $ANYCLAUDE_DEBUG"
+  if [ "$PROXY_ONLY" = "true" ]; then
+    echo -e "${YELLOW}ℹ${NC} Running in proxy-only mode (no Claude Code)"
+  else
+    echo -e "${GREEN}✓${NC} Claude Code:       Running"
+  fi
+  echo ""
+  echo -e "${BLUE}Logs:${NC}"
+  echo "  MLX-Omni:  $LOG_DIR/mlx-omni-server.log"
+  echo "  AnyClaude: Check the AnyClaude output above"
+  echo ""
+  echo -e "${BLUE}Press Ctrl+C to stop both services${NC}"
+  echo ""
+}
+
+# Main
+main() {
+  echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${BLUE}║${NC}     AnyClaude + MLX-Omni-Server Launcher                ${BLUE}║${NC}"
+  echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+
+  check_mlx_omni_installed
+  start_mlx_omni
+  start_anyclaude
+
+  show_status
+
+  # Wait for processes
+  wait
+}
+
+main "$@"
