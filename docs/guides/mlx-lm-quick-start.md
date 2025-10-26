@@ -91,9 +91,15 @@ export ANYCLAUDE_DEBUG=3  # Trace (includes tool calls)
 
 | Scenario | Time | Note |
 |----------|------|------|
-| First query | ~30s | System prompt computed & cached |
-| Follow-ups | <1s | Cached by KV cache |
-| Session total (5 queries) | ~31.5s | vs 150s without cache |
+| First query | ~30-60s | System prompt computed & cached |
+| Follow-ups | ~15-20s | Cached KV reused, 2-3x faster |
+| Session total (5 queries) | ~120s | vs 200-300s without cache (40% speedup) |
+
+**Note**: Follow-up improvement varies based on:
+- Model size and quantization (30B models are larger, take longer)
+- System prompt size (18,490 tokens being cached)
+- Response length (longer responses take longer to generate)
+- Hardware specifics (M4 Max shows better cache efficiency)
 
 ## Typical Session
 
