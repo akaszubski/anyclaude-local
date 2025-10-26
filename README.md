@@ -1,11 +1,11 @@
-# anyclaude-lmstudio
+# anyclaude-local
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/github/stars/akaszubski/anyclaude-lmstudio?style=social)](https://github.com/akaszubski/anyclaude-lmstudio)
+[![GitHub](https://img.shields.io/github/stars/akaszubski/anyclaude-local?style=social)](https://github.com/akaszubski/anyclaude-local)
 
-**Run Claude Code with local LMStudio models - zero cloud dependency, full privacy**
+**Run Claude Code with local models (mlx-lm, LMStudio) - zero cloud dependency, full privacy**
 
-An intelligent translation layer ported from [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of local LMStudio models as if they were the real Claude API.
+An intelligent translation layer ported from [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of local models as if they were the real Claude API. **9x faster on Apple Silicon with mlx-lm's native KV cache!**
 
 ## ✨ Features
 
@@ -73,8 +73,8 @@ Development dependencies:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/akaszubski/anyclaude-lmstudio.git
-cd anyclaude-lmstudio
+git clone https://github.com/akaszubski/anyclaude-local.git
+cd anyclaude-local
 
 # 2. Install dependencies
 bun install
@@ -929,19 +929,20 @@ CMD ["anyclaude"]
 
 This is a **simplified fork** of the original anyclaude project.
 
-| Feature              | Original anyclaude                       | anyclaude-lmstudio        |
+| Feature              | Original anyclaude                       | anyclaude-local           |
 | -------------------- | ---------------------------------------- | ------------------------- |
 | **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ❌ None (local only)      |
-| **LMStudio Support** | ✅ Via failover                          | ✅ Primary focus          |
+| **Local Backends**   | ✅ LMStudio via failover                 | ✅ LMStudio + mlx-lm      |
+| **MLX Support**      | ❌ Not supported                         | ✅ Native (9x faster)     |
 | **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed for simplicity |
 | **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable         |
 | **Codebase Size**    | ~2,500 lines                             | ~1,000 lines              |
-| **Setup Complexity** | Moderate (multiple providers)            | Simple (one provider)     |
+| **Setup Complexity** | Moderate (multiple providers)            | Simple (local-only)       |
 | **Use Case**         | Multi-provider flexibility               | Local-first privacy       |
 
 **Choose Original anyclaude if**: You need cloud providers, failover, or GPT-5 features
 
-**Choose anyclaude-lmstudio if**: You want local-only, simple setup, privacy-focused usage
+**Choose anyclaude-local if**: You want local-only, simple setup, privacy-focused usage with optimal Apple Silicon performance
 
 ---
 
@@ -956,10 +957,11 @@ This project is a simplified fork of [anyclaude](https://github.com/coder/anycla
 - GPT-5 reasoning effort controls
 - OpenRouter integration
 
-### This Fork (anyclaude-lmstudio)
+### This Fork (anyclaude-local)
 
-- **Focused on**: LMStudio local models only
+- **Focused on**: Local models only (LMStudio, mlx-lm)
 - **Removed**: Cloud provider dependencies (~1,500 lines)
+- **Added**: mlx-lm support with native KV cache (9x faster on Apple Silicon)
 - **Added**: Dynamic model switching without restart
 - **Simplified**: Easier to maintain and understand
 
@@ -967,7 +969,7 @@ This project is a simplified fork of [anyclaude](https://github.com/coder/anycla
 
 ### Why Fork?
 
-The original anyclaude is excellent for multi-provider usage, but many users wanted a **simpler, local-only solution** without cloud dependencies. This fork strips away complexity to focus on one thing: seamless LMStudio integration.
+The original anyclaude is excellent for multi-provider usage, but many users wanted a **simpler, local-only solution** without cloud dependencies. This fork strips away complexity to focus on local models with optimal performance - especially on Apple Silicon via mlx-lm's native KV cache.
 
 ---
 
@@ -993,8 +995,8 @@ The original anyclaude is excellent for multi-provider usage, but many users wan
 
 ## 🐛 Support & Issues
 
-- **Issues**: [GitHub Issues](https://github.com/akaszubski/anyclaude-lmstudio/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/akaszubski/anyclaude-lmstudio/discussions)
+- **Issues**: [GitHub Issues](https://github.com/akaszubski/anyclaude-local/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/akaszubski/anyclaude-local/discussions)
 - **Original Project**: [anyclaude](https://github.com/coder/anyclaude)
 
 ---
@@ -1004,13 +1006,13 @@ The original anyclaude is excellent for multi-provider usage, but many users wan
 MIT License - see [LICENSE](LICENSE)
 
 **Copyright (c) 2025 Coder Technologies Inc.** (Original anyclaude project)
-**Copyright (c) 2025 akaszubski** (anyclaude-lmstudio fork)
+**Copyright (c) 2025 akaszubski** (anyclaude-local fork)
 
 ---
 
 ## 🌟 Show Your Support
 
-If anyclaude-lmstudio helps you build with local AI models, please:
+If anyclaude-local helps you build with local AI models, please:
 
 - ⭐ Star this repo on GitHub
 - ⭐ Star the [original anyclaude](https://github.com/coder/anyclaude) repo

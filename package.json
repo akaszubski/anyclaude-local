@@ -1,5 +1,5 @@
 {
-  "name": "anyclaude-lmstudio",
+  "name": "anyclaude-local",
   "version": "2.0.0",
   "author": {
     "name": "akaszubski",
@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/akaszubski/anyclaude-lmstudio"
+    "url": "https://github.com/akaszubski/anyclaude-local"
   },
   "bin": {
     "anyclaude": "./dist/main-cli.js",
@@ -40,11 +40,14 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "description": "Run Claude Code with LMStudio local models. Simplified fork of anyclaude for local-first AI development.",
+  "description": "Run Claude Code with local models (LMStudio, mlx-lm). Simplified fork of anyclaude for local-first AI development.",
   "keywords": [
     "claude",
     "claude-code",
     "lmstudio",
+    "mlx",
+    "mlx-lm",
+    "apple-silicon",
     "local-llm",
     "anthropic",
     "ai",
@@ -53,12 +56,13 @@
     "mistral",
     "llama",
     "deepseek",
+    "qwen",
     "local-ai",
     "privacy"
   ],
-  "homepage": "https://github.com/akaszubski/anyclaude-lmstudio#readme",
+  "homepage": "https://github.com/akaszubski/anyclaude-local#readme",
   "bugs": {
-    "url": "https://github.com/akaszubski/anyclaude-lmstudio/issues"
+    "url": "https://github.com/akaszubski/anyclaude-local/issues"
   },
   "license": "MIT",
   "engines": {
