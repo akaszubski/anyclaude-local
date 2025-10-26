@@ -78,6 +78,7 @@ start_mlx_omni() {
 
   /Users/akaszubski/.local/bin/mlx-omni-server \
     --port "$MLX_OMNI_PORT" \
+    --model "$MLX_OMNI_MODEL" \
     > "$LOG_DIR/mlx-omni-server.log" 2>&1 &
 
   MLX_OMNI_PID=$!
