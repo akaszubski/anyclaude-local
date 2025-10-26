@@ -32,6 +32,8 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 - [Development Guide](development/DEVELOPMENT.md) - Setup for contributors
 - [Testing Guide](development/testing-guide.md) - Running and writing tests
+- **[TDD Guide](development/tdd-guide.md)** - ⭐ Test-Driven Development workflow
+- **[GenAI Testing Guide](development/genai-testing-guide.md)** - ⭐ When and how to use GenAI testing
 - [Automated Testing](development/automated-testing.md) - CI/CD setup
 - [Model Testing](development/model-testing.md) - Testing with different models
 
