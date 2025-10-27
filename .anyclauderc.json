@@ -1,5 +1,5 @@
 {
-  "backend": "lmstudio",
+  "backend": "mlx-lm",
   "debug": {
     "level": 0,
     "enableTraces": false,
@@ -20,7 +20,7 @@
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "mlx-lm",
-      "model": "current-model",
+      "model": "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
       "description": "MLX Language Model with native KV cache - best performance for follow-up requests"
     }
   }

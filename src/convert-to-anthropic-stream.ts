@@ -29,6 +29,7 @@ export function convertToAnthropicStream(
   >({
     transform(chunk, controller) {
       chunkCount++;
+      debug(1, `[Stream Conversion] Received chunk ${chunkCount} of type: ${chunk.type}`);
 
       // Log raw chunks from AI SDK to help debug LMStudio responses
       // Log first 10 chunks at level 1, then all chunks at verbose level 2

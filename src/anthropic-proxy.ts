@@ -578,6 +578,7 @@ export const createAnthropicProxy = ({
             // Create tool parser for mlx-lm mode (supports tool calling)
             const toolParser = providerName === "mlx-lm" ? createToolParser() : null;
 
+            debug(1, `[streamText] About to call streamText for ${providerName}/${model}`);
             stream = await streamText({
               model: languageModel,
               system,
@@ -588,6 +589,7 @@ export const createAnthropicProxy = ({
               abortSignal: abortController.signal,
 
               onFinish: ({ response, usage, finishReason }) => {
+                debug(1, `[streamText onFinish] Called, stop reason: ${finishReason}`);
                 // Clear timeout on successful completion
                 clearTimeout(timeout);
                 // If the body is already being streamed,
@@ -818,9 +820,11 @@ export const createAnthropicProxy = ({
         }, 10000); // 10 second interval
 
         try {
+          debug(1, `[Streaming] Starting stream conversion and pipe for ${providerName}/${model}`);
           await convertToAnthropicStream(stream.fullStream, true).pipeTo(
             new WritableStream({
               write(chunk) {
+                debug(2, `[WritableStream] Received chunk of type: ${chunk.type}`);
                 // Clear keepalive on first chunk (stream has started)
                 if (keepaliveInterval) {
                   clearInterval(keepaliveInterval);
