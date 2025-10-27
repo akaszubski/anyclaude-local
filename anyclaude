@@ -3,6 +3,7 @@
 # Single entry point that manages everything
 # Usage: ./anyclaude                      # Start with MLX-Omni (recommended - HuggingFace models)
 #        ./anyclaude mlx-lm               # Start with MLX-LM (local model paths)
+#        ./anyclaude --mode=vllm-mlx      # Start with vLLM-MLX (supports --mode= syntax)
 #        ./anyclaude mlx-lm /path/to/model # Start with MLX-LM using specific model
 
 set -e
@@ -33,7 +34,15 @@ load_config() {
 load_config
 
 # Command line args override everything
+# If first arg starts with --, pass through to Node.js binary (new --mode= syntax)
+if [[ "$1" == --* ]]; then
+  # Use the Node.js based binary instead of shell scripts
+  exec node "$SCRIPT_DIR/dist/main.js" "$@"
+fi
+
+# Otherwise, support legacy positional argument syntax
 MODE=${1:-${ANYCLAUDE_MODE:-mlx-omni-local}}  # Default: MLX-Omni-Local (KV cache + local models)
+REMAINING_ARGS=("${@:2}")
 
 # Cleanup
 cleanup() {
@@ -43,39 +52,40 @@ cleanup() {
 
 # Show help
 show_help() {
-  echo "AnyClaude - Local Claude Code with MLX"
+  echo "AnyClaude - Local Claude Code with LMStudio, MLX, or vLLM"
   echo ""
-  echo "Usage: ./anyclaude [MODE] [OPTIONS]"
+  echo "Usage: ./anyclaude [MODE] [OPTIONS]  or  ./anyclaude --mode=<backend> [OPTIONS]"
   echo ""
-  echo "Modes:"
+  echo "Modes (Legacy Positional):"
   echo "  (default)              Start MLX-Omni (RECOMMENDED for HuggingFace models)"
   echo "  mlx-omni               Same as default - loads HuggingFace model IDs"
   echo "  mlx-lm                 Use MLX-LM - loads local model paths OR HuggingFace IDs"
   echo "  help                   Show this message"
   echo ""
+  echo "Modes (New --mode= Flag Syntax):"
+  echo "  --mode=lmstudio        Use LMStudio (default in config)"
+  echo "  --mode=mlx-lm          Use MLX-LM (MLX on CPU/GPU)"
+  echo "  --mode=vllm-mlx        Use vLLM-MLX (high-performance MLX)"
+  echo "  --mode=claude          Use real Anthropic API (requires ANTHROPIC_API_KEY)"
+  echo ""
   echo "Examples:"
-  echo "  ./anyclaude                                # Start with MLX-Omni (default)"
-  echo "  ./anyclaude mlx-lm                         # Start with MLX-LM (HuggingFace ID)"
-  echo "  ./anyclaude mlx-lm /path/to/local/model    # Start with MLX-LM (local model)"
+  echo "  ./anyclaude                                # Start with default mode"
+  echo "  ./anyclaude mlx-lm                         # Start with MLX-LM"
+  echo "  ./anyclaude --mode=lmstudio                # Start with LMStudio"
+  echo "  ./anyclaude --mode=vllm-mlx                # Start with vLLM-MLX"
+  echo "  ./anyclaude --mode=claude                  # Start with Anthropic API"
   echo "  ./anyclaude help                           # Show this message"
   echo ""
-  echo "Environment variables (all modes):"
-  echo "  MLX_MODEL        HuggingFace model ID or local path"
-  echo "  ANYCLAUDE_DEBUG  Debug level (0=none, 1=basic, 2=verbose, 3=trace)"
-  echo "  VENV_PATH        Path to MLX venv (default: ~/.venv-mlx)"
+  echo "Configuration:"
+  echo "  Create .anyclauderc.json in project directory to configure backends"
+  echo "  Example: { \"backend\": \"lmstudio\", \"backends\": { \"lmstudio\": { \"baseUrl\": \"...\" } } }"
   echo ""
-  echo "Key Differences:"
-  echo "  MLX-Omni:  ✓ HuggingFace models only (mlx-community/...)"
-  echo "             ✓ Native Anthropic API format"
-  echo "             ✓ Full tool support and streaming"
+  echo "Environment variables:"
+  echo "  ANYCLAUDE_DEBUG          Debug level (0=none, 1=basic, 2=verbose, 3=trace)"
+  echo "  ANYCLAUDE_NO_AUTO_LAUNCH Disable automatic backend server startup"
+  echo "  LMSTUDIO_URL             LMStudio API URL (default: http://localhost:1234/v1)"
+  echo "  VLLM_MLX_URL             vLLM-MLX API URL (default: http://localhost:8081/v1)"
   echo ""
-  echo "  MLX-LM:    ✓ Local model paths (filesystem)"
-  echo "             ✓ HuggingFace model IDs (auto-downloads)"
-  echo "             ✓ OpenAI-compatible API format"
-  echo ""
-  echo "To use your local Qwen3-Coder-30B model:"
-  echo "  export MLX_MODEL=\"/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit\""
-  echo "  ./anyclaude mlx-lm"
 }
 
 # Main
