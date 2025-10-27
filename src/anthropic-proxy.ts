@@ -38,7 +38,6 @@ export type CreateAnthropicProxyOptions = {
   defaultProvider: string;
   defaultModel: string;
   mode: AnyclaudeMode;
-  mlxOmniUrl?: string;
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -51,7 +50,6 @@ export const createAnthropicProxy = ({
   defaultProvider,
   defaultModel,
   mode,
-  mlxOmniUrl,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();

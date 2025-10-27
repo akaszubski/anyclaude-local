@@ -484,30 +484,90 @@ anyclaude
 
 ## ⚙️ Configuration
 
-Configure via environment variables (all optional):
+AnyClaude supports configuration via:
+1. **Configuration file** (`.anyclauderc.json`) - Recommended for persistent settings
+2. **Environment variables** - For overrides and runtime configuration
+3. **CLI flags** - For one-time command-line configuration
+
+### Configuration File (.anyclauderc.json)
+
+Create `.anyclauderc.json` in your project root to configure both backends:
+
+```json
+{
+  "backend": "mlx-lm",
+  "debug": {
+    "level": 0,
+    "enableTraces": false,
+    "enableStreamLogging": false
+  },
+  "backends": {
+    "lmstudio": {
+      "enabled": true,
+      "port": 1234,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model",
+      "compatibility": "legacy",
+      "description": "LMStudio local model server"
+    },
+    "mlx-lm": {
+      "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "mlx-lm",
+      "model": "current-model",
+      "description": "MLX Language Model with native KV cache"
+    }
+  }
+}
+```
+
+**Configuration Priority:**
+1. CLI flags (`--mode=mlx-lm`) - Highest priority
+2. Environment variables (`ANYCLAUDE_MODE=lmstudio`)
+3. Config file (`backend: "mlx-lm"` in `.anyclauderc.json`)
+4. Defaults - Lowest priority (lmstudio)
+
+### Environment Variables
+
+Override specific settings via environment variables:
 
 ```bash
-# LMStudio endpoint (default: http://localhost:1234/v1)
+# Mode selection (overrides config file)
+export ANYCLAUDE_MODE=mlx-lm  # or lmstudio, or claude
+
+# LMStudio configuration
 export LMSTUDIO_URL=http://localhost:1234/v1
-
-# Model name (default: current-model)
-# Note: LMStudio serves whatever model is currently loaded
 export LMSTUDIO_MODEL=current-model
-
-# API key for LMStudio (default: lm-studio)
 export LMSTUDIO_API_KEY=lm-studio
 
-# Debug logging (default: disabled)
+# MLX-LM configuration
+export MLX_LM_URL=http://localhost:8081/v1
+export MLX_LM_MODEL=current-model
+export MLX_LM_API_KEY=mlx-lm
+
+# Debug logging
 export ANYCLAUDE_DEBUG=1  # Basic debug info
-# or
 export ANYCLAUDE_DEBUG=2  # Verbose debug info
 
-# Context window management (NEW!)
-export LMSTUDIO_CONTEXT_LENGTH=32768  # Override auto-detected context limit
-# Useful if your model supports larger context than the default
+# Context window management
+export LMSTUDIO_CONTEXT_LENGTH=32768
 
 # Proxy-only mode (for testing)
 export PROXY_ONLY=true
+```
+
+### CLI Flags
+
+```bash
+# Select mode via CLI (highest priority)
+anyclaude --mode=mlx-lm
+anyclaude --mode=lmstudio
+anyclaude --mode=claude
+
+# Test model compatibility
+anyclaude --test-model
 ```
 
 ### Mode Switching

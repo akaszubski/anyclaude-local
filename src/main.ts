@@ -1,5 +1,7 @@
 // Proxy wrapper to run Claude Code with LMStudio local models or real Anthropic API
 
+import * as fs from "fs";
+import * as path from "path";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { spawn } from "child_process";
@@ -11,17 +13,72 @@ import type { AnyclaudeMode } from "./trace-logger";
 import { debug, isDebugEnabled } from "./debug";
 
 /**
+ * Configuration file structure for .anyclauderc.json
+ */
+interface AnyclaudeConfig {
+  backend?: string;
+  debug?: {
+    level?: number;
+    enableTraces?: boolean;
+    enableStreamLogging?: boolean;
+  };
+  backends?: {
+    lmstudio?: {
+      enabled?: boolean;
+      port?: number;
+      baseUrl?: string;
+      apiKey?: string;
+      model?: string;
+      compatibility?: string;
+      description?: string;
+    };
+    "mlx-lm"?: {
+      enabled?: boolean;
+      port?: number;
+      baseUrl?: string;
+      apiKey?: string;
+      model?: string;
+      description?: string;
+    };
+    claude?: {
+      enabled?: boolean;
+      description?: string;
+    };
+  };
+}
+
+/**
+ * Load configuration from .anyclauderc.json if it exists
+ */
+function loadConfig(): AnyclaudeConfig {
+  const configPath = path.join(process.cwd(), ".anyclauderc.json");
+
+  if (fs.existsSync(configPath)) {
+    try {
+      const configContent = fs.readFileSync(configPath, "utf8");
+      const config = JSON.parse(configContent);
+      return config as AnyclaudeConfig;
+    } catch (error) {
+      console.error(`[anyclaude] Error reading config file: ${error}`);
+      return {};
+    }
+  }
+
+  return {};
+}
+
+/**
  * Parse CLI arguments for --mode flag
  */
 function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
   for (const arg of args) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm" || mode === "mlx-omni") {
+      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm") {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'mlx-lm', or 'mlx-omni'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'mlx-lm'.`
       );
       process.exit(1);
     }
@@ -56,10 +113,10 @@ async function runModelTest() {
 }
 
 /**
- * Detect anyclaude mode from CLI args or environment variable
- * Priority: CLI args > ANYCLAUDE_MODE env var > default (lmstudio)
+ * Detect anyclaude mode from config file, CLI args, or environment variable
+ * Priority: CLI args > ANYCLAUDE_MODE env var > config file > default (lmstudio)
  */
-function detectMode(): AnyclaudeMode {
+function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
   // Check CLI arguments first
   const cliMode = parseModeFromArgs(process.argv);
   if (cliMode) {
@@ -68,8 +125,16 @@ function detectMode(): AnyclaudeMode {
 
   // Check environment variable
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
-  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm" || envMode === "mlx-omni") {
+  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm") {
     return envMode as AnyclaudeMode;
+  }
+
+  // Check config file
+  if (config.backend) {
+    const backend = config.backend.toLowerCase();
+    if (backend === "claude" || backend === "lmstudio" || backend === "mlx-lm") {
+      return backend as AnyclaudeMode;
+    }
   }
 
   // Default to lmstudio for backwards compatibility
@@ -82,14 +147,51 @@ if (shouldRunModelTest(process.argv)) {
   // runModelTest() exits the process, so this line is never reached
 }
 
+// Load configuration
+const config = loadConfig();
+
 // Detect mode before configuring providers
-const mode: AnyclaudeMode = detectMode();
+const mode: AnyclaudeMode = detectMode(config);
+
+/**
+ * Get configuration for a specific backend with priority:
+ * Environment variables > config file > defaults
+ */
+function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConfig["backends"]) {
+  if (backend === "lmstudio") {
+    const defaultConfig = {
+      baseURL: "http://localhost:1234/v1",
+      apiKey: "lm-studio",
+      model: "current-model",
+    };
+    return {
+      baseURL: process.env.LMSTUDIO_URL || configBackends?.lmstudio?.baseUrl || defaultConfig.baseURL,
+      apiKey: process.env.LMSTUDIO_API_KEY || configBackends?.lmstudio?.apiKey || defaultConfig.apiKey,
+      model: process.env.LMSTUDIO_MODEL || configBackends?.lmstudio?.model || defaultConfig.model,
+    };
+  } else if (backend === "mlx-lm") {
+    const defaultConfig = {
+      baseURL: "http://localhost:8081/v1",
+      apiKey: "mlx-lm",
+      model: "current-model",
+    };
+    return {
+      baseURL: process.env.MLX_LM_URL || configBackends?.["mlx-lm"]?.baseUrl || defaultConfig.baseURL,
+      apiKey: process.env.MLX_LM_API_KEY || configBackends?.["mlx-lm"]?.apiKey || defaultConfig.apiKey,
+      model: process.env.MLX_LM_MODEL || configBackends?.["mlx-lm"]?.model || defaultConfig.model,
+    };
+  }
+  return null;
+}
 
 // Configure providers based on mode
+const lmstudioConfig = getBackendConfig("lmstudio", config.backends);
+const mlxLmConfig = getBackendConfig("mlx-lm", config.backends);
+
 const providers: CreateAnthropicProxyOptions["providers"] = {
   lmstudio: createOpenAI({
-    baseURL: process.env.LMSTUDIO_URL || "http://localhost:1234/v1",
-    apiKey: process.env.LMSTUDIO_API_KEY || "lm-studio",
+    baseURL: lmstudioConfig?.baseURL || "http://localhost:1234/v1",
+    apiKey: lmstudioConfig?.apiKey || "lm-studio",
     // @ts-ignore - compatibility is valid but not in TypeScript types
     compatibility: "legacy", // LMStudio requires Chat Completions format
     fetch: (async (url, init) => {
@@ -170,8 +272,8 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     }) as typeof fetch,
   }),
   "mlx-lm": createOpenAI({
-    baseURL: process.env.MLX_LM_URL || "http://localhost:8081/v1",
-    apiKey: process.env.MLX_LM_API_KEY || "mlx-lm",
+    baseURL: mlxLmConfig?.baseURL || "http://localhost:8081/v1",
+    apiKey: mlxLmConfig?.apiKey || "mlx-lm",
     fetch: (async (url, init) => {
       if (init?.body && typeof init.body === "string") {
         const body = JSON.parse(init.body);
@@ -224,62 +326,13 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
-  "mlx-omni": createAnthropic({
-    baseURL: process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic",
-    apiKey: process.env.MLX_OMNI_API_KEY || "mlx-omni",
-  }) as any,
   claude: createAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY || "",
   }) as any,
 };
 
-// For mlx-omni, validate that we're using a local model path, not a HuggingFace ID
-// mlx-omni-server loads models locally only - no remote HuggingFace access
-function validateMlxOmniModel(modelPath: string | undefined): string {
-  if (!modelPath) {
-    throw new Error(
-      "[anyclaude] MLX-Omni mode requires MLX_OMNI_MODEL or MLX_MODEL environment variable.\n" +
-      "Must be a local file path (e.g., /path/to/model-4bit), not a HuggingFace model ID.\n" +
-      "Example: MLX_OMNI_MODEL=/Users/user/models/Qwen3-Coder-30B-MLX-4bit anyclaude"
-    );
-  }
-
-  // Check if it looks like a HuggingFace ID (org/model format or just model name)
-  // HuggingFace IDs typically don't start with / or contain full paths
-  const isHuggingFaceId =
-    !modelPath.startsWith("/") &&
-    !modelPath.includes("/Users/") &&
-    !modelPath.includes("/home/") &&
-    !modelPath.includes("\\") &&
-    !modelPath.match(/^[A-Z]:/); // Not Windows absolute path
-
-  if (isHuggingFaceId) {
-    throw new Error(
-      `[anyclaude] MLX-Omni mode does NOT support HuggingFace model IDs.\n` +
-      `Got: "${modelPath}"\n` +
-      `MLX-Omni only works with local model files (e.g., /path/to/model).\n` +
-      `To use HuggingFace models, use MLX-LM or LMStudio mode instead.`
-    );
-  }
-
-  return modelPath;
-}
-
 // Wrap initialization in async IIFE
 (async () => {
-  // Validate mlx-omni model path (must be local file, not HuggingFace ID)
-  // The actual model path is only used for configuration/validation
-  // We pass a recognized Anthropic model ID to the SDK for validation
-  // The actual model running is determined by mlx-omni-server's loaded model, not this ID
-  let mlxOmniModel = "claude-3-5-sonnet-20241022"; // Use standard Anthropic model ID for SDK compatibility
-  if (mode === "mlx-omni") {
-    validateMlxOmniModel(process.env.MLX_OMNI_MODEL || process.env.MLX_MODEL);
-    // Just log the local model path for reference
-    if (process.env.ANYCLAUDE_DEBUG) {
-      console.log(`[anyclaude] MLX-Omni local model: ${process.env.MLX_OMNI_MODEL || process.env.MLX_MODEL}`);
-    }
-  }
-
   const proxyURL = createAnthropicProxy({
     providers,
     defaultProvider: mode,
@@ -287,37 +340,30 @@ function validateMlxOmniModel(modelPath: string | undefined): string {
       mode === "claude"
         ? "claude-3-5-sonnet-20241022"
         : mode === "mlx-lm"
-          ? process.env.MLX_LM_MODEL || "current-model"
-          : mode === "mlx-omni"
-            ? mlxOmniModel
-            : process.env.LMSTUDIO_MODEL || "current-model",
+          ? mlxLmConfig?.model || "current-model"
+          : lmstudioConfig?.model || "current-model",
     mode,
-    mlxOmniUrl: mode === "mlx-omni" ? (process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic") : undefined,
   });
 
   console.log(`[anyclaude] Mode: ${mode.toUpperCase()}`);
   console.log(`[anyclaude] Proxy URL: ${proxyURL}`);
+  if (fs.existsSync(path.join(process.cwd(), ".anyclauderc.json"))) {
+    console.log(`[anyclaude] Config: .anyclauderc.json`);
+  }
 
   if (mode === "lmstudio") {
     console.log(
-      `[anyclaude] LMStudio endpoint: ${process.env.LMSTUDIO_URL || "http://localhost:1234/v1"}`
+      `[anyclaude] LMStudio endpoint: ${lmstudioConfig?.baseURL || "http://localhost:1234/v1"}`
     );
     console.log(
-      `[anyclaude] Model: ${process.env.LMSTUDIO_MODEL || "current-model"} (uses whatever is loaded in LMStudio)`
+      `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (uses whatever is loaded in LMStudio)`
     );
   } else if (mode === "mlx-lm") {
     console.log(
-      `[anyclaude] MLX-LM endpoint: ${process.env.MLX_LM_URL || "http://localhost:8080/v1"}`
+      `[anyclaude] MLX-LM endpoint: ${mlxLmConfig?.baseURL || "http://localhost:8081/v1"}`
     );
     console.log(
-      `[anyclaude] Model: ${process.env.MLX_LM_MODEL || "current-model"} (with native KV cache)`
-    );
-  } else if (mode === "mlx-omni") {
-    console.log(
-      `[anyclaude] MLX-Omni-Server endpoint: ${process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic"}`
-    );
-    console.log(
-      `[anyclaude] Model: ${mlxOmniModel} (with KV cache + tool calling)`
+      `[anyclaude] Model: ${mlxLmConfig?.model || "current-model"} (with native KV cache)`
     );
   } else if (mode === "claude") {
     console.log(`[anyclaude] Using real Anthropic API`);

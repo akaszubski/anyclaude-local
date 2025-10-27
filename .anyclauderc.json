@@ -1,0 +1,27 @@
+{
+  "backend": "lmstudio",
+  "debug": {
+    "level": 0,
+    "enableTraces": false,
+    "enableStreamLogging": false
+  },
+  "backends": {
+    "lmstudio": {
+      "enabled": true,
+      "port": 1234,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model",
+      "compatibility": "legacy",
+      "description": "LMStudio local model server - fast iteration, good compatibility"
+    },
+    "mlx-lm": {
+      "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "mlx-lm",
+      "model": "current-model",
+      "description": "MLX Language Model with native KV cache - best performance for follow-up requests"
+    }
+  }
+}
