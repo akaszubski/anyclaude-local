@@ -27,6 +27,10 @@ import {
 } from "./context-manager";
 import { getModelContextLength } from "./lmstudio-info";
 import { logTrace, type AnyclaudeMode } from "./trace-logger";
+import {
+  createToolParser,
+  type ParsedToolOutput,
+} from "./tool-parsers";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -34,6 +38,7 @@ export type CreateAnthropicProxyOptions = {
   defaultProvider: string;
   defaultModel: string;
   mode: AnyclaudeMode;
+  mlxOmniUrl?: string;
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -46,6 +51,7 @@ export const createAnthropicProxy = ({
   defaultProvider,
   defaultModel,
   mode,
+  mlxOmniUrl,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -288,11 +294,73 @@ export const createAnthropicProxy = ({
         return;
       }
 
-      // LMStudio mode: non-messages endpoints go to Anthropic
+      // For non-messages endpoints, passthrough to Anthropic
       if (!req.url.startsWith("/v1/messages")) {
         proxyToAnthropic();
         return;
       }
+
+      /**
+       * Helper function to parse tool calls from text content
+       * Used in mlx-lm mode to detect and format tool calls
+       */
+      const parseToolCallsFromContent = (
+        content: Array<{ type: string; text?: string }>,
+        toolParser: ReturnType<typeof createToolParser>
+      ): {
+        parsedTools: Array<{
+          type: "tool_use";
+          id: string;
+          name: string;
+          input: Record<string, unknown>;
+        }>;
+        cleanedContent: Array<{ type: string; text?: string }>;
+      } => {
+        const result = {
+          parsedTools: [] as Array<{
+            type: "tool_use";
+            id: string;
+            name: string;
+            input: Record<string, unknown>;
+          }>,
+          cleanedContent: [] as Array<{ type: string; text?: string }>,
+        };
+
+        for (const block of content) {
+          if (block.type === "text" && block.text) {
+            // Parse tool calls from text
+            const parsed = toolParser.parse(block.text);
+
+            if (parsed.hasToolCalls) {
+              // Add parsed tool calls
+              for (const toolCall of parsed.toolCalls) {
+                result.parsedTools.push({
+                  type: "tool_use",
+                  id: toolCall.id,
+                  name: toolCall.function.name,
+                  input: JSON.parse(toolCall.function.arguments),
+                });
+              }
+
+              // Add remaining text if any
+              if (parsed.remainingText.trim()) {
+                result.cleanedContent.push({
+                  type: "text",
+                  text: parsed.remainingText,
+                });
+              }
+            } else {
+              // No tool calls, keep as is
+              result.cleanedContent.push(block);
+            }
+          } else {
+            // Non-text blocks, keep as is
+            result.cleanedContent.push(block);
+          }
+        }
+
+        return result;
+      };
 
       // LMStudio mode: convert messages and route through LMStudio
       (async () => {
@@ -509,6 +577,9 @@ export const createAnthropicProxy = ({
               ? (provider as any).chat(model)
               : provider.languageModel(model);
 
+            // Create tool parser for mlx-lm mode (supports tool calling)
+            const toolParser = providerName === "mlx-lm" ? createToolParser() : null;
+
             stream = await streamText({
               model: languageModel,
               system,
@@ -543,14 +614,52 @@ export const createAnthropicProxy = ({
                   throw new Error("No prompt message found");
                 }
 
+                // For mlx-lm mode, parse tool calls from the response content
+                let contentToSend: typeof promptMessage.content = promptMessage.content;
+                let finalFinishReason = mapAnthropicStopReason(finishReason);
+
+                if (toolParser && Array.isArray(promptMessage.content)) {
+                  const { parsedTools, cleanedContent } = parseToolCallsFromContent(
+                    promptMessage.content as Array<{ type: string; text?: string }>,
+                    toolParser
+                  );
+
+                  if (parsedTools.length > 0) {
+                    // Tool calls were detected and parsed
+                    const toolBlocks = parsedTools.map((t) => ({
+                      type: "tool_use" as const,
+                      id: t.id,
+                      name: t.name,
+                      input: t.input,
+                    }));
+                    contentToSend = [...cleanedContent, ...toolBlocks] as typeof promptMessage.content;
+                    finalFinishReason = "tool_use";
+
+                    if (isTraceDebugEnabled()) {
+                      debug(
+                        3,
+                        `[MLX-LM → Tool Parsing] Parsed ${parsedTools.length} tool call(s)`,
+                        {
+                          tools: parsedTools.map((t) => ({
+                            name: t.name,
+                            id: t.id,
+                          })),
+                        }
+                      );
+                    }
+                  } else {
+                    contentToSend = cleanedContent as typeof promptMessage.content;
+                  }
+                }
+
                 res.writeHead(200, { "Content-Type": "application/json" }).end(
                   JSON.stringify({
                     id: "msg_" + Date.now(),
                     type: "message",
                     role: promptMessage.role,
-                    content: promptMessage.content,
+                    content: contentToSend,
                     model: body.model,
-                    stop_reason: mapAnthropicStopReason(finishReason),
+                    stop_reason: finalFinishReason,
                     stop_sequence: null,
                     usage: {
                       input_tokens: usage.inputTokens,

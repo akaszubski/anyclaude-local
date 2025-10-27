@@ -33,10 +33,18 @@ load_config
 
 # Apply defaults
 MLX_OMNI_PORT=${MLX_OMNI_PORT:-8080}
-MLX_MODEL=${MLX_MODEL:-"mlx-community/Qwen2.5-3B-Instruct-4bit"}
+# MLX-Omni mode now ONLY supports local model paths (not HuggingFace IDs)
+# User MUST set MLX_MODEL to a local file path
+# If not set, the validation in main.js will provide a helpful error
+MLX_MODEL=${MLX_MODEL:-""}
 ANYCLAUDE_DEBUG=${ANYCLAUDE_DEBUG:-0}
 PROXY_ONLY=${PROXY_ONLY:-false}
 VENV_PATH=${VENV_PATH:-"$HOME/.venv-mlx"}
+
+# Export variables so they're available to child processes
+export MLX_MODEL
+export ANYCLAUDE_DEBUG
+export PROXY_ONLY
 
 # State files
 PIDS_FILE="/tmp/anyclaude-omni-local.pids"

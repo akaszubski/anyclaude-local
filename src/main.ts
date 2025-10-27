@@ -233,72 +233,121 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   }) as any,
 };
 
-const proxyURL = createAnthropicProxy({
-  providers,
-  defaultProvider: mode,
-  defaultModel:
-    mode === "claude"
-      ? "claude-3-5-sonnet-20241022"
-      : mode === "mlx-lm"
-        ? process.env.MLX_LM_MODEL || "current-model"
-        : mode === "mlx-omni"
-          ? process.env.MLX_OMNI_MODEL || "qwen3-coder-30b"
-          : process.env.LMSTUDIO_MODEL || "current-model",
-  mode,
-});
-
-console.log(`[anyclaude] Mode: ${mode.toUpperCase()}`);
-console.log(`[anyclaude] Proxy URL: ${proxyURL}`);
-
-if (mode === "lmstudio") {
-  console.log(
-    `[anyclaude] LMStudio endpoint: ${process.env.LMSTUDIO_URL || "http://localhost:1234/v1"}`
-  );
-  console.log(
-    `[anyclaude] Model: ${process.env.LMSTUDIO_MODEL || "current-model"} (uses whatever is loaded in LMStudio)`
-  );
-} else if (mode === "mlx-lm") {
-  console.log(
-    `[anyclaude] MLX-LM endpoint: ${process.env.MLX_LM_URL || "http://localhost:8080/v1"}`
-  );
-  console.log(
-    `[anyclaude] Model: ${process.env.MLX_LM_MODEL || "current-model"} (with native KV cache)`
-  );
-} else if (mode === "mlx-omni") {
-  console.log(
-    `[anyclaude] MLX-Omni-Server endpoint: ${process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic"}`
-  );
-  console.log(
-    `[anyclaude] Model: ${process.env.MLX_OMNI_MODEL || "qwen3-coder-30b"} (with KV cache + tool calling)`
-  );
-} else if (mode === "claude") {
-  console.log(`[anyclaude] Using real Anthropic API`);
-  console.log(
-    `[anyclaude] Model: claude-3-5-sonnet-20241022 (or as specified by Claude Code)`
-  );
-  if (process.env.ANYCLAUDE_DEBUG) {
-    const traceDir = require("os").homedir() + "/.anyclaude/traces/claude";
-    console.log(`[anyclaude] Trace directory: ${traceDir}`);
+// For mlx-omni, validate that we're using a local model path, not a HuggingFace ID
+// mlx-omni-server loads models locally only - no remote HuggingFace access
+function validateMlxOmniModel(modelPath: string | undefined): string {
+  if (!modelPath) {
+    throw new Error(
+      "[anyclaude] MLX-Omni mode requires MLX_OMNI_MODEL or MLX_MODEL environment variable.\n" +
+      "Must be a local file path (e.g., /path/to/model-4bit), not a HuggingFace model ID.\n" +
+      "Example: MLX_OMNI_MODEL=/Users/user/models/Qwen3-Coder-30B-MLX-4bit anyclaude"
+    );
   }
+
+  // Check if it looks like a HuggingFace ID (org/model format or just model name)
+  // HuggingFace IDs typically don't start with / or contain full paths
+  const isHuggingFaceId =
+    !modelPath.startsWith("/") &&
+    !modelPath.includes("/Users/") &&
+    !modelPath.includes("/home/") &&
+    !modelPath.includes("\\") &&
+    !modelPath.match(/^[A-Z]:/); // Not Windows absolute path
+
+  if (isHuggingFaceId) {
+    throw new Error(
+      `[anyclaude] MLX-Omni mode does NOT support HuggingFace model IDs.\n` +
+      `Got: "${modelPath}"\n` +
+      `MLX-Omni only works with local model files (e.g., /path/to/model).\n` +
+      `To use HuggingFace models, use MLX-LM or LMStudio mode instead.`
+    );
+  }
+
+  return modelPath;
 }
 
-if (process.env.PROXY_ONLY === "true") {
-  console.log("Proxy only mode - not spawning Claude Code");
-} else {
-  // Filter out --mode flag from arguments passed to Claude Code
-  const claudeArgs = process.argv
-    .slice(2)
-    .filter((arg) => !arg.startsWith("--mode="));
+// Wrap initialization in async IIFE
+(async () => {
+  // Validate mlx-omni model path (must be local file, not HuggingFace ID)
+  // The actual model path is only used for configuration/validation
+  // We pass a recognized Anthropic model ID to the SDK for validation
+  // The actual model running is determined by mlx-omni-server's loaded model, not this ID
+  let mlxOmniModel = "claude-3-5-sonnet-20241022"; // Use standard Anthropic model ID for SDK compatibility
+  if (mode === "mlx-omni") {
+    validateMlxOmniModel(process.env.MLX_OMNI_MODEL || process.env.MLX_MODEL);
+    // Just log the local model path for reference
+    if (process.env.ANYCLAUDE_DEBUG) {
+      console.log(`[anyclaude] MLX-Omni local model: ${process.env.MLX_OMNI_MODEL || process.env.MLX_MODEL}`);
+    }
+  }
 
-  const proc = spawn("claude", claudeArgs, {
-    env: {
-      ...process.env,
-      ANTHROPIC_BASE_URL: proxyURL,
-    },
-    stdio: "inherit",
+  const proxyURL = createAnthropicProxy({
+    providers,
+    defaultProvider: mode,
+    defaultModel:
+      mode === "claude"
+        ? "claude-3-5-sonnet-20241022"
+        : mode === "mlx-lm"
+          ? process.env.MLX_LM_MODEL || "current-model"
+          : mode === "mlx-omni"
+            ? mlxOmniModel
+            : process.env.LMSTUDIO_MODEL || "current-model",
+    mode,
+    mlxOmniUrl: mode === "mlx-omni" ? (process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic") : undefined,
   });
 
-  proc.on("exit", (code) => {
-    process.exit(code ?? 0);
-  });
-}
+  console.log(`[anyclaude] Mode: ${mode.toUpperCase()}`);
+  console.log(`[anyclaude] Proxy URL: ${proxyURL}`);
+
+  if (mode === "lmstudio") {
+    console.log(
+      `[anyclaude] LMStudio endpoint: ${process.env.LMSTUDIO_URL || "http://localhost:1234/v1"}`
+    );
+    console.log(
+      `[anyclaude] Model: ${process.env.LMSTUDIO_MODEL || "current-model"} (uses whatever is loaded in LMStudio)`
+    );
+  } else if (mode === "mlx-lm") {
+    console.log(
+      `[anyclaude] MLX-LM endpoint: ${process.env.MLX_LM_URL || "http://localhost:8080/v1"}`
+    );
+    console.log(
+      `[anyclaude] Model: ${process.env.MLX_LM_MODEL || "current-model"} (with native KV cache)`
+    );
+  } else if (mode === "mlx-omni") {
+    console.log(
+      `[anyclaude] MLX-Omni-Server endpoint: ${process.env.MLX_OMNI_URL || "http://localhost:8080/anthropic"}`
+    );
+    console.log(
+      `[anyclaude] Model: ${mlxOmniModel} (with KV cache + tool calling)`
+    );
+  } else if (mode === "claude") {
+    console.log(`[anyclaude] Using real Anthropic API`);
+    console.log(
+      `[anyclaude] Model: claude-3-5-sonnet-20241022 (or as specified by Claude Code)`
+    );
+    if (process.env.ANYCLAUDE_DEBUG) {
+      const traceDir = require("os").homedir() + "/.anyclaude/traces/claude";
+      console.log(`[anyclaude] Trace directory: ${traceDir}`);
+    }
+  }
+
+  if (process.env.PROXY_ONLY === "true") {
+    console.log("Proxy only mode - not spawning Claude Code");
+  } else {
+    // Filter out --mode flag from arguments passed to Claude Code
+    const claudeArgs = process.argv
+      .slice(2)
+      .filter((arg) => !arg.startsWith("--mode="));
+
+    const proc = spawn("claude", claudeArgs, {
+      env: {
+        ...process.env,
+        ANTHROPIC_BASE_URL: proxyURL,
+      },
+      stdio: "inherit",
+    });
+
+    proc.on("exit", (code) => {
+      process.exit(code ?? 0);
+    });
+  }
+})();
