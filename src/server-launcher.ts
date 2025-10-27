@@ -177,6 +177,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const port = config.port || 8081;
   const modelPath = config.model;
   const serverScript = "scripts/vllm-mlx-server.py";
+  const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
 
   if (!modelPath || modelPath === "current-model") {
     console.log("[anyclaude] vLLM-MLX auto-launch disabled (no model path configured)");
@@ -205,13 +206,18 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     process.exit(1);
   }
 
-  const serverProcess = spawn("python3", [
-    serverScriptPath,
-    "--model",
-    modelPath,
-    "--port",
-    port.toString()
-  ], {
+  // Check if venv exists
+  const activateScript = path.join(pythonVenv, "bin", "activate");
+  if (!fs.existsSync(activateScript)) {
+    console.error(`[anyclaude] Python virtual environment not found: ${pythonVenv}`);
+    console.error("[anyclaude] Please run: scripts/setup-vllm-mlx-venv.sh");
+    process.exit(1);
+  }
+
+  // Build command to activate venv and start vLLM-MLX
+  const command = `source ${activateScript} && python3 ${serverScriptPath} --model "${modelPath}" --port ${port}`;
+
+  const serverProcess = spawn("bash", ["-c", command], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true, // Create a new process group so we can kill all children
   });
