@@ -46,6 +46,35 @@ source ~/.venv-mlx/bin/activate
 python3 -m mlx_lm server --port 8081
 ```
 
+### vLLM-MLX (Auto-launch with Prompt Caching & Tool Calling)
+
+Best for: Apple Silicon Macs, automatic server startup, advanced features
+
+Features:
+- 🚀 **Auto-launches** when you run `anyclaude`
+- 📦 **Prompt caching** (40-50% faster follow-ups)
+- 🔧 **Tool/function calling** support
+- 🛑 **Auto-cleanup** when you exit (no orphaned processes)
+
+Prerequisites:
+- macOS with Apple Silicon (M1/M2/M3+)
+- Python 3.9+
+
+Installation:
+```bash
+# Create virtual environment
+python3 -m venv ~/.venv-mlx
+source ~/.venv-mlx/bin/activate
+
+# Install vLLM-MLX and dependencies
+pip install mlx-lm fastapi uvicorn pydantic
+
+# Verify installation
+python3 -m mlx_lm --help
+```
+
+The server will auto-launch when configured in `.anyclauderc.json` - no manual startup needed!
+
 ### Claude API (Production Use)
 
 Best for: Most reliable, official Anthropic models
@@ -56,6 +85,33 @@ Best for: Most reliable, official Anthropic models
 ## AnyClaude Setup
 
 ### 1. Install AnyClaude
+
+**Option A: Global Installation (Recommended)**
+
+Install anyclaude globally so you can run it from anywhere:
+
+```bash
+# Clone repository
+git clone https://github.com/anthropics/anyclaude.git
+cd anyclaude
+
+# Install dependencies and build
+bun install
+bun run build
+
+# Install globally (creates `anyclaude` command)
+bun install -g $(pwd)
+
+# Verify installation
+which anyclaude
+anyclaude --help
+```
+
+Now you can run `anyclaude` from any directory.
+
+**Option B: Local Development**
+
+For development or testing without global installation:
 
 ```bash
 # Clone repository
@@ -69,21 +125,34 @@ bun install
 # Build the project
 bun run build
 # or: npm run build
+
+# Run locally
+bun run ./dist/main.js
 ```
 
 ### 2. Create Configuration File
 
 Create `.anyclauderc.json` in your project root:
 
+**Example: vLLM-MLX (Recommended for Apple Silicon)**
 ```json
 {
-  "backend": "lmstudio",
+  "backend": "vllm-mlx",
   "debug": {
     "level": 0,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
+    "vllm-mlx": {
+      "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "vllm-mlx",
+      "model": "/path/to/mlx-model",
+      "serverScript": "scripts/vllm-mlx-server.py",
+      "description": "vLLM-MLX: Auto-launch, prompt caching, tool calling"
+    },
     "lmstudio": {
       "enabled": true,
       "baseUrl": "http://localhost:1234/v1",
@@ -95,53 +164,74 @@ Create `.anyclauderc.json` in your project root:
       "enabled": true,
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "mlx-lm",
-      "model": "current-model",
+      "model": "/path/to/mlx-model",
       "description": "MLX Language Model with native KV cache"
+    },
+    "claude": {
+      "enabled": true,
+      "description": "Official Anthropic Claude API"
     }
   }
 }
 ```
 
 **Key settings:**
-- `backend`: Which backend to use (`lmstudio`, `mlx-lm`, or `claude`)
+- `backend`: Which backend to use (`vllm-mlx`, `lmstudio`, `mlx-lm`, or `claude`)
+- `backends[backend].model`: Full path to model (for vLLM-MLX and MLX-LM) or `current-model` for LMStudio
 - `debug.level`: 0=off, 1=basic, 2=verbose, 3=trace
-- `backends`: Configuration for each available backend
+- For vLLM-MLX: Server auto-launches on startup and auto-cleans up on exit
 
 See [CONFIGURATION.md](CONFIGURATION.md) for detailed options.
 
 ### 3. Start Your Backend
 
-**LMStudio:**
+**vLLM-MLX (Auto-launch):**
 ```bash
-# LMStudio application handles startup - just ensure it's running and a model is loaded
+# No manual startup needed! Server launches automatically when you run anyclaude
+# Just make sure your .anyclauderc.json is configured with vllm-mlx backend
+anyclaude
 ```
 
-**MLX-LM:**
+**LMStudio (Manual):**
+```bash
+# LMStudio application handles startup - just ensure it's running and a model is loaded
+# Then run: anyclaude
+```
+
+**MLX-LM (Manual):**
 ```bash
 source ~/.venv-mlx/bin/activate
 python3 -m mlx_lm server --port 8081
+# In another terminal: anyclaude
 ```
 
-**Claude API:**
+**Claude API (No server needed):**
 ```bash
-# Just need ANTHROPIC_API_KEY set
+# Just set API key
 export ANTHROPIC_API_KEY=sk-ant-xxxxx
+# Then run: anyclaude --mode=claude
 ```
 
 ### 4. Run AnyClaude
 
+**Basic usage:**
 ```bash
-# Basic usage (uses backend from .anyclauderc.json)
+# Uses backend configured in .anyclauderc.json
 anyclaude
+```
 
-# Or override backend via CLI
+For vLLM-MLX: Server auto-launches, model loads, then Claude Code starts. That's it!
+
+**Advanced usage:**
+```bash
+# Override backend via CLI flag
 anyclaude --mode=mlx-lm
 
 # Or use environment variable
 export ANYCLAUDE_MODE=mlx-lm
 anyclaude
 
-# With debug logging
+# With debug logging (see what's happening)
 ANYCLAUDE_DEBUG=1 anyclaude
 
 # Proxy-only mode (test configuration without launching Claude Code)
@@ -259,25 +349,31 @@ anyclaude --mode=mlx-lm
 ## Environment Variables Quick Reference
 
 ```bash
-# Mode selection
-export ANYCLAUDE_MODE=mlx-lm|lmstudio|claude
+# Mode selection (vllm-mlx|mlx-lm|lmstudio|claude)
+export ANYCLAUDE_MODE=vllm-mlx
+
+# vLLM-MLX (auto-launches server)
+export VLLM_MLX_URL=http://localhost:8081/v1
+export VLLM_MLX_MODEL=current-model
+export VLLM_MLX_API_KEY=vllm-mlx
 
 # LMStudio
 export LMSTUDIO_URL=http://localhost:1234/v1
 export LMSTUDIO_MODEL=current-model
 export LMSTUDIO_API_KEY=lm-studio
 
-# MLX-LM
+# MLX-LM (manual server startup)
 export MLX_LM_URL=http://localhost:8081/v1
-export MLX_LM_MODEL=current-model
+export MLX_LM_MODEL=/path/to/mlx-model
 export MLX_LM_API_KEY=mlx-lm
 
-# Claude API
+# Claude API (official, no server needed)
 export ANTHROPIC_API_KEY=sk-ant-xxxxx
 
-# Debug
+# Debug and testing
 export ANYCLAUDE_DEBUG=1      # 0=off, 1=basic, 2=verbose, 3=trace
 export PROXY_ONLY=true        # Test proxy without launching Claude Code
+export ANYCLAUDE_NO_AUTO_LAUNCH=true  # Skip auto-launch (for debugging)
 ```
 
 ## Support

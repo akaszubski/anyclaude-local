@@ -10,12 +10,14 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 ## ✨ Features
 
 - 🏠 **100% Local** - No cloud API keys required
-- 🚀 **Simple Setup** - Running in under 5 minutes
+- 🚀 **Simple Setup** - Running in under 5 minutes with auto-launch
 - 🔒 **Privacy First** - Your code never leaves your machine
 - 🧩 **Works with LMStudio Models** - Tested with Qwen Coder, Mistral, Llama, DeepSeek (performance depends on your hardware: GPU, VRAM, RAM)
-- ⚡ **MLX Support (Apple Silicon)** - 4.4x faster with native KV cache on M-series chips
+- ⚡ **vLLM-MLX Support** - Auto-launches server, prompt caching (40-50% faster), tool calling
+- 🎯 **Multi-Mode** - Switch between vLLM-MLX, LMStudio, mlx-lm, and real Claude API
+- 🛑 **Auto-Cleanup** - Server processes terminate cleanly when you exit (no orphaned processes)
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
-- 🎯 **Triple Mode** - Switch between local LMStudio, mlx-lm, and real Claude API
+- 💻 **Global Command** - Install once, run `anyclaude` from anywhere
 
 ---
 
@@ -111,35 +113,57 @@ bun install
 # 3. Build the project
 bun run build
 
-# 4. Install globally (makes 'anyclaude' command available)
-bun run install:global
+# 4. Install globally (makes 'anyclaude' command available everywhere)
+bun install -g $(pwd)
+
+# 5. Verify installation
+which anyclaude
 ```
 
-### Setup & Run
+### Quick Setup (vLLM-MLX Recommended)
 
-1. **Start LMStudio**
-   - Open LMStudio
-   - Download a model (e.g., Mistral 7B, Llama 3, DeepSeek Coder)
-   - Go to "Server" tab
-   - Load the model
-   - Click "Start Server" (default: http://localhost:1234)
+1. **Install vLLM-MLX dependencies** (one-time)
+   ```bash
+   python3 -m venv ~/.venv-mlx
+   source ~/.venv-mlx/bin/activate
+   pip install mlx-lm fastapi uvicorn pydantic
+   ```
 
-2. **Run anyclaude**
+2. **Create `.anyclauderc.json` in your project directory:**
+   ```json
+   {
+     "backend": "vllm-mlx",
+     "backends": {
+       "vllm-mlx": {
+         "enabled": true,
+         "port": 8081,
+         "model": "/path/to/mlx-model"
+       }
+     }
+   }
+   ```
 
+3. **Run anyclaude** (server auto-launches!)
    ```bash
    anyclaude
    ```
 
-3. **Start using Claude Code with your local model!** 🎉
+That's it! Server launches automatically, model loads, Claude Code starts. When you exit, everything cleans up. 🎉
 
-### Alternative: Run Without Installing Globally
+### Alternative Backends
 
+**LMStudio:**
+1. Open LMStudio, download a model, click "Start Server"
+2. Run: `anyclaude --mode=lmstudio`
+
+**MLX-LM (manual start):**
+1. Run: `source ~/.venv-mlx/bin/activate && python3 -m mlx_lm server --port 8081`
+2. In another terminal: `anyclaude --mode=mlx-lm`
+
+**Real Claude API:**
 ```bash
-# After building, run directly
-node dist/main.js
-
-# Or with debug logging
-ANYCLAUDE_DEBUG=1 node dist/main.js
+export ANTHROPIC_API_KEY=sk-ant-xxxxx
+anyclaude --mode=claude
 ```
 
 ---
