@@ -29,12 +29,9 @@
     "dist/**/*.js"
   ],
   "devDependencies": {
-    "@ai-sdk/anthropic": "^1.2.12",
-    "@ai-sdk/openai": "^2.0.6",
     "@types/bun": "latest",
     "@types/json-schema": "^7.0.15",
     "@types/uuid": "^10.0.0",
-    "ai": "^5.0.8",
     "prettier": "^3.6.2",
     "zod": "3.25.76"
   },
@@ -79,6 +76,9 @@
     "install:global": "npm run build && npm pack --silent && npm install -g anyclaude-*.tgz"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/openai": "^2.0.6",
+    "ai": "^5.0.8",
     "json-schema": "^0.4.0",
     "tiktoken": "^1.0.22",
     "uuid": "^9.0.1"

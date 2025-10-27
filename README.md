@@ -60,14 +60,43 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 
 ### Dependencies
 
-Runtime dependencies (automatically installed):
+**Runtime dependencies** (automatically installed when you run `npm install` or `bun install`):
 
-- `@ai-sdk/openai-compatible` - AI SDK for OpenAI-compatible servers (LMStudio)
-- `ai` - Vercel AI SDK core
+- **[@ai-sdk/anthropic](https://github.com/vercel-labs/ai/tree/main/packages/anthropic)** - AI SDK for Anthropic Claude API
+  - Used for: Parsing real Claude API responses (in claude mode for tracing)
+  - Package: `@ai-sdk/anthropic@^1.2.12`
 
-Development dependencies:
+- **[@ai-sdk/openai](https://github.com/vercel-labs/ai/tree/main/packages/openai)** - AI SDK for OpenAI-compatible servers
+  - Used for: Communicating with LMStudio and mlx-lm servers
+  - Package: `@ai-sdk/openai@^2.0.6`
 
-- TypeScript types and tooling
+- **[ai](https://github.com/vercel-labs/ai)** - Vercel AI SDK core library
+  - Used for: Base AI model interfaces, streaming, and tool calling
+  - Package: `ai@^5.0.8`
+
+- **[json-schema](https://github.com/kriszyp/json-schema)** - JSON Schema validation
+  - Used for: Validating tool input schemas
+  - Package: `json-schema@^0.4.0`
+
+- **[tiktoken](https://github.com/openai/js-tiktoken)** - Token counter for OpenAI models
+  - Used for: Counting tokens in prompts for context window management
+  - Package: `tiktoken@^1.0.22`
+
+- **[uuid](https://github.com/uuidjs/uuid)** - UUID generation
+  - Used for: Generating unique request/trace IDs
+  - Package: `uuid@^9.0.1`
+
+**Development dependencies** (not included in production builds):
+
+- **@types/\*** - TypeScript type definitions for Node.js and JSON Schema
+- **prettier** - Code formatter
+- **zod** - Runtime type validation (for config parsing)
+
+**Peer dependencies:**
+
+- **[typescript](https://www.typescriptlang.org/)** `^5` - Required for building from source
+  - Used for: Type checking and compilation
+  - Install with: `npm install --save-peer typescript`
 
 ### Installation
 
@@ -228,6 +257,42 @@ See `PRODUCTION-HYBRID-SETUP.md` for complete setup guide including:
 ```
 
 **Key Innovation**: Claude Code uses the Anthropic API format, but anyclaude-lmstudio translates it to OpenAI format for LMStudio, allowing seamless local model usage.
+
+### Source Code Structure
+
+**Key components** (detailed in [PROJECT.md](PROJECT.md)):
+
+- **[src/main.ts](src/main.ts)** - Entry point and mode selection
+  - Spawns proxy server and optionally launches Claude Code
+  - Handles configuration loading from `.anyclauderc.json`
+  - Supports multiple backends (lmstudio, mlx-lm, claude)
+
+- **[src/anthropic-proxy.ts](src/anthropic-proxy.ts)** - HTTP proxy server
+  - Mimics Anthropic API on local port
+  - Routes requests through appropriate converter
+  - Handles streaming and keep-alive
+
+- **[src/convert-anthropic-messages.ts](src/convert-anthropic-messages.ts)** - Format converter
+  - Bidirectional: Anthropic format ↔ OpenAI format
+  - Handles system prompts, messages, tool definitions, and responses
+
+- **[src/convert-to-anthropic-stream.ts](src/convert-to-anthropic-stream.ts)** - Stream converter
+  - Converts LMStudio streaming responses to Anthropic SSE format
+  - Handles tool call streaming and event deduplication
+
+- **[src/json-schema.ts](src/json-schema.ts)** - Schema adapter
+  - Adapts Anthropic tool schemas to OpenAI format
+  - Handles type conversions and field mappings
+
+- **[src/debug.ts](src/debug.ts)** - Debug logging
+  - Structured logging with multiple verbosity levels
+  - Request/response tracing and timing
+
+- **[src/trace-logger.ts](src/trace-logger.ts)** - Trace file management
+  - Records requests/responses for analysis and replay
+  - Automatic file organization and security
+
+See [PROJECT.md](PROJECT.md) for complete architectural deep-dive and implementation details.
 
 ---
 
