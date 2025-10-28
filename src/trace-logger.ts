@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-export type AnyclaudeMode = "claude" | "lmstudio" | "mlx-lm";
+export type AnyclaudeMode = "claude" | "lmstudio" | "mlx-lm" | "vllm-mlx";
 
 export interface TraceRequest {
   method?: string;

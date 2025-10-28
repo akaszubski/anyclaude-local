@@ -16,6 +16,10 @@ import {
   waitForServerReady,
   cleanupServerProcess,
 } from "./server-launcher";
+import {
+  displaySetupStatus,
+  shouldFailStartup,
+} from "./setup-checker";
 
 /**
  * Configuration file structure for .anyclauderc.json
@@ -166,6 +170,19 @@ const config = loadConfig();
 
 // Detect mode before configuring providers
 const mode: AnyclaudeMode = detectMode(config);
+
+// Check dependencies early and fail with helpful message if needed
+if (!process.env.ANYCLAUDE_SKIP_SETUP_CHECK) {
+  if (shouldFailStartup(mode)) {
+    process.exit(1);
+  }
+}
+
+// Show setup status if --check-setup flag is provided
+if (process.argv.includes("--check-setup")) {
+  displaySetupStatus();
+  process.exit(0);
+}
 
 /**
  * Get configuration for a specific backend with priority:

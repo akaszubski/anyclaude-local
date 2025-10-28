@@ -659,13 +659,86 @@ ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/fixed.log
 ./analyze-tool-calls.sh
 ```
 
+## Configuration System
+
+AnyClaude uses a hierarchical configuration system that allows users to configure backends via files, environment variables, or CLI flags:
+
+### Configuration Priority
+
+```
+CLI Flags > Environment Variables > Configuration File > Defaults
+```
+
+**Example**:
+```bash
+# .anyclauderc.json says: backend = "lmstudio"
+# Environment says: export ANYCLAUDE_MODE=mlx-lm
+# CLI says: anyclaude --mode=claude
+
+# Result: Claude mode is used (CLI has highest priority)
+```
+
+### Configuration File (.anyclauderc.json)
+
+Place in project root with structure:
+
+```json
+{
+  "backend": "mlx-lm",
+  "debug": {
+    "level": 1,
+    "enableTraces": false,
+    "enableStreamLogging": false
+  },
+  "backends": {
+    "lmstudio": {
+      "enabled": true,
+      "port": 1234,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model"
+    },
+    "mlx-lm": {
+      "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "mlx-lm",
+      "model": "current-model"
+    }
+  }
+}
+```
+
+**Key Features**:
+- Define multiple backends in one file
+- Users can switch between backends via CLI flag or env var
+- Configuration is optional - defaults work out-of-box
+- See CONFIGURATION.md for comprehensive documentation
+- See INSTALLATION.md for setup guide
+
+### Implementation in src/main.ts
+
+The configuration system is implemented in `src/main.ts` with:
+
+1. **Config Loading**: `loadConfig()` reads `.anyclauderc.json` from project root
+2. **Priority Detection**: `detectMode()` checks CLI flags, env vars, then config file
+3. **Unified Backend Configuration**: `getBackendConfig()` retrieves settings with proper priority hierarchy
+4. **Type Safety**: `AnyclaudeMode` type ensures only valid backends are used
+
+Key functions:
+```typescript
+function loadConfig(): AnyclaudeConfig
+function detectMode(config: AnyclaudeConfig): AnyclaudeMode
+function getBackendConfig(backend: AnyclaudeMode): BackendConfig
+```
+
 ## File Structure
 
 ### Core Files
 
 | File                                 | Purpose                              | Lines | Complexity |
 | ------------------------------------ | ------------------------------------ | ----- | ---------- |
-| `src/main.ts`                        | Entry point, LMStudio provider setup | ~200  | Low        |
+| `src/main.ts`                        | Entry point, configuration, routing  | ~400  | Low        |
 | `src/anthropic-proxy.ts`             | HTTP proxy server, mode routing      | ~650  | Medium     |
 | `src/convert-anthropic-messages.ts`  | Message format translation           | ~300  | High       |
 | `src/convert-to-anthropic-stream.ts` | Stream format translation            | ~250  | High       |

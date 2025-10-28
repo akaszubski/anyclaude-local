@@ -31,6 +31,12 @@ import {
   createToolParser,
   type ParsedToolOutput,
 } from "./tool-parsers";
+import {
+  initializeCacheTracking,
+  getCacheTracker,
+  displayCacheMetricsOnExit,
+} from "./cache-metrics";
+import { getCachedPrompt, getCacheStats } from "./prompt-cache";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -54,9 +60,16 @@ export const createAnthropicProxy = ({
   // Log debug status on startup
   displayDebugStartup();
 
+  // Initialize cache metrics tracking
+  initializeCacheTracking();
+  displayCacheMetricsOnExit();
+
   // Cache for LMStudio context length (queried on first request)
   let cachedContextLength: number | null = null;
   let contextLengthQueried = false;
+
+  // Request ID counter for tracking
+  let requestCounter = 0;
 
   const proxy = http
     .createServer((req, res) => {
@@ -138,6 +151,39 @@ export const createAnthropicProxy = ({
 
             proxiedRes.on("end", () => {
               const responseBody = Buffer.concat(responseChunks).toString();
+              const requestId = `req-${++requestCounter}`;
+
+              // Record cache metrics
+              if (body && statusCode >= 200 && statusCode < 400) {
+                try {
+                  const parsedResponse = JSON.parse(responseBody);
+                  const tracker = getCacheTracker();
+                  const responseHeaders = proxiedRes.headers as Record<string, any>;
+
+                  tracker.recordRequest(
+                    requestId,
+                    mode,
+                    body,
+                    responseHeaders,
+                    parsedResponse
+                  );
+
+                  // Log cache metrics for verbose debugging
+                  if (isVerboseDebugEnabled()) {
+                    const usage = parsedResponse?.usage;
+                    if (usage?.cache_creation_input_tokens || usage?.cache_read_input_tokens) {
+                      debug(2, `[Cache Metrics] ${requestId}`, {
+                        cache_creation_tokens: usage.cache_creation_input_tokens || 0,
+                        cache_read_tokens: usage.cache_read_input_tokens || 0,
+                        input_tokens: usage.input_tokens,
+                        output_tokens: usage.output_tokens,
+                      });
+                    }
+                  }
+                } catch (error) {
+                  debug(1, "[Cache Metrics] Failed to record metrics:", error);
+                }
+              }
 
               // Log trace for Claude mode (successful responses)
               if (
@@ -386,6 +432,19 @@ export const createAnthropicProxy = ({
           throw new Error(`Provider not configured: ${providerName}`);
         }
 
+        // Check prompt cache to avoid re-sending 9000 tokens every request
+        const cachedPrompt = getCachedPrompt(body.system || [], body.tools || []);
+        if (cachedPrompt.cached && isVerboseDebugEnabled()) {
+          debug(
+            2,
+            `[Prompt Cache] HIT - Skipping ${
+              body.system && Array.isArray(body.system)
+                ? body.system.reduce((sum: number, s: any) => sum + (s.text?.length || 0), 0)
+                : 0
+            } characters of system prompt`
+          );
+        }
+
         let system: string | undefined;
         if (body.system) {
           // Handle both string and array formats for system prompt
@@ -570,8 +629,8 @@ export const createAnthropicProxy = ({
           }, 600000); // 600 second (10 minute) timeout - needed for large models like qwen3-coder-30b
 
           try {
-            // Use .chat() for OpenAI providers (lmstudio, mlx-lm) and .languageModel() for Anthropic
-            const languageModel = (providerName === "lmstudio" || providerName === "mlx-lm")
+            // Use .chat() for OpenAI providers (lmstudio, mlx-lm, vllm-mlx) and .languageModel() for Anthropic
+            const languageModel = (providerName === "lmstudio" || providerName === "mlx-lm" || providerName === "vllm-mlx")
               ? (provider as any).chat(model)
               : provider.languageModel(model);
 
@@ -921,6 +980,17 @@ export const createAnthropicProxy = ({
       });
     })
     .listen(port ?? 0);
+
+  // Display cache stats on exit
+  process.on("exit", () => {
+    const cacheStats = getCacheStats();
+    if (cacheStats.size > 0 && isDebugEnabled()) {
+      debug(1, `[Prompt Cache] Final stats: ${cacheStats.size} cached prompts`);
+      if (isVerboseDebugEnabled()) {
+        debug(2, `[Prompt Cache] Cached entries:`, cacheStats.entries);
+      }
+    }
+  });
 
   const address = proxy.address();
   if (!address) {
