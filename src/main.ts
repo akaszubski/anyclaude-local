@@ -11,6 +11,11 @@ import {
 } from "./anthropic-proxy";
 import type { AnyclaudeMode } from "./trace-logger";
 import { debug, isDebugEnabled } from "./debug";
+import {
+  launchBackendServer,
+  waitForServerReady,
+  cleanupServerProcess,
+} from "./server-launcher";
 
 /**
  * Configuration file structure for .anyclauderc.json
@@ -38,6 +43,15 @@ interface AnyclaudeConfig {
       baseUrl?: string;
       apiKey?: string;
       model?: string;
+      description?: string;
+    };
+    "vllm-mlx"?: {
+      enabled?: boolean;
+      port?: number;
+      baseUrl?: string;
+      apiKey?: string;
+      model?: string;
+      serverScript?: string;
       description?: string;
     };
     claude?: {
@@ -74,11 +88,11 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
   for (const arg of args) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm") {
+      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm" || mode === "vllm-mlx") {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'mlx-lm'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'mlx-lm', or 'vllm-mlx'.`
       );
       process.exit(1);
     }
@@ -125,14 +139,14 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
 
   // Check environment variable
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
-  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm") {
+  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm" || envMode === "vllm-mlx") {
     return envMode as AnyclaudeMode;
   }
 
   // Check config file
   if (config.backend) {
     const backend = config.backend.toLowerCase();
-    if (backend === "claude" || backend === "lmstudio" || backend === "mlx-lm") {
+    if (backend === "claude" || backend === "lmstudio" || backend === "mlx-lm" || backend === "vllm-mlx") {
       return backend as AnyclaudeMode;
     }
   }
@@ -180,6 +194,17 @@ function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConf
       apiKey: process.env.MLX_LM_API_KEY || configBackends?.["mlx-lm"]?.apiKey || defaultConfig.apiKey,
       model: process.env.MLX_LM_MODEL || configBackends?.["mlx-lm"]?.model || defaultConfig.model,
     };
+  } else if (backend === "vllm-mlx") {
+    const defaultConfig = {
+      baseURL: "http://localhost:8081/v1",
+      apiKey: "vllm-mlx",
+      model: "current-model",
+    };
+    return {
+      baseURL: process.env.VLLM_MLX_URL || configBackends?.["vllm-mlx"]?.baseUrl || defaultConfig.baseURL,
+      apiKey: process.env.VLLM_MLX_API_KEY || configBackends?.["vllm-mlx"]?.apiKey || defaultConfig.apiKey,
+      model: process.env.VLLM_MLX_MODEL || configBackends?.["vllm-mlx"]?.model || defaultConfig.model,
+    };
   }
   return null;
 }
@@ -187,6 +212,10 @@ function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConf
 // Configure providers based on mode
 const lmstudioConfig = getBackendConfig("lmstudio", config.backends);
 const mlxLmConfig = getBackendConfig("mlx-lm", config.backends);
+const vllmMlxConfig = getBackendConfig("vllm-mlx", config.backends);
+
+// Launch backend server if needed (non-blocking)
+launchBackendServer(mode, config);
 
 const providers: CreateAnthropicProxyOptions["providers"] = {
   lmstudio: createOpenAI({
@@ -326,6 +355,40 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
+  "vllm-mlx": createOpenAI({
+    baseURL: vllmMlxConfig?.baseURL || "http://localhost:8081/v1",
+    apiKey: vllmMlxConfig?.apiKey || "vllm-mlx",
+    fetch: (async (url, init) => {
+      if (init?.body && typeof init.body === "string") {
+        const body = JSON.parse(init.body);
+
+        // Map max_tokens for vLLM-MLX compatibility
+        const maxTokens = body.max_tokens;
+        delete body.max_tokens;
+        if (typeof maxTokens !== "undefined") {
+          body.max_completion_tokens = maxTokens;
+        }
+
+        // Remove parameters that vLLM-MLX doesn't support
+        delete body.reasoning;
+        delete body.service_tier;
+
+        // Keep tool calling enabled for vLLM-MLX
+        // vLLM-MLX supports tools parameter
+
+        init.body = JSON.stringify(body);
+      }
+
+      const response = await globalThis.fetch(url, init);
+
+      // Log vLLM-MLX responses when debugging
+      if (isDebugEnabled() && response.body && response.ok) {
+        debug(1, `[vLLM-MLX → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`);
+      }
+
+      return response;
+    }) as typeof fetch,
+  }),
   claude: createAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY || "",
   }) as any,
@@ -333,6 +396,36 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
 
 // Wrap initialization in async IIFE
 (async () => {
+  // Setup signal handlers for graceful shutdown
+  const handleShutdown = async () => {
+    debug(1, "[anyclaude] Received shutdown signal, cleaning up...");
+    cleanupServerProcess();
+    // Give processes time to exit
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    process.exit(0);
+  };
+
+  process.on("SIGINT", handleShutdown);
+  process.on("SIGTERM", handleShutdown);
+
+  // Wait for backend server to be ready if launching locally
+  if (mode !== "claude") {
+    const backendConfig = config.backends?.[mode];
+    if (backendConfig?.baseUrl) {
+      console.log(`[anyclaude] Waiting for ${mode} server to be ready at ${backendConfig.baseUrl}...`);
+      const isReady = await waitForServerReady(backendConfig.baseUrl);
+      if (isReady) {
+        console.log(`[anyclaude] ${mode} server is ready!`);
+      } else {
+        console.warn(
+          `[anyclaude] Backend server did not start in time. Attempting to continue...`
+        );
+      }
+    } else {
+      console.log(`[anyclaude] No baseUrl configured for ${mode}, skipping wait`);
+    }
+  }
+
   const proxyURL = createAnthropicProxy({
     providers,
     defaultProvider: mode,
@@ -341,7 +434,9 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         ? "claude-3-5-sonnet-20241022"
         : mode === "mlx-lm"
           ? mlxLmConfig?.model || "current-model"
-          : lmstudioConfig?.model || "current-model",
+          : mode === "vllm-mlx"
+            ? vllmMlxConfig?.model || "current-model"
+            : lmstudioConfig?.model || "current-model",
     mode,
   });
 
@@ -364,6 +459,13 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     );
     console.log(
       `[anyclaude] Model: ${mlxLmConfig?.model || "current-model"} (with native KV cache)`
+    );
+  } else if (mode === "vllm-mlx") {
+    console.log(
+      `[anyclaude] vLLM-MLX endpoint: ${vllmMlxConfig?.baseURL || "http://localhost:8081/v1"}`
+    );
+    console.log(
+      `[anyclaude] Model: ${vllmMlxConfig?.model || "current-model"} (with prompt caching + tool calling)`
     );
   } else if (mode === "claude") {
     console.log(`[anyclaude] Using real Anthropic API`);
@@ -393,6 +495,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     });
 
     proc.on("exit", (code) => {
+      cleanupServerProcess();
       process.exit(code ?? 0);
     });
   }

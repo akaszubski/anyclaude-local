@@ -313,14 +313,16 @@ export function launchBackendServer(
  */
 export async function waitForServerReady(
   baseUrl: string,
-  timeout: number = 60000
+  timeout: number = 120000 // 2 minutes for vLLM-MLX model loading
 ): Promise<boolean> {
   const startTime = Date.now();
+  let attempts = 0;
 
   while (Date.now() - startTime < timeout) {
+    attempts++;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch(baseUrl + "/models", {
         signal: controller.signal,
@@ -329,17 +331,20 @@ export async function waitForServerReady(
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        debug(1, "[server-launcher] Backend server is ready");
+        debug(1, `[server-launcher] Backend server is ready after ${attempts} attempts (${Date.now() - startTime}ms)`);
         return true;
+      } else {
+        debug(1, `[server-launcher] Server responded with status ${response.status}, attempt ${attempts}`);
       }
     } catch (error) {
       // Server not ready yet, keep waiting
+      debug(1, `[server-launcher] Server not ready (attempt ${attempts}): ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Wait before retrying
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Wait before retrying (shorter wait to be more responsive)
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  console.warn("[anyclaude] Backend server did not respond within timeout");
+  console.warn(`[anyclaude] Backend server did not respond within ${timeout}ms (${attempts} attempts)`);
   return false;
 }
