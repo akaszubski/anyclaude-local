@@ -187,8 +187,8 @@ export const createAnthropicProxy = ({
                     }
                   }
 
-                  // Record cache metrics for monitoring (Claude mode only)
-                  if (mode === "claude" && parsedResponse?.usage && body) {
+                  // Record cache metrics for monitoring (Claude and vLLM-MLX)
+                  if (parsedResponse?.usage && body) {
                     const usage = parsedResponse.usage;
                     const inputTokens = usage.input_tokens || 0;
                     const cacheReadTokens = usage.cache_read_input_tokens || 0;
@@ -210,16 +210,38 @@ export const createAnthropicProxy = ({
                       .digest("hex");
 
                     const monitor = getCacheMonitor();
-                    if (cacheReadTokens > 0) {
-                      monitor.recordHit(hash, inputTokens, cacheReadTokens);
+
+                    if (mode === "claude") {
+                      // Claude returns explicit cache metrics
+                      if (cacheReadTokens > 0) {
+                        monitor.recordHit(hash, inputTokens, cacheReadTokens);
+                      } else {
+                        monitor.recordMiss(
+                          hash,
+                          inputTokens,
+                          cacheCreationTokens,
+                          systemPromptLength,
+                          toolCount
+                        );
+                      }
                     } else {
-                      monitor.recordMiss(
-                        hash,
-                        inputTokens,
-                        cacheCreationTokens,
-                        systemPromptLength,
-                        toolCount
-                      );
+                      // vLLM-MLX: infer cache hits from repeated request hashes
+                      // Track this request for pattern detection
+                      const currentEntry = monitor.getMetrics().entries.get(hash);
+
+                      if (currentEntry && currentEntry.misses > 0) {
+                        // We've seen this hash before - vLLM-MLX likely cached it
+                        monitor.recordHit(hash, inputTokens, 0);
+                      } else {
+                        // First time seeing this hash
+                        monitor.recordMiss(
+                          hash,
+                          inputTokens,
+                          0,
+                          systemPromptLength,
+                          toolCount
+                        );
+                      }
                     }
                   }
                 } catch (error) {
