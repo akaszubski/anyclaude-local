@@ -19,6 +19,7 @@ export function convertToAnthropicStream(
   let reasoningBuffer = ""; // Buffer for accumulating reasoning text
   let chunkCount = 0; // Track chunks for debugging
   let messageStartSkipped = false; // Track if we've skipped the first message_start
+  let messageStopSent = false; // Track if message_stop has been sent
   const streamedToolIds = new Set<string>(); // Track tool IDs we've already sent via streaming
   const toolsWithoutDeltas = new Map<string, { index: number; name: string }>(); // Track tools that got tool-input-end without deltas
   let currentStreamingTool: { id: string; name: string; index: number; receivedDelta: boolean } | null = null; // Track current streaming tool
@@ -101,6 +102,7 @@ export function convertToAnthropicStream(
         }
         case "finish": {
           controller.enqueue({ type: "message_stop" });
+          messageStopSent = true;
           // reset index and streamed tools for next message
           index = 0;
           streamedToolIds.clear();
@@ -420,6 +422,14 @@ export function convertToAnthropicStream(
           1,
           `[Stream Conversion] Stream complete. Total chunks: ${chunkCount}`
         );
+      }
+
+      // Safety net: ensure message_stop is always sent
+      // This handles cases where the AI SDK doesn't send a 'finish' event
+      if (!messageStopSent) {
+        debug(1, `[Stream Conversion] ⚠️  No finish event received - sending fallback message_stop`);
+        controller.enqueue({ type: "message_stop" });
+        messageStopSent = true;
       }
     },
   });
