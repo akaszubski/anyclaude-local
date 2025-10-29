@@ -401,10 +401,12 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
 
     // Import cache monitor to display stats on exit
     try {
-      const { cacheMonitor } = await import("./cache-monitor");
-      const stats = cacheMonitor.getMetrics();
+      const { getCacheMonitor } = await import("./cache-monitor-dashboard");
+      const monitor = getCacheMonitor();
+      const stats = monitor.getMetrics();
       if (stats.totalRequests > 0) {
-        console.log(cacheMonitor.getFormattedStats());
+        monitor.displayReport();
+        monitor.save();
       }
     } catch (error) {
       // Cache monitor may not be available

@@ -33,8 +33,9 @@ import {
   displayCacheMetricsOnExit,
 } from "./cache-metrics";
 import { getCachedPrompt, getCacheStats } from "./prompt-cache";
-import { cacheMonitor } from "./cache-monitor";
+import { getCacheMonitor } from "./cache-monitor-dashboard";
 import { getTimeoutConfig } from "./timeout-config";
+import { createHash } from "crypto";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -187,15 +188,38 @@ export const createAnthropicProxy = ({
                   }
 
                   // Record cache metrics for monitoring (Claude mode only)
-                  if (mode === "claude" && parsedResponse?.usage) {
+                  if (mode === "claude" && parsedResponse?.usage && body) {
                     const usage = parsedResponse.usage;
                     const inputTokens = usage.input_tokens || 0;
                     const cacheReadTokens = usage.cache_read_input_tokens || 0;
+                    const cacheCreationTokens =
+                      usage.cache_creation_input_tokens || 0;
 
+                    // Calculate hash from system prompt and tools for per-prompt tracking
+                    let systemPrompt = "";
+                    if (typeof body.system === "string") {
+                      systemPrompt = body.system;
+                    } else if (Array.isArray(body.system)) {
+                      systemPrompt = JSON.stringify(body.system);
+                    }
+                    const systemPromptLength = systemPrompt.length;
+                    const toolCount = body.tools ? body.tools.length : 0;
+                    const hashInput = systemPrompt + String(toolCount);
+                    const hash = createHash("sha256")
+                      .update(hashInput)
+                      .digest("hex");
+
+                    const monitor = getCacheMonitor();
                     if (cacheReadTokens > 0) {
-                      cacheMonitor.recordHit(inputTokens, cacheReadTokens);
+                      monitor.recordHit(hash, inputTokens, cacheReadTokens);
                     } else {
-                      cacheMonitor.recordMiss(inputTokens);
+                      monitor.recordMiss(
+                        hash,
+                        inputTokens,
+                        cacheCreationTokens,
+                        systemPromptLength,
+                        toolCount
+                      );
                     }
                   }
                 } catch (error) {
