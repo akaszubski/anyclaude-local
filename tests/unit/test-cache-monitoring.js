@@ -216,7 +216,9 @@ test("should display cache metrics in dashboard format", () => {
     cacheCreationTokens: 10000,
   };
 
-  const hitRate = ((metrics.cacheHits / metrics.totalRequests) * 100).toFixed(1);
+  const hitRate = ((metrics.cacheHits / metrics.totalRequests) * 100).toFixed(
+    1
+  );
   const savings = (
     (metrics.cacheReadTokens / metrics.cacheCreationTokens) *
     100
@@ -290,9 +292,11 @@ test("should generate CSV export format", () => {
     },
   ];
 
-  const csv = "timestamp,hash,hits,tokens\n" + entries
-    .map((e) => `${e.timestamp},${e.hash},${e.hits},${e.cacheReadTokens}`)
-    .join("\n");
+  const csv =
+    "timestamp,hash,hits,tokens\n" +
+    entries
+      .map((e) => `${e.timestamp},${e.hash},${e.hits},${e.cacheReadTokens}`)
+      .join("\n");
 
   expect(csv).toContain("abc123");
   expect(csv).toContain("def456");

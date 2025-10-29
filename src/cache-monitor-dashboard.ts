@@ -50,18 +50,13 @@ class CacheMonitor {
       entries: new Map(),
     };
     this.exportPath =
-      exportPath ||
-      path.join(process.cwd(), ".anyclaude-cache-metrics.json");
+      exportPath || path.join(process.cwd(), ".anyclaude-cache-metrics.json");
   }
 
   /**
    * Record a cache hit
    */
-  recordHit(
-    hash: string,
-    inputTokens: number,
-    cacheReadTokens: number
-  ): void {
+  recordHit(hash: string, inputTokens: number, cacheReadTokens: number): void {
     this.metrics.totalRequests++;
     this.metrics.cacheHits++;
     this.metrics.cacheReadTokens += cacheReadTokens;
@@ -123,8 +118,7 @@ class CacheMonitor {
     if (this.metrics.cacheCreationTokens === 0) return 0;
     // Assume cache reads cost 10% of normal token cost
     const regularCost =
-      this.metrics.cacheCreationTokens +
-      this.metrics.cacheReadTokens * 10;
+      this.metrics.cacheCreationTokens + this.metrics.cacheReadTokens * 10;
     const savedCost = this.metrics.cacheReadTokens * 9; // 90% savings per cache read
     return (savedCost / regularCost) * 100;
   }
@@ -147,16 +141,13 @@ class CacheMonitor {
     const runtime = ((Date.now() - this.metrics.startTime) / 1000).toFixed(1);
 
     let report = "";
-    report +=
-      "╔══════════════════════════════════════════════════════════╗\n";
-    report +=
-      "║         ANYCLAUDE CACHE PERFORMANCE REPORT               ║\n";
+    report += "╔══════════════════════════════════════════════════════════╗\n";
+    report += "║         ANYCLAUDE CACHE PERFORMANCE REPORT               ║\n";
     report +=
       "╚══════════════════════════════════════════════════════════╝\n\n";
 
     report += "OVERALL STATISTICS\n";
-    report +=
-      "──────────────────────────────────────────────────────────\n";
+    report += "──────────────────────────────────────────────────────────\n";
     report += `  Total Requests:       ${this.metrics.totalRequests}\n`;
     report += `  Cache Hits:           ${this.metrics.cacheHits}\n`;
     report += `  Cache Misses:         ${this.metrics.cacheMisses}\n`;
@@ -164,8 +155,7 @@ class CacheMonitor {
     report += `  Runtime:              ${runtime}s\n\n`;
 
     report += "TOKEN USAGE\n";
-    report +=
-      "──────────────────────────────────────────────────────────\n";
+    report += "──────────────────────────────────────────────────────────\n";
     report += `  Total Input Tokens:   ${this.metrics.totalInputTokens.toLocaleString()}\n`;
     report += `  Cache Creation:       ${this.metrics.cacheCreationTokens.toLocaleString()}\n`;
     report += `  Cache Reads:          ${this.metrics.cacheReadTokens.toLocaleString()}\n`;
@@ -174,8 +164,7 @@ class CacheMonitor {
     const topEntries = this.getTopEntries(5);
     if (topEntries.length > 0) {
       report += "TOP CACHED PROMPTS\n";
-      report +=
-        "──────────────────────────────────────────────────────────\n";
+      report += "──────────────────────────────────────────────────────────\n";
       topEntries.forEach((entry, i) => {
         const ratio =
           entry.hits > 0
@@ -213,9 +202,7 @@ class CacheMonitor {
         hits: e.hits,
         misses: e.misses,
         hitRate:
-          e.hits > 0
-            ? ((e.hits / (e.hits + e.misses)) * 100).toFixed(1)
-            : "0",
+          e.hits > 0 ? ((e.hits / (e.hits + e.misses)) * 100).toFixed(1) : "0",
         cacheTokens: e.cacheCreationTokens + e.cacheReadTokens,
       })),
     };
