@@ -1,10 +1,12 @@
 /**
- * Tool call parsing for mlx-lm-server responses
+ * Tool call parsing utilities (legacy - no longer used)
  *
- * Extracts tool calls from model outputs in various formats:
+ * Previously used for mlx-lm to extract tool calls from model outputs in various formats:
  * - Hermes-style XML tags: <tool_call>{"name": "...", "arguments": {...}}</tool_call>
  * - Llama JSON format: {"name": "...", "arguments": {...}}
  * - Mistral format: [TOOL_CALLS] [{"name": "...", "arguments": {...}}]
+ *
+ * Note: vLLM-MLX and LMStudio handle tool calling natively via OpenAI format.
  */
 
 import { v4 as uuidv4 } from 'uuid';
