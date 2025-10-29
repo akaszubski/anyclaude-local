@@ -179,10 +179,10 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const serverScript = "scripts/vllm-mlx-server.py";
   const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
 
+  // Silent return if no model path - don't log, just skip auto-launch
+  // (User has explicitly chosen vllm-mlx mode, server should already be running)
   if (!modelPath || modelPath === "current-model") {
-    console.log("[anyclaude] vLLM-MLX auto-launch disabled (no model path configured)");
-    console.log("[anyclaude] Assuming server is running on http://localhost:8081");
-    console.log("[anyclaude] To enable auto-launch, add backends.vllm-mlx.model to .anyclauderc.json");
+    debug(1, "[server-launcher] vLLM-MLX auto-launch skipped (no model path in config)");
     return;
   }
 

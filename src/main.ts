@@ -390,6 +390,22 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         delete body.reasoning;
         delete body.service_tier;
 
+        // FIX: Clean system prompt for vLLM-MLX (JSON parsing issues with newlines)
+        // vLLM-MLX's server has strict JSON validation, normalize newlines in all messages
+        if (body.messages && Array.isArray(body.messages)) {
+          for (const msg of body.messages) {
+            // Clean system role messages
+            if (msg.role === "system" && msg.content && typeof msg.content === "string") {
+              msg.content = msg.content.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+            }
+            // Also clean user messages that might contain newlines
+            if (msg.role === "user" && msg.content && typeof msg.content === "string") {
+              // User messages can have newlines, but normalize them to prevent JSON issues
+              msg.content = msg.content.replace(/\r\n/g, "\n");
+            }
+          }
+        }
+
         // Keep tool calling enabled for vLLM-MLX
         // vLLM-MLX supports tools parameter
 

@@ -128,37 +128,52 @@ export function convertToAnthropicStream(
           break;
         }
         case "tool-input-start": {
+          // CRITICAL FIX: Validate tool call ID and name before using
+          const toolId = (chunk as any).id;
+          const toolName = (chunk as any).toolName;
+
+          if (!toolId || !toolName || typeof toolId !== 'string' || typeof toolName !== 'string') {
+            debug(1, `[Tool Input Start] ⚠️  INVALID tool start event - missing or invalid id/name:`, {
+              id: toolId,
+              toolName: toolName,
+              idType: typeof toolId,
+              nameType: typeof toolName,
+              fullChunk: chunk,
+            });
+            break; // Skip malformed tool call
+          }
+
           // DIAGNOSTIC: Log streaming tool start
           debug(1, `[Tool Input Start Debug] Streaming tool detected:`, {
-            id: chunk.id,
-            toolName: chunk.toolName,
+            id: toolId,
+            toolName: toolName,
             chunkKeys: Object.keys(chunk),
           });
 
           // Track this tool for delta detection
           currentStreamingTool = {
-            id: chunk.id,
-            name: chunk.toolName,
+            id: toolId,
+            name: toolName,
             index: index,
             receivedDelta: false,
           };
 
           // Send streaming tool parameters as Anthropic's input_json_delta format
           // This is how the original anyclaude handles it
-          streamedToolIds.add(chunk.id); // Mark this tool as streamed
+          streamedToolIds.add(toolId); // Mark this tool as streamed
           controller.enqueue({
             type: "content_block_start",
             index,
             content_block: {
               type: "tool_use",
-              id: chunk.id,
-              name: chunk.toolName,
+              id: toolId,
+              name: toolName,
               input: {},
             },
           });
           if (isTraceDebugEnabled()) {
-            debug(3, `[Tool Input] Started streaming tool: ${chunk.toolName}`, {
-              id: chunk.id,
+            debug(3, `[Tool Input] Started streaming tool: ${toolName}`, {
+              id: toolId,
             });
           }
           break;
@@ -213,10 +228,25 @@ export function convertToAnthropicStream(
           break;
         }
         case "tool-call": {
+          // CRITICAL FIX: Validate required fields before processing
+          const toolCallId = (chunk as any).toolCallId;
+          const toolName = (chunk as any).toolName;
+
+          if (!toolCallId || !toolName || typeof toolCallId !== 'string' || typeof toolName !== 'string') {
+            debug(1, `[Tool Call] ⚠️  INVALID tool-call chunk - missing or invalid toolCallId/toolName:`, {
+              toolCallId: toolCallId,
+              toolName: toolName,
+              toolCallIdType: typeof toolCallId,
+              toolNameType: typeof toolName,
+              fullChunkKeys: Object.keys(chunk),
+            });
+            break; // Skip malformed tool call
+          }
+
           // DIAGNOSTIC: Log the full chunk structure
           debug(1, `[Tool Call Debug] Received tool-call chunk:`, {
-            toolCallId: chunk.toolCallId,
-            toolName: chunk.toolName,
+            toolCallId: toolCallId,
+            toolName: toolName,
             hasInput: 'input' in (chunk as any),
             inputType: typeof (chunk as any).input,
             inputValue: (chunk as any).input,
@@ -224,11 +254,11 @@ export function convertToAnthropicStream(
           });
 
           // Check if this tool was started but never received deltas
-          const pendingTool = toolsWithoutDeltas.get(chunk.toolCallId);
+          const pendingTool = toolsWithoutDeltas.get(toolCallId);
           if (pendingTool) {
             // This tool was started but got tool-input-end without deltas!
             // Now we have the actual input from the tool-call chunk.
-            debug(1, `[Tool Call] Completing tool ${chunk.toolName} that had no deltas`);
+            debug(1, `[Tool Call] Completing tool ${toolName} that had no deltas`);
 
             const toolInput = (chunk as any).input;
             if (toolInput && typeof toolInput === 'object') {
@@ -245,17 +275,17 @@ export function convertToAnthropicStream(
             index = pendingTool.index + 1;
 
             // Remove from pending and mark as streamed
-            toolsWithoutDeltas.delete(chunk.toolCallId);
-            streamedToolIds.add(chunk.toolCallId);
+            toolsWithoutDeltas.delete(toolCallId);
+            streamedToolIds.add(toolCallId);
             break;
           }
 
           // Skip if we already sent this tool via streaming events
-          if (streamedToolIds.has(chunk.toolCallId)) {
+          if (streamedToolIds.has(toolCallId)) {
             if (isTraceDebugEnabled()) {
               debug(
                 3,
-                `[Tool Call] Skipping duplicate tool-call (already streamed): ${chunk.toolName}`
+                `[Tool Call] Skipping duplicate tool-call (already streamed): ${toolName}`
               );
             }
             break;
@@ -267,8 +297,8 @@ export function convertToAnthropicStream(
 
           // Defensive: Ensure input exists and is valid
           if (!toolInput || typeof toolInput !== 'object') {
-            debug(1, `[Tool Call] ⚠️  Missing or invalid input for ${chunk.toolName}:`, {
-              toolCallId: chunk.toolCallId,
+            debug(1, `[Tool Call] ⚠️  Missing or invalid input for ${toolName}:`, {
+              toolCallId: toolCallId,
               input: toolInput,
               chunkType: typeof toolInput,
               entireChunk: chunk,
@@ -279,8 +309,8 @@ export function convertToAnthropicStream(
               index,
               content_block: {
                 type: "tool_use",
-                id: chunk.toolCallId,
-                name: chunk.toolName,
+                id: toolCallId,
+                name: toolName,
                 input: {},
               },
             });
@@ -290,9 +320,9 @@ export function convertToAnthropicStream(
           }
 
           if (isTraceDebugEnabled()) {
-            debug(3, `[Tool Call] Atomic tool call: ${chunk.toolName}`, {
-              toolCallId: chunk.toolCallId,
-              toolName: chunk.toolName,
+            debug(3, `[Tool Call] Atomic tool call: ${toolName}`, {
+              toolCallId: toolCallId,
+              toolName: toolName,
               input: toolInput,
             });
           }
@@ -302,8 +332,8 @@ export function convertToAnthropicStream(
             index,
             content_block: {
               type: "tool_use",
-              id: chunk.toolCallId,
-              name: chunk.toolName,
+              id: toolCallId,
+              name: toolName,
               input: toolInput,
             },
           });
