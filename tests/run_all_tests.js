@@ -52,6 +52,51 @@ async function runAllTests() {
       file: path.join(__dirname, "unit", "test_tool_calling.js"),
       description: "Tool Calling Edge Cases Tests",
     },
+    // Phase 1: Stream + File I/O Error Tests
+    {
+      file: path.join(__dirname, "unit", "test-stream-error-handling.js"),
+      description: "Stream Error Handling Tests (Phase 1)",
+    },
+    {
+      file: path.join(__dirname, "unit", "test-file-io-errors.js"),
+      description: "File I/O Error Handling Tests (Phase 1)",
+    },
+    // Phase 2: Network + Tool Validation Tests
+    {
+      file: path.join(__dirname, "unit", "test-network-errors.js"),
+      description: "Network/Timeout Error Handling Tests (Phase 2)",
+    },
+    {
+      file: path.join(__dirname, "unit", "test-tool-validation-errors.js"),
+      description: "Tool Validation Error Handling Tests (Phase 2)",
+    },
+    // Phase 3: Configuration + Message Conversion Tests
+    {
+      file: path.join(__dirname, "unit", "test-config-errors.js"),
+      description: "Configuration Error Handling Tests (Phase 3)",
+    },
+    {
+      file: path.join(__dirname, "unit", "test-message-errors.js"),
+      description: "Message Conversion Error Handling Tests (Phase 3)",
+    },
+    // Phase 4: Process + Context Management Tests
+    {
+      file: path.join(__dirname, "unit", "test-process-errors.js"),
+      description: "Process Management Error Handling Tests (Phase 4)",
+    },
+    {
+      file: path.join(__dirname, "unit", "test-context-errors.js"),
+      description: "Context Management Error Handling Tests (Phase 4)",
+    },
+    // Phase 5: Schema + Proxy Error Tests
+    {
+      file: path.join(__dirname, "unit", "test-schema-errors.js"),
+      description: "JSON Schema Error Handling Tests (Phase 5)",
+    },
+    {
+      file: path.join(__dirname, "unit", "test-proxy-errors.js"),
+      description: "Proxy Request/Response Error Handling Tests (Phase 5)",
+    },
     // Note: Mode detection tests require spawning the proxy, which is slow
     // We'll skip them for now and rely on manual testing
     // {
