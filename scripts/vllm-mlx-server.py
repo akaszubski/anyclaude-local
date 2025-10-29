@@ -132,6 +132,7 @@ class PromptCache:
             "misses": 0,
             "total_requests": 0
         }
+        self.last_request_was_hit = False  # Track if last request was a cache hit
 
     def get_cache_key(self, messages: list, tools: list = None) -> str:
         """Generate consistent cache key from messages and tools"""
@@ -203,7 +204,10 @@ class PromptCache:
     def record_request(self, is_hit: bool = False) -> None:
         """Record cache request stats"""
         self.cache_stats["total_requests"] += 1
-        if not is_hit:
+        self.last_request_was_hit = is_hit
+        if is_hit:
+            self.cache_stats["hits"] += 1
+        else:
             self.cache_stats["misses"] += 1
 
 
@@ -218,7 +222,10 @@ class VLLMMLXServer:
         self.host = host
         self.model = None
         self.tokenizer = None
-        self.cache = PromptCache()
+        # Configure cache size: default 256, override with VLLM_CACHE_SIZE env var
+        cache_size = int(os.environ.get("VLLM_CACHE_SIZE", "256"))
+        self.cache = PromptCache(max_size=cache_size)
+        logger.info(f"Prompt cache initialized with size: {cache_size}")
         self.app = FastAPI(title="vLLM-MLX Server")
         # Thread pool for blocking MLX inference (1 worker to serialize GPU ops)
         # Using single worker prevents concurrent GPU operations that cause Metal assertion errors
@@ -354,6 +361,9 @@ class VLLMMLXServer:
             cached_result = self.cache.get(cache_key)
             self.cache.record_request(is_hit=True)
             logger.info(f"Cache HIT: {len(messages)} messages, returning cached response")
+            # Log cache statistics
+            cache_stats = self.cache.get_stats()
+            logger.debug(f"[Cache Stats] Hit Rate: {cache_stats['hit_rate']} ({cache_stats['hits']}/{cache_stats['total_requests']}), Cached Items: {cache_stats['cached_items']}")
 
         # Convert messages to prompt
         prompt = self._format_messages(messages, tools)
@@ -371,7 +381,11 @@ class VLLMMLXServer:
                 return JSONResponse(cached_result)
 
             self.cache.record_request(is_hit=False)
+            logger.debug(f"[Cache Miss] Processing new request (cache size: {len(self.cache.cache)}/{self.cache.max_size})")
             response = await self._generate_response(prompt, temperature, max_tokens, messages, tools, cache_key)
+            # Log cache statistics after generating new response
+            cache_stats = self.cache.get_stats()
+            logger.debug(f"[Cache Stats] Hit Rate: {cache_stats['hit_rate']} ({cache_stats['hits']}/{cache_stats['total_requests']}), Cached Items: {cache_stats['cached_items']}")
             return JSONResponse(response)
 
     def _format_messages(self, messages: list, tools: list = None) -> str:
@@ -393,9 +407,12 @@ class VLLMMLXServer:
 
         # Add tool descriptions if provided
         if tools:
+            # Sort tools by name for deterministic tool description ordering
+            # This ensures consistent cache keys regardless of tool order from client
+            sorted_tools = sorted(tools, key=lambda t: t['function']['name'])
             tool_descriptions = "\n\n".join([
                 f"Tool: {tool['function']['name']}\nDescription: {tool['function']['description']}"
-                for tool in tools
+                for tool in sorted_tools
             ])
             system_prompt += f"\n\nAvailable tools:\n{tool_descriptions}"
 
@@ -411,6 +428,7 @@ class VLLMMLXServer:
 
             # If we have a cached result, stream it
             if cached_result:
+                logger.debug(f"[Stream Cache Hit] Streaming cached response")
                 cached_text = cached_result['choices'][0]['message']['content']
                 for char in cached_text:
                     yield f"data: {json.dumps({'object': 'text_completion', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
@@ -429,9 +447,13 @@ class VLLMMLXServer:
                 }
                 yield f"data: {json.dumps(final_msg)}\n\n"
                 yield "data: [DONE]\n\n"
+                # Log cache statistics after streaming cached response
+                cache_stats = self.cache.get_stats()
+                logger.debug(f"[Cache Stats] Hit Rate: {cache_stats['hit_rate']} ({cache_stats['hits']}/{cache_stats['total_requests']}), Cached Items: {cache_stats['cached_items']}")
                 return
 
             generated_text = ""
+            logger.debug(f"[Stream Cache Miss] Processing new streaming request (cache size: {len(self.cache.cache)}/{self.cache.max_size})")
 
             if HAS_MLX and self.model and self.tokenizer:
                 # Real MLX inference in thread pool to avoid blocking event loop
@@ -504,6 +526,9 @@ class VLLMMLXServer:
             }
             yield f"data: {json.dumps(final_msg)}\n\n"
             yield "data: [DONE]\n\n"
+            # Log cache statistics after streaming is complete
+            cache_stats = self.cache.get_stats()
+            logger.debug(f"[Cache Stats] Hit Rate: {cache_stats['hit_rate']} ({cache_stats['hits']}/{cache_stats['total_requests']}), Cached Items: {cache_stats['cached_items']}")
 
         except Exception as e:
             logger.error(f"Streaming generation error: {e}")

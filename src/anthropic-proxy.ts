@@ -33,6 +33,7 @@ import {
   displayCacheMetricsOnExit,
 } from "./cache-metrics";
 import { getCachedPrompt, getCacheStats } from "./prompt-cache";
+import { cacheMonitor } from "./cache-monitor";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -174,6 +175,19 @@ export const createAnthropicProxy = ({
                         input_tokens: usage.input_tokens,
                         output_tokens: usage.output_tokens,
                       });
+                    }
+                  }
+
+                  // Record cache metrics for monitoring (Claude mode only)
+                  if (mode === "claude" && parsedResponse?.usage) {
+                    const usage = parsedResponse.usage;
+                    const inputTokens = usage.input_tokens || 0;
+                    const cacheReadTokens = usage.cache_read_input_tokens || 0;
+
+                    if (cacheReadTokens > 0) {
+                      cacheMonitor.recordHit(inputTokens, cacheReadTokens);
+                    } else {
+                      cacheMonitor.recordMiss(inputTokens);
                     }
                   }
                 } catch (error) {
@@ -406,7 +420,11 @@ export const createAnthropicProxy = ({
           });
         }
 
-        const tools = body.tools?.reduce(
+        // Sort tools by name for deterministic cache keys
+        // This ensures the same tools in different orders still produce cache hits
+        const sortedTools = body.tools ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name)) : undefined;
+
+        const tools = sortedTools?.reduce(
           (acc, tool) => {
             const originalSchema = tool.input_schema;
             const providerizedSchema = providerizeSchema(

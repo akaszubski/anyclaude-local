@@ -357,6 +357,18 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   // Setup signal handlers for graceful shutdown
   const handleShutdown = async () => {
     debug(1, "[anyclaude] Received shutdown signal, cleaning up...");
+
+    // Import cache monitor to display stats on exit
+    try {
+      const { cacheMonitor } = await import("./cache-monitor");
+      const stats = cacheMonitor.getMetrics();
+      if (stats.totalRequests > 0) {
+        console.log(cacheMonitor.getFormattedStats());
+      }
+    } catch (error) {
+      // Cache monitor may not be available
+    }
+
     cleanupServerProcess();
     // Give processes time to exit
     await new Promise((resolve) => setTimeout(resolve, 2000));
