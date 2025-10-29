@@ -214,35 +214,80 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     process.exit(1);
   }
 
+  // Create log directory if it doesn't exist
+  const logDir = path.join(os.homedir(), ".anyclaude", "logs");
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+
+  // Log file for server output (helps with debugging)
+  const logFile = path.join(logDir, "vllm-mlx-server.log");
+  const logStream = fs.createWriteStream(logFile, { flags: "a" });
+  logStream.write(`\n=== vLLM-MLX Server Started at ${new Date().toISOString()} ===\n`);
+
   // Build command to activate venv and start vLLM-MLX
-  const command = `source ${activateScript} && python3 ${serverScriptPath} --model "${modelPath}" --port ${port}`;
+  // Redirect stderr to stdout so we capture all output
+  // Disable macOS crash reporting dialog with PYTHONUNBUFFERED and disabling crash handler
+  const command = `source ${activateScript} && PYTHONUNBUFFERED=1 python3 ${serverScriptPath} --model "${modelPath}" --port ${port} 2>&1`;
 
   const serverProcess = spawn("bash", ["-c", command], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true, // Create a new process group so we can kill all children
+    env: {
+      ...process.env,
+      PYTHONUNBUFFERED: "1",
+      // Disable macOS crash handler for this subprocess
+      DYLD_INSERT_LIBRARIES: "",
+      // Disable Python crash handler
+      PYTHONDONTWRITEBYTECODE: "1",
+    },
   });
 
   // Register process for cleanup on exit
   registerServerProcess(serverProcess);
 
-  // Listen for output to know when server is ready
-  serverProcess.stdout?.on("data", (data) => {
-    const output = data.toString();
-    if (output.includes("Uvicorn running") || output.includes("Application startup complete")) {
-      debug(1, "[server-launcher] vLLM-MLX server started successfully");
-    }
-  });
+  // Write server output to log file and console (for errors)
+  let hasStarted = false;
 
-  serverProcess.stderr?.on("data", (data) => {
+  const handleServerOutput = (data: Buffer) => {
     const output = data.toString();
-    if (output.includes("error") || output.includes("Error")) {
-      console.error(`[anyclaude] vLLM-MLX error: ${output}`);
+
+    // Write to log file
+    logStream.write(output);
+
+    // Check if server has started
+    if (!hasStarted && (output.includes("Uvicorn running") || output.includes("Application startup complete"))) {
+      hasStarted = true;
+      debug(1, "[server-launcher] vLLM-MLX server started successfully");
+      console.log(`[anyclaude] vLLM-MLX server is ready`);
     }
-  });
+
+    // Also log errors to console
+    if (output.includes("error") || output.includes("Error") || output.includes("failed") || output.includes("Error")) {
+      console.error(`[anyclaude] vLLM-MLX: ${output.trim()}`);
+    }
+  };
+
+  serverProcess.stdout?.on("data", handleServerOutput);
+  serverProcess.stderr?.on("data", handleServerOutput);
 
   serverProcess.on("error", (error) => {
+    logStream.write(`ERROR: ${error.message}\n`);
     console.error(`[anyclaude] Failed to start vLLM-MLX server: ${error.message}`);
+    console.error(`[anyclaude] Check logs at: ${logFile}`);
     process.exit(1);
+  });
+
+  serverProcess.on("exit", (code, signal) => {
+    const message = code !== null
+      ? `exited with code ${code}`
+      : `killed with signal ${signal}`;
+    logStream.write(`Process ${message} at ${new Date().toISOString()}\n`);
+
+    if (!hasStarted && code !== 0) {
+      console.error(`[anyclaude] vLLM-MLX server failed to start (${message})`);
+      console.error(`[anyclaude] Check logs at: ${logFile}`);
+    }
   });
 
   // Keep the server running in the background

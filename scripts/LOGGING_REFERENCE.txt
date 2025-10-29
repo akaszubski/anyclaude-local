@@ -1,0 +1,157 @@
+================================================================================
+PYTHON LOGGING UTILITY - QUICK REFERENCE
+================================================================================
+
+IMPORT & SETUP
+─────────────────────────────────────────────────────────────────────────────
+from scripts.utils_logging import setup_logger, debug
+
+logger = setup_logger(__name__)              # Create logger
+logger.info("message")                       # Standard logging
+
+
+DEBUG FUNCTIONS (ANYCLAUDE_DEBUG-aware)
+─────────────────────────────────────────────────────────────────────────────
+debug(1, "message")                          # Shows at level 1+
+debug(1, "msg", {"data": "value"})           # With JSON data
+debug(2, "verbose info")                     # Shows at level 2+
+debug(3, "full trace", large_dict)           # Full pretty-print at level 3
+
+
+DEBUG LEVEL CHECKS
+─────────────────────────────────────────────────────────────────────────────
+get_debug_level()                            # Returns 0, 1, 2, or 3
+is_debug_enabled()                           # True if level > 0
+is_verbose_debug_enabled()                   # True if level >= 2
+is_trace_debug_enabled()                     # True if level >= 3
+
+
+PERFORMANCE TIMING
+─────────────────────────────────────────────────────────────────────────────
+with PerformanceTimer("operation_name"):
+    # do work
+    # Logs: operation_name completed in 123.45ms
+
+with PerformanceTimer("op", log_level=3) as timer:
+    timer.checkpoint("halfway")              # Log checkpoint
+    timer.checkpoint("done")
+    # Both checkpoints logged with elapsed time
+
+
+CACHE TRACKING
+─────────────────────────────────────────────────────────────────────────────
+log_cache_hit("type", key)                   # Cache hit
+log_cache_hit("type", key, {"size": 1500})   # With metadata
+
+log_cache_miss("type", key)                  # Cache miss
+log_cache_miss("type", key, "reason")        # With reason
+
+
+ERROR DEBUGGING
+─────────────────────────────────────────────────────────────────────────────
+file = write_error_debug_file(
+    status_code=500,
+    request_info={"method": "POST", "url": "/api"},
+    response_info={"statusCode": 500, "body": "error"}
+)
+# Writes JSON file to /tmp/anyclaude-debug-*.json
+
+log_debug_error("HTTP", 500, file, {"provider": "mlx"})
+
+
+DECORATORS
+─────────────────────────────────────────────────────────────────────────────
+@timing_decorator()                          # Logs function duration
+def my_function():
+    pass
+
+@timing_decorator(log_level=3)               # Only at trace level
+def critical_operation():
+    pass
+
+
+ENVIRONMENT VARIABLES
+─────────────────────────────────────────────────────────────────────────────
+ANYCLAUDE_DEBUG=0  (no debug)
+ANYCLAUDE_DEBUG=1  (basic debug)
+ANYCLAUDE_DEBUG=2  (verbose + performance)
+ANYCLAUDE_DEBUG=3  (full trace)
+
+# Usage:
+ANYCLAUDE_DEBUG=1 python3 script.py
+ANYCLAUDE_DEBUG=2 python3 script.py
+
+
+RUN EXAMPLES
+─────────────────────────────────────────────────────────────────────────────
+python3 scripts/example_logging_integration.py
+ANYCLAUDE_DEBUG=1 python3 scripts/example_logging_integration.py
+ANYCLAUDE_DEBUG=2 python3 scripts/example_logging_integration.py
+ANYCLAUDE_DEBUG=3 python3 scripts/example_logging_integration.py
+
+
+OUTPUT EXAMPLES
+─────────────────────────────────────────────────────────────────────────────
+
+Level 1 (Basic):
+  [2025-10-28 22:46:27] [anyclaude] DEBUG: Request received {"path":"/api"}
+  [2025-10-28 22:46:27] [myapp] INFO: Processing started
+
+Level 2 (Verbose):
+  [2025-10-28 22:46:27] [anyclaude] DEBUG: Request received {"path":"/api"}
+  [2025-10-28 22:46:27] [anyclaude] DEBUG: [Timer] operation @ checkpoint: 123.45ms
+  [2025-10-28 22:46:27] [myapp] INFO: Processing started
+
+Level 3 (Trace):
+  [2025-10-28 22:46:27] [anyclaude] DEBUG: Request received {
+    "path": "/api",
+    "method": "POST",
+    "data": { ... full structure ... }
+  }
+
+
+STANDARD LOGGING (still available)
+─────────────────────────────────────────────────────────────────────────────
+logger.info("message")                       # Info
+logger.warning("message")                    # Warning
+logger.error("message")                      # Error
+logger.debug("message")                      # Debug (not ANYCLAUDE_DEBUG-aware)
+
+
+INTEGRATION CHECKLIST
+─────────────────────────────────────────────────────────────────────────────
+[ ] Import utils_logging module
+[ ] Call setup_logger() at startup
+[ ] Call display_debug_startup() if desired
+[ ] Replace logger.debug() with debug(1, ...) for ANYCLAUDE_DEBUG support
+[ ] Add PerformanceTimer around key operations
+[ ] Add log_cache_hit/miss for cache operations
+[ ] Test with ANYCLAUDE_DEBUG=1 python3 script.py
+
+
+TROUBLESHOOTING
+─────────────────────────────────────────────────────────────────────────────
+Problem: Debug messages not showing
+  → Check: echo $ANYCLAUDE_DEBUG
+  → Use: debug() function, not logger.debug()
+  → Verify: Debug level matches your need (1, 2, or 3)
+
+Problem: Performance timer showing too much
+  → Adjust: PerformanceTimer(..., log_level=3)
+
+Problem: Can't import module
+  → Add to path: sys.path.insert(0, 'scripts')
+  → Or: import sys
+        sys.path.insert(0, str(Path(__file__).parent))
+
+
+FILES
+─────────────────────────────────────────────────────────────────────────────
+scripts/utils_logging.py                     Main module
+scripts/LOGGING_QUICK_START.md               Quick start guide
+scripts/LOGGING_GUIDE.md                     Complete API reference
+scripts/example_logging_integration.py       Working examples
+scripts/VLLM_MLX_LOGGING_INTEGRATION.md      Integration instructions
+scripts/LOGGING_REFERENCE.txt                This file
+
+================================================================================

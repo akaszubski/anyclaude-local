@@ -13,6 +13,9 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 📐 **Understanding How It Works**
 
+- **[Architecture Summary](ARCHITECTURE_SUMMARY.md)** - ⭐ NEW: System overview, design patterns, and performance characteristics
+- **[Best Practices Research](BEST_PRACTICES_RESEARCH.md)** - ⭐ NEW: Industry patterns for proxies, tool calling, MLX optimization, and caching
+- **[Priority Implementation Guide](PRIORITY_IMPLEMENTATION_GUIDE.md)** - ⭐ NEW: Step-by-step optimization roadmap (L1/L2 caching, memory management)
 - [PROJECT.md](../PROJECT.md) - Complete architectural deep-dive
 - [Model Adapters](architecture/model-adapters.md) - Model-specific handling
 - [Tool Calling Enhancement](architecture/tool-calling-enhancement.md) - Tool system improvements

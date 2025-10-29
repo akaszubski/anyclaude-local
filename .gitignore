@@ -31,6 +31,12 @@ node_modules/
 # TypeScript cache
 *.tsbuildinfo
 
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # Optional npm cache directory
 .npm
 
