@@ -102,7 +102,8 @@ test("flush() should log warning when sending fallback message_stop", () => {
   const flushBody = flushMatch[0];
 
   // Should log a warning when this happens
-  expect(flushBody).toMatch(/debug.*finish.*event/i);
+  // Use [\s\S]*? instead of .* to match across newlines
+  expect(flushBody).toMatch(/debug[\s\S]*?finish[\s\S]*?event/i);
 });
 
 test("messageStopSent should be reset along with index", () => {

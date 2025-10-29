@@ -877,27 +877,60 @@ export const createAnthropicProxy = ({
                   );
                   // Return a Promise that resolves when the response is ready for more data
                   return new Promise((resolve, reject) => {
+                    let drainTimeout: NodeJS.Timeout | null = null;
+                    let cleaned = false;
+
+                    const cleanup = () => {
+                      if (cleaned) return;
+                      cleaned = true;
+                      if (drainTimeout) clearTimeout(drainTimeout);
+                      res.removeListener("drain", onDrain);
+                      res.removeListener("error", onError);
+                      res.removeListener("close", onClose);
+                    };
+
                     const onDrain = () => {
                       debug(
                         2,
                         `[Backpressure] Drain event received, resuming writes`
                       );
-                      res.removeListener("drain", onDrain);
-                      res.removeListener("error", onError);
+                      cleanup();
                       resolve();
                     };
+
                     const onError = (err: Error) => {
                       debug(
                         1,
                         `[Backpressure] Error while waiting for drain:`,
                         err
                       );
-                      res.removeListener("drain", onDrain);
-                      res.removeListener("error", onError);
+                      cleanup();
                       reject(err);
                     };
+
+                    const onClose = () => {
+                      debug(
+                        1,
+                        `[Backpressure] Response closed while waiting for drain`
+                      );
+                      cleanup();
+                      reject(new Error("Response closed"));
+                    };
+
+                    // Set a timeout to prevent hanging forever if drain never comes
+                    // This can happen if the client disconnects or the response gets stuck
+                    drainTimeout = setTimeout(() => {
+                      debug(
+                        1,
+                        `[Backpressure] Timeout waiting for drain (5s) - response may be stuck`
+                      );
+                      cleanup();
+                      reject(new Error("Drain event timeout after 5 seconds"));
+                    }, 5000);
+
                     res.once("drain", onDrain);
                     res.once("error", onError);
+                    res.once("close", onClose);
                   });
                 }
               },
