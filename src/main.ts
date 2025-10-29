@@ -17,10 +17,7 @@ import {
   cleanupServerProcess,
 } from "./server-launcher";
 import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
-import {
-  getTimeoutConfig,
-  getTimeoutInfoString,
-} from "./timeout-config";
+import { getTimeoutConfig, getTimeoutInfoString } from "./timeout-config";
 
 /**
  * Configuration file structure for .anyclauderc.json

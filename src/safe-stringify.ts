@@ -27,19 +27,21 @@ export function safeStringify(
     return val;
   };
 
-  const finalReplacer = replacer ? (key: string, val: any) => {
-    // Apply user's replacer first
-    const replaced = replacer(key, val);
+  const finalReplacer = replacer
+    ? (key: string, val: any) => {
+        // Apply user's replacer first
+        const replaced = replacer(key, val);
 
-    // Then apply circular reference check
-    if (typeof replaced === "object" && replaced !== null) {
-      if (seen.has(replaced)) {
-        return "[Circular]";
+        // Then apply circular reference check
+        if (typeof replaced === "object" && replaced !== null) {
+          if (seen.has(replaced)) {
+            return "[Circular]";
+          }
+          seen.add(replaced);
+        }
+        return replaced;
       }
-      seen.add(replaced);
-    }
-    return replaced;
-  } : defaultReplacer;
+    : defaultReplacer;
 
   return JSON.stringify(value, finalReplacer, space);
 }

@@ -73,9 +73,7 @@ console.log("\n╔════════════════════�
 console.log("║  PHASE 1 INTEGRATION TESTS - Streaming Context         ║");
 console.log("╚══════════════════════════════════════════════════════════╝\n");
 
-console.log(
-  "INTEGRATION TEST 1: Circular Reference in Tool Inputs\n"
-);
+console.log("INTEGRATION TEST 1: Circular Reference in Tool Inputs\n");
 
 test("should stringify normal tool input without error", () => {
   const toolInput = {
@@ -153,9 +151,7 @@ test("should encode tool input as SSE event data", () => {
 // INTEGRATION TEST 2: RESPONSE CLOSE HANDLER IN STREAMING
 // ============================================================================
 
-console.log(
-  "INTEGRATION TEST 2: Response Close Handler in Streaming\n"
-);
+console.log("INTEGRATION TEST 2: Response Close Handler in Streaming\n");
 
 function createStreamingResponse() {
   const listeners = {};

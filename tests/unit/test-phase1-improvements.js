@@ -34,11 +34,7 @@ function test(name, fn) {
 function expect(value) {
   return {
     toBe: (expected) => {
-      assert.strictEqual(
-        value,
-        expected,
-        `Expected ${expected}, got ${value}`
-      );
+      assert.strictEqual(value, expected, `Expected ${expected}, got ${value}`);
     },
     toEqual: (expected) => {
       assert.deepStrictEqual(value, expected);
@@ -74,10 +70,7 @@ function expect(value) {
       assert.ok(!value, `Expected falsy value, got ${value}`);
     },
     toBeGreaterThan: (threshold) => {
-      assert.ok(
-        value > threshold,
-        `Expected ${value} > ${threshold}`
-      );
+      assert.ok(value > threshold, `Expected ${value} > ${threshold}`);
     },
     toHaveBeenCalled: () => {
       assert.ok(value.called, "Expected function to have been called");
@@ -150,15 +143,12 @@ console.log("╚═════════════════════�
 
 console.log("TEST SUITE 1: Circular Reference Protection\n");
 
-test(
-  "should handle simple object without circular references",
-  () => {
-    const obj = { a: 1, b: "test", c: { d: 2 } };
-    const result = JSON.stringify(obj);
-    expect(result).toContain('"a":1');
-    expect(result).toContain('"b":"test"');
-  }
-);
+test("should handle simple object without circular references", () => {
+  const obj = { a: 1, b: "test", c: { d: 2 } };
+  const result = JSON.stringify(obj);
+  expect(result).toContain('"a":1');
+  expect(result).toContain('"b":"test"');
+});
 
 test("should detect circular reference in object", () => {
   const obj = { a: 1 };
@@ -458,7 +448,8 @@ test("should handle non-numeric timeout gracefully", () => {
 });
 
 test("should log helpful message about Qwen3-30B model timing", () => {
-  const modelInfo = "Qwen3-Coder-30B can take 30-60 seconds to load on first request";
+  const modelInfo =
+    "Qwen3-Coder-30B can take 30-60 seconds to load on first request";
   const timeout = 30000;
   const message =
     timeout < 120000
