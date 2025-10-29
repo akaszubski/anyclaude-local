@@ -91,8 +91,10 @@ function testMissingRequiredFields() {
   const toolCall = {}; // Empty - missing toolName and toolCallId
 
   // Validate required fields
-  const hasToolName = "toolName" in toolCall && typeof toolCall.toolName === "string";
-  const hasToolId = "toolCallId" in toolCall && typeof toolCall.toolCallId === "string";
+  const hasToolName =
+    "toolName" in toolCall && typeof toolCall.toolName === "string";
+  const hasToolId =
+    "toolCallId" in toolCall && typeof toolCall.toolCallId === "string";
 
   assert.ok(!hasToolName, "Missing toolName detected");
   assert.ok(!hasToolId, "Missing toolCallId detected");
@@ -270,7 +272,8 @@ function testToolInputEndWithoutDeltas() {
   };
 
   // Tool input-end received without any deltas
-  const hasInput = Object.keys(toolState.input).length > 0 || toolState.receivedDeltas;
+  const hasInput =
+    Object.keys(toolState.input).length > 0 || toolState.receivedDeltas;
 
   // Later, full input arrives in tool-call chunk
   const toolCall = {
@@ -282,7 +285,11 @@ function testToolInputEndWithoutDeltas() {
     toolState.input = toolCall.input;
   }
 
-  assert.deepStrictEqual(toolState.input, { param: "value" }, "Input properly set from tool-call");
+  assert.deepStrictEqual(
+    toolState.input,
+    { param: "value" },
+    "Input properly set from tool-call"
+  );
   console.log("   ✅ Missing deltas handled by tool-call input");
   passed++;
 }
@@ -303,7 +310,8 @@ function testEmptyToolInput() {
   };
 
   // Empty input is valid for some tools
-  const isValidInput = typeof toolCall.input === "object" && toolCall.input !== null;
+  const isValidInput =
+    typeof toolCall.input === "object" && toolCall.input !== null;
   assert.ok(isValidInput, "Empty input object is valid");
 
   // Should not error

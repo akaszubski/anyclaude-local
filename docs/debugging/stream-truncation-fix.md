@@ -9,6 +9,7 @@
 Claude Code responses were being truncated mid-stream, cutting off at arbitrary points during the response generation. This affected both short and long responses, making the tool unreliable.
 
 **Symptoms**:
+
 - Responses ending abruptly mid-sentence
 - Missing `message_stop` event from SSE stream
 - No errors reported by the proxy or client
@@ -21,6 +22,7 @@ Through research and investigation, we identified **multiple overlapping issues*
 ### 1. Backpressure Handling (Primary Issue)
 
 Node.js `res.write()` returns a **boolean** indicating whether the buffer has space:
+
 - Returns `true`: Data written immediately
 - Returns `false`: Internal buffer is full (typically 16KB by default)
 
@@ -41,6 +43,7 @@ When the buffer filled up, the write would silently fail or be dropped, causing 
 Intermediate proxies and gateways can buffer SSE responses, truncating them at buffer boundaries (typically 32KB with HTTP/2).
 
 **Solution**: Disable buffering with headers:
+
 ```
 X-Accel-Buffering: no  // Disable nginx/Accel buffering
 Transfer-Encoding: chunked  // Use chunked encoding for streaming
@@ -51,6 +54,7 @@ Transfer-Encoding: chunked  // Use chunked encoding for streaming
 ### 3. High-Water Mark Limits
 
 WritableStreams have a default buffer size (highWaterMark):
+
 - For binary streams: 16KB
 - For object mode: 16 objects
 
@@ -67,8 +71,8 @@ res.writeHead(200, {
   "Content-Type": "text/event-stream",
   "Cache-Control": "no-cache",
   Connection: "keep-alive",
-  "X-Accel-Buffering": "no",        // ← NEW: Disable proxy buffering
-  "Transfer-Encoding": "chunked",     // ← NEW: Force chunked encoding
+  "X-Accel-Buffering": "no", // ← NEW: Disable proxy buffering
+  "Transfer-Encoding": "chunked", // ← NEW: Force chunked encoding
 });
 ```
 
@@ -108,6 +112,7 @@ write(chunk) {
 ```
 
 **Why**:
+
 - Checks if `res.write()` returns `false`
 - Returns a Promise that pauses the stream
 - Resumes when the 'drain' event fires (buffer emptied)
@@ -151,28 +156,31 @@ abort(reason) {
 ### Common Patterns
 
 **Pattern 1: Backpressure-aware Write**
+
 ```typescript
 // Correct way to handle backpressure
 if (!res.write(data)) {
   // Buffer full - wait for drain
   return new Promise((resolve) => {
-    res.once('drain', resolve);
+    res.once("drain", resolve);
   });
 }
 ```
 
 **Pattern 2: SSE Headers for Streaming**
+
 ```typescript
 res.writeHead(200, {
   "Content-Type": "text/event-stream",
   "Cache-Control": "no-cache",
-  "Connection": "keep-alive",
-  "X-Accel-Buffering": "no",        // Disable nginx buffering
-  "Transfer-Encoding": "chunked",    // Use chunked encoding
+  Connection: "keep-alive",
+  "X-Accel-Buffering": "no", // Disable nginx buffering
+  "Transfer-Encoding": "chunked", // Use chunked encoding
 });
 ```
 
 **Pattern 3: Proper Stream Lifecycle**
+
 ```typescript
 const transform = new WritableStream({
   write(chunk) {
@@ -194,6 +202,7 @@ const transform = new WritableStream({
 Created two test suites to validate the fix:
 
 **TypeScript/Jest Tests** (`tests/regression/stream-truncation.test.ts`):
+
 - Short response test
 - Medium response test
 - Long response test
@@ -201,6 +210,7 @@ Created two test suites to validate the fix:
 - Backpressure handling validation
 
 **Node.js Manual Tests** (`scripts/test/stream-truncation.mjs`):
+
 - Direct HTTP requests to proxy
 - Response completeness validation
 - Event counting
@@ -222,6 +232,7 @@ node scripts/test/stream-truncation.mjs 58798
 ✅ **After**: Complete responses, all events received, `message_stop` present
 
 **Indicators of Success**:
+
 1. All responses end with `message_stop` event
 2. No data loss even for large responses (>10KB)
 3. Debug logs show backpressure events being handled
@@ -236,6 +247,7 @@ ANYCLAUDE_DEBUG=2 bun run src/main.ts
 ```
 
 Look for these debug messages:
+
 - `[Backpressure] Buffer full, waiting for drain event` - Backpressure detected
 - `[Backpressure] Drain event received, resuming writes` - Buffer drained, resuming
 - `[WritableStream] Received chunk of type: ...` - Stream events flowing
@@ -273,12 +285,14 @@ Claude Code receives complete SSE stream
 ## Related Issues
 
 This fix addresses the common pattern where:
+
 1. SSE streaming gets truncated at buffer boundaries
 2. Responses cut off mid-word
 3. Final completion events never arrive
 4. Data loss occurs without error messages
 
 Similar issues have been reported in:
+
 - OpenAI SDK streaming issues
 - Anthropic SDK streaming issues
 - LiteLLM proxying issues

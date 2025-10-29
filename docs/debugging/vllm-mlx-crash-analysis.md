@@ -13,6 +13,7 @@ This analysis identifies **8 critical crash points** in the anthropic-proxy.ts a
 ### Location: `convert-to-anthropic-stream.ts` lines 265-307
 
 ### Issue
+
 When processing atomic (non-streaming) tool calls, the code assumes `toolInput` exists and is an object. However, vLLM-MLX may return malformed tool calls where `input` is missing, null, or not an object.
 
 ```typescript
@@ -24,7 +25,7 @@ case "tool-call": {
   // ...
 
   const toolInput = (chunk as any).input;
-  
+
   // CRASH POINT #2: Input can be undefined/null but code assumes it exists
   if (!toolInput || typeof toolInput !== 'object') {
     // Handles some cases but...
@@ -47,6 +48,7 @@ case "tool-call": {
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **Missing tool call ID**: vLLM-MLX returns `{ toolName: "foo" }` without `toolCallId`
    - Crashes: `Map.get(undefined)` in line 227
    - Impact: Stream terminates, Claude Code disconnects
@@ -60,11 +62,13 @@ case "tool-call": {
    - Better approach: Validate presence of required fields before queueing
 
 ### Root Cause
+
 - vLLM-MLX's output format is less strict than LMStudio
 - No validation that `toolCallId` and `toolName` are non-empty strings
 - Defensive handling only checks input validity, not ID/name validity
 
 ### Fix Required
+
 ```typescript
 case "tool-call": {
   // Validate required fields before processing
@@ -73,13 +77,13 @@ case "tool-call": {
     controller.error(new Error(`Tool call missing required toolCallId`));
     break;
   }
-  
+
   if (!chunk.toolName || typeof chunk.toolName !== 'string') {
     debug(1, `[Tool Call] INVALID: Missing or non-string toolName`, chunk);
     controller.error(new Error(`Tool call missing required toolName`));
     break;
   }
-  
+
   const toolInput = (chunk as any).input;
   // ... rest of logic
 }
@@ -92,6 +96,7 @@ case "tool-call": {
 ### Location: `convert-to-anthropic-stream.ts` lines 394-413
 
 ### Issue
+
 Pipeline errors are swallowed without propagating to the response stream. If vLLM-MLX sends invalid SSE data, the error is logged but Claude Code receives no error response.
 
 ```typescript
@@ -112,6 +117,7 @@ stream.pipeTo(transform.writable).catch((error) => {
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **Malformed SSE event**: vLLM-MLX sends `data: {invalid json}`
    - AI SDK fails to parse
    - Stream aborts with empty error `{}`
@@ -129,18 +135,24 @@ stream.pipeTo(transform.writable).catch((error) => {
    - Claude Code receives incomplete response
 
 ### Root Cause
+
 - Pipeline errors not connected to response stream error handling
 - Empty error `{}` indicates stream corruption but is logged without action
 - No timeout/deadline for stream completion in WritableStream
 
 ### Fix Required
+
 ```typescript
 // In anthropic-proxy.ts, after stream conversion:
 try {
   await convertToAnthropicStream(stream.fullStream, true).pipeTo(
     new WritableStream({
-      write(chunk) { /* ... */ },
-      close() { /* ... */ },
+      write(chunk) {
+        /* ... */
+      },
+      close() {
+        /* ... */
+      },
     })
   );
 } catch (error) {
@@ -148,15 +160,19 @@ try {
   debug(1, `[Stream Conversion] Pipeline failed:`, error);
   if (!res.headersSent) {
     res.writeHead(503, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({
-      type: "error",
-      error: { type: "stream_error", message: "Stream processing failed" }
-    }));
+    res.end(
+      JSON.stringify({
+        type: "error",
+        error: { type: "stream_error", message: "Stream processing failed" },
+      })
+    );
   } else {
-    res.write(`event: error\ndata: ${JSON.stringify({
-      type: "error",
-      error: { type: "stream_error", message: "Stream interrupted" }
-    })}\n\n`);
+    res.write(
+      `event: error\ndata: ${JSON.stringify({
+        type: "error",
+        error: { type: "stream_error", message: "Stream interrupted" },
+      })}\n\n`
+    );
     res.end();
   }
 }
@@ -169,6 +185,7 @@ try {
 ### Location: `convert-to-anthropic-stream.ts` lines 127, 208, 244
 
 ### Issue
+
 Content block `index` counter increments without bounds checking. If vLLM-MLX returns many tool calls, index grows unbounded and could exceed message limits.
 
 ```typescript
@@ -193,6 +210,7 @@ case "tool-call": {
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **Many sequential tool calls**: vLLM-MLX streams 100+ tool calls
    - Index reaches 200+
    - Anthropic API may reject message with too many content blocks
@@ -209,11 +227,13 @@ case "tool-call": {
    - Claude Code message parsing fails with mismatched indices
 
 ### Root Cause
+
 - No validation of content block count in Anthropic messages
 - No awareness of vLLM-MLX's tool call generation patterns
 - Defensive coding missing for malformed tool call sequences
 
 ### Fix Required
+
 ```typescript
 const MAX_CONTENT_BLOCKS = 128; // Anthropic limit
 
@@ -223,7 +243,7 @@ case "tool-call": {
     // Stop processing further tool calls
     break;
   }
-  
+
   // ... existing logic ...
   index += 1;
   break;
@@ -237,6 +257,7 @@ case "tool-call": {
 ### Location: `convert-to-anthropic-stream.ts` lines 130-213
 
 ### Issue
+
 The streaming tool call state machine has a race condition. If vLLM-MLX sends tool-input-end without tool-input-start, or sends multiple deltas without proper sequencing, the state tracking becomes invalid.
 
 ```typescript
@@ -283,6 +304,7 @@ case "tool-input-end": {
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **Out-of-order events**: vLLM-MLX sends `tool-input-delta` before `tool-input-start`
    - currentStreamingTool is null
    - Delta still queued with wrong index (outer scope index)
@@ -299,11 +321,13 @@ case "tool-input-end": {
    - Claude Code receives incomplete tool call message
 
 ### Root Cause
+
 - Single `currentStreamingTool` variable assumes sequential processing
 - No correlation between streaming events and tool IDs
 - Index management separate from tool state
 
 ### Fix Required
+
 ```typescript
 // Use Map to track multiple streaming tools by ID
 const streamingTools = new Map<string, {
@@ -350,15 +374,20 @@ case "tool-input-delta": {
 ### Location: `anthropic-proxy.ts` line 633-635
 
 ### Issue
+
 vLLM-MLX is configured as OpenAI-compatible provider, but response format assumptions may not match vLLM-MLX's actual implementation.
 
 ```typescript
-const languageModel = (providerName === "lmstudio" || providerName === "mlx-lm" || providerName === "vllm-mlx")
-  ? (provider as any).chat(model)
-  : provider.languageModel(model);
+const languageModel =
+  providerName === "lmstudio" ||
+  providerName === "mlx-lm" ||
+  providerName === "vllm-mlx"
+    ? (provider as any).chat(model)
+    : provider.languageModel(model);
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **Missing or malformed usage data**: vLLM-MLX doesn't return standard OpenAI usage field
    - `usage.inputTokens` undefined
    - Line 724 creates `NaN` in usage response
@@ -375,22 +404,24 @@ const languageModel = (providerName === "lmstudio" || providerName === "mlx-lm" 
    - Stream conversion logic assumes exact OpenAI format
 
 ### Root Cause
+
 - vLLM-MLX treated as drop-in OpenAI replacement without format validation
 - No type checking on provider metadata
 - Response assumptions not documented
 
 ### Fix Required
+
 ```typescript
 // Validate vLLM-MLX response format
 const validateVLLMMLXResponse = (usage: any) => {
-  if (!usage || typeof usage !== 'object') {
+  if (!usage || typeof usage !== "object") {
     debug(1, `[vLLM-MLX] Invalid usage object:`, usage);
     return {
       inputTokens: 0,
       outputTokens: 0,
     };
   }
-  
+
   return {
     inputTokens: Number.isFinite(usage.inputTokens) ? usage.inputTokens : 0,
     outputTokens: Number.isFinite(usage.outputTokens) ? usage.outputTokens : 0,
@@ -405,31 +436,35 @@ const validateVLLMMLXResponse = (usage: any) => {
 ### Location: `anthropic-proxy.ts` lines 806-826
 
 ### Issue
+
 Non-streaming requests can fail during stream consumption without proper error response to client.
 
 ```typescript
 if (!body.stream) {
   try {
-    await stream.consumeStream();  // <-- Can throw here
+    await stream.consumeStream(); // <-- Can throw here
   } catch (error) {
     debug(1, `Error consuming stream...`, error);
-    
+
     // Response already sent if streaming started
     // But for non-streaming, response headers NOT sent yet
     res.writeHead(503, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({
-      type: "error",
-      error: {
-        type: "overloaded_error",
-        message: `Failed to process response from ${providerName}.`,
-      },
-    }));
+    res.end(
+      JSON.stringify({
+        type: "error",
+        error: {
+          type: "overloaded_error",
+          message: `Failed to process response from ${providerName}.`,
+        },
+      })
+    );
   }
-  return;  // Exit without sending response!
+  return; // Exit without sending response!
 }
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **Stream consumption timeout**: vLLM-MLX takes >10 minutes to generate response
    - AbortSignal timeout fires at line 628
    - stream.consumeStream() throws AbortError
@@ -447,11 +482,13 @@ if (!body.stream) {
    - Node.js GC pause pauses stream
 
 ### Root Cause
+
 - consumeStream() error handling assumes streaming mode
 - No differentiation between streaming and non-streaming error paths
 - onError callback may fire before consumeStream() completes
 
 ### Fix Required
+
 ```typescript
 let responseAlreadySent = false;
 
@@ -459,12 +496,12 @@ let responseAlreadySent = false;
 onError: ({ error }) => {
   responseAlreadySent = true;
   // ... existing error handling
-}
+};
 
 onFinish: () => {
   responseAlreadySent = true;
   // ... existing finish handling
-}
+};
 
 if (!body.stream) {
   try {
@@ -474,13 +511,15 @@ if (!body.stream) {
       debug(1, `Stream error after response sent:`, error);
       return;
     }
-    
+
     debug(1, `Error consuming stream:`, error);
     res.writeHead(503, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({
-      type: "error",
-      error: { type: "stream_error", message: "Stream processing failed" }
-    }));
+    res.end(
+      JSON.stringify({
+        type: "error",
+        error: { type: "stream_error", message: "Stream processing failed" },
+      })
+    );
   }
   return;
 }
@@ -493,20 +532,18 @@ if (!body.stream) {
 ### Location: `anthropic-proxy.ts` lines 475-505 (Tool schema processing)
 
 ### Issue
+
 Tool schemas from vLLM-MLX not validated before being passed to AI SDK. Invalid schemas cause silent failures or crashes deep in tool calling code.
 
 ```typescript
 const tools = body.tools?.reduce(
   (acc, tool) => {
     const originalSchema = tool.input_schema;
-    const providerizedSchema = providerizeSchema(
-      providerName,
-      originalSchema
-    );
+    const providerizedSchema = providerizeSchema(providerName, originalSchema);
 
     acc[tool.name] = {
       description: tool.description || tool.name,
-      inputSchema: jsonSchema(providerizedSchema),  // <-- Can fail here
+      inputSchema: jsonSchema(providerizedSchema), // <-- Can fail here
     };
     return acc;
   },
@@ -515,6 +552,7 @@ const tools = body.tools?.reduce(
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **Circular schema reference**: vLLM-MLX returns schema with `$ref` pointing to itself
    - jsonSchema() tries to resolve infinite recursion
    - Stack overflow
@@ -531,29 +569,31 @@ const tools = body.tools?.reduce(
    - jsonSchema(undefined) throws
 
 ### Root Cause
+
 - No validation of tool schema structure before processing
 - providerizeSchema() assumes well-formed input
 - jsonSchema() errors not caught
 
 ### Fix Required
+
 ```typescript
 const validateToolSchema = (schema: any): boolean => {
-  if (!schema || typeof schema !== 'object') {
+  if (!schema || typeof schema !== "object") {
     return false;
   }
-  
+
   // Check for required fields
-  if (typeof schema.type !== 'string') {
+  if (typeof schema.type !== "string") {
     return false;
   }
-  
+
   // Prevent circular references
   const depth = checkSchemaDepth(schema, new Set());
   if (depth > 10) {
     debug(1, `[Tool Schema] Schema depth ${depth} exceeds limit`);
     return false;
   }
-  
+
   return true;
 };
 
@@ -564,9 +604,12 @@ const tools = body.tools?.reduce(
       debug(1, `[Tool Schema] Invalid schema for tool ${tool.name}`);
       return acc; // Skip invalid tool
     }
-    
+
     try {
-      const providerizedSchema = providerizeSchema(providerName, tool.input_schema);
+      const providerizedSchema = providerizeSchema(
+        providerName,
+        tool.input_schema
+      );
       acc[tool.name] = {
         description: tool.description || tool.name,
         inputSchema: jsonSchema(providerizedSchema),
@@ -587,6 +630,7 @@ const tools = body.tools?.reduce(
 ### Location: `anthropic-proxy.ts` lines 458-462
 
 ### Issue
+
 vLLM-MLX system prompt normalization is incomplete for non-string system prompts.
 
 ```typescript
@@ -601,6 +645,7 @@ if (system && providerName === "mlx-lm") {
 ```
 
 ### vLLM-MLX Scenarios That Crash
+
 1. **System prompt with newlines**: Claude Code sends system prompt with `\n`
    - vLLM-MLX receives malformed JSON in OpenAI request
    - Returns 400 error with cryptic message
@@ -617,28 +662,36 @@ if (system && providerName === "mlx-lm") {
    - Debug logs show full prompt (performance hit)
 
 ### Root Cause
+
 - System prompt normalization only for mlx-lm
 - vLLM-MLX may need same normalization but doesn't get it
 - No token counting for system prompt
 
 ### Fix Required
+
 ```typescript
 // Normalize system prompt for all OpenAI-compatible providers
-const normalizeSystemPrompt = (system: string | undefined, provider: string): string | undefined => {
+const normalizeSystemPrompt = (
+  system: string | undefined,
+  provider: string
+): string | undefined => {
   if (!system) return undefined;
-  
+
   // All OpenAI-compatible providers need newline normalization
   if (provider === "mlx-lm" || provider === "vllm-mlx") {
     system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
   }
-  
+
   // Cap system prompt length (vLLM-MLX default context is often small)
   const maxLength = provider === "vllm-mlx" ? 4000 : 8000;
   if (system.length > maxLength) {
-    debug(1, `[System Prompt] Truncating ${provider} system prompt from ${system.length} to ${maxLength}`);
+    debug(
+      1,
+      `[System Prompt] Truncating ${provider} system prompt from ${system.length} to ${maxLength}`
+    );
     system = system.substring(0, maxLength).trim();
   }
-  
+
   return system;
 };
 
@@ -649,34 +702,30 @@ system = normalizeSystemPrompt(system, providerName);
 
 ## Summary Table
 
-| # | Component | Severity | Issue | Impact |
-|---|-----------|----------|-------|--------|
-| 1 | Tool Call Processing | CRITICAL | Missing null checks on toolCallId/toolName | Stream termination, message parsing failure |
-| 2 | Stream Pipeline | CRITICAL | Unhandled conversion errors swallowed | Hung requests, timeout disconnects |
-| 3 | Content Block Indexing | HIGH | Unbounded index increments | Message format errors, parse failures |
-| 4 | Tool State Machine | HIGH | Race conditions in streaming tool calls | Misaligned content blocks, duplicate tools |
-| 5 | Provider Configuration | HIGH | vLLM-MLX format assumptions | Malformed responses, token count errors |
-| 6 | Non-streaming Error Path | MEDIUM | Incomplete error propagation | Silent failures, client-side timeouts |
-| 7 | Tool Schema Validation | HIGH | No validation before processing | Stack overflow, crashes in schema compilation |
-| 8 | System Prompt Handling | MEDIUM | Incomplete normalization for vLLM-MLX | JSON errors, request failures |
+| #   | Component                | Severity | Issue                                      | Impact                                        |
+| --- | ------------------------ | -------- | ------------------------------------------ | --------------------------------------------- |
+| 1   | Tool Call Processing     | CRITICAL | Missing null checks on toolCallId/toolName | Stream termination, message parsing failure   |
+| 2   | Stream Pipeline          | CRITICAL | Unhandled conversion errors swallowed      | Hung requests, timeout disconnects            |
+| 3   | Content Block Indexing   | HIGH     | Unbounded index increments                 | Message format errors, parse failures         |
+| 4   | Tool State Machine       | HIGH     | Race conditions in streaming tool calls    | Misaligned content blocks, duplicate tools    |
+| 5   | Provider Configuration   | HIGH     | vLLM-MLX format assumptions                | Malformed responses, token count errors       |
+| 6   | Non-streaming Error Path | MEDIUM   | Incomplete error propagation               | Silent failures, client-side timeouts         |
+| 7   | Tool Schema Validation   | HIGH     | No validation before processing            | Stack overflow, crashes in schema compilation |
+| 8   | System Prompt Handling   | MEDIUM   | Incomplete normalization for vLLM-MLX      | JSON errors, request failures                 |
 
 ---
 
 ## Recommended Priority
 
 **Phase 1 (Critical Path):**
+
 1. Issue #1: Validate tool call IDs and names
 2. Issue #2: Proper error propagation in stream pipeline
 3. Issue #7: Validate tool schemas before processing
 
-**Phase 2 (High Impact):**
-4. Issue #3: Add content block index bounds checking
-5. Issue #5: Validate vLLM-MLX response format
-6. Issue #4: Fix tool state machine race conditions
+**Phase 2 (High Impact):** 4. Issue #3: Add content block index bounds checking 5. Issue #5: Validate vLLM-MLX response format 6. Issue #4: Fix tool state machine race conditions
 
-**Phase 3 (Polish):**
-7. Issue #6: Improve error paths for non-streaming
-8. Issue #8: Extend system prompt normalization to vLLM-MLX
+**Phase 3 (Polish):** 7. Issue #6: Improve error paths for non-streaming 8. Issue #8: Extend system prompt normalization to vLLM-MLX
 
 ---
 
@@ -690,7 +739,7 @@ const malformedToolCall = {
   type: "tool-call",
   toolName: "search",
   // Missing toolCallId
-  input: { query: "test" }
+  input: { query: "test" },
 };
 
 // Test 2: Null input
@@ -698,7 +747,7 @@ const nullInputToolCall = {
   type: "tool-call",
   toolCallId: "call_123",
   toolName: "search",
-  input: null
+  input: null,
 };
 
 // Test 3: Out-of-order events
@@ -711,8 +760,7 @@ const outOfOrderEvents = [
 const circularSchema = {
   type: "object",
   properties: {
-    nested: { $ref: "#" } // Circular reference
-  }
+    nested: { $ref: "#" }, // Circular reference
+  },
 };
 ```
-

@@ -155,7 +155,10 @@ export const createAnthropicProxy = ({
                 try {
                   const parsedResponse = JSON.parse(responseBody);
                   const tracker = getCacheTracker();
-                  const responseHeaders = proxiedRes.headers as Record<string, any>;
+                  const responseHeaders = proxiedRes.headers as Record<
+                    string,
+                    any
+                  >;
 
                   tracker.recordRequest(
                     requestId,
@@ -168,9 +171,13 @@ export const createAnthropicProxy = ({
                   // Log cache metrics for verbose debugging
                   if (isVerboseDebugEnabled()) {
                     const usage = parsedResponse?.usage;
-                    if (usage?.cache_creation_input_tokens || usage?.cache_read_input_tokens) {
+                    if (
+                      usage?.cache_creation_input_tokens ||
+                      usage?.cache_read_input_tokens
+                    ) {
                       debug(2, `[Cache Metrics] ${requestId}`, {
-                        cache_creation_tokens: usage.cache_creation_input_tokens || 0,
+                        cache_creation_tokens:
+                          usage.cache_creation_input_tokens || 0,
                         cache_read_tokens: usage.cache_read_input_tokens || 0,
                         input_tokens: usage.input_tokens,
                         output_tokens: usage.output_tokens,
@@ -381,13 +388,19 @@ export const createAnthropicProxy = ({
         }
 
         // Check prompt cache to avoid re-sending 9000 tokens every request
-        const cachedPrompt = getCachedPrompt(body.system || [], body.tools || []);
+        const cachedPrompt = getCachedPrompt(
+          body.system || [],
+          body.tools || []
+        );
         if (cachedPrompt.cached && isVerboseDebugEnabled()) {
           debug(
             2,
             `[Prompt Cache] HIT - Skipping ${
               body.system && Array.isArray(body.system)
-                ? body.system.reduce((sum: number, s: any) => sum + (s.text?.length || 0), 0)
+                ? body.system.reduce(
+                    (sum: number, s: any) => sum + (s.text?.length || 0),
+                    0
+                  )
                 : 0
             } characters of system prompt`
           );
@@ -399,7 +412,9 @@ export const createAnthropicProxy = ({
           if (typeof body.system === "string") {
             system = body.system;
           } else if (Array.isArray(body.system) && body.system.length > 0) {
-            system = body.system.map((s) => (typeof s === "string" ? s : s.text)).join("\n");
+            system = body.system
+              .map((s) => (typeof s === "string" ? s : s.text))
+              .join("\n");
           }
         }
 
@@ -422,7 +437,9 @@ export const createAnthropicProxy = ({
 
         // Sort tools by name for deterministic cache keys
         // This ensures the same tools in different orders still produce cache hits
-        const sortedTools = body.tools ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name)) : undefined;
+        const sortedTools = body.tools
+          ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name))
+          : undefined;
 
         const tools = sortedTools?.reduce(
           (acc, tool) => {
@@ -582,13 +599,17 @@ export const createAnthropicProxy = ({
 
           try {
             // Use .chat() for OpenAI providers (lmstudio, vllm-mlx) and .languageModel() for Anthropic
-            const languageModel = (providerName === "lmstudio" || providerName === "vllm-mlx")
-              ? (provider as any).chat(model)
-              : provider.languageModel(model);
+            const languageModel =
+              providerName === "lmstudio" || providerName === "vllm-mlx"
+                ? (provider as any).chat(model)
+                : provider.languageModel(model);
 
             // No tool parser needed - vllm-mlx and lmstudio handle tool calling natively
 
-            debug(1, `[streamText] About to call streamText for ${providerName}/${model}`);
+            debug(
+              1,
+              `[streamText] About to call streamText for ${providerName}/${model}`
+            );
             stream = await streamText({
               model: languageModel,
               system,
@@ -599,7 +620,10 @@ export const createAnthropicProxy = ({
               abortSignal: abortController.signal,
 
               onFinish: ({ response, usage, finishReason }) => {
-                debug(1, `[streamText onFinish] Called, stop reason: ${finishReason}`);
+                debug(
+                  1,
+                  `[streamText onFinish] Called, stop reason: ${finishReason}`
+                );
                 // Clear timeout on successful completion
                 clearTimeout(timeout);
                 // If the body is already being streamed,
@@ -624,7 +648,8 @@ export const createAnthropicProxy = ({
                   throw new Error("No prompt message found");
                 }
 
-                let contentToSend: typeof promptMessage.content = promptMessage.content;
+                let contentToSend: typeof promptMessage.content =
+                  promptMessage.content;
                 let finalFinishReason = mapAnthropicStopReason(finishReason);
 
                 res.writeHead(200, { "Content-Type": "application/json" }).end(
@@ -797,14 +822,20 @@ export const createAnthropicProxy = ({
         }, 10000); // 10 second interval
 
         try {
-          debug(1, `[Streaming] Starting stream conversion and pipe for ${providerName}/${model}`);
+          debug(
+            1,
+            `[Streaming] Starting stream conversion and pipe for ${providerName}/${model}`
+          );
 
           // CRITICAL: Create a WritableStream that properly handles backpressure
           // This prevents truncation when res.write() returns false (buffer full)
           await convertToAnthropicStream(stream.fullStream, true).pipeTo(
             new WritableStream({
               write(chunk) {
-                debug(2, `[WritableStream] Received chunk of type: ${chunk.type}`);
+                debug(
+                  2,
+                  `[WritableStream] Received chunk of type: ${chunk.type}`
+                );
                 // Clear keepalive on first chunk (stream has started)
                 if (keepaliveInterval) {
                   clearInterval(keepaliveInterval);
@@ -840,23 +871,33 @@ export const createAnthropicProxy = ({
                 const canContinue = res.write(data);
 
                 if (!canContinue) {
-                  debug(2, `[Backpressure] Buffer full, waiting for drain event`);
+                  debug(
+                    2,
+                    `[Backpressure] Buffer full, waiting for drain event`
+                  );
                   // Return a Promise that resolves when the response is ready for more data
                   return new Promise((resolve, reject) => {
                     const onDrain = () => {
-                      debug(2, `[Backpressure] Drain event received, resuming writes`);
-                      res.removeListener('drain', onDrain);
-                      res.removeListener('error', onError);
+                      debug(
+                        2,
+                        `[Backpressure] Drain event received, resuming writes`
+                      );
+                      res.removeListener("drain", onDrain);
+                      res.removeListener("error", onError);
                       resolve();
                     };
                     const onError = (err: Error) => {
-                      debug(1, `[Backpressure] Error while waiting for drain:`, err);
-                      res.removeListener('drain', onDrain);
-                      res.removeListener('error', onError);
+                      debug(
+                        1,
+                        `[Backpressure] Error while waiting for drain:`,
+                        err
+                      );
+                      res.removeListener("drain", onDrain);
+                      res.removeListener("error", onError);
                       reject(err);
                     };
-                    res.once('drain', onDrain);
-                    res.once('error', onError);
+                    res.once("drain", onDrain);
+                    res.once("error", onError);
                   });
                 }
               },

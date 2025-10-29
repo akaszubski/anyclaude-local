@@ -25,22 +25,26 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 ## 🆕 Latest Improvements (v2.1.0)
 
 ### ✅ Streaming Response Fixes
+
 - **Fixed**: Message_stop safeguard now ensures responses always complete (never hang)
 - **Added**: Fallback message_stop in flush() callback for edge cases
 - **Impact**: Prevents Claude Code from waiting forever if AI SDK doesn't send finish event
 
 ### ✅ Regression Test Integration
+
 - **Added**: Streaming regression tests to automated test suite
 - **Improved**: `npm test` now runs both unit and regression tests
 - **Impact**: Streaming bugs caught before reaching remote (via pre-push hook)
 
 ### ✅ Git Hooks Automation
+
 - **Added**: Pre-commit hook for fast checks (type checking, formatting)
 - **Added**: Pre-push hook for comprehensive testing (unit + regression + integration)
 - **Configured**: `git config core.hooksPath .githooks`
 - **Impact**: Developers can commit frequently, regressions caught before push
 
 ### ✅ Cache Performance Tuning
+
 - **Increased**: vLLM-MLX cache from 32 to 256 entries (default)
 - **Added**: Cache metrics tracking and monitoring
 - **Added**: Deterministic tool ordering for consistent cache hits
@@ -1052,11 +1056,13 @@ anyclaude
 Tests run automatically via git hooks to prevent regressions:
 
 **Pre-commit hook** (fast, ~2 seconds):
+
 - Type checking with TypeScript
 - Code formatting validation
 - Runs on `git commit` (blocks commits if issues found)
 
 **Pre-push hook** (comprehensive, ~30-60 seconds):
+
 - All unit tests (22 tests)
 - All integration tests (50+ tests)
 - **All regression tests** (streaming, timeouts, error handling)

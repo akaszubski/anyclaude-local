@@ -20,6 +20,7 @@ The vLLM-MLX server itself **works fine** when started directly in a terminal, b
 The fix involves **disabling auto-launch** and having users start the vLLM-MLX server manually:
 
 ### 1. Configuration Change (.anyclauderc.json)
+
 ```json
 "vllm-mlx": {
   "enabled": true,
@@ -47,6 +48,7 @@ Even though auto-launch is disabled, the error handling was improved for future 
 ## How to Use
 
 ### Terminal 1: Start the vLLM-MLX Server
+
 ```bash
 source ~/.venv-mlx/bin/activate && python3 /Users/akaszubski/Documents/GitHub/anyclaude/scripts/vllm-mlx-server.py \
   --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" \
@@ -54,6 +56,7 @@ source ~/.venv-mlx/bin/activate && python3 /Users/akaszubski/Documents/GitHub/an
 ```
 
 Wait for output like:
+
 ```
 [vllm-mlx] INFO: Model loaded successfully
 Uvicorn running on http://0.0.0.0:8081
@@ -61,11 +64,13 @@ Application startup complete.
 ```
 
 ### Terminal 2: Run anyclaude
+
 ```bash
 anyclaude
 ```
 
 This will now:
+
 1. See that the server is already running on port 8081
 2. Connect to it without trying to auto-launch
 3. Spawn Claude Code with the proper proxy configuration

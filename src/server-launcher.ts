@@ -45,7 +45,10 @@ export function cleanupServerProcess(): void {
       // Kill the process group to ensure all child processes are terminated
       // Use negative PID to kill the entire process group
       if (spawnedServerProcess.pid) {
-        debug(1, `[server-launcher] Killing process group for PID ${spawnedServerProcess.pid}`);
+        debug(
+          1,
+          `[server-launcher] Killing process group for PID ${spawnedServerProcess.pid}`
+        );
         process.kill(-spawnedServerProcess.pid, "SIGTERM");
 
         // Give it a moment to exit gracefully
@@ -54,7 +57,10 @@ export function cleanupServerProcess(): void {
           try {
             if (spawnedServerProcess && spawnedServerProcess.pid) {
               process.kill(-spawnedServerProcess.pid, "SIGKILL");
-              debug(1, `[server-launcher] Sent SIGKILL to process group ${spawnedServerProcess.pid}`);
+              debug(
+                1,
+                `[server-launcher] Sent SIGKILL to process group ${spawnedServerProcess.pid}`
+              );
             }
           } catch (e) {
             // Process already exited
@@ -101,7 +107,9 @@ export function startLMStudioServer(config: ServerLauncherConfig): void {
 
   console.log(`[anyclaude] LMStudio configured at ${baseUrl}`);
   console.log(`[anyclaude] Make sure LMStudio is running with a model loaded`);
-  console.log(`[anyclaude] You can start it manually or configure auto-start in settings`);
+  console.log(
+    `[anyclaude] You can start it manually or configure auto-start in settings`
+  );
 }
 
 /**
@@ -115,16 +123,25 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
 
   // Return early if no model path - user must provide model path for auto-launch
   if (!modelPath || modelPath === "current-model") {
-    console.log(`[anyclaude] vLLM-MLX: No model path configured in .anyclauderc.json`);
-    console.log(`[anyclaude] vLLM-MLX: Expecting server to be running at http://localhost:${port}/v1`);
-    debug(1, "[server-launcher] vLLM-MLX auto-launch skipped (no model path in config)");
+    console.log(
+      `[anyclaude] vLLM-MLX: No model path configured in .anyclauderc.json`
+    );
+    console.log(
+      `[anyclaude] vLLM-MLX: Expecting server to be running at http://localhost:${port}/v1`
+    );
+    debug(
+      1,
+      "[server-launcher] vLLM-MLX auto-launch skipped (no model path in config)"
+    );
     return;
   }
 
   // Check if model path exists
   if (!fs.existsSync(modelPath)) {
     console.error(`[anyclaude] Model path not found: ${modelPath}`);
-    console.error("[anyclaude] Make sure the model path in .anyclauderc.json is correct");
+    console.error(
+      "[anyclaude] Make sure the model path in .anyclauderc.json is correct"
+    );
     process.exit(1);
   }
 
@@ -144,7 +161,9 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   // Check if venv exists
   const activateScript = path.join(pythonVenv, "bin", "activate");
   if (!fs.existsSync(activateScript)) {
-    console.error(`[anyclaude] Python virtual environment not found: ${pythonVenv}`);
+    console.error(
+      `[anyclaude] Python virtual environment not found: ${pythonVenv}`
+    );
     console.error("[anyclaude] Please run: scripts/setup-vllm-mlx-venv.sh");
     process.exit(1);
   }
@@ -158,7 +177,9 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   // Log file for server output (helps with debugging)
   const logFile = path.join(logDir, "vllm-mlx-server.log");
   const logStream = fs.createWriteStream(logFile, { flags: "a" });
-  logStream.write(`\n=== vLLM-MLX Server Started at ${new Date().toISOString()} ===\n`);
+  logStream.write(
+    `\n=== vLLM-MLX Server Started at ${new Date().toISOString()} ===\n`
+  );
 
   // Build command to activate venv and start vLLM-MLX
   // Redirect stderr to stdout so we capture all output
@@ -191,14 +212,23 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     logStream.write(output);
 
     // Check if server has started
-    if (!hasStarted && (output.includes("Uvicorn running") || output.includes("Application startup complete"))) {
+    if (
+      !hasStarted &&
+      (output.includes("Uvicorn running") ||
+        output.includes("Application startup complete"))
+    ) {
       hasStarted = true;
       debug(1, "[server-launcher] vLLM-MLX server started successfully");
       console.log(`[anyclaude] vLLM-MLX server is ready`);
     }
 
     // Also log errors to console
-    if (output.includes("error") || output.includes("Error") || output.includes("failed") || output.includes("Error")) {
+    if (
+      output.includes("error") ||
+      output.includes("Error") ||
+      output.includes("failed") ||
+      output.includes("Error")
+    ) {
       console.error(`[anyclaude] vLLM-MLX: ${output.trim()}`);
     }
   };
@@ -208,15 +238,18 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
 
   serverProcess.on("error", (error) => {
     logStream.write(`ERROR: ${error.message}\n`);
-    console.error(`[anyclaude] Failed to start vLLM-MLX server: ${error.message}`);
+    console.error(
+      `[anyclaude] Failed to start vLLM-MLX server: ${error.message}`
+    );
     console.error(`[anyclaude] Check logs at: ${logFile}`);
     process.exit(1);
   });
 
   serverProcess.on("exit", (code, signal) => {
-    const message = code !== null
-      ? `exited with code ${code}`
-      : `killed with signal ${signal}`;
+    const message =
+      code !== null
+        ? `exited with code ${code}`
+        : `killed with signal ${signal}`;
     logStream.write(`Process ${message} at ${new Date().toISOString()}\n`);
 
     if (!hasStarted && code !== 0) {
@@ -239,7 +272,10 @@ export function launchBackendServer(
   config: { backends?: Record<string, any>; pythonVenv?: string }
 ): void {
   if (process.env.ANYCLAUDE_NO_AUTO_LAUNCH) {
-    debug(1, "[server-launcher] Auto-launch disabled via ANYCLAUDE_NO_AUTO_LAUNCH");
+    debug(
+      1,
+      "[server-launcher] Auto-launch disabled via ANYCLAUDE_NO_AUTO_LAUNCH"
+    );
     return;
   }
 
@@ -304,20 +340,31 @@ export async function waitForServerReady(
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        debug(1, `[server-launcher] Backend server is ready after ${attempts} attempts (${Date.now() - startTime}ms)`);
+        debug(
+          1,
+          `[server-launcher] Backend server is ready after ${attempts} attempts (${Date.now() - startTime}ms)`
+        );
         return true;
       } else {
-        debug(1, `[server-launcher] Server responded with status ${response.status}, attempt ${attempts}`);
+        debug(
+          1,
+          `[server-launcher] Server responded with status ${response.status}, attempt ${attempts}`
+        );
       }
     } catch (error) {
       // Server not ready yet, keep waiting
-      debug(1, `[server-launcher] Server not ready (attempt ${attempts}): ${error instanceof Error ? error.message : String(error)}`);
+      debug(
+        1,
+        `[server-launcher] Server not ready (attempt ${attempts}): ${error instanceof Error ? error.message : String(error)}`
+      );
     }
 
     // Wait before retrying (shorter wait to be more responsive)
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  console.warn(`[anyclaude] Backend server did not respond within ${timeout}ms (${attempts} attempts)`);
+  console.warn(
+    `[anyclaude] Backend server did not respond within ${timeout}ms (${attempts} attempts)`
+  );
   return false;
 }

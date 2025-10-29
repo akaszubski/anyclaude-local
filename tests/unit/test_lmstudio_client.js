@@ -92,7 +92,11 @@ async function test_get_models_success() {
   assert.ok(result, "Result should exist");
   assert.ok(result.data, "Result should have data array");
   assert.strictEqual(result.data.length, 2, "Should have 2 models");
-  assert.strictEqual(result.data[0].state, "loaded", "First model should be loaded");
+  assert.strictEqual(
+    result.data[0].state,
+    "loaded",
+    "First model should be loaded"
+  );
 
   restoreFetch();
   console.log("✓ getModels() returns correct structure");
@@ -295,9 +299,13 @@ async function test_error_handling() {
 }
 
 async function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("LMSTUDIO CLIENT UNIT TESTS");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("");
 
   try {
@@ -314,15 +322,23 @@ async function runTests() {
     await test_error_handling();
 
     console.log("");
-    console.log("================================================================================");
+    console.log(
+      "================================================================================"
+    );
     console.log("✓ ALL LMSTUDIO CLIENT TESTS PASSED");
-    console.log("================================================================================");
+    console.log(
+      "================================================================================"
+    );
     return 0;
   } catch (error) {
     console.error("");
-    console.error("================================================================================");
+    console.error(
+      "================================================================================"
+    );
     console.error("✗ TEST FAILED");
-    console.error("================================================================================");
+    console.error(
+      "================================================================================"
+    );
     console.error(error);
     return 1;
   }

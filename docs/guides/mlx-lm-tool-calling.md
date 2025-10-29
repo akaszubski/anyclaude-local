@@ -20,12 +20,14 @@
 ### MLX-LM Capabilities (Current Version: 0.28.3)
 
 ✅ **Supported**:
+
 - Text generation (OpenAI-compatible `/v1/chat/completions`)
 - System prompts (cached with KV cache!)
 - Streaming responses
 - Basic parameters (temperature, max_tokens, top_p, etc.)
 
 ❌ **NOT Supported**:
+
 - Tool/function calling
 - Structured output (JSON mode)
 - Vision/multimodal (no image processing)
@@ -134,6 +136,7 @@ Improvement: 2.2x faster with hybrid mode
 ## Migration Strategy
 
 ### Phase 1: Current Setup (LMStudio Only)
+
 ```bash
 # Fast but repetitive LMStudio mode
 ANYCLAUDE_MODE=lmstudio
@@ -142,6 +145,7 @@ ANYCLAUDE_MODE=lmstudio
 ```
 
 ### Phase 2: Hybrid Modes (Recommended) ✅
+
 ```bash
 # Use MLX-LM for analysis (0.3s follow-ups!)
 ANYCLAUDE_MODE=mlx-lm
@@ -151,6 +155,7 @@ ANYCLAUDE_MODE=lmstudio
 ```
 
 ### Phase 3: Smart Mode Selector (Future)
+
 ```bash
 anyclaude
 
@@ -181,6 +186,7 @@ ANYCLAUDE_MODE=lmstudio
 ### Option 2: Wait for MLX-LM Evolution
 
 Future versions might add:
+
 - Tool calling support (roadmap item)
 - Structured output (JSON mode)
 - Post-processing for tool format validation
@@ -199,6 +205,7 @@ python -m vllm.entrypoints.openai.api_server \
 ```
 
 Trade-offs with vLLM:
+
 - ✅ Better tool calling support
 - ✅ Production-grade infrastructure
 - ❌ More complex setup
@@ -208,6 +215,7 @@ Trade-offs with vLLM:
 ### Option 4: Proposal to MLX Team
 
 File a feature request:
+
 - "Add tool calling support to MLX-LM server"
 - Reference this investigation showing 100x KV cache benefit
 - Suggest simple tool post-processing
@@ -217,18 +225,23 @@ File a feature request:
 ## Recommendation
 
 ### For Pure Analysis Work (80% of sessions)
+
 Use **MLX-LM mode**:
+
 - Fast follow-ups (0.3s vs 30s)
 - 100x speedup on repeated queries
 - Perfect for code review, Q&A, planning
 
 ### For Editing/Tools (20% of sessions)
+
 Use **LMStudio mode**:
+
 - Full Claude Code features
 - File editing, git, web search
 - No KV cache (but you need the tools)
 
 ### Optimal Workflow
+
 ```bash
 # Start with fast analysis
 ANYCLAUDE_MODE=mlx-lm
@@ -244,6 +257,7 @@ ANYCLAUDE_MODE=mlx-lm
 ```
 
 This gives you **best of both worlds**:
+
 - Speed where it matters (analysis)
 - Features where needed (editing)
 
@@ -284,15 +298,16 @@ response = model.generate(prompts, return_tools=True)
 
 ## Summary
 
-| Feature | MLX-LM | LMStudio | vLLM |
-|---------|--------|----------|------|
-| **KV Cache** | ✅ 100x | ❌ None | ✅ Good |
-| **Tools** | ❌ No | ✅ Yes | ✅ Yes |
-| **Speed** | ⚡ Fast | 🐢 Slow | ⚡⚡ Very fast |
-| **Apple Silicon** | ✅ Optimized | ⚠️ Generic | ⚠️ Generic |
-| **Setup** | Easy | Easy | Complex |
+| Feature           | MLX-LM       | LMStudio   | vLLM           |
+| ----------------- | ------------ | ---------- | -------------- |
+| **KV Cache**      | ✅ 100x      | ❌ None    | ✅ Good        |
+| **Tools**         | ❌ No        | ✅ Yes     | ✅ Yes         |
+| **Speed**         | ⚡ Fast      | 🐢 Slow    | ⚡⚡ Very fast |
+| **Apple Silicon** | ✅ Optimized | ⚠️ Generic | ⚠️ Generic     |
+| **Setup**         | Easy         | Easy       | Complex        |
 
 **Recommendation**: Hybrid approach
+
 - **MLX-LM** for analysis (0.3s follow-ups)
 - **LMStudio** for editing (full features)
 
@@ -311,6 +326,7 @@ A: Probably not for production use. Hybrid mode works great now. You can always 
 
 **Q: What if I need both tools and KV cache?**
 A: Current options:
+
 1. Use LMStudio (has tools, no cache)
 2. Use hybrid mode (best of both)
 3. Wait for future versions with both
@@ -319,6 +335,6 @@ Hybrid mode is recommended - you get cache benefits where they matter most (anal
 
 ---
 
-*Last updated: 2025-10-26*
-*MLX-LM Version: 0.28.3*
-*Status: Documented and recommended hybrid approach*
+_Last updated: 2025-10-26_
+_MLX-LM Version: 0.28.3_
+_Status: Documented and recommended hybrid approach_

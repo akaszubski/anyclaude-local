@@ -265,7 +265,9 @@ function test_tool_call_deduplication() {
   const tracker = new ToolCallTracker();
 
   // Incomplete streaming sequence
-  tracker.handleToolInputStart(createToolInputStartChunk("call_789", "Write", 0));
+  tracker.handleToolInputStart(
+    createToolInputStartChunk("call_789", "Write", 0)
+  );
   tracker.handleToolInputEnd(createToolInputEndChunk("call_789"));
 
   // First tool-call chunk
@@ -332,7 +334,9 @@ function test_tool_call_before_end() {
 
   const tracker = new ToolCallTracker();
 
-  tracker.handleToolInputStart(createToolInputStartChunk("call_999", "Bash", 0));
+  tracker.handleToolInputStart(
+    createToolInputStartChunk("call_999", "Bash", 0)
+  );
 
   // Tool-call arrives immediately (unusual but possible)
   const toolCall = tracker.handleToolCall(
@@ -347,9 +351,13 @@ function test_tool_call_before_end() {
 }
 
 function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("TOOL CALLING EDGE CASES TESTS");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("");
 
   try {
@@ -360,15 +368,23 @@ function runTests() {
     test_tool_call_before_end();
 
     console.log("");
-    console.log("================================================================================");
+    console.log(
+      "================================================================================"
+    );
     console.log("✓ ALL TOOL CALLING TESTS PASSED");
-    console.log("================================================================================");
+    console.log(
+      "================================================================================"
+    );
     return 0;
   } catch (error) {
     console.error("");
-    console.error("================================================================================");
+    console.error(
+      "================================================================================"
+    );
     console.error("✗ TEST FAILED");
-    console.error("================================================================================");
+    console.error(
+      "================================================================================"
+    );
     console.error(error);
     return 1;
   }

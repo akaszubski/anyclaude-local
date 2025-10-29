@@ -8,13 +8,14 @@ export type { ModelInfo as LMStudioModelInfo } from "./lmstudio-client";
  * Get the currently loaded model from LMStudio
  * @deprecated Use LMStudioClient.getLoadedModel() instead
  */
-export async function getLoadedModel(
-  lmstudioUrl: string
-): Promise<any | null> {
+export async function getLoadedModel(lmstudioUrl: string): Promise<any | null> {
   const client = new LMStudioClient(lmstudioUrl);
 
   try {
-    debug(1, `[LMStudio] Querying model info from: ${lmstudioUrl}/api/v0/models`);
+    debug(
+      1,
+      `[LMStudio] Querying model info from: ${lmstudioUrl}/api/v0/models`
+    );
 
     const model = await client.getLoadedModel();
 
@@ -23,7 +24,8 @@ export async function getLoadedModel(
       return null;
     }
 
-    const contextLength = model.loaded_context_length || model.max_context_length || 0;
+    const contextLength =
+      model.loaded_context_length || model.max_context_length || 0;
     debug(
       1,
       `[LMStudio] Loaded model: ${model.id} | Context: ${contextLength.toLocaleString()} tokens`

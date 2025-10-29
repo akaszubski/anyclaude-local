@@ -146,14 +146,14 @@ async def chat_completions(request: Request):
 
 ## What's Different from Standard Logging
 
-| Feature | Standard | utils_logging |
-|---------|----------|---------------|
-| Debug levels | Manual if/else | `debug(level, msg, data)` |
-| Environment control | Via CLI args | `ANYCLAUDE_DEBUG=1-3` |
-| Performance timing | Manual time.time() | `PerformanceTimer()` context |
-| Cache tracking | Manual logging | `log_cache_hit/miss()` |
-| Error debugging | Console only | JSON files in `/tmp` |
-| Data formatting | String only | Pretty JSON at level 3 |
+| Feature             | Standard           | utils_logging                |
+| ------------------- | ------------------ | ---------------------------- |
+| Debug levels        | Manual if/else     | `debug(level, msg, data)`    |
+| Environment control | Via CLI args       | `ANYCLAUDE_DEBUG=1-3`        |
+| Performance timing  | Manual time.time() | `PerformanceTimer()` context |
+| Cache tracking      | Manual logging     | `log_cache_hit/miss()`       |
+| Error debugging     | Console only       | JSON files in `/tmp`         |
+| Data formatting     | String only        | Pretty JSON at level 3       |
 
 ## Example: Full Integration
 

@@ -140,6 +140,7 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 - ✅ Proper error handling and authentication
 
 **Architecture**:
+
 ```
 Claude Code → AnyClaude Proxy → MLX-Omni-Server → MLX Models
 (Anthropic API)  (Passthrough)  (Anthropic API)  (HuggingFace IDs)
@@ -164,6 +165,7 @@ mlx-omni-server --port 8080
 **Available Models** (auto-downloaded from HuggingFace):
 
 Run `curl http://localhost:8080/anthropic/v1/models` to see available MLX models:
+
 - mlx-community/Qwen2.5-1.5B-Instruct-4bit
 - mlx-community/Qwen2.5-0.5B-Instruct-4bit
 - mlx-community/Qwen2.5-3B-Instruct-4bit
@@ -191,6 +193,7 @@ Run `curl http://localhost:8080/anthropic/v1/models` to see available MLX models
 **Purpose**: Maximum performance with KV cache (trade-off: no tool calling)
 
 **What Works**:
+
 - ✅ MLX library with native KV cache (10-100x speedup on follow-ups)
 - ✅ Local model support (uses model paths directly)
 - ✅ Apple Silicon optimized inference
@@ -198,6 +201,7 @@ Run `curl http://localhost:8080/anthropic/v1/models` to see available MLX models
 - ✅ Privacy-focused (completely offline)
 
 **Trade-off**:
+
 - ❌ No tool calling support
 - ⚠️ Read-only mode (analysis, review, planning only)
 
@@ -224,6 +228,7 @@ Run `curl http://localhost:8080/anthropic/v1/models` to see available MLX models
 - For full Claude Code workflows
 
 **Setup**:
+
 ```bash
 # Start MLX-LM server with local model
 python -m mlx_lm.server --model-path /path/to/Qwen3-Coder-30B-MLX
@@ -670,6 +675,7 @@ CLI Flags > Environment Variables > Configuration File > Defaults
 ```
 
 **Example**:
+
 ```bash
 # .anyclauderc.json says: backend = "lmstudio"
 # Environment says: export ANYCLAUDE_MODE=mlx-lm
@@ -710,6 +716,7 @@ Place in project root with structure:
 ```
 
 **Key Features**:
+
 - Define multiple backends in one file
 - Users can switch between backends via CLI flag or env var
 - Configuration is optional - defaults work out-of-box
@@ -726,10 +733,11 @@ The configuration system is implemented in `src/main.ts` with:
 4. **Type Safety**: `AnyclaudeMode` type ensures only valid backends are used
 
 Key functions:
+
 ```typescript
-function loadConfig(): AnyclaudeConfig
-function detectMode(config: AnyclaudeConfig): AnyclaudeMode
-function getBackendConfig(backend: AnyclaudeMode): BackendConfig
+function loadConfig(): AnyclaudeConfig;
+function detectMode(config: AnyclaudeConfig): AnyclaudeMode;
+function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
 ```
 
 ## File Structure
@@ -776,6 +784,7 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig
 **Original Challenge**: "We need KV cache for fast analysis AND tool calling for file operations. Can this be done?"
 
 **Investigation Results**:
+
 1. ✅ **KV Cache Research**: Confirmed crucial importance
    - System prompt: 18,490 tokens
    - Recomputed every request without caching
@@ -807,12 +816,14 @@ Trade-off: No tool calling (analysis-only mode)
 ```
 
 **Best For**:
+
 - Code review and analysis
 - Documentation generation
 - Brainstorming and planning
 - Follow-up questions on same context
 
 **Setup**:
+
 ```bash
 source ~/.venv-mlx/bin/activate
 python3 -m mlx_lm server \
@@ -833,12 +844,14 @@ Performance:
 ```
 
 **Best For**:
+
 - File creation and editing
 - Git operations
 - Web search and lookup
 - Tool-heavy workflows
 
 **Setup**:
+
 ```bash
 # LMStudio must be running via app on port 1234
 
@@ -876,6 +889,7 @@ Total: 120.9 seconds ← 1.7x faster!
 ```
 
 **Key Insight**:
+
 - Analysis tasks (80% of usage) benefit from 100x speedup via KV cache
 - Editing tasks (20% of usage) need full tool support
 - Switching modes is instant (just env var + restart anyclaude)
@@ -883,16 +897,19 @@ Total: 120.9 seconds ← 1.7x faster!
 ### Implementation Status
 
 ✅ **Code**: AnyClaude already supports both modes
+
 - `src/main.ts`: Mode detection and routing
 - `src/anthropic-proxy.ts`: Request handling for each mode
 - `src/context-manager.ts`: Context window management
 
 ✅ **Documentation**: Complete setup guides created
+
 - `PRODUCTION-HYBRID-SETUP.md`: Step-by-step setup (400+ lines)
 - `DEPLOYMENT-READY.md`: Production checklist and recommendation
 - `README-HYBRID-SECTION.md`: README addition
 
 ✅ **Performance Validation**: Tested and proven
+
 - MLX-LM: 0.3 second responses confirmed on follow-ups
 - LMStudio: All tools working perfectly
 - Mode switching: Seamless with no restart needed
@@ -902,12 +919,14 @@ Total: 120.9 seconds ← 1.7x faster!
 **Investigation Complete**: MLX-Omni-Server Unsupported for Local Use
 
 **Why It Didn't Work**:
+
 - ❌ Only supports HuggingFace model IDs, not local paths
 - ❌ Server tries to download from HuggingFace API
 - ❌ Failed with `401 Unauthorized` for local models
 - ❌ Fundamental mismatch: Cloud-oriented, not offline-capable
 
 **Lessons Learned**:
+
 - Don't wait for perfect solutions when good ones exist
 - Hybrid approach often beats single-solution pursuit
 - User value: Deploy working solution now, optimize later
@@ -915,16 +934,19 @@ Total: 120.9 seconds ← 1.7x faster!
 ### Files Ready for Deployment
 
 **Core Production Files**:
+
 - ✅ `PRODUCTION-HYBRID-SETUP.md` - Complete setup guide
 - ✅ `README-HYBRID-SECTION.md` - README addition
 - ✅ `DEPLOYMENT-READY.md` - Deployment readiness checklist
 
 **Reference Documentation**:
+
 - ✅ `docs/guides/mlx-lm-setup.md` - MLX-LM configuration
 - ✅ `QUICK-START-MLX-LM.md` - Quick reference guide
 - ✅ `docs/guides/kv-cache-strategy.md` - Strategic deep-dive
 
 **Research & Planning**:
+
 - ✅ `docs/research/mlx-tool-calling-research.md` - GitHub research
 - ✅ `IMPLEMENTATION-PLAN-MLX-TEXTGEN.md` - Future upgrade path
 - ✅ `SESSION-CONCLUSION-MLXTEXTGEN.md` - Session wrap-up
@@ -934,6 +956,7 @@ Total: 120.9 seconds ← 1.7x faster!
 **Status**: 🎯 **DEPLOY IMMEDIATELY** ✅
 
 **Why**:
+
 1. **Zero development risk** - No custom code needed
 2. **Proven technology** - Both backends tested and stable
 3. **User benefit** - 10x typical session improvement
@@ -941,11 +964,13 @@ Total: 120.9 seconds ← 1.7x faster!
 5. **Simple switching** - One environment variable to change modes
 
 **Deployment Timeline**:
+
 - 5 minutes: Update README.md
 - 10 minutes: Test both modes
 - Done! Users can start using immediately
 
 **Next Steps**:
+
 1. Update main README with hybrid mode section
 2. Commit and tag release
 3. Announce to users

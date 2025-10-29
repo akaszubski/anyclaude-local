@@ -12,6 +12,7 @@ The vLLM-MLX server **auto-launches automatically** when you start anyclaude. No
 6. **Returns proxy URL to Claude Code**
 
 The entire flow is automatic and handled by:
+
 - `src/main.ts` - Loads config and calls launcher at line 170
 - `src/server-launcher.ts` - Contains `startVLLMMLXServer()` function
 
@@ -81,6 +82,7 @@ bun run ./dist/main.js
 3. **Default values** (lowest priority)
 
 Example:
+
 ```bash
 # This will use the env var, not the config file
 VLLM_MLX_MODEL=/custom/model bun run ./dist/main.js
@@ -95,6 +97,7 @@ ANYCLAUDE_NO_AUTO_LAUNCH=true bun run ./dist/main.js
 ```
 
 Then start the server manually:
+
 ```bash
 python3 scripts/vllm-mlx-server.py --model /path/to/model --port 8081
 ```
@@ -104,12 +107,14 @@ python3 scripts/vllm-mlx-server.py --model /path/to/model --port 8081
 If port 8081 is already in use:
 
 **Option 1: Kill the existing process**
+
 ```bash
 lsof -i :8081
 kill -9 <PID>
 ```
 
 **Option 2: Change the port in config**
+
 ```json
 {
   "vllm-mlx": {
@@ -120,6 +125,7 @@ kill -9 <PID>
 ```
 
 **Option 3: Use environment variable**
+
 ```bash
 VLLM_MLX_URL=http://localhost:8082/v1 bun run ./dist/main.js
 ```
@@ -133,8 +139,9 @@ curl http://localhost:8081/health
 ```
 
 Should return:
+
 ```json
-{"status":"healthy","model":"your-model-name","caching":true}
+{ "status": "healthy", "model": "your-model-name", "caching": true }
 ```
 
 ## Debug Auto-Launch
@@ -146,6 +153,7 @@ ANYCLAUDE_DEBUG=1 bun run ./dist/main.js
 ```
 
 You'll see:
+
 ```
 [anyclaude] Waiting for vllm-mlx server to be ready...
 [server-launcher] Backend server is ready
@@ -188,23 +196,21 @@ export function launchBackendServer(
     startVLLMMLXServer({
       backend: mode,
       port: config.backends?.["vllm-mlx"]?.port,
-      model: config.backends?.["vllm-mlx"]?.model
+      model: config.backends?.["vllm-mlx"]?.model,
     });
   }
 }
 
 function startVLLMMLXServer(config: ServerLauncherConfig): void {
   // Spawn Python process
-  const serverProcess = spawn("python3", [
-    config.serverScript,
-    "--model",
-    config.model,
-    "--port",
-    config.port
-  ], {
-    stdio: ["ignore", "pipe", "pipe"],
-    detached: false
-  });
+  const serverProcess = spawn(
+    "python3",
+    [config.serverScript, "--model", config.model, "--port", config.port],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: false,
+    }
+  );
 
   // Keep running in background
   serverProcess.unref();

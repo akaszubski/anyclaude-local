@@ -22,7 +22,8 @@ export class LMStudioClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || process.env.LMSTUDIO_URL || "http://localhost:1234";
+    this.baseUrl =
+      baseUrl || process.env.LMSTUDIO_URL || "http://localhost:1234";
   }
 
   /**
@@ -31,7 +32,9 @@ export class LMStudioClient {
   async getModels(): Promise<ModelsResponse> {
     const response = await fetch(`${this.baseUrl}/api/v0/models`);
     if (!response.ok) {
-      throw new Error(`LMStudio API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `LMStudio API error: ${response.status} ${response.statusText}`
+      );
     }
     return (await response.json()) as ModelsResponse;
   }

@@ -49,6 +49,7 @@ display_debug_startup()
 ### Step 2: Replace Logging Calls
 
 **Before:**
+
 ```python
 logger.debug("Processing request")
 logger.info("Cache hit for prompt")
@@ -56,6 +57,7 @@ logger.error("Error occurred", exc_info=True)
 ```
 
 **After:**
+
 ```python
 debug(1, "Processing request")
 logger.info("Cache hit for prompt")
@@ -221,12 +223,14 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 ## What You'll See
 
 ### Level 0 (Default)
+
 ```
 [2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
 [2025-10-28 22:46:27] [vllm-mlx] INFO: Chat request completed successfully
 ```
 
 ### Level 1 (Basic Debug)
+
 ```
 [2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
 [2025-10-28 22:46:27] [vllm-mlx] DEBUG: Processing request
@@ -235,6 +239,7 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 ```
 
 ### Level 2 (Verbose + Performance)
+
 ```
 [2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
 [2025-10-28 22:46:27] [vllm-mlx] DEBUG: Cache put {"key":"...","size_kb":1.2}
@@ -247,6 +252,7 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 ```
 
 ### Level 3 (Full Trace)
+
 ```
 [2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
 [2025-10-28 22:46:27] [anyclaude] DEBUG: Chat request {
@@ -264,23 +270,25 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 
 ## Benefits
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| Debug control | No built-in | `ANYCLAUDE_DEBUG=0-3` |
-| Cache visibility | Manual logging | `log_cache_hit/miss()` |
+| Aspect              | Before            | After                      |
+| ------------------- | ----------------- | -------------------------- |
+| Debug control       | No built-in       | `ANYCLAUDE_DEBUG=0-3`      |
+| Cache visibility    | Manual logging    | `log_cache_hit/miss()`     |
 | Performance metrics | Time.time() calls | `PerformanceTimer` context |
-| Error details | Console only | JSON files in `/tmp` |
-| Data formatting | String concat | Pretty JSON at level 3 |
-| Trace analysis | Grep logs | Structured debug files |
+| Error details       | Console only      | JSON files in `/tmp`       |
+| Data formatting     | String concat     | Pretty JSON at level 3     |
+| Trace analysis      | Grep logs         | Structured debug files     |
 
 ## Testing
 
 1. **Start server with debug:**
+
    ```bash
    ANYCLAUDE_DEBUG=2 python3 scripts/vllm-mlx-server.py
    ```
 
 2. **Make a request:**
+
    ```bash
    curl http://localhost:8081/v1/chat/completions \
      -H "Content-Type: application/json" \
@@ -295,15 +303,18 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 ## Debugging Issues
 
 **Messages not showing?**
+
 - Check `echo $ANYCLAUDE_DEBUG` is set
 - Use `debug()` not `logger.debug()` for ANYCLAUDE_DEBUG awareness
 - Check log level matches your expectation
 
 **Performance timer showing twice?**
+
 - That's normal - it logs at checkpoint and on exit
 - Adjust log_level if too verbose: `PerformanceTimer(..., log_level=3)`
 
 **Errors not being caught?**
+
 - Make sure you have a global exception handler
 - Check error_debug_file is being created in /tmp
 

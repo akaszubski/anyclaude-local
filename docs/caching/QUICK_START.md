@@ -7,6 +7,7 @@ anyclaude now automatically tracks prompt caching performance and explains why y
 ## Three Ways to Check Cache Performance
 
 ### 1. **Automatic Report** (Easiest)
+
 ```bash
 # Just run normally - stats show on exit
 ANYCLAUDE_DEBUG=2 anyclaude
@@ -15,6 +16,7 @@ ANYCLAUDE_DEBUG=2 anyclaude
 ```
 
 ### 2. **Benchmark Script** (Measure Real Gain)
+
 ```bash
 ./scripts/test/benchmark-cache.sh 3
 # Shows: First request vs cached request latency
@@ -22,6 +24,7 @@ ANYCLAUDE_DEBUG=2 anyclaude
 ```
 
 ### 3. **View Raw Metrics** (Deep Dive)
+
 ```bash
 cat ~/.anyclaude/cache-metrics/*.json | jq
 # Shows: Every request/response with cache stats
@@ -31,16 +34,17 @@ cat ~/.anyclaude/cache-metrics/*.json | jq
 
 Based on research of Anthropic API, vLLM-MLX, and MLX:
 
-| Factor | Impact | Solution |
-|--------|--------|----------|
-| **Ephemeral Cache** | 5-min TTL only | Make repeated requests within 5 min |
-| **Small Payload** | System prompt ~500 bytes | Need 1000+ cached tokens for benefit |
-| **vLLM-MLX** | Cache not fully optimized | Use Anthropic API for real gains |
-| **One-off Requests** | No cache reuse | Create multi-request workflows |
+| Factor               | Impact                    | Solution                             |
+| -------------------- | ------------------------- | ------------------------------------ |
+| **Ephemeral Cache**  | 5-min TTL only            | Make repeated requests within 5 min  |
+| **Small Payload**    | System prompt ~500 bytes  | Need 1000+ cached tokens for benefit |
+| **vLLM-MLX**         | Cache not fully optimized | Use Anthropic API for real gains     |
+| **One-off Requests** | No cache reuse            | Create multi-request workflows       |
 
 ## Expected Performance
 
 ### Anthropic API + Large Cached Prompt
+
 ```
 Request 1: 2000ms (writes cache)
 Request 2: 300ms  (reads cache) → 85% faster! ✓
@@ -48,18 +52,19 @@ Request 3: 290ms  (reads cache) → 85% faster! ✓
 ```
 
 ### vLLM-MLX
+
 - Cache headers set but limited latency benefit
 - Better for cost reduction than speed
 - Future improvements possible
 
 ## What's Now Available
 
-| Feature | File | Purpose |
-|---------|------|---------|
-| **Metrics Tracking** | `src/cache-metrics.ts` | Auto-records cache stats |
-| **Benchmark Tool** | `scripts/test/benchmark-cache.sh` | Measure performance |
-| **Documentation** | `docs/caching/CACHE_STRATEGY.md` | Complete guide |
-| **Integration** | `src/anthropic-proxy.ts` | Tracks all requests |
+| Feature              | File                              | Purpose                  |
+| -------------------- | --------------------------------- | ------------------------ |
+| **Metrics Tracking** | `src/cache-metrics.ts`            | Auto-records cache stats |
+| **Benchmark Tool**   | `scripts/test/benchmark-cache.sh` | Measure performance      |
+| **Documentation**    | `docs/caching/CACHE_STRATEGY.md`  | Complete guide           |
+| **Integration**      | `src/anthropic-proxy.ts`          | Tracks all requests      |
 
 ## Quick Test
 
@@ -106,6 +111,7 @@ To see the promised 85% latency improvement:
 3. **Make identical request within 5 minutes** → Watch it run 85% faster!
 
 Or use the benchmark script:
+
 ```bash
 ./scripts/test/benchmark-cache.sh 3
 ```

@@ -14,9 +14,13 @@ let failed = 0;
 
 function testMissingRequiredProperty() {
   console.log("\n✓ Test 1: Missing required property in schema");
-  const schema = { type: "object", properties: { name: { type: "string" }, age: { type: "number" } }, required: ["name", "age"] };
+  const schema = {
+    type: "object",
+    properties: { name: { type: "string" }, age: { type: "number" } },
+    required: ["name", "age"],
+  };
   const data = { name: "John" }; // Missing age
-  const hasRequired = schema.required.every(prop => prop in data);
+  const hasRequired = schema.required.every((prop) => prop in data);
   assert.ok(!hasRequired, "Missing required property detected");
   console.log("   ✅ Missing properties detected");
   passed++;
@@ -37,8 +41,12 @@ function testNestedObjectValidation() {
   const schema = {
     type: "object",
     properties: {
-      user: { type: "object", properties: { id: { type: "number" } }, required: ["id"] }
-    }
+      user: {
+        type: "object",
+        properties: { id: { type: "number" } },
+        required: ["id"],
+      },
+    },
   };
   const data = { user: { name: "John" } }; // Missing id
   const hasId = "id" in (data.user || {});
@@ -51,7 +59,7 @@ function testArrayItemValidation() {
   console.log("\n✓ Test 4: Array item validation fails");
   const schema = { type: "array", items: { type: "number" } };
   const data = [1, 2, "invalid", 4];
-  const hasInvalid = data.some(item => typeof item !== "number");
+  const hasInvalid = data.some((item) => typeof item !== "number");
   assert.ok(hasInvalid, "Invalid array item detected");
   console.log("   ✅ Array validation fails detected");
   passed++;
@@ -83,7 +91,9 @@ function testNumberRangeValidation() {
   console.log("\n✓ Test 7: Number range validation fails");
   const schema = { type: "number", minimum: 0, maximum: 100 };
   const testValues = [-5, 150];
-  const hasInvalid = testValues.some(v => v < schema.minimum || v > schema.maximum);
+  const hasInvalid = testValues.some(
+    (v) => v < schema.minimum || v > schema.maximum
+  );
   assert.ok(hasInvalid, "Range validation failed");
   console.log("   ✅ Number range validation fails detected");
   passed++;
@@ -91,9 +101,13 @@ function testNumberRangeValidation() {
 
 function testAdditionalPropertiesDisallowed() {
   console.log("\n✓ Test 8: Additional properties not allowed");
-  const schema = { type: "object", properties: { name: { type: "string" } }, additionalProperties: false };
+  const schema = {
+    type: "object",
+    properties: { name: { type: "string" } },
+    additionalProperties: false,
+  };
   const data = { name: "John", age: 30 };
-  const hasExtra = Object.keys(data).some(key => !(key in schema.properties));
+  const hasExtra = Object.keys(data).some((key) => !(key in schema.properties));
   assert.ok(hasExtra, "Extra properties detected");
   console.log("   ✅ Additional properties detected");
   passed++;
@@ -115,8 +129,8 @@ function testAllOfValidationFails() {
   const schema = {
     allOf: [
       { type: "object", properties: { name: { type: "string" } } },
-      { type: "object", properties: { name: { minLength: 5 } } }
-    ]
+      { type: "object", properties: { name: { minLength: 5 } } },
+    ],
   };
   const data = { name: "Bob" }; // Too short
   const meetsMinLength = !data.name || data.name.length >= 5;

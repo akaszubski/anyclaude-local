@@ -50,7 +50,10 @@ export function getCachedPrompt(
   const now = Date.now();
 
   if (cached && now - cached.createdAt < CACHE_TTL_MS) {
-    console.log("[Prompt Cache] HIT - Reusing cached system+tools", hash.substring(0, 8));
+    console.log(
+      "[Prompt Cache] HIT - Reusing cached system+tools",
+      hash.substring(0, 8)
+    );
     return {
       hash,
       cached: true,
@@ -60,7 +63,10 @@ export function getCachedPrompt(
   }
 
   // Cache miss - store this prompt
-  console.log("[Prompt Cache] MISS - Caching new system+tools", hash.substring(0, 8));
+  console.log(
+    "[Prompt Cache] MISS - Caching new system+tools",
+    hash.substring(0, 8)
+  );
   promptCache.set(hash, {
     system,
     tools,

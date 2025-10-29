@@ -9,6 +9,7 @@
 ## Executive Summary
 
 A developer named **nath1295** has built **MLX-Textgen**, a production-ready server that combines:
+
 - ✅ **KV Cache**: Multiple KV-cache slots + smart prompt caching
 - ✅ **Tool Calling**: Full function calling support via OpenAI-compatible API
 - ✅ **Local Models**: Works with local model paths
@@ -31,6 +32,7 @@ A developer named **nath1295** has built **MLX-Textgen**, a production-ready ser
 ### Key Features
 
 #### 1. KV Cache Support ✅
+
 ```
 Smart prompt caching with multiple KV-cache slots
 - Reduces repeated prompt processing
@@ -39,6 +41,7 @@ Smart prompt caching with multiple KV-cache slots
 ```
 
 #### 2. Tool Calling Support ✅
+
 ```
 Full function calling capabilities:
 - /v1/chat/completions endpoint (OpenAI compatible)
@@ -48,6 +51,7 @@ Full function calling capabilities:
 ```
 
 #### 3. Model Support ✅
+
 ```
 Works with:
 - Local model paths (your Qwen3-Coder model!)
@@ -57,6 +61,7 @@ Works with:
 ```
 
 #### 4. Additional Features
+
 - Batch inference (process multiple requests at once)
 - Guided decoding (regex, JSON schema, grammar)
 - Streaming responses
@@ -133,29 +138,29 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 
 ### MLX-Textgen vs MLX-Omni-Server
 
-| Feature | MLX-Textgen | MLX Omni Server |
-|---------|-------------|-----------------|
-| **KV Cache** | ✅ YES | ❌ NO |
-| **Tool Calling** | ✅ YES | ✅ YES |
-| **Local Models** | ✅ YES | ✅ YES |
-| **Stars** | 97 | 587 |
-| **Community** | Small but active | Larger |
-| **Dual API** | OpenAI only | OpenAI + Anthropic |
-| **Production Ready** | ✅ YES | ✅ YES |
-| **Maintenance** | ✅ Active | ✅ Active |
+| Feature              | MLX-Textgen      | MLX Omni Server    |
+| -------------------- | ---------------- | ------------------ |
+| **KV Cache**         | ✅ YES           | ❌ NO              |
+| **Tool Calling**     | ✅ YES           | ✅ YES             |
+| **Local Models**     | ✅ YES           | ✅ YES             |
+| **Stars**            | 97               | 587                |
+| **Community**        | Small but active | Larger             |
+| **Dual API**         | OpenAI only      | OpenAI + Anthropic |
+| **Production Ready** | ✅ YES           | ✅ YES             |
+| **Maintenance**      | ✅ Active        | ✅ Active          |
 
 **Winner for your use case**: **MLX-Textgen** (has both features you need)
 
 ### MLX-Textgen vs Official mlx-lm
 
-| Feature | MLX-Textgen | Official mlx-lm |
-|---------|-------------|-----------------|
-| **KV Cache** | ✅ YES | ✅ YES |
-| **Tool Calling** | ✅ YES | ✅ YES (new, March 2025) |
-| **Integration** | ✅ Built-in | ⚠️ Manual work needed |
-| **Stars** | 97 | Official (Apple) |
-| **Easy Setup** | ✅ YES | ⚠️ More complex |
-| **Ready to Use** | ✅ YES | ⚠️ Needs integration |
+| Feature          | MLX-Textgen | Official mlx-lm          |
+| ---------------- | ----------- | ------------------------ |
+| **KV Cache**     | ✅ YES      | ✅ YES                   |
+| **Tool Calling** | ✅ YES      | ✅ YES (new, March 2025) |
+| **Integration**  | ✅ Built-in | ⚠️ Manual work needed    |
+| **Stars**        | 97          | Official (Apple)         |
+| **Easy Setup**   | ✅ YES      | ⚠️ More complex          |
+| **Ready to Use** | ✅ YES      | ⚠️ Needs integration     |
 
 **Winner for quick deployment**: **MLX-Textgen** (works out of box)
 
@@ -164,6 +169,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 ## Why MLX-Textgen is Perfect for AnyClaude
 
 ### 1. Solves Your Exact Problem
+
 ```
 ✅ KV Cache: System prompt cached = 100x faster follow-ups
 ✅ Tools: All tools work (read, write, git, web search)
@@ -171,6 +177,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 ```
 
 ### 2. Drop-in Replacement
+
 ```
 Current:
 ANYCLAUDE_MODE=mlx-lm (no tools)
@@ -182,6 +189,7 @@ ANYCLAUDE_MODE=mlx-textgen (both! ✅)
 ```
 
 ### 3. OpenAI Compatible
+
 ```
 MLX-Textgen server → OpenAI-compatible API
 → Works with existing anyclaude integration
@@ -189,6 +197,7 @@ MLX-Textgen server → OpenAI-compatible API
 ```
 
 ### 4. Production Ready
+
 ```
 ✅ Actively maintained
 ✅ Real deployments using it
@@ -235,7 +244,7 @@ anyclaude
 In `src/main.ts`, add support for mlx-textgen:
 
 ```typescript
-if (mode === 'mlx-textgen' || mode === 'mlx-lm') {
+if (mode === "mlx-textgen" || mode === "mlx-lm") {
   // Use same configuration
   // MLX-Textgen is OpenAI-compatible like mlx-lm
 }
@@ -264,6 +273,7 @@ Compared to:
 ```
 
 ### Key Advantage
+
 ```
 Everything in one server:
 - ✅ Fast initial request (30s cold)
@@ -278,24 +288,28 @@ Everything in one server:
 ## Other Solutions Found
 
 ### 1. Official mlx-lm (Both Features, Needs Integration)
+
 - **Tool Calling**: Just added (March 2025, PR #1316)
 - **KV Cache**: Native support (excellent)
 - **Status**: Both exist but integration left to user
 - **Timeline**: 1-2 days to integrate
 
 ### 2. MLX-Omni-Server (Tools, No Cache)
+
 - **Tool Calling**: ✅ Full support (587 stars)
 - **KV Cache**: ❌ Not included
 - **Status**: Production-ready but missing caching
 - **Alternative**: Could add caching layer on top
 
 ### 3. MLX-OpenAI-Server (Multimodal, Unclear Caching)
+
 - **Tool Calling**: ✅ YES
 - **KV Cache**: ⚠️ Unclear/Partial
 - **Status**: Production-ready, feature-rich
 - **Alternative**: May support caching, unclear
 
 ### 4. FastMLX (Tools, No Cache)
+
 - **Status**: Early project (Oct 2024)
 - **Tools**: ✅ For specific models
 - **Cache**: ❌ NO
@@ -307,14 +321,14 @@ Everything in one server:
 
 ### In One Table
 
-| Aspect | MLX-Textgen | Others |
-|--------|-------------|--------|
-| **Both KV + Tools** | ✅ Only one with both | ❌ Others pick one |
-| **Production Ready** | ✅ YES | ⚠️ Some are early |
-| **Easy Deploy** | ✅ pip install | ⚠️ More complex |
-| **Works Locally** | ✅ YES | ✅ YES (all do) |
-| **Maintained** | ✅ Active | ✅ Most are active |
-| **Doc Quality** | ✅ Good | ⚠️ Varies |
+| Aspect               | MLX-Textgen           | Others             |
+| -------------------- | --------------------- | ------------------ |
+| **Both KV + Tools**  | ✅ Only one with both | ❌ Others pick one |
+| **Production Ready** | ✅ YES                | ⚠️ Some are early  |
+| **Easy Deploy**      | ✅ pip install        | ⚠️ More complex    |
+| **Works Locally**    | ✅ YES                | ✅ YES (all do)    |
+| **Maintained**       | ✅ Active             | ✅ Most are active |
+| **Doc Quality**      | ✅ Good               | ⚠️ Varies          |
 
 **Verdict**: MLX-Textgen is the obvious choice.
 
@@ -366,13 +380,13 @@ anyclaude
 
 ### Risks of Using MLX-Textgen
 
-| Risk | Likelihood | Mitigation |
-|------|-----------|-----------|
-| **Breaking changes in updates** | Low | Keep pinned version, monitor releases |
-| **Community size** (97 stars) | Low | It's actively maintained, just smaller community |
-| **Bug with edge cases** | Low | Original developer responsive to issues |
-| **Performance regression** | Very Low | KV cache is core feature, well-tested |
-| **Incompatibility with new MLX** | Low | Author maintains compatibility |
+| Risk                             | Likelihood | Mitigation                                       |
+| -------------------------------- | ---------- | ------------------------------------------------ |
+| **Breaking changes in updates**  | Low        | Keep pinned version, monitor releases            |
+| **Community size** (97 stars)    | Low        | It's actively maintained, just smaller community |
+| **Bug with edge cases**          | Low        | Original developer responsive to issues          |
+| **Performance regression**       | Very Low   | KV cache is core feature, well-tested            |
+| **Incompatibility with new MLX** | Low        | Author maintains compatibility                   |
 
 **Overall**: Very low risk for production use
 
@@ -392,6 +406,7 @@ Bugs: Already discovered and fixed
 ## Next Steps
 
 ### Immediate (Today)
+
 1. Install MLX-Textgen: `pip install mlx-textgen`
 2. Start server with your Qwen3-Coder model
 3. Test tool calling with simple curl request
@@ -399,12 +414,14 @@ Bugs: Already discovered and fixed
 5. Document results
 
 ### Short Term (This Week)
+
 1. Integrate MLX-Textgen mode into anyclaude
 2. Test with Claude Code end-to-end
 3. Verify performance (compare to LMStudio)
 4. Document setup and usage
 
 ### Medium Term (Next Month)
+
 1. Add mode selection UI to anyclaude
 2. Create comparison charts
 3. Make MLX-Textgen the recommended default
@@ -455,6 +472,7 @@ anyclaude
 **Stop investigating tool calling patches for MLX-LM. Use MLX-Textgen instead.**
 
 It's a drop-in replacement that gives you:
+
 - ✅ 100x faster follow-ups (KV cache)
 - ✅ Full tool calling support (all tools work)
 - ✅ Single server (no mode switching)
@@ -472,5 +490,5 @@ It's a drop-in replacement that gives you:
 
 ---
 
-*Last updated: 2025-10-26*
-*Status: Ready to evaluate and integrate MLX-Textgen*
+_Last updated: 2025-10-26_
+_Status: Ready to evaluate and integrate MLX-Textgen_

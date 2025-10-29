@@ -38,12 +38,14 @@ mlx-omni-server is **intended for cloud deployment with HuggingFace model IDs**,
 ### mlx-Omni-Server Limitations
 
 **Design Constraints**:
+
 - ❌ **Cannot use local model paths**: Only accepts HuggingFace model IDs
 - ❌ **Requires internet connection**: Downloads models from HuggingFace
 - ❌ **No local offline support**: Conflicts with LMStudio approach
 - ⚠️ **Limited error handling**: 500 errors bubble up without debugging info
 
 **Known Issues in Source Code**:
+
 1. **No try-catch in message router**: Line in `router.py` can throw unhandled exceptions
 2. **Broad exception catching**: Model creation failures are re-raised as RuntimeError
 3. **Missing null checks**: Tool conversion can fail on malformed input schemas
@@ -64,6 +66,7 @@ async def create_message(request: MessagesRequest):
 ```
 
 When you pass a local model path like `"/path/to/model"`:
+
 1. Server treats it as HuggingFace model ID
 2. Attempts to download from HuggingFace (fails)
 3. Model initialization fails silently
@@ -72,23 +75,25 @@ When you pass a local model path like `"/path/to/model"`:
 
 ### What Works vs What Doesn't
 
-| Mode | Local Model Paths | Tool Calling | Performance | Offline |
-|------|------------------|-------------|-------------|---------|
-| **LMStudio** | ✅ Yes | ✅ Yes | Baseline | ✅ Yes |
-| **MLX-LM** | ✅ Yes | ❌ No | 10-100x KV cache | ✅ Yes |
-| **MLX-Omni** | ❌ No | ✅ Maybe | TBD | ❌ No |
+| Mode         | Local Model Paths | Tool Calling | Performance      | Offline |
+| ------------ | ----------------- | ------------ | ---------------- | ------- |
+| **LMStudio** | ✅ Yes            | ✅ Yes       | Baseline         | ✅ Yes  |
+| **MLX-LM**   | ✅ Yes            | ❌ No        | 10-100x KV cache | ✅ Yes  |
+| **MLX-Omni** | ❌ No             | ✅ Maybe     | TBD              | ❌ No   |
 
 ---
 
 ## Why Your Setup Fails
 
 **Your Current Configuration**:
+
 ```bash
 MLX_OMNI_MODEL="/Users/.../Qwen3-Coder-30B-A3B-Instruct-MLX-4bit"
 ANYCLAUDE_MODE=mlx-omni
 ```
 
 **What Happens**:
+
 1. AnyClaude passes model ID to mlx-omni-server ✅
 2. mlx-omni-server tries to download from HuggingFace ❌
 3. Download fails (not a HF model ID) ❌
@@ -150,6 +155,7 @@ Given your goals (local models, no internet, offline use), **MLX-Omni-Server is 
 **Recommended Approach**: **Use MLX-LM for fast performance**
 
 MLX-LM:
+
 - ✅ Supports local model paths
 - ✅ Works completely offline
 - ✅ 10-100x faster with KV cache
@@ -176,12 +182,14 @@ ANYCLAUDE_MODE=lmstudio anyclaude
 ## Why mlx-Omni-Server Exists
 
 mlx-omni-server is designed for:
+
 - ✅ Cloud deployment (with internet)
 - ✅ HuggingFace model ecosystem integration
 - ✅ Anthropic API compatibility for cloud services
 - ✅ Users who want tool calling with downloaded models
 
 It's **not designed for**:
+
 - ❌ Local offline use with local model paths
 - ❌ Users without internet connection
 - ❌ Existing LMStudio model libraries
@@ -193,6 +201,7 @@ It's **not designed for**:
 Your AnyClaude implementation for mlx-omni mode is **technically correct**:
 
 ### What Works in AnyClaude ✅
+
 - Model ID validation (ensures local path format)
 - Anthropic SDK initialization
 - Proxy configuration
@@ -200,6 +209,7 @@ Your AnyClaude implementation for mlx-omni mode is **technically correct**:
 - Retry logic (manifests as 503)
 
 ### What Can't Work ❌
+
 - AnyClaude can't force mlx-omni-server to support local models
 - This is a mlx-omni-server design limitation, not a bug you can fix
 
@@ -244,6 +254,7 @@ Update `/CLAUDE.md` to clarify:
 ## Mode Comparison
 
 ### LMStudio Mode
+
 - Model Source: Local (LMStudio)
 - Internet Required: No
 - Tool Calling: ✅ Full support
@@ -251,6 +262,7 @@ Update `/CLAUDE.md` to clarify:
 - Use For: Production, complex tasks
 
 ### MLX-LM Mode
+
 - Model Source: Local (same as LMStudio)
 - Internet Required: No
 - Tool Calling: ❌ Not supported
@@ -258,6 +270,7 @@ Update `/CLAUDE.md` to clarify:
 - Use For: Analysis, documentation, reading
 
 ### MLX-Omni Mode (NOT Recommended for Local Use)
+
 - Model Source: HuggingFace (requires download)
 - Internet Required: Yes
 - Tool Calling: ✅ Supported
@@ -299,6 +312,7 @@ Update `/CLAUDE.md` to clarify:
 It's a **fundamental architectural limitation of mlx-omni-server** that can't be fixed without modifying the mlx-omni-server codebase itself.
 
 **Recommended Action**:
+
 1. Accept MLX-LM as the high-performance local solution
 2. Use LMStudio for tool-heavy tasks
 3. Document mlx-omni-server limitations clearly

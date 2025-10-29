@@ -67,7 +67,9 @@ async function makeAnyclaudeRequest({ prompt, lmstudioUrl, timeout = 120000 }) {
     const endTime = Date.now();
 
     if (!response.ok) {
-      throw new Error(`LMStudio error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `LMStudio error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();

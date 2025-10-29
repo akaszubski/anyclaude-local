@@ -83,7 +83,9 @@ class CacheMetricsTracker {
       requestId,
       inputTokens: responseBody?.usage?.input_tokens || 0,
       outputTokens: responseBody?.usage?.output_tokens || 0,
-      totalTokens: (responseBody?.usage?.input_tokens || 0) + (responseBody?.usage?.output_tokens || 0),
+      totalTokens:
+        (responseBody?.usage?.input_tokens || 0) +
+        (responseBody?.usage?.output_tokens || 0),
       cacheHit: false,
       cacheMiss: false,
       cacheControlHeaders: this.extractCacheHeaders(body),
@@ -105,7 +107,7 @@ class CacheMetricsTracker {
         metric.cacheReadInputTokens = usage.cache_read_input_tokens;
         metric.cacheHit = true;
         // Cache read costs 10% of base
-        metric.cacheReadCost = usage.cache_read_input_tokens * 0.10;
+        metric.cacheReadCost = usage.cache_read_input_tokens * 0.1;
       }
     }
 
@@ -122,7 +124,9 @@ class CacheMetricsTracker {
     const headers: Record<string, string> = {};
 
     if (body?.system) {
-      const systemBlocks = Array.isArray(body.system) ? body.system : [body.system];
+      const systemBlocks = Array.isArray(body.system)
+        ? body.system
+        : [body.system];
       const hasCacheControl = systemBlocks.some(
         (block: any) => block.cache_control?.type === "ephemeral"
       );
@@ -154,12 +158,18 @@ class CacheMetricsTracker {
   getStats(): CacheStats {
     const stats: CacheStats = {
       totalRequests: this.metrics.length,
-      cacheHits: this.metrics.filter(m => m.cacheHit).length,
-      cacheMisses: this.metrics.filter(m => m.cacheMiss).length,
+      cacheHits: this.metrics.filter((m) => m.cacheHit).length,
+      cacheMisses: this.metrics.filter((m) => m.cacheMiss).length,
       hitRate: 0,
       totalTokens: this.metrics.reduce((sum, m) => sum + m.totalTokens, 0),
-      cachedTokens: this.metrics.reduce((sum, m) => sum + (m.cacheReadInputTokens || 0), 0),
-      uncachedTokens: this.metrics.reduce((sum, m) => sum + (m.cacheCreationInputTokens || 0), 0),
+      cachedTokens: this.metrics.reduce(
+        (sum, m) => sum + (m.cacheReadInputTokens || 0),
+        0
+      ),
+      uncachedTokens: this.metrics.reduce(
+        (sum, m) => sum + (m.cacheCreationInputTokens || 0),
+        0
+      ),
       estimatedCostSavings: 0,
       estimatedLatencySavings: 0,
     };
@@ -168,15 +178,17 @@ class CacheMetricsTracker {
       stats.hitRate = stats.cacheHits / stats.totalRequests;
 
       // Cost calculation: cache reads are 90% cheaper than normal
-      stats.estimatedCostSavings = stats.cachedTokens * 0.90;
+      stats.estimatedCostSavings = stats.cachedTokens * 0.9;
 
       // Latency savings: ~85% according to Anthropic docs
       const nonCachedLatencies = this.metrics
-        .filter(m => m.cacheMiss && m.totalLatency)
-        .map(m => m.totalLatency!);
+        .filter((m) => m.cacheMiss && m.totalLatency)
+        .map((m) => m.totalLatency!);
 
       if (nonCachedLatencies.length > 0) {
-        const avgLatency = nonCachedLatencies.reduce((a, b) => a + b, 0) / nonCachedLatencies.length;
+        const avgLatency =
+          nonCachedLatencies.reduce((a, b) => a + b, 0) /
+          nonCachedLatencies.length;
         stats.estimatedLatencySavings = avgLatency * 0.85;
       }
     }
@@ -219,15 +231,23 @@ class CacheMetricsTracker {
     console.log("\n📊 Cache Performance Metrics");
     console.log("─".repeat(50));
     console.log(`Total Requests:         ${stats.totalRequests}`);
-    console.log(`Cache Hits:             ${stats.cacheHits} (${(stats.hitRate * 100).toFixed(1)}%)`);
+    console.log(
+      `Cache Hits:             ${stats.cacheHits} (${(stats.hitRate * 100).toFixed(1)}%)`
+    );
     console.log(`Cache Misses:           ${stats.cacheMisses}`);
     console.log(`\nToken Statistics:`);
     console.log(`  Total Tokens:         ${stats.totalTokens}`);
-    console.log(`  Cached Tokens:        ${stats.cachedTokens} (${((stats.cachedTokens / stats.totalTokens) * 100 || 0).toFixed(1)}%)`);
+    console.log(
+      `  Cached Tokens:        ${stats.cachedTokens} (${((stats.cachedTokens / stats.totalTokens) * 100 || 0).toFixed(1)}%)`
+    );
     console.log(`  Uncached Tokens:      ${stats.uncachedTokens}`);
     console.log(`\nEstimated Savings:`);
-    console.log(`  Cost Reduction:       ~${(stats.estimatedCostSavings * 100).toFixed(0)}% per cached token`);
-    console.log(`  Latency Reduction:    ~${stats.estimatedLatencySavings.toFixed(0)}ms per cache hit`);
+    console.log(
+      `  Cost Reduction:       ~${(stats.estimatedCostSavings * 100).toFixed(0)}% per cached token`
+    );
+    console.log(
+      `  Latency Reduction:    ~${stats.estimatedLatencySavings.toFixed(0)}ms per cache hit`
+    );
     console.log("─".repeat(50) + "\n");
   }
 

@@ -27,7 +27,7 @@ class ConversationManager {
     this.messages.push({
       role: "user",
       content: content,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -35,14 +35,14 @@ class ConversationManager {
     this.messages.push({
       role: "assistant",
       content: content,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   getConversation() {
     return {
       systemPrompt: this.systemPrompt,
-      messages: this.messages
+      messages: this.messages,
     };
   }
 
@@ -95,7 +95,7 @@ function testMultiTurnConversation() {
   const exchanges = [
     { user: "Hi", ai: "Hello!" },
     { user: "How are you?", ai: "I'm doing well, thank you!" },
-    { user: "What's your name?", ai: "I'm Claude" }
+    { user: "What's your name?", ai: "I'm Claude" },
   ];
 
   for (const exchange of exchanges) {
@@ -120,7 +120,11 @@ function testSystemPrompt() {
   conv.addUserMessage("Explain fractions");
 
   const conversation = conv.getConversation();
-  assert.strictEqual(conversation.systemPrompt, customPrompt, "System prompt set");
+  assert.strictEqual(
+    conversation.systemPrompt,
+    customPrompt,
+    "System prompt set"
+  );
   assert.ok(conversation.messages.length > 0, "Messages with system prompt");
   console.log("   ✅ System prompt works");
   passed++;
@@ -136,7 +140,11 @@ function testConversationContext() {
   conv.addAssistantMessage("Your name is Alice");
 
   const messages = conv.getConversation().messages;
-  assert.strictEqual(messages[0].content, "My name is Alice", "Context available");
+  assert.strictEqual(
+    messages[0].content,
+    "My name is Alice",
+    "Context available"
+  );
   assert.ok(messages[3].content.includes("Alice"), "AI uses context");
   console.log("   ✅ Conversation context works");
   passed++;
@@ -206,7 +214,10 @@ function testConversationMetadata() {
   const after = Date.now();
 
   const message = conv.getLastMessage();
-  assert.ok(message.timestamp >= before && message.timestamp <= after, "Timestamp present");
+  assert.ok(
+    message.timestamp >= before && message.timestamp <= after,
+    "Timestamp present"
+  );
   assert.ok(message.role, "Role stored");
   assert.ok(message.content, "Content stored");
   console.log("   ✅ Conversation metadata works");
@@ -229,14 +240,22 @@ function testCompleteConversationFlow() {
 
   // Verify complete flow
   const conversation = conv.getConversation();
-  assert.strictEqual(conversation.systemPrompt, "You are helpful", "System prompt configured");
+  assert.strictEqual(
+    conversation.systemPrompt,
+    "You are helpful",
+    "System prompt configured"
+  );
   assert.strictEqual(conv.getMessageCount(), 4, "All messages present");
 
   const messages = conversation.messages;
   assert.strictEqual(messages[0].role, "user", "First is user question");
   assert.strictEqual(messages[1].role, "assistant", "Second is AI response");
   assert.strictEqual(messages[2].role, "user", "Third is follow-up");
-  assert.strictEqual(messages[3].role, "assistant", "Fourth is second response");
+  assert.strictEqual(
+    messages[3].role,
+    "assistant",
+    "Fourth is second response"
+  );
 
   console.log("   ✅ Complete conversation flow works");
   passed++;

@@ -7,11 +7,13 @@ MLX-LM is Apple's optimized inference framework offering native KV cache support
 ## Issue #1: JSON Parsing Error
 
 ### Symptom
+
 ```
 JSONDecodeError: Invalid control character at: line 4 column 119
 ```
 
 ### Root Cause
+
 MLX-LM's Python JSON decoder has strict validation and rejects literal newline characters in JSON strings. The system prompt sent by AnyClaude contained multiple newlines:
 
 ```json
@@ -30,6 +32,7 @@ Keep responses..."  // ← Literal newlines cause JSON parse failure
 ```
 
 ### Solution
+
 Normalize system prompt in the MLX-LM fetch handler to replace newlines with spaces.
 
 **Location**: `src/main.ts:195-210`
@@ -41,7 +44,11 @@ Normalize system prompt in the MLX-LM fetch handler to replace newlines with spa
 if (body.messages && Array.isArray(body.messages)) {
   for (const msg of body.messages) {
     // Clean system role messages
-    if (msg.role === "system" && msg.content && typeof msg.content === "string") {
+    if (
+      msg.role === "system" &&
+      msg.content &&
+      typeof msg.content === "string"
+    ) {
       msg.content = msg.content.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
     }
     // Also clean user messages that might contain newlines
@@ -59,14 +66,17 @@ if (body.messages && Array.isArray(body.messages)) {
 ## Issue #2: Model Name Validation Error
 
 ### Symptom
+
 ```
 Repository Not Found for url: https://huggingface.co/api/models/current-model
 ```
 
 ### Root Cause
+
 MLX-LM server validates the `model` field against HuggingFace API. When AnyClaude sent `model: "current-model"`, MLX-LM tried to fetch this model from HuggingFace and failed.
 
 The old code (pre-fix):
+
 ```typescript
 // Map any model name to "current-model" (MLX-LM always uses the loaded model)
 if (body.model) {
@@ -77,6 +87,7 @@ if (body.model) {
 This logic was wrong because MLX-LM **validates** the model name, unlike LMStudio which ignores it.
 
 ### Solution
+
 Don't send the model field at all. MLX-LM always uses whatever model is running on startup.
 
 **Location**: `src/main.ts:179-181`
@@ -88,6 +99,7 @@ delete body.model;
 ```
 
 **Why it works**:
+
 - MLX-LM loads a single model on startup
 - It serves that model regardless of what `model` field is sent
 - By removing the field, we avoid validation errors
@@ -134,7 +146,9 @@ Qwen3-Coder Model
 ## Testing & Validation
 
 ### Unit Tests
+
 All tests pass (43 unit + 5 regression):
+
 ```
 ✓ Trace logger tests
 ✓ JSON schema transformation tests
@@ -145,6 +159,7 @@ All tests pass (43 unit + 5 regression):
 ```
 
 ### Integration Test
+
 Direct curl test to MLX-LM confirms the fix works:
 
 ```bash
@@ -178,6 +193,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 MLX-LM automatically caches the Key-Value (KV) tensors computed from the system prompt during the first request:
 
 **First Request (Cold)**
+
 ```
 System prompt tokens: 18,490
 User input tokens: ~50
@@ -187,6 +203,7 @@ Saves: KV cache in memory
 ```
 
 **Follow-up Requests (Warm)**
+
 ```
 System prompt tokens: 18,490 (retrieved from cache instantly)
 User input tokens: ~50
@@ -199,17 +216,18 @@ Speedup: ~30x
 
 For a typical coding session with 5 follow-up questions:
 
-| Mode | Query 1 | Query 2 | Query 3 | Query 4 | Query 5 | Total |
-|------|---------|---------|---------|---------|---------|-------|
-| Without Cache (LMStudio) | 30s | 30s | 30s | 30s | 30s | 150s |
-| With Cache (MLX-LM) | 30s | <1s | <1s | <1s | <1s | ~31s |
-| **Improvement** | - | 30x | 30x | 30x | 30x | **4.8x** |
+| Mode                     | Query 1 | Query 2 | Query 3 | Query 4 | Query 5 | Total    |
+| ------------------------ | ------- | ------- | ------- | ------- | ------- | -------- |
+| Without Cache (LMStudio) | 30s     | 30s     | 30s     | 30s     | 30s     | 150s     |
+| With Cache (MLX-LM)      | 30s     | <1s     | <1s     | <1s     | <1s     | ~31s     |
+| **Improvement**          | -       | 30x     | 30x     | 30x     | 30x     | **4.8x** |
 
 ---
 
 ## Compatibility Notes
 
 ### What Works
+
 - ✅ All tool calling operations
 - ✅ System prompts with any content
 - ✅ Multi-turn conversations (KV cache maintained)
@@ -217,21 +235,22 @@ For a typical coding session with 5 follow-up questions:
 - ✅ Parameter mapping (max_tokens, temperature, etc.)
 
 ### Limitations
+
 - ⚠️ Only one model loaded at a time
 - ⚠️ Model must be loaded via `--model` flag on startup
 - ⚠️ Cannot change models without restarting server
 
 ### Differences from LMStudio
 
-| Feature | MLX-LM | LMStudio |
-|---------|--------|----------|
-| Model Field | Ignored (removed) | Ignored |
-| JSON Validation | Strict | Permissive |
-| KV Cache | Native support | Not available |
-| Tool Calling | Supported | Supported |
-| Parameter Names | `max_completion_tokens` | `max_tokens` |
-| Parameter Mapping | Required | Required |
-| macOS Optimized | Yes | No |
+| Feature           | MLX-LM                  | LMStudio      |
+| ----------------- | ----------------------- | ------------- |
+| Model Field       | Ignored (removed)       | Ignored       |
+| JSON Validation   | Strict                  | Permissive    |
+| KV Cache          | Native support          | Not available |
+| Tool Calling      | Supported               | Supported     |
+| Parameter Names   | `max_completion_tokens` | `max_tokens`  |
+| Parameter Mapping | Required                | Required      |
+| macOS Optimized   | Yes                     | No            |
 
 ---
 
@@ -244,6 +263,7 @@ ANYCLAUDE_DEBUG=3 ./dist/main-cli.js
 ```
 
 This will show:
+
 - All MLX-LM requests/responses
 - Parameter transformations
 - Tool call events
@@ -252,6 +272,7 @@ This will show:
 ### Check MLX-LM Logs
 
 MLX-LM server outputs processing progress:
+
 ```
 INFO - Prompt processing progress: 0/18540
 INFO - Prompt processing progress: 9270/18540
@@ -259,6 +280,7 @@ INFO - Prompt processing progress: 18540/18540
 ```
 
 This indicates:
+
 - System prompt + user input being processed
 - KV cache being computed
 - Request ready to be handled
@@ -290,5 +312,5 @@ cat /tmp/anyclaude-debug-*.json | jq '.request.body' | python3 -m json.tool
 
 - [MLX Framework](https://github.com/ml-explore/mlx)
 - [MLX-LM Server Code](https://github.com/ml-explore/mlx-lm)
-- [KV Cache in Transformers](https://en.wikipedia.org/wiki/Transformer_(machine_learning_model)#Computational_and_memory_efficiency)
+- [KV Cache in Transformers](<https://en.wikipedia.org/wiki/Transformer_(machine_learning_model)#Computational_and_memory_efficiency>)
 - [Python JSON Specification](https://docs.python.org/3/library/json.html)

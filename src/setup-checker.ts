@@ -194,9 +194,7 @@ export function runFullSetupCheck(): SetupCheckResult {
   if (!venvCheck.ok) {
     issues.push(venvCheck.message);
     if (venvCheck.canFix) {
-      suggestions.push(
-        "Set up Python venv: scripts/setup-vllm-mlx-venv.sh"
-      );
+      suggestions.push("Set up Python venv: scripts/setup-vllm-mlx-venv.sh");
     }
   }
 

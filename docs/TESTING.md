@@ -24,13 +24,13 @@ node tests/unit/test-config-errors.js
 
 ## Test Overview
 
-| Category | Count | Coverage | Purpose |
-|----------|-------|----------|---------|
-| Unit | 100 | Error handling | Catch failures early |
-| Integration | 30 | Component interaction | Verify components work |
-| E2E | 20 | Complete workflows | Validate real scenarios |
-| Performance | 20 | Stress & scale | Reliability under load |
-| **Total** | **170+** | **Comprehensive** | **Production ready** |
+| Category    | Count    | Coverage              | Purpose                 |
+| ----------- | -------- | --------------------- | ----------------------- |
+| Unit        | 100      | Error handling        | Catch failures early    |
+| Integration | 30       | Component interaction | Verify components work  |
+| E2E         | 20       | Complete workflows    | Validate real scenarios |
+| Performance | 20       | Stress & scale        | Reliability under load  |
+| **Total**   | **170+** | **Comprehensive**     | **Production ready**    |
 
 ---
 
@@ -39,6 +39,7 @@ node tests/unit/test-config-errors.js
 ### Unit Tests (100)
 
 Error handling across 10 categories:
+
 - ✅ Stream error handling (10 tests)
 - ✅ File I/O errors (10 tests)
 - ✅ Network & timeout errors (10 tests)
@@ -53,6 +54,7 @@ Error handling across 10 categories:
 ### Integration Tests (30)
 
 Component interaction:
+
 - ✅ Message pipeline conversion (10 tests)
 - ✅ Tool calling workflow (10 tests)
 - ✅ Proxy request/response cycle (10 tests)
@@ -60,12 +62,14 @@ Component interaction:
 ### End-to-End Tests (20)
 
 Complete workflows:
+
 - ✅ Full conversations (10 tests)
 - ✅ Tool use workflows (10 tests)
 
 ### Performance Tests (20)
 
 Stress & scale:
+
 - ✅ Large context handling (10 tests)
 - ✅ Concurrent request processing (10 tests)
 
@@ -85,12 +89,15 @@ Stress & scale:
 ## Running Tests
 
 ### All Tests (Recommended)
+
 ```bash
 npm test
 ```
+
 Runs: build → unit tests → integration tests → regression tests
 
 ### Specific Test Files
+
 ```bash
 # Unit test
 node tests/unit/test-config-errors.js
@@ -106,6 +113,7 @@ node tests/performance/test-large-context.js
 ```
 
 ### With Verbose Output
+
 ```bash
 DEBUG=* npm test
 ```
@@ -133,6 +141,7 @@ Tests run automatically before every commit:
 ```
 
 Emergency only (skip tests):
+
 ```bash
 git commit --no-verify
 ```
@@ -142,12 +151,14 @@ git commit --no-verify
 ## Troubleshooting
 
 ### Tests Hang
+
 ```bash
 pkill -f "node tests"
 timeout 30 npm test
 ```
 
 ### Import/Module Errors
+
 ```bash
 rm -rf node_modules
 npm install
@@ -156,6 +167,7 @@ npm test
 ```
 
 ### Test Failures
+
 ```bash
 # Run single test for debugging
 node tests/unit/test-config-errors.js
@@ -180,6 +192,7 @@ DEBUG=* npm test
 ## Full Documentation
 
 For comprehensive information about:
+
 - All 170+ tests in detail
 - Test patterns and best practices
 - Performance benchmarks
@@ -191,6 +204,7 @@ For comprehensive information about:
 ---
 
 **Status**: ✅ **Production Ready**
+
 - 170+ tests
 - 0 failures
 - 100% pass rate

@@ -14,9 +14,34 @@ let failed = 0;
 
 // Mock tool registry
 const toolRegistry = new Map([
-  ["calculator", { name: "calculator", input_schema: { type: "object", properties: { operation: { type: "string" }, a: { type: "number" }, b: { type: "number" } } } }],
-  ["search", { name: "search", input_schema: { type: "object", properties: { query: { type: "string" } } } }],
-  ["get_time", { name: "get_time", input_schema: { type: "object", properties: {} } } ]
+  [
+    "calculator",
+    {
+      name: "calculator",
+      input_schema: {
+        type: "object",
+        properties: {
+          operation: { type: "string" },
+          a: { type: "number" },
+          b: { type: "number" },
+        },
+      },
+    },
+  ],
+  [
+    "search",
+    {
+      name: "search",
+      input_schema: {
+        type: "object",
+        properties: { query: { type: "string" } },
+      },
+    },
+  ],
+  [
+    "get_time",
+    { name: "get_time", input_schema: { type: "object", properties: {} } },
+  ],
 ]);
 
 // Mock tool execution
@@ -42,15 +67,17 @@ function executeToolCall(toolName, input) {
 function testToolDetection() {
   console.log("\n✓ Test 1: Tool detection in response");
   const response = {
-    content: [{
-      type: "tool_use",
-      id: "tool-1",
-      name: "calculator",
-      input: { operation: "add", a: 2, b: 3 }
-    }]
+    content: [
+      {
+        type: "tool_use",
+        id: "tool-1",
+        name: "calculator",
+        input: { operation: "add", a: 2, b: 3 },
+      },
+    ],
   };
 
-  const tools = response.content.filter(c => c.type === "tool_use");
+  const tools = response.content.filter((c) => c.type === "tool_use");
   assert.strictEqual(tools.length, 1, "Tool detected");
   assert.strictEqual(tools[0].name, "calculator", "Tool name extracted");
   console.log("   ✅ Tool detection works");
@@ -59,7 +86,10 @@ function testToolDetection() {
 
 function testToolValidation() {
   console.log("\n✓ Test 2: Tool validation in workflow");
-  const toolCall = { name: "calculator", input: { operation: "add", a: 2, b: 3 } };
+  const toolCall = {
+    name: "calculator",
+    input: { operation: "add", a: 2, b: 3 },
+  };
 
   const tool = toolRegistry.get(toolCall.name);
   assert.ok(tool, "Tool found in registry");
@@ -70,7 +100,11 @@ function testToolValidation() {
 
 function testToolExecution() {
   console.log("\n✓ Test 3: Tool execution in workflow");
-  const result = executeToolCall("calculator", { operation: "add", a: 5, b: 3 });
+  const result = executeToolCall("calculator", {
+    operation: "add",
+    a: 5,
+    b: 3,
+  });
   assert.strictEqual(result, 8, "Addition executed correctly");
   console.log("   ✅ Tool execution works");
   passed++;
@@ -80,7 +114,11 @@ function testMultipleToolCalls() {
   console.log("\n✓ Test 4: Multiple tool calls in sequence");
   const toolCalls = [
     { id: "t1", name: "calculator", input: { operation: "add", a: 2, b: 2 } },
-    { id: "t2", name: "calculator", input: { operation: "multiply", a: 4, b: 5 } }
+    {
+      id: "t2",
+      name: "calculator",
+      input: { operation: "multiply", a: 4, b: 5 },
+    },
   ];
 
   const results = [];
@@ -113,7 +151,10 @@ function testToolErrorHandling() {
     error = e;
   }
   assert.ok(error, "Invalid tool throws error");
-  assert.ok(error.message.includes("Tool not found"), "Error message is informative");
+  assert.ok(
+    error.message.includes("Tool not found"),
+    "Error message is informative"
+  );
   console.log("   ✅ Tool error handling works");
   passed++;
 }
@@ -124,17 +165,21 @@ function testToolResultIntegration() {
     type: "tool_use",
     id: "tool-123",
     name: "search",
-    input: { query: "Claude API" }
+    input: { query: "Claude API" },
   };
 
   const result = executeToolCall(toolUseBlock.name, toolUseBlock.input);
   const toolResult = {
     type: "tool_result",
     tool_use_id: toolUseBlock.id,
-    content: JSON.stringify(result)
+    content: JSON.stringify(result),
   };
 
-  assert.strictEqual(toolResult.tool_use_id, toolUseBlock.id, "Result linked to call");
+  assert.strictEqual(
+    toolResult.tool_use_id,
+    toolUseBlock.id,
+    "Result linked to call"
+  );
   assert.ok(toolResult.content, "Content populated");
   console.log("   ✅ Tool result integration works");
   passed++;
@@ -153,7 +198,10 @@ function testToolStateIsolation() {
 
 function testToolInputValidation() {
   console.log("\n✓ Test 9: Tool input validation");
-  const toolCall = { name: "calculator", input: { operation: "add", a: 5, b: 3 } };
+  const toolCall = {
+    name: "calculator",
+    input: { operation: "add", a: 5, b: 3 },
+  };
 
   try {
     const result = executeToolCall(toolCall.name, toolCall.input);
@@ -179,16 +227,21 @@ function testCompleteToolWorkflow() {
   const aiResponse = {
     content: [
       { type: "text", text: "Let me calculate that for you" },
-      { type: "tool_use", id: "calc-1", name: "calculator", input: { operation: "multiply", a: 6, b: 7 } }
-    ]
+      {
+        type: "tool_use",
+        id: "calc-1",
+        name: "calculator",
+        input: { operation: "multiply", a: 6, b: 7 },
+      },
+    ],
   };
 
   // Extract and execute tools
-  const toolCalls = aiResponse.content.filter(c => c.type === "tool_use");
-  const results = toolCalls.map(call => ({
+  const toolCalls = aiResponse.content.filter((c) => c.type === "tool_use");
+  const results = toolCalls.map((call) => ({
     type: "tool_result",
     tool_use_id: call.id,
-    content: String(executeToolCall(call.name, call.input))
+    content: String(executeToolCall(call.name, call.input)),
   }));
 
   assert.strictEqual(results.length, 1, "One tool executed");
@@ -198,11 +251,15 @@ function testCompleteToolWorkflow() {
     content: [
       ...aiResponse.content,
       ...results,
-      { type: "text", text: "The answer is 42" }
-    ]
+      { type: "text", text: "The answer is 42" },
+    ],
   };
 
-  assert.strictEqual(finalResponse.content.length, 4, "Final response has all components");
+  assert.strictEqual(
+    finalResponse.content.length,
+    4,
+    "Final response has all components"
+  );
   console.log("   ✅ Complete tool workflow works");
   passed++;
 }

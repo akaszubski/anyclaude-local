@@ -5,11 +5,13 @@
 These tests validate the fix for a critical issue where vLLM-MLX receives malformed system prompts due to strict JSON parsing:
 
 **Issue**: vLLM-MLX rejects system prompts with embedded newlines and excess whitespace, causing:
+
 - Looping/repetitive model responses
 - Unpredictable behavior
 - Corrupted input to the model
 
 **Fix**: Normalize system prompts before sending to vLLM-MLX by:
+
 - Converting newlines to spaces
 - Collapsing multiple spaces to single space
 - Trimming leading/trailing whitespace
@@ -21,6 +23,7 @@ These tests validate the fix for a critical issue where vLLM-MLX receives malfor
 **Purpose**: Test the normalization logic in isolation
 
 **Tests**:
+
 1. **Newlines normalized**: `\n` → spaces
 2. **Whitespace collapsed**: Multiple spaces → single space
 3. **Trimming**: Leading/trailing whitespace removed
@@ -33,6 +36,7 @@ These tests validate the fix for a critical issue where vLLM-MLX receives malfor
 10. **Multiple messages**: Mixed message types
 
 **Run**:
+
 ```bash
 node tests/unit/test-vllm-mlx-system-prompt.js
 ```
@@ -42,6 +46,7 @@ node tests/unit/test-vllm-mlx-system-prompt.js
 **Purpose**: Validate the fix works at the integration level
 
 **Tests**:
+
 1. **Fetch interceptor**: Main.ts fetch normalization
 2. **Proxy-level**: anthropic-proxy.ts normalization
 3. **Provider isolation**: LMStudio unaffected
@@ -54,6 +59,7 @@ node tests/unit/test-vllm-mlx-system-prompt.js
 10. **Idempotency**: Repeated normalization consistent
 
 **Run**:
+
 ```bash
 node tests/integration/test-vllm-mlx-system-prompt-fix.js
 ```
@@ -65,6 +71,7 @@ node tests/integration/test-vllm-mlx-system-prompt-fix.js
 The fix is applied at TWO levels to ensure robustness:
 
 #### 1. Proxy Level (anthropic-proxy.ts:460)
+
 ```typescript
 if (system && providerName === "vllm-mlx") {
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
@@ -74,10 +81,15 @@ if (system && providerName === "vllm-mlx") {
 This normalizes the system prompt right before calling streamText().
 
 #### 2. Fetch Interceptor Level (main.ts:320-332)
+
 ```typescript
 if (body.messages && Array.isArray(body.messages)) {
   for (const msg of body.messages) {
-    if (msg.role === "system" && msg.content && typeof msg.content === "string") {
+    if (
+      msg.role === "system" &&
+      msg.content &&
+      typeof msg.content === "string"
+    ) {
       msg.content = msg.content.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
     }
   }
@@ -101,6 +113,7 @@ This normalizes at the fetch call level for extra safety.
 ## How to Verify the Fix
 
 Before the fix, this question would produce looping/repetitive responses:
+
 ```
 > can you read README.md and summarise it for me?
 
@@ -116,6 +129,7 @@ I've read the README.md file...
 ```
 
 After the fix:
+
 ```
 > can you read README.md and summarise it for me?
 
@@ -129,22 +143,23 @@ that enables using local MLX models through the Anthropic API format.
 
 ## Test Coverage
 
-| Aspect | Coverage | Status |
-|--------|----------|--------|
-| Newline handling | 4 tests | ✅ |
-| Whitespace handling | 3 tests | ✅ |
-| JSON validity | 2 tests | ✅ |
-| Provider isolation | 2 tests | ✅ |
-| Message types | 3 tests | ✅ |
-| Edge cases | 2 tests | ✅ |
-| Idempotency | 2 tests | ✅ |
-| Real-world scenarios | 2 tests | ✅ |
+| Aspect               | Coverage | Status |
+| -------------------- | -------- | ------ |
+| Newline handling     | 4 tests  | ✅     |
+| Whitespace handling  | 3 tests  | ✅     |
+| JSON validity        | 2 tests  | ✅     |
+| Provider isolation   | 2 tests  | ✅     |
+| Message types        | 3 tests  | ✅     |
+| Edge cases           | 2 tests  | ✅     |
+| Idempotency          | 2 tests  | ✅     |
+| Real-world scenarios | 2 tests  | ✅     |
 
 **Total: 20 tests across unit + integration**
 
 ## Regression Prevention
 
 These tests catch:
+
 - ❌ If normalization is removed
 - ❌ If only lmstudio branch is checked (mlx-lm removal)
 - ❌ If newlines aren't converted
@@ -182,6 +197,7 @@ node tests/integration/test-vllm-mlx-system-prompt-fix.js
 ```
 
 Both should show:
+
 ```
 ✅ All vLLM-MLX system prompt normalization tests passed!
 ✅ All vLLM-MLX system prompt fix integration tests passed!

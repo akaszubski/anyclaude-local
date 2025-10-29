@@ -78,10 +78,7 @@ async function test_multi_sentence_completion() {
       );
 
       // Verify response length is reasonable (not too short, not too long)
-      assert.ok(
-        result.response.length > 50,
-        "Response should be substantial"
-      );
+      assert.ok(result.response.length > 50, "Response should be substantial");
       assert.ok(
         result.response.length < 1000,
         "Response should be concise (2 sentences)"
@@ -133,9 +130,13 @@ async function test_model_follows_instructions() {
 }
 
 async function runAllTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("GENAI: BASIC COMPLETION TESTS");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("");
   console.log("These tests verify the loaded model can:");
   console.log("  - Complete simple text generation");
@@ -150,9 +151,13 @@ async function runAllTests() {
   results.push(await test_model_follows_instructions());
 
   console.log("");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("GENAI TEST SUMMARY");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   const passed = results.filter((r) => r.passed).length;
   const skipped = results.filter((r) => r.skipped).length;
@@ -164,11 +169,15 @@ async function runAllTests() {
 
   if (skipped > 0) {
     console.log("");
-    console.log("Note: Tests were skipped because no model is loaded in LMStudio.");
+    console.log(
+      "Note: Tests were skipped because no model is loaded in LMStudio."
+    );
     console.log("Load a model and run again to execute these tests.");
   }
 
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   if (failed > 0) {
     process.exit(1);

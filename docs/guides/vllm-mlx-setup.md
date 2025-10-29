@@ -5,10 +5,12 @@ This guide walks you through setting up and using vLLM-MLX with anyclaude for hi
 ## What is vLLM-MLX?
 
 **vLLM-MLX** combines:
+
 - **vLLM**: A production-grade inference engine with advanced features like prompt caching and continuous batching
 - **MLX**: Apple's machine learning framework optimized for Apple Silicon (M1/M2/M3+)
 
 This gives you:
+
 - Fast inference on Apple hardware
 - Support for larger models (up to 70B parameters)
 - Prompt caching for better performance with repeated queries
@@ -31,6 +33,7 @@ scripts/setup-vllm-mlx-venv.sh
 ```
 
 This script will:
+
 - Create a Python virtual environment at `~/.venv-mlx`
 - Install all required dependencies (mlx, vllm-mlx, certifi, etc.)
 - Verify the installation
@@ -73,6 +76,7 @@ ANYCLAUDE_DEBUG=1 anyclaude --mode=vllm-mlx
 ```
 
 anyclaude will:
+
 1. Check if the venv exists (if not, show setup instructions)
 2. Activate the venv automatically
 3. Start the vLLM-MLX server
@@ -86,16 +90,17 @@ anyclaude will:
 vLLM-MLX works with quantized models optimized for MLX. Popular sources:
 
 **Hugging Face** (recommended):
+
 - [MLX Community Models](https://huggingface.co/mlx-community) - Official MLX models
 - Look for models ending in `-MLX` or `-mlx-4bit`
 
 **Example Models**:
 
-| Model | Size | Use Case | Link |
-|-------|------|----------|------|
-| Qwen3-Coder-30B-MLX | 30B | Code generation | [mlx-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit](https://huggingface.co/mlx-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit) |
-| DeepSeek-Coder-33B-MLX | 33B | Code + reasoning | [mlx-community/DeepSeek-Coder-33B-Instruct-MLX-4bit](https://huggingface.co/mlx-community/DeepSeek-Coder-33B-Instruct-MLX-4bit) |
-| Llama2-70B-Chat-MLX | 70B | General purpose | [mlx-community/Llama2-70B-Chat-MLX](https://huggingface.co/mlx-community/Llama2-70B-Chat-MLX) |
+| Model                  | Size | Use Case         | Link                                                                                                                              |
+| ---------------------- | ---- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Qwen3-Coder-30B-MLX    | 30B  | Code generation  | [mlx-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit](https://huggingface.co/mlx-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit) |
+| DeepSeek-Coder-33B-MLX | 33B  | Code + reasoning | [mlx-community/DeepSeek-Coder-33B-Instruct-MLX-4bit](https://huggingface.co/mlx-community/DeepSeek-Coder-33B-Instruct-MLX-4bit)   |
+| Llama2-70B-Chat-MLX    | 70B  | General purpose  | [mlx-community/Llama2-70B-Chat-MLX](https://huggingface.co/mlx-community/Llama2-70B-Chat-MLX)                                     |
 
 ### Download a Model
 
@@ -239,6 +244,7 @@ anyclaude --mode=vllm-mlx
 ### Model Selection
 
 For Claude Code (code generation & tool use):
+
 - **Best**: Qwen3-Coder-30B (balanced speed + quality)
 - **Fast**: DeepSeek-Coder-6.7B (smaller, still good)
 - **Powerful**: DeepSeek-Coder-33B or Llama2-70B (slower but better reasoning)
@@ -261,14 +267,14 @@ max_num_seqs = 4  # default: 8
 
 ## Comparing with Other Backends
 
-| Feature | vLLM-MLX | MLX-LM | LMStudio |
-|---------|----------|--------|----------|
-| Speed | ⚡⚡⚡ Fast | ⚡⚡ Moderate | ⚡⚡ Moderate |
-| Tool Calling | ✓ Good | ⚠️ Basic | ✓ Good |
-| Prompt Caching | ✓ Yes | ✗ No | ⚠️ Limited |
-| Setup | Script | Manual | GUI app |
-| Memory | Efficient | Very efficient | Medium |
-| Model size | Up to 70B | Up to 30B | Unlimited |
+| Feature        | vLLM-MLX    | MLX-LM         | LMStudio      |
+| -------------- | ----------- | -------------- | ------------- |
+| Speed          | ⚡⚡⚡ Fast | ⚡⚡ Moderate  | ⚡⚡ Moderate |
+| Tool Calling   | ✓ Good      | ⚠️ Basic       | ✓ Good        |
+| Prompt Caching | ✓ Yes       | ✗ No           | ⚠️ Limited    |
+| Setup          | Script      | Manual         | GUI app       |
+| Memory         | Efficient   | Very efficient | Medium        |
+| Model size     | Up to 70B   | Up to 30B      | Unlimited     |
 
 ## See Also
 

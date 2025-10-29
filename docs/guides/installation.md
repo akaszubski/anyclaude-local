@@ -24,10 +24,12 @@ Best for: First-time setup, compatibility testing
 Best for: Apple Silicon Macs, KV cache optimization
 
 Prerequisites:
+
 - macOS with Apple Silicon (M1/M2/M3+)
 - Python 3.9+
 
 Installation:
+
 ```bash
 # Create virtual environment
 python3 -m venv ~/.venv-mlx
@@ -41,6 +43,7 @@ python3 -m mlx_lm --help
 ```
 
 Starting the server:
+
 ```bash
 source ~/.venv-mlx/bin/activate
 python3 -m mlx_lm server --port 8081
@@ -51,16 +54,19 @@ python3 -m mlx_lm server --port 8081
 Best for: Apple Silicon Macs, automatic server startup, advanced features
 
 Features:
+
 - 🚀 **Auto-launches** when you run `anyclaude`
 - 📦 **Prompt caching** (40-50% faster follow-ups)
 - 🔧 **Tool/function calling** support
 - 🛑 **Auto-cleanup** when you exit (no orphaned processes)
 
 Prerequisites:
+
 - macOS with Apple Silicon (M1/M2/M3+)
 - Python 3.9+
 
 Installation:
+
 ```bash
 # Create virtual environment
 python3 -m venv ~/.venv-mlx
@@ -135,6 +141,7 @@ bun run ./dist/main.js
 Create `.anyclauderc.json` in your project root:
 
 **Example: vLLM-MLX (Recommended for Apple Silicon)**
+
 ```json
 {
   "backend": "vllm-mlx",
@@ -176,6 +183,7 @@ Create `.anyclauderc.json` in your project root:
 ```
 
 **Key settings:**
+
 - `backend`: Which backend to use (`vllm-mlx`, `lmstudio`, `mlx-lm`, or `claude`)
 - `backends[backend].model`: Full path to model (for vLLM-MLX and MLX-LM) or `current-model` for LMStudio
 - `debug.level`: 0=off, 1=basic, 2=verbose, 3=trace
@@ -186,6 +194,7 @@ See [CONFIGURATION.md](CONFIGURATION.md) for detailed options.
 ### 3. Start Your Backend
 
 **vLLM-MLX (Auto-launch):**
+
 ```bash
 # No manual startup needed! Server launches automatically when you run anyclaude
 # Just make sure your .anyclauderc.json is configured with vllm-mlx backend
@@ -193,12 +202,14 @@ anyclaude
 ```
 
 **LMStudio (Manual):**
+
 ```bash
 # LMStudio application handles startup - just ensure it's running and a model is loaded
 # Then run: anyclaude
 ```
 
 **MLX-LM (Manual):**
+
 ```bash
 source ~/.venv-mlx/bin/activate
 python3 -m mlx_lm server --port 8081
@@ -206,6 +217,7 @@ python3 -m mlx_lm server --port 8081
 ```
 
 **Claude API (No server needed):**
+
 ```bash
 # Just set API key
 export ANTHROPIC_API_KEY=sk-ant-xxxxx
@@ -215,6 +227,7 @@ export ANTHROPIC_API_KEY=sk-ant-xxxxx
 ### 4. Run AnyClaude
 
 **Basic usage:**
+
 ```bash
 # Uses backend configured in .anyclauderc.json
 anyclaude
@@ -223,6 +236,7 @@ anyclaude
 For vLLM-MLX: Server auto-launches, model loads, then Claude Code starts. That's it!
 
 **Advanced usage:**
+
 ```bash
 # Override backend via CLI flag
 anyclaude --mode=mlx-lm
@@ -248,6 +262,7 @@ Settings are checked in this order (highest to lowest priority):
 4. **Defaults** (LMStudio at localhost:1234)
 
 Example:
+
 ```bash
 # Config file says: lmstudio
 # Env var says: mlx-lm
@@ -302,6 +317,7 @@ anyclaude
 **Problem:** "Connection refused at localhost:1234"
 
 **Solution:**
+
 1. Verify backend is running: `curl http://localhost:1234/v1/models`
 2. Check port is correct in `.anyclauderc.json`
 3. Ensure model is loaded in LMStudio (check LMStudio UI)
@@ -311,6 +327,7 @@ anyclaude
 **Problem:** Config says MLX-LM but connects to LMStudio
 
 **Solution:**
+
 ```bash
 # Check which mode is being used
 PROXY_ONLY=true ANYCLAUDE_DEBUG=1 anyclaude
@@ -325,6 +342,7 @@ anyclaude --mode=mlx-lm
 **Problem:** "Model 'current-model' not found"
 
 **Solution:**
+
 - LMStudio: Just load a model in the LMStudio UI, AnyClaude will use it
 - MLX-LM: Model path must be correct, verify in server output
 
@@ -333,6 +351,7 @@ anyclaude --mode=mlx-lm
 **Problem:** "EADDRINUSE localhost:8081"
 
 **Solution:**
+
 1. Use different port in `.anyclauderc.json`
 2. Or kill existing process:
    ```bash

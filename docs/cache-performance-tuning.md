@@ -20,14 +20,17 @@ anyclaude uses **multi-level caching** to minimize token consumption and improve
 **Problem**: The original cache size of 32 entries was too small for large Claude Code prompts, causing frequent evictions.
 
 **Solution**:
+
 - Increased default cache size from **32 → 256 entries**
 - Made configurable via `VLLM_CACHE_SIZE` environment variable
 - Improved cache hit rates for typical workloads
 
 **Files Modified**:
+
 - `scripts/vllm-mlx-server.py:221-224`
 
 **Usage**:
+
 ```bash
 # Use default (256 entries)
 anyclaude
@@ -40,6 +43,7 @@ VLLM_CACHE_SIZE=64 anyclaude
 ```
 
 **Performance Impact**:
+
 - ⬆️ Cache hit rate: +40-60% (depends on workload)
 - ⬇️ Memory usage: ~100-200KB per additional cache entry
 
@@ -50,11 +54,13 @@ VLLM_CACHE_SIZE=64 anyclaude
 **Problem**: vLLM-MLX wasn't reporting cache hit/miss statistics, making optimization difficult.
 
 **Solution**:
+
 - Added comprehensive cache statistics logging
 - Tracks hits, misses, hit rate percentage, and cache size
 - Logs at DEBUG level for all request types (streaming and non-streaming)
 
 **Files Modified**:
+
 - `scripts/vllm-mlx-server.py`:
   - Added `last_request_was_hit` tracking (line 135)
   - Updated `record_request()` to properly increment hits (lines 204-211)
@@ -66,6 +72,7 @@ VLLM_CACHE_SIZE=64 anyclaude
   - Added stream completion stats logging (lines 527-528)
 
 **Usage**:
+
 ```bash
 # See cache statistics with debug logging
 ANYCLAUDE_DEBUG=1 anyclaude
@@ -82,15 +89,20 @@ ANYCLAUDE_DEBUG=1 anyclaude
 **Problem**: Same tools provided in different orders created different cache keys, causing cache misses.
 
 **Solution**:
+
 - Sort tools alphabetically by name before processing
 - Ensures identical tools in any order produce same cache key
 - Prevents semantic duplicates from missing cache
 
 **Files Modified**:
+
 - `src/anthropic-proxy.ts:409-413`:
+
   ```typescript
   // Sort tools by name for deterministic cache keys
-  const sortedTools = body.tools ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name)) : undefined;
+  const sortedTools = body.tools
+    ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name))
+    : undefined;
   ```
 
 - `scripts/vllm-mlx-server.py:410-416`:
@@ -100,6 +112,7 @@ ANYCLAUDE_DEBUG=1 anyclaude
   ```
 
 **Performance Impact**:
+
 - ⬆️ Cache hit rate: +10-20% (when tools vary in order)
 - ➡️ Processing overhead: <1ms (sorting negligible)
 
@@ -110,24 +123,26 @@ ANYCLAUDE_DEBUG=1 anyclaude
 **New Feature**: Real-time cache performance monitoring with cost analysis.
 
 **Files Added**:
+
 - `src/cache-monitor.ts` - Cache metrics tracking and reporting
 - Integration in `src/anthropic-proxy.ts:181-192` - Records hits/misses
 - Integration in `src/main.ts:361-370` - Displays stats on exit
 
 **Tracked Metrics**:
+
 ```typescript
 {
-  hitCount: number;           // Total cache hits
-  missCount: number;          // Total cache misses
-  totalRequests: number;      // Total API requests
-  totalInputTokens: number;   // All input tokens used
-  cacheReadTokens: number;    // Tokens served from cache (90% cheaper)
-  cacheCreateTokens: number;  // Tokens that created cache entries
+  hitCount: number; // Total cache hits
+  missCount: number; // Total cache misses
+  totalRequests: number; // Total API requests
+  totalInputTokens: number; // All input tokens used
+  cacheReadTokens: number; // Tokens served from cache (90% cheaper)
+  cacheCreateTokens: number; // Tokens that created cache entries
   estimatedCost: {
-    rawCost: number;          // Cost without caching
-    withCacheCost: number;    // Cost with caching
-    savings: number;          // Actual savings in dollars
-    savingsPercent: number;   // Savings percentage
+    rawCost: number; // Cost without caching
+    withCacheCost: number; // Cost with caching
+    savings: number; // Actual savings in dollars
+    savingsPercent: number; // Savings percentage
   }
 }
 ```
@@ -181,6 +196,7 @@ MLX Model
 ### Cache Key Generation
 
 **vLLM-MLX Server** (`scripts/vllm-mlx-server.py:137-147`):
+
 ```python
 def get_cache_key(self, messages: list, tools: list = None) -> str:
     # Deterministic JSON serialization with sorted keys
@@ -192,18 +208,19 @@ def get_cache_key(self, messages: list, tools: list = None) -> str:
 ```
 
 Cache hit occurs when:
+
 1. Same system prompt (after normalization)
 2. Same conversation history
 3. Same tools (regardless of order - thanks to deterministic sorting)
 
 ### Performance Characteristics
 
-| Scenario | Hit Rate | Time Saved | Tokens Saved |
-|----------|----------|-----------|-------------|
-| Repeated queries | 95% | ~500ms | 95% of input |
-| Tool calls | 85% | ~400ms | 85% of input |
-| Different queries | 20% | ~50ms | Minimal |
-| First-ever query | 0% | None | None |
+| Scenario          | Hit Rate | Time Saved | Tokens Saved |
+| ----------------- | -------- | ---------- | ------------ |
+| Repeated queries  | 95%      | ~500ms     | 95% of input |
+| Tool calls        | 85%      | ~400ms     | 85% of input |
+| Different queries | 20%      | ~50ms      | Minimal      |
+| First-ever query  | 0%       | None       | None         |
 
 ---
 
@@ -213,6 +230,7 @@ Cache hit occurs when:
 
 Default: 256 entries
 Recommended ranges:
+
 - **Small usage** (light development): 64-128
 - **Medium usage** (typical): 256 (default)
 - **Heavy usage** (continuous development): 512-1024
@@ -354,11 +372,13 @@ anyclaude --mode=vllm-mlx
 **Symptoms**: Cache hit rate < 30% despite same queries
 
 **Causes**:
+
 1. Cache too small → Entries evicted too quickly
 2. Tools in different order → Still auto-sorted now, should be fixed
 3. Slight prompt variations → Whitespace/formatting differences
 
 **Solutions**:
+
 ```bash
 # Increase cache size
 VLLM_CACHE_SIZE=512 anyclaude
@@ -374,11 +394,13 @@ ANYCLAUDE_DEBUG=3 anyclaude
 **Symptoms**: High miss rate, constant evictions
 
 **Causes**:
+
 1. Cache size too small for workload
 2. Too many unique queries
 3. Large system prompts causing memory pressure
 
 **Solutions**:
+
 ```bash
 # Increase cache size
 VLLM_CACHE_SIZE=1024 anyclaude
@@ -393,21 +415,21 @@ ANYCLAUDE_DEBUG=1 anyclaude | grep "Cached Items"
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VLLM_CACHE_SIZE` | 256 | Cache entry count |
-| `ANYCLAUDE_DEBUG` | 0 | Debug level (0-3) |
-| `VLLM_MLX_URL` | http://localhost:8081/v1 | Server URL |
-| `VLLM_MLX_MODEL` | current-model | Model name |
+| Variable          | Default                  | Description       |
+| ----------------- | ------------------------ | ----------------- |
+| `VLLM_CACHE_SIZE` | 256                      | Cache entry count |
+| `ANYCLAUDE_DEBUG` | 0                        | Debug level (0-3) |
+| `VLLM_MLX_URL`    | http://localhost:8081/v1 | Server URL        |
+| `VLLM_MLX_MODEL`  | current-model            | Model name        |
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `scripts/vllm-mlx-server.py` | vLLM server with LRU cache |
-| `src/cache-monitor.ts` | Metrics tracking |
-| `src/anthropic-proxy.ts` | Proxy with tool ordering |
-| `src/main.ts` | Entry point with exit handler |
+| File                         | Purpose                       |
+| ---------------------------- | ----------------------------- |
+| `scripts/vllm-mlx-server.py` | vLLM server with LRU cache    |
+| `src/cache-monitor.ts`       | Metrics tracking              |
+| `src/anthropic-proxy.ts`     | Proxy with tool ordering      |
+| `src/main.ts`                | Entry point with exit handler |
 
 ### Files Modified
 

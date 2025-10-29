@@ -46,6 +46,7 @@ tests/genai/
 ### Prerequisites
 
 1. **LMStudio must be running**
+
    ```bash
    # Start LMStudio server (default: http://localhost:1234)
    ```
@@ -120,7 +121,10 @@ Testing: Basic text completion...
 ### Pattern: Model Compatibility Test
 
 ```javascript
-const { runGenAITest, makeAnyclaudeRequest } = require("../framework/lmstudio-harness");
+const {
+  runGenAITest,
+  makeAnyclaudeRequest,
+} = require("../framework/lmstudio-harness");
 
 async function test_my_feature() {
   return await runGenAITest({
@@ -252,13 +256,13 @@ assert.strictEqual(response, "TypeScript is a typed superset...");
 
 ```javascript
 // Simple completion
-timeout: 30000  // 30 seconds
+timeout: 30000; // 30 seconds
 
 // Multi-step task
-timeout: 120000 // 2 minutes
+timeout: 120000; // 2 minutes
 
 // Complex workflow
-timeout: 300000 // 5 minutes
+timeout: 300000; // 5 minutes
 ```
 
 ---
@@ -266,15 +270,18 @@ timeout: 300000 // 5 minutes
 ## Running in CI/CD
 
 ### Development
+
 - Run manually when testing model-specific changes
 - Run before commits that affect prompt/schema changes
 
 ### Pre-Release
+
 - Run full GenAI suite with representative models
 - Collect and analyze metrics
 - Verify no regressions
 
 ### Continuous Integration
+
 - **Don't** run on every commit (too slow)
 - **Do** run nightly builds with qwen3-coder, llama-3.1
 - **Do** run before major releases

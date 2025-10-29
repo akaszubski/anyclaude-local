@@ -21,6 +21,7 @@ pip install mlx mlx-lm
 ```
 
 **Expected output**:
+
 ```
 Successfully installed mlx-0.29.3 mlx-lm-0.28.3 mlx-metal-0.29.3 ...
 ```
@@ -34,6 +35,7 @@ python3 -m mlx_lm server --port 8081 &
 ```
 
 **Expected output**:
+
 ```
 Starting httpd at 127.0.0.1 on port 8081...
 ```
@@ -63,12 +65,12 @@ anyclaude
 
 ### Performance Characteristics
 
-| Scenario | Time | Notes |
-|----------|------|-------|
-| First request (cold) | ~30 seconds | System prompt computed from scratch |
-| Follow-up (KV cached) | ~0.3 seconds | System prompt reused (100x faster!) |
-| Context size | Up to 128K | Depends on model and VRAM |
-| Hardware | Apple Silicon only | M1/M2/M3 Macs (no Intel support) |
+| Scenario              | Time               | Notes                               |
+| --------------------- | ------------------ | ----------------------------------- |
+| First request (cold)  | ~30 seconds        | System prompt computed from scratch |
+| Follow-up (KV cached) | ~0.3 seconds       | System prompt reused (100x faster!) |
+| Context size          | Up to 128K         | Depends on model and VRAM           |
+| Hardware              | Apple Silicon only | M1/M2/M3 Macs (no Intel support)    |
 
 ---
 
@@ -79,6 +81,7 @@ anyclaude
 **Cause**: Python 3.14 is too new; MLX only supports 3.11-3.13
 
 **Solution**:
+
 ```bash
 # Find Python 3.11 on your system
 which python3.11
@@ -94,6 +97,7 @@ source ~/.venv-mlx/bin/activate
 **Cause**: Old pip version trying to resolve dependencies
 
 **Solution**:
+
 ```bash
 pip install --upgrade pip setuptools wheel
 pip install mlx mlx-lm
@@ -121,6 +125,7 @@ python3 -m mlx_lm server --port 8081
 ```
 
 **Available models** (auto-downloaded):
+
 - `mlx-community/Llama-3.2-1B-Instruct-4bit`
 - `mlx-community/Qwen2.5-7B-Instruct-4bit`
 - And many more
@@ -236,12 +241,14 @@ npm run dev
 Claude Code sends ~18,490 tokens in system prompt every request.
 
 **LMStudio (no KV cache)**:
+
 - Request 1: 30s (full computation)
 - Request 2: 30s (full recomputation)
 - Request 3: 30s (full recomputation)
 - **Total for 3 queries**: 90 seconds
 
 **MLX-LM (with KV cache)**:
+
 - Request 1: 30s (full computation, cached)
 - Request 2: 0.3s (KV cache reuse)
 - Request 3: 0.3s (KV cache reuse)
@@ -319,6 +326,7 @@ powermetrics --samplers gpu_power -n 1
 ### When to Use MLX-LM
 
 ✅ **Use MLX-LM for**:
+
 - Code analysis and review
 - Documentation generation
 - Brainstorming and planning
@@ -326,6 +334,7 @@ powermetrics --samplers gpu_power -n 1
 - Explanation and teaching
 
 ❌ **Don't use MLX-LM for**:
+
 - File writing/editing (no tool support)
 - Git operations (no tool support)
 - Web search (no tool support)
@@ -334,6 +343,7 @@ powermetrics --samplers gpu_power -n 1
 ### When to Use LMStudio
 
 ✅ **Use LMStudio for**:
+
 - File creation and editing
 - Git operations
 - Web search
@@ -341,6 +351,7 @@ powermetrics --samplers gpu_power -n 1
 - Full Claude Code features
 
 ❌ **Don't use LMStudio for**:
+
 - Performance-critical tasks (no KV cache)
 - Analysis-only work (slower than MLX-LM)
 
@@ -403,6 +414,7 @@ python3 -m mlx_lm server \
 **Cause**: Model too large for available VRAM
 
 **Solution**:
+
 1. Try smaller model (e.g., 1B instead of 7B)
 2. Use 4-bit quantization
 3. Check available VRAM
@@ -412,6 +424,7 @@ python3 -m mlx_lm server \
 **Cause**: Running on CPU instead of GPU
 
 **Solution**: Check that Metal GPU is being used
+
 ```bash
 # Should see "Metal" in device info
 python3 -c "import mlx.core as mx; print(mx.metal.is_available())"
@@ -423,6 +436,7 @@ python3 -c "import mlx.core as mx; print(mx.metal.is_available())"
 **Cause**: Wrong URL or port
 
 **Solution**:
+
 ```bash
 # Check server is running
 curl http://localhost:8081/v1/models
@@ -460,4 +474,3 @@ export MLX_LM_URL="http://localhost:8081/v1"
 2. **Measure KV cache benefit**: Confirm 100x speedup on follow-ups
 3. **Use with Claude Code**: Try full MLX-LM mode in production
 4. **Monitor**: Track performance over time, optimize as needed
-

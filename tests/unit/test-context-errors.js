@@ -108,7 +108,10 @@ function testTruncationCreatesInvalidSequence() {
   // Detect invalid sequences
   let hasInvalid = false;
   for (let i = 1; i < messages.length; i++) {
-    if (messages[i].role === messages[i - 1].role && messages[i].role === "assistant") {
+    if (
+      messages[i].role === messages[i - 1].role &&
+      messages[i].role === "assistant"
+    ) {
       hasInvalid = true;
     }
   }
@@ -128,7 +131,10 @@ function testCacheMetricsCalculationFails() {
     error = e;
   }
   // This will cause type error
-  assert.ok(error !== null || typeof cacheData.hits !== "number", "Invalid cache data");
+  assert.ok(
+    error !== null || typeof cacheData.hits !== "number",
+    "Invalid cache data"
+  );
   console.log("   ✅ Invalid cache data detected");
   passed++;
 }

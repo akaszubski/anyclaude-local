@@ -115,10 +115,7 @@ function setupTestFixtures() {
     path.join(TEST_FIXTURES_DIR, "old-broken-format.json"),
     JSON.stringify(oldBrokenTrace, null, 2)
   );
-  fs.writeFileSync(
-    path.join(TEST_FIXTURES_DIR, "invalid.json"),
-    invalidJson
-  );
+  fs.writeFileSync(path.join(TEST_FIXTURES_DIR, "invalid.json"), invalidJson);
   fs.writeFileSync(
     path.join(TEST_FIXTURES_DIR, "missing-body.json"),
     JSON.stringify(missingBody, null, 2)
@@ -215,7 +212,9 @@ function test_analyze_trace_with_tools() {
 
   assert.strictEqual(
     result.tokens.totalTokens,
-    result.tokens.systemTokens + result.tokens.toolTokens + result.tokens.messageTokens,
+    result.tokens.systemTokens +
+      result.tokens.toolTokens +
+      result.tokens.messageTokens,
     "Total should equal sum of parts"
   );
 
@@ -289,9 +288,13 @@ function test_list_traces() {
 }
 
 function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("TRACE ANALYZER UNIT TESTS");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("");
 
   try {
@@ -307,15 +310,23 @@ function runTests() {
     test_list_traces();
 
     console.log("");
-    console.log("================================================================================");
+    console.log(
+      "================================================================================"
+    );
     console.log("✓ ALL TRACE ANALYZER TESTS PASSED");
-    console.log("================================================================================");
+    console.log(
+      "================================================================================"
+    );
     return 0;
   } catch (error) {
     console.error("");
-    console.error("================================================================================");
+    console.error(
+      "================================================================================"
+    );
     console.error("✗ TEST FAILED");
-    console.error("================================================================================");
+    console.error(
+      "================================================================================"
+    );
     console.error(error);
     return 1;
   } finally {

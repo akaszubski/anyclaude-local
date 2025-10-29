@@ -24,13 +24,14 @@ class MockProxy {
 
     if (!request.url) throw new Error("Missing URL");
     if (!request.method) throw new Error("Missing method");
-    if (request.method === "POST" && !request.body) throw new Error("Missing body");
+    if (request.method === "POST" && !request.body)
+      throw new Error("Missing body");
 
     return {
       method: request.method,
       url: request.url,
       headers: request.headers || {},
-      body: request.body || null
+      body: request.body || null,
     };
   }
 
@@ -40,7 +41,7 @@ class MockProxy {
     return {
       statusCode: response.statusCode || 200,
       headers: response.headers || { "content-type": "application/json" },
-      body: response.body || ""
+      body: response.body || "",
     };
   }
 
@@ -50,7 +51,7 @@ class MockProxy {
     const backendResponse = {
       statusCode: 200,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ success: true, request: processedRequest })
+      body: JSON.stringify({ success: true, request: processedRequest }),
     };
     return this.transformResponse(backendResponse);
   }
@@ -62,8 +63,11 @@ function testBasicProxyRequest() {
   const request = {
     method: "POST",
     url: "/v1/messages",
-    headers: { "content-type": "application/json", "authorization": "Bearer token" },
-    body: JSON.stringify({ messages: [{ role: "user", content: "Hi" }] })
+    headers: {
+      "content-type": "application/json",
+      authorization: "Bearer token",
+    },
+    body: JSON.stringify({ messages: [{ role: "user", content: "Hi" }] }),
   };
 
   const processed = proxy.handleRequest(request);
@@ -96,7 +100,7 @@ function testResponseTransformation() {
   const backendResponse = {
     statusCode: 200,
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ result: "success" })
+    body: JSON.stringify({ result: "success" }),
   };
 
   const transformed = proxy.transformResponse(backendResponse);
@@ -113,7 +117,7 @@ function testProxyCycle() {
     method: "POST",
     url: "/v1/messages",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ test: true })
+    body: JSON.stringify({ test: true }),
   };
 
   const processed = proxy.handleRequest(request);
@@ -132,7 +136,7 @@ function testMultipleRequests() {
       method: "POST",
       url: "/v1/messages",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ message: i })
+      body: JSON.stringify({ message: i }),
     });
   }
 
@@ -146,16 +150,16 @@ function testHeaderPreservation() {
   const proxy = new MockProxy();
   const headers = {
     "content-type": "application/json",
-    "authorization": "Bearer abc123",
+    authorization: "Bearer abc123",
     "user-agent": "claude-code",
-    "x-custom": "value"
+    "x-custom": "value",
   };
 
   const request = {
     method: "POST",
     url: "/test",
     headers: headers,
-    body: "{}"
+    body: "{}",
   };
 
   const processed = proxy.handleRequest(request);
@@ -171,16 +175,16 @@ function testBodyPreservation() {
     model: "gpt-4",
     messages: [
       { role: "system", content: "You are helpful" },
-      { role: "user", content: "Hello" }
+      { role: "user", content: "Hello" },
     ],
-    temperature: 0.7
+    temperature: 0.7,
   });
 
   const request = {
     method: "POST",
     url: "/v1/messages",
     headers: { "content-type": "application/json" },
-    body: body
+    body: body,
   };
 
   const processed = proxy.handleRequest(request);
@@ -196,7 +200,11 @@ function testResponseHeaderDefaults() {
 
   const transformed = proxy.transformResponse(response);
   assert.ok(transformed.headers, "Headers present");
-  assert.strictEqual(transformed.headers["content-type"], "application/json", "Default content-type set");
+  assert.strictEqual(
+    transformed.headers["content-type"],
+    "application/json",
+    "Default content-type set"
+  );
   console.log("   ✅ Response header defaults work");
   passed++;
 }
@@ -225,7 +233,7 @@ function testRequestLogging() {
     method: "GET",
     url: "/health",
     headers: {},
-    body: null
+    body: null,
   };
 
   proxy.handleRequest(request);
@@ -234,7 +242,11 @@ function testRequestLogging() {
 
   assert.strictEqual(proxy.requestLog.length, 1, "Request logged");
   assert.strictEqual(proxy.responseLog.length, 1, "Response logged");
-  assert.strictEqual(proxy.requestLog[0].url, "/health", "Request details logged");
+  assert.strictEqual(
+    proxy.requestLog[0].url,
+    "/health",
+    "Request details logged"
+  );
   console.log("   ✅ Request/response logging works");
   passed++;
 }

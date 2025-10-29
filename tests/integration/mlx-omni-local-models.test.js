@@ -48,7 +48,9 @@ describe("MLX-Omni Local Models Integration", () => {
       };
 
       const output = execSync(`node ${distPath}`, { env, encoding: "utf8" });
-      expect(output).toContain("[anyclaude] Model: /Users/user/models/Qwen3-Coder-30B-4bit");
+      expect(output).toContain(
+        "[anyclaude] Model: /Users/user/models/Qwen3-Coder-30B-4bit"
+      );
     });
 
     test("should accept Linux home directory paths", () => {
@@ -60,7 +62,9 @@ describe("MLX-Omni Local Models Integration", () => {
       };
 
       const output = execSync(`node ${distPath}`, { env, encoding: "utf8" });
-      expect(output).toContain("[anyclaude] Model: /home/user/models/Qwen3-Coder-30B-4bit");
+      expect(output).toContain(
+        "[anyclaude] Model: /home/user/models/Qwen3-Coder-30B-4bit"
+      );
     });
 
     test("should accept Windows absolute paths", () => {
@@ -134,7 +138,9 @@ describe("MLX-Omni Local Models Integration", () => {
         output = error.message;
       }
 
-      expect(output).toContain("MLX-Omni mode does NOT support HuggingFace model IDs");
+      expect(output).toContain(
+        "MLX-Omni mode does NOT support HuggingFace model IDs"
+      );
       expect(output).toContain("MLX-Omni only works with local model files");
       expect(output).toContain("use MLX-LM or LMStudio mode instead");
     });
@@ -155,7 +161,9 @@ describe("MLX-Omni Local Models Integration", () => {
         output = error.message;
       }
 
-      expect(output).toContain("MLX_OMNI_MODEL or MLX_MODEL environment variable");
+      expect(output).toContain(
+        "MLX_OMNI_MODEL or MLX_MODEL environment variable"
+      );
       expect(output).toContain("local file path");
     });
   });

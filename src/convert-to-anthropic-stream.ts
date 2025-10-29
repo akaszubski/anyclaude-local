@@ -22,7 +22,12 @@ export function convertToAnthropicStream(
   let messageStopSent = false; // Track if message_stop has been sent
   const streamedToolIds = new Set<string>(); // Track tool IDs we've already sent via streaming
   const toolsWithoutDeltas = new Map<string, { index: number; name: string }>(); // Track tools that got tool-input-end without deltas
-  let currentStreamingTool: { id: string; name: string; index: number; receivedDelta: boolean } | null = null; // Track current streaming tool
+  let currentStreamingTool: {
+    id: string;
+    name: string;
+    index: number;
+    receivedDelta: boolean;
+  } | null = null; // Track current streaming tool
 
   const transform = new TransformStream<
     TextStreamPart<Record<string, Tool>>,
@@ -30,7 +35,10 @@ export function convertToAnthropicStream(
   >({
     transform(chunk, controller) {
       chunkCount++;
-      debug(1, `[Stream Conversion] Received chunk ${chunkCount} of type: ${chunk.type}`);
+      debug(
+        1,
+        `[Stream Conversion] Received chunk ${chunkCount} of type: ${chunk.type}`
+      );
 
       // Log raw chunks from AI SDK to help debug LMStudio responses
       // Log first 10 chunks at level 1, then all chunks at verbose level 2
@@ -134,14 +142,23 @@ export function convertToAnthropicStream(
           const toolId = (chunk as any).id;
           const toolName = (chunk as any).toolName;
 
-          if (!toolId || !toolName || typeof toolId !== 'string' || typeof toolName !== 'string') {
-            debug(1, `[Tool Input Start] ⚠️  INVALID tool start event - missing or invalid id/name:`, {
-              id: toolId,
-              toolName: toolName,
-              idType: typeof toolId,
-              nameType: typeof toolName,
-              fullChunk: chunk,
-            });
+          if (
+            !toolId ||
+            !toolName ||
+            typeof toolId !== "string" ||
+            typeof toolName !== "string"
+          ) {
+            debug(
+              1,
+              `[Tool Input Start] ⚠️  INVALID tool start event - missing or invalid id/name:`,
+              {
+                id: toolId,
+                toolName: toolName,
+                idType: typeof toolId,
+                nameType: typeof toolName,
+                fullChunk: chunk,
+              }
+            );
             break; // Skip malformed tool call
           }
 
@@ -210,7 +227,10 @@ export function convertToAnthropicStream(
           if (currentStreamingTool && !currentStreamingTool.receivedDelta) {
             // No deltas received! This means the tool parameters will come in the tool-call chunk.
             // Save this tool to handle later.
-            debug(1, `[Tool Input End] No deltas received for ${currentStreamingTool.name}, waiting for tool-call chunk`);
+            debug(
+              1,
+              `[Tool Input End] No deltas received for ${currentStreamingTool.name}, waiting for tool-call chunk`
+            );
             toolsWithoutDeltas.set(currentStreamingTool.id, {
               index: currentStreamingTool.index,
               name: currentStreamingTool.name,
@@ -234,14 +254,23 @@ export function convertToAnthropicStream(
           const toolCallId = (chunk as any).toolCallId;
           const toolName = (chunk as any).toolName;
 
-          if (!toolCallId || !toolName || typeof toolCallId !== 'string' || typeof toolName !== 'string') {
-            debug(1, `[Tool Call] ⚠️  INVALID tool-call chunk - missing or invalid toolCallId/toolName:`, {
-              toolCallId: toolCallId,
-              toolName: toolName,
-              toolCallIdType: typeof toolCallId,
-              toolNameType: typeof toolName,
-              fullChunkKeys: Object.keys(chunk),
-            });
+          if (
+            !toolCallId ||
+            !toolName ||
+            typeof toolCallId !== "string" ||
+            typeof toolName !== "string"
+          ) {
+            debug(
+              1,
+              `[Tool Call] ⚠️  INVALID tool-call chunk - missing or invalid toolCallId/toolName:`,
+              {
+                toolCallId: toolCallId,
+                toolName: toolName,
+                toolCallIdType: typeof toolCallId,
+                toolNameType: typeof toolName,
+                fullChunkKeys: Object.keys(chunk),
+              }
+            );
             break; // Skip malformed tool call
           }
 
@@ -249,7 +278,7 @@ export function convertToAnthropicStream(
           debug(1, `[Tool Call Debug] Received tool-call chunk:`, {
             toolCallId: toolCallId,
             toolName: toolName,
-            hasInput: 'input' in (chunk as any),
+            hasInput: "input" in (chunk as any),
             inputType: typeof (chunk as any).input,
             inputValue: (chunk as any).input,
             fullChunkKeys: Object.keys(chunk),
@@ -260,20 +289,29 @@ export function convertToAnthropicStream(
           if (pendingTool) {
             // This tool was started but got tool-input-end without deltas!
             // Now we have the actual input from the tool-call chunk.
-            debug(1, `[Tool Call] Completing tool ${toolName} that had no deltas`);
+            debug(
+              1,
+              `[Tool Call] Completing tool ${toolName} that had no deltas`
+            );
 
             const toolInput = (chunk as any).input;
-            if (toolInput && typeof toolInput === 'object') {
+            if (toolInput && typeof toolInput === "object") {
               // Send the complete input as a single delta
               controller.enqueue({
                 type: "content_block_delta",
                 index: pendingTool.index,
-                delta: { type: "input_json_delta", partial_json: JSON.stringify(toolInput) },
+                delta: {
+                  type: "input_json_delta",
+                  partial_json: JSON.stringify(toolInput),
+                },
               });
             }
 
             // Now close the block
-            controller.enqueue({ type: "content_block_stop", index: pendingTool.index });
+            controller.enqueue({
+              type: "content_block_stop",
+              index: pendingTool.index,
+            });
             index = pendingTool.index + 1;
 
             // Remove from pending and mark as streamed
@@ -298,13 +336,17 @@ export function convertToAnthropicStream(
           const toolInput = (chunk as any).input;
 
           // Defensive: Ensure input exists and is valid
-          if (!toolInput || typeof toolInput !== 'object') {
-            debug(1, `[Tool Call] ⚠️  Missing or invalid input for ${toolName}:`, {
-              toolCallId: toolCallId,
-              input: toolInput,
-              chunkType: typeof toolInput,
-              entireChunk: chunk,
-            });
+          if (!toolInput || typeof toolInput !== "object") {
+            debug(
+              1,
+              `[Tool Call] ⚠️  Missing or invalid input for ${toolName}:`,
+              {
+                toolCallId: toolCallId,
+                input: toolInput,
+                chunkType: typeof toolInput,
+                entireChunk: chunk,
+              }
+            );
             // Use empty object as fallback
             controller.enqueue({
               type: "content_block_start",
@@ -427,7 +469,10 @@ export function convertToAnthropicStream(
       // Safety net: ensure message_stop is always sent
       // This handles cases where the AI SDK doesn't send a 'finish' event
       if (!messageStopSent) {
-        debug(1, `[Stream Conversion] ⚠️  No finish event received - sending fallback message_stop`);
+        debug(
+          1,
+          `[Stream Conversion] ⚠️  No finish event received - sending fallback message_stop`
+        );
         controller.enqueue({ type: "message_stop" });
         messageStopSent = true;
       }

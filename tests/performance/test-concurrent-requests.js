@@ -23,7 +23,12 @@ class RequestQueue {
 
   enqueue(request) {
     const id = this.nextId++;
-    const queuedRequest = { id, ...request, status: "queued", timestamp: Date.now() };
+    const queuedRequest = {
+      id,
+      ...request,
+      status: "queued",
+      timestamp: Date.now(),
+    };
     this.pending.push(queuedRequest);
     return id;
   }
@@ -41,7 +46,12 @@ class RequestQueue {
   completeRequest(id, result) {
     if (this.active.has(id)) {
       this.active.delete(id);
-      const completed = { id, status: "completed", result, timestamp: Date.now() };
+      const completed = {
+        id,
+        status: "completed",
+        result,
+        timestamp: Date.now(),
+      };
       this.completed.push(completed);
       return true;
     }
@@ -53,7 +63,7 @@ class RequestQueue {
       pending: this.pending.length,
       active: this.active.size,
       completed: this.completed.length,
-      total: this.nextId
+      total: this.nextId,
     };
   }
 
@@ -72,7 +82,7 @@ class RequestProcessor {
     const result = {
       request_id: request.id,
       processed_at: Date.now(),
-      response: { status: "ok", data: request.data }
+      response: { status: "ok", data: request.data },
     };
     this.processedRequests.push(result);
     return result;
@@ -224,7 +234,9 @@ function testProcessingThroughput() {
   const elapsed = Date.now() - startTime;
   assert.strictEqual(processingCount, 100, "All processed");
   assert.ok(elapsed < 1000, "Processing is fast"); // Shouldn't take >1s
-  console.log(`   ✅ Processing throughput works (100 requests in ${elapsed}ms)`);
+  console.log(
+    `   ✅ Processing throughput works (100 requests in ${elapsed}ms)`
+  );
   passed++;
 }
 
@@ -238,8 +250,16 @@ function testRequestIsolation() {
   const result1 = processor.processRequest(req1);
   const result2 = processor.processRequest(req2);
 
-  assert.notStrictEqual(result1.request_id, result2.request_id, "Different IDs");
-  assert.notStrictEqual(result1.response, result2.response, "Different responses");
+  assert.notStrictEqual(
+    result1.request_id,
+    result2.request_id,
+    "Different IDs"
+  );
+  assert.notStrictEqual(
+    result1.response,
+    result2.response,
+    "Different responses"
+  );
   console.log("   ✅ Request isolation works");
   passed++;
 }

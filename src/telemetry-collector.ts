@@ -130,10 +130,7 @@ export class TelemetryCollector {
 
     // Write to file (JSONL format - one JSON per line)
     try {
-      fs.appendFileSync(
-        this.metricsFile,
-        JSON.stringify(metric) + "\n"
-      );
+      fs.appendFileSync(this.metricsFile, JSON.stringify(metric) + "\n");
     } catch (error) {
       console.error("[telemetry] Failed to write metric:", error);
     }
@@ -143,7 +140,7 @@ export class TelemetryCollector {
     const statusEmoji = metric.status === "success" ? "✓" : "✗";
     console.log(
       `[telemetry] ${statusEmoji} ${metric.provider}/${metric.model} - ` +
-      `${metric.latency_ms}ms (${cacheStatus})`
+        `${metric.latency_ms}ms (${cacheStatus})`
     );
   }
 
@@ -152,23 +149,31 @@ export class TelemetryCollector {
       return this.createEmptySummary();
     }
 
-    const successful = this.metrics.filter(m => m.status === "success");
-    const failed = this.metrics.filter(m => m.status === "error");
-    const timeouts = this.metrics.filter(m => m.status === "timeout");
+    const successful = this.metrics.filter((m) => m.status === "success");
+    const failed = this.metrics.filter((m) => m.status === "error");
+    const timeouts = this.metrics.filter((m) => m.status === "timeout");
 
-    const latencies = successful.map(m => m.latency_ms).sort((a, b) => a - b);
+    const latencies = successful.map((m) => m.latency_ms).sort((a, b) => a - b);
 
-    const cacheHits = this.metrics.filter(m => m.cache_hit).length;
-    const cacheHitRate = this.metrics.length > 0
-      ? (cacheHits / this.metrics.length) * 100
-      : 0;
+    const cacheHits = this.metrics.filter((m) => m.cache_hit).length;
+    const cacheHitRate =
+      this.metrics.length > 0 ? (cacheHits / this.metrics.length) * 100 : 0;
 
-    const totalInputTokens = this.metrics.reduce((sum, m) => sum + m.message_tokens, 0);
-    const totalOutputTokens = this.metrics.reduce((sum, m) => sum + m.response_tokens, 0);
-    const totalToolCalls = this.metrics.reduce((sum, m) => sum + m.tool_calls_made, 0);
+    const totalInputTokens = this.metrics.reduce(
+      (sum, m) => sum + m.message_tokens,
+      0
+    );
+    const totalOutputTokens = this.metrics.reduce(
+      (sum, m) => sum + m.response_tokens,
+      0
+    );
+    const totalToolCalls = this.metrics.reduce(
+      (sum, m) => sum + m.tool_calls_made,
+      0
+    );
 
-    const providersUsed = [...new Set(this.metrics.map(m => m.provider))];
-    const modelsUsed = [...new Set(this.metrics.map(m => m.model))];
+    const providersUsed = [...new Set(this.metrics.map((m) => m.provider))];
+    const modelsUsed = [...new Set(this.metrics.map((m) => m.model))];
 
     const endTime = Date.now();
     const durationMs = endTime - this.sessionStartTime;
@@ -185,9 +190,10 @@ export class TelemetryCollector {
       timeout_requests: timeouts.length,
 
       total_latency_ms: latencies.reduce((a, b) => a + b, 0),
-      avg_latency_ms: latencies.length > 0
-        ? latencies.reduce((a, b) => a + b, 0) / latencies.length
-        : 0,
+      avg_latency_ms:
+        latencies.length > 0
+          ? latencies.reduce((a, b) => a + b, 0) / latencies.length
+          : 0,
       min_latency_ms: latencies[0] || 0,
       max_latency_ms: latencies[latencies.length - 1] || 0,
       p50_latency_ms: this.percentile(latencies, 50),
@@ -261,12 +267,18 @@ export class TelemetryCollector {
 
     console.log("Performance:");
     console.log(`  Avg latency: ${summary.avg_latency_ms.toFixed(0)}ms`);
-    console.log(`  Min/Max: ${summary.min_latency_ms}ms / ${summary.max_latency_ms}ms`);
-    console.log(`  P95/P99: ${summary.p95_latency_ms.toFixed(0)}ms / ${summary.p99_latency_ms.toFixed(0)}ms`);
+    console.log(
+      `  Min/Max: ${summary.min_latency_ms}ms / ${summary.max_latency_ms}ms`
+    );
+    console.log(
+      `  P95/P99: ${summary.p95_latency_ms.toFixed(0)}ms / ${summary.p99_latency_ms.toFixed(0)}ms`
+    );
     console.log("");
 
     console.log("Cache Performance:");
-    console.log(`  Cache hits: ${summary.cache_hits} (${summary.cache_hit_rate.toFixed(1)}%)`);
+    console.log(
+      `  Cache hits: ${summary.cache_hits} (${summary.cache_hit_rate.toFixed(1)}%)`
+    );
     console.log("");
 
     console.log("Tokens:");
@@ -276,11 +288,14 @@ export class TelemetryCollector {
     console.log("");
 
     console.log("Models:");
-    summary.models_used.forEach(model => console.log(`  - ${model}`));
+    summary.models_used.forEach((model) => console.log(`  - ${model}`));
     console.log("");
 
     // Save summary to JSON file
-    const summaryFile = this.metricsFile.replace("-metrics.jsonl", "-summary.json");
+    const summaryFile = this.metricsFile.replace(
+      "-metrics.jsonl",
+      "-summary.json"
+    );
     fs.writeFileSync(summaryFile, JSON.stringify(summary, null, 2));
     console.log(`📊 Full summary saved to: ${summaryFile}`);
     console.log(`📋 All metrics saved to: ${this.metricsFile}`);
@@ -310,9 +325,9 @@ export class TelemetryCollector {
     const lines = fs
       .readFileSync(metricsFile, "utf-8")
       .split("\n")
-      .filter(line => line.trim());
+      .filter((line) => line.trim());
 
-    const metrics: RequestMetric[] = lines.map(line => JSON.parse(line));
+    const metrics: RequestMetric[] = lines.map((line) => JSON.parse(line));
 
     console.log("\n📊 Telemetry Analysis");
     console.log("════════════════════════════════════════");
@@ -322,34 +337,42 @@ export class TelemetryCollector {
     const byProvider = this.groupBy(metrics, "provider");
     console.log("By Provider:");
     Object.entries(byProvider).forEach(([provider, items]) => {
-      const avg = (items as RequestMetric[]).reduce((sum, m) => sum + m.latency_ms, 0) / items.length;
-      console.log(`  ${provider}: ${items.length} requests, avg ${avg.toFixed(0)}ms`);
+      const avg =
+        (items as RequestMetric[]).reduce((sum, m) => sum + m.latency_ms, 0) /
+        items.length;
+      console.log(
+        `  ${provider}: ${items.length} requests, avg ${avg.toFixed(0)}ms`
+      );
     });
     console.log("");
 
     // Cache effectiveness
-    const cacheHits = metrics.filter(m => m.cache_hit).length;
-    console.log(`Cache Hits: ${cacheHits}/${metrics.length} (${(cacheHits/metrics.length*100).toFixed(1)}%)`);
+    const cacheHits = metrics.filter((m) => m.cache_hit).length;
+    console.log(
+      `Cache Hits: ${cacheHits}/${metrics.length} (${((cacheHits / metrics.length) * 100).toFixed(1)}%)`
+    );
     console.log("");
 
     // Error analysis
-    const errors = metrics.filter(m => m.status !== "success");
+    const errors = metrics.filter((m) => m.status !== "success");
     if (errors.length > 0) {
       console.log("Errors:");
-      errors.forEach(e => {
+      errors.forEach((e) => {
         console.log(`  - ${e.error_message}`);
       });
       console.log("");
     }
 
     // Slowest requests
-    const slowest = metrics.sort((a, b) => b.latency_ms - a.latency_ms).slice(0, 5);
+    const slowest = metrics
+      .sort((a, b) => b.latency_ms - a.latency_ms)
+      .slice(0, 5);
     console.log("Slowest Requests:");
-    slowest.forEach(m => {
+    slowest.forEach((m) => {
       const cacheStatus = m.cache_hit ? "cached" : "uncached";
       console.log(
         `  ${m.latency_ms}ms - ${m.model} (${cacheStatus}, ` +
-        `${m.message_count} messages)`
+          `${m.message_count} messages)`
       );
     });
   }
@@ -358,13 +381,16 @@ export class TelemetryCollector {
     items: T[],
     key: keyof T
   ): Record<string, T[]> {
-    return items.reduce((result, item) => {
-      const k = String(item[key]);
-      if (!result[k]) {
-        result[k] = [];
-      }
-      result[k].push(item);
-      return result;
-    }, {} as Record<string, T[]>);
+    return items.reduce(
+      (result, item) => {
+        const k = String(item[key]);
+        if (!result[k]) {
+          result[k] = [];
+        }
+        result[k].push(item);
+        return result;
+      },
+      {} as Record<string, T[]>
+    );
   }
 }

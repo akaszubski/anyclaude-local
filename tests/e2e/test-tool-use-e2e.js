@@ -19,7 +19,7 @@ class ConversationWithTools {
     this.toolResults = [];
     this.tools = new Map([
       ["weather", { name: "weather", description: "Get weather" }],
-      ["calculator", { name: "calculator", description: "Do math" }]
+      ["calculator", { name: "calculator", description: "Do math" }],
     ]);
   }
 
@@ -33,7 +33,7 @@ class ConversationWithTools {
     }
     this.messages.push({
       role: "assistant",
-      content: [{ type: "tool_use", name: toolName, input }]
+      content: [{ type: "tool_use", name: toolName, input }],
     });
   }
 
@@ -41,7 +41,7 @@ class ConversationWithTools {
     this.toolResults.push({ tool: toolName, result });
     this.messages.push({
       role: "user",
-      content: [{ type: "tool_result", tool: toolName, content: result }]
+      content: [{ type: "tool_result", tool: toolName, content: result }],
     });
   }
 
@@ -57,7 +57,7 @@ class ConversationWithTools {
     return {
       messages: this.messages,
       toolResults: this.toolResults,
-      toolsUsed: this.toolResults.map(t => t.tool)
+      toolsUsed: this.toolResults.map((t) => t.tool),
     };
   }
 }
@@ -70,7 +70,10 @@ function testSimpleToolUse() {
   conv.addToolCall("weather", { location: "New York" });
 
   assert.strictEqual(conv.messages.length, 2, "Messages recorded");
-  assert.ok(conv.getLastMessage().content[0].type === "tool_use", "Tool call recorded");
+  assert.ok(
+    conv.getLastMessage().content[0].type === "tool_use",
+    "Tool call recorded"
+  );
   console.log("   ✅ Simple tool use works");
   passed++;
 }
@@ -169,7 +172,7 @@ function testToolResultContent() {
   const complexResult = JSON.stringify({
     temperature: 72,
     condition: "Clear",
-    humidity: 65
+    humidity: 65,
   });
 
   conv.addMessage("user", "Get detailed weather");
@@ -177,7 +180,10 @@ function testToolResultContent() {
   conv.addToolResult("weather", complexResult);
 
   const results = conv.getToolResults();
-  assert.ok(results[0].result.includes("temperature"), "Complex result preserved");
+  assert.ok(
+    results[0].result.includes("temperature"),
+    "Complex result preserved"
+  );
   console.log("   ✅ Tool result content works");
   passed++;
 }

@@ -93,6 +93,7 @@ ANYCLAUDE_DEBUG=2 ./scripts/debug/start-local.sh
    - **Check:** LMStudio server logs, API endpoint accessibility
 
 3. **Unhandled chunk type:**
+
    ```
    [Stream Conversion] ⚠️  Unhandled chunk type: unknown-type
    ```

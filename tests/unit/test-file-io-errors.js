@@ -265,7 +265,10 @@ function testTimestampCollision() {
   const ts2 = getUniqueTimestamp();
 
   assert.ok(ts1 <= ts2, "Timestamps are sequential or equal");
-  assert.ok(usedTimestamps.has(ts1) || usedTimestamps.has(ts2), "Timestamps tracked");
+  assert.ok(
+    usedTimestamps.has(ts1) || usedTimestamps.has(ts2),
+    "Timestamps tracked"
+  );
   console.log("   ✅ Timestamp collisions handled");
   passed++;
 }
@@ -399,4 +402,8 @@ if (require.main === module) {
   runTests();
 }
 
-module.exports = { testPermissionDeniedOnMkdir, testDiskFullOnWrite, testConcurrentTraceWrites };
+module.exports = {
+  testPermissionDeniedOnMkdir,
+  testDiskFullOnWrite,
+  testConcurrentTraceWrites,
+};

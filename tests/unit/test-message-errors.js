@@ -18,7 +18,7 @@ function testMultipleSystemPrompts() {
     { role: "system", content: "system 1" },
     { role: "system", content: "system 2" },
   ];
-  const systemCount = messages.filter(m => m.role === "system").length;
+  const systemCount = messages.filter((m) => m.role === "system").length;
   assert.ok(systemCount > 1, "Multiple system prompts detected");
   console.log("   ✅ Multiple system prompts detected");
   passed++;
@@ -27,7 +27,8 @@ function testMultipleSystemPrompts() {
 function testEmptyMessageContent() {
   console.log("\n✓ Test 2: Empty message content");
   const message = { role: "user", content: [] };
-  const isEmpty = Array.isArray(message.content) && message.content.length === 0;
+  const isEmpty =
+    Array.isArray(message.content) && message.content.length === 0;
   assert.ok(isEmpty, "Empty content detected");
   console.log("   ✅ Empty messages detected");
   passed++;
@@ -100,9 +101,7 @@ function testUrlFileNotFound() {
 
 function testToolCallNotFound() {
   console.log("\n✓ Test 8: Tool call not found in response");
-  const toolResults = new Map([
-    ["tool-1", { result: "value" }],
-  ]);
+  const toolResults = new Map([["tool-1", { result: "value" }]]);
   const toolId = "tool-2";
   const exists = toolResults.has(toolId);
   assert.ok(!exists, "Missing tool found");
@@ -122,7 +121,7 @@ function testToolResultContentTypeMismatch() {
 
 function testNonUtf8FileData() {
   console.log("\n✓ Test 10: Non-UTF8 file data");
-  const buffer = Buffer.from([0xFF, 0xFE, 0xFD]);
+  const buffer = Buffer.from([0xff, 0xfe, 0xfd]);
   let decoded = null;
   try {
     decoded = buffer.toString("utf8");

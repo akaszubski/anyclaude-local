@@ -93,7 +93,10 @@ function testBackpressureBufferFull() {
     backpressureDetected = true;
   }
 
-  assert.ok(drainListenerAdded || !backpressureDetected, "Should register drain listener on backpressure");
+  assert.ok(
+    drainListenerAdded || !backpressureDetected,
+    "Should register drain listener on backpressure"
+  );
   console.log("   ✅ Backpressure detection works");
   passed++;
 }
@@ -110,7 +113,10 @@ function testUnknownChunkSkipped() {
   const stream = new MockWritableStream({
     write: (chunk) => {
       // Should handle unknown chunk types gracefully
-      if (!chunk.type || ["start", "text-delta", "tool-call"].includes(chunk.type)) {
+      if (
+        !chunk.type ||
+        ["start", "text-delta", "tool-call"].includes(chunk.type)
+      ) {
         return true;
       }
       // Unknown chunk - should skip but not crash
@@ -123,7 +129,11 @@ function testUnknownChunkSkipped() {
   stream.write({ type: "unknown-future-type", data: "something" });
   stream.write({ type: "text-delta", text: " world" });
 
-  assert.strictEqual(stream.getChunkCount(), 3, "All chunks received (known + unknown)");
+  assert.strictEqual(
+    stream.getChunkCount(),
+    3,
+    "All chunks received (known + unknown)"
+  );
   assert.ok(!stream.isClosed, "Stream not closed by unknown chunk");
   console.log("   ✅ Unknown chunks skipped without terminating stream");
   passed++;
@@ -148,8 +158,10 @@ function testDrainListenerCleanup() {
       if (event === "error") errorListener = callback;
     },
     removeListener: (event, callback) => {
-      if ((event === "drain" && callback === drainListener) ||
-          (event === "error" && callback === errorListener)) {
+      if (
+        (event === "drain" && callback === drainListener) ||
+        (event === "error" && callback === errorListener)
+      ) {
         listenersRemoved = true;
       }
     },
@@ -170,7 +182,10 @@ function testDrainListenerCleanup() {
     // Simulate error
     if (errorListener) {
       errorListener(new Error("Test error"));
-      assert.ok(listenersCleaned || listenersRemoved, "Listeners should be cleaned up");
+      assert.ok(
+        listenersCleaned || listenersRemoved,
+        "Listeners should be cleaned up"
+      );
     }
   }
 
@@ -258,7 +273,10 @@ function testToolStateIsolation() {
     toolsWithoutDeltas: new Map(),
   };
 
-  assert.ok(!newStreamState.streamedToolIds.has("tool-1"), "Tool ID from first message not in second");
+  assert.ok(
+    !newStreamState.streamedToolIds.has("tool-1"),
+    "Tool ID from first message not in second"
+  );
   console.log("   ✅ Tool state properly isolated between streams");
   passed++;
 }
@@ -300,7 +318,10 @@ function testCircularReferenceInToolInput() {
   }
 
   assert.ok(stringified && !error, "Circular reference handled with replacer");
-  assert.ok(stringified.includes("[Circular]"), "Circular reference marked in output");
+  assert.ok(
+    stringified.includes("[Circular]"),
+    "Circular reference marked in output"
+  );
   console.log("   ✅ Circular references detected and handled");
   passed++;
 }
@@ -436,4 +457,8 @@ if (require.main === module) {
   runTests();
 }
 
-module.exports = { testBackpressureBufferFull, testUnknownChunkSkipped, testDrainListenerCleanup };
+module.exports = {
+  testBackpressureBufferFull,
+  testUnknownChunkSkipped,
+  testDrainListenerCleanup,
+};

@@ -327,6 +327,7 @@ Create this file in your project root to configure anyclaude:
 ```
 
 **Key fields for vllm-mlx auto-launch:**
+
 - `backend`: Set to `"vllm-mlx"` to use this backend
 - `model`: Full path to your MLX model (e.g., `/Users/you/.../Qwen3-Coder-30B-A3B-Instruct-MLX-4bit`)
   - If model path is configured, anyclaude auto-launches the server
@@ -388,16 +389,19 @@ anyclaude --test-model
 ### Environment Variables
 
 **vLLM-MLX Configuration:**
+
 - `VLLM_MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
 - `VLLM_MLX_MODEL`: Model name/path (overrides config file)
 - `VLLM_MLX_API_KEY`: API key (default: `vllm-mlx`)
 
 **LMStudio Configuration:**
+
 - `LMSTUDIO_URL`: Server URL (default: `http://localhost:1234/v1`)
 - `LMSTUDIO_MODEL`: Model name (default: `current-model`)
 - `LMSTUDIO_API_KEY`: API key (default: `lm-studio`)
 
 **Mode & Debug:**
+
 - `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | vllm-mlx)
 - `ANYCLAUDE_DEBUG`: Debug level (0-3)
 - `ANYCLAUDE_NO_AUTO_LAUNCH`: Disable server auto-launch
@@ -407,6 +411,7 @@ anyclaude --test-model
 ### Troubleshooting
 
 **Server fails to start:**
+
 ```bash
 # Check server logs
 tail ~/.anyclaude/logs/vllm-mlx-server.log
@@ -416,6 +421,7 @@ ANYCLAUDE_DEBUG=2 anyclaude
 ```
 
 **Port already in use:**
+
 ```bash
 # Check what's using port 8081
 lsof -i :8081
@@ -427,11 +433,13 @@ kill -9 <PID>
 ```
 
 **Server takes too long to load:**
+
 - This is normal for large models (30-50 seconds for 30B models)
 - Anyclaude waits up to 2 minutes (120 seconds)
 - Check `~/.anyclaude/logs/vllm-mlx-server.log` for progress
 
 **Responses are truncated mid-stream:**
+
 - This was fixed in v3.0+ by implementing proper backpressure handling
 - The fix includes:
   - Handling `res.write()` return value for backpressure
@@ -448,6 +456,7 @@ Git hooks automate quality checks and prevent regressions from reaching the remo
 ### Pre-commit Hook (Fast Checks)
 
 Runs before allowing commits:
+
 - Type checking (`npm run typecheck`)
 - Format validation
 
@@ -466,6 +475,7 @@ git commit -m "fix: improve performance"
 ### Pre-push Hook (Full Test Suite)
 
 Runs before pushing to remote:
+
 - Unit tests
 - Integration tests
 - **Regression tests** (catches streaming bugs, timeouts, etc.)
@@ -511,6 +521,7 @@ npm test
 ### Why This Matters for Regression Tests
 
 The streaming bug that happened was caught because:
+
 1. Regression tests exist in the codebase
 2. Pre-push hook now runs `npm test` automatically
 3. Future streaming changes won't slip through because tests will fail

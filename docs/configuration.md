@@ -65,8 +65,8 @@ interface AnyclaudeConfig {
 
   // Debug configuration (optional)
   debug?: {
-    level?: 0 | 1 | 2 | 3;        // 0=off, 1=basic, 2=verbose, 3=trace
-    enableTraces?: boolean;        // Save request/response traces
+    level?: 0 | 1 | 2 | 3; // 0=off, 1=basic, 2=verbose, 3=trace
+    enableTraces?: boolean; // Save request/response traces
     enableStreamLogging?: boolean; // Log streaming events
   };
 
@@ -118,6 +118,7 @@ interface AnyclaudeConfig {
 ```
 
 **Options:**
+
 - `enabled` - Whether this backend is available
 - `port` - LMStudio server port (default: 1234)
 - `baseUrl` - LMStudio API endpoint (default: `http://localhost:1234/v1`)
@@ -144,6 +145,7 @@ interface AnyclaudeConfig {
 ```
 
 **Options:**
+
 - `enabled` - Whether this backend is available
 - `port` - MLX-LM server port (default: 8081)
 - `baseUrl` - MLX-LM API endpoint (default: `http://localhost:8081/v1`)
@@ -165,6 +167,7 @@ interface AnyclaudeConfig {
 ```
 
 **Options:**
+
 - `enabled` - Whether this backend is available
 - `description` - User-friendly description
 

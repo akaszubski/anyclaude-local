@@ -157,7 +157,8 @@ describe("Stream Truncation Regression Tests", () => {
       messages: [
         {
           role: "user",
-          content: "List 5 popular programming languages and briefly describe each.",
+          content:
+            "List 5 popular programming languages and briefly describe each.",
         },
       ],
       stream: true,

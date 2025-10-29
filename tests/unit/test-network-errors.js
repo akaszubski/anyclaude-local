@@ -68,7 +68,11 @@ function testConnectionRefused() {
   // Test error detection logic
   const isConnectionRefused = connectionError.code === "ECONNREFUSED";
   assert.ok(isConnectionRefused, "Connection refused error detected");
-  assert.strictEqual(connectionError.code, "ECONNREFUSED", "Error code correct");
+  assert.strictEqual(
+    connectionError.code,
+    "ECONNREFUSED",
+    "Error code correct"
+  );
   console.log("   ✅ Connection refused properly handled");
   passed++;
 }
@@ -90,7 +94,10 @@ function testPartialResponse() {
   const streamError = new Error("Connection dropped");
 
   assert.ok(isPartialResponse, "Partial response detected");
-  assert.ok(streamError.message.includes("Connection"), "Error indicates connection issue");
+  assert.ok(
+    streamError.message.includes("Connection"),
+    "Error indicates connection issue"
+  );
   console.log("   ✅ Partial response properly detected");
   passed++;
 }
@@ -138,7 +145,10 @@ function testSlowServerResponse() {
   }
 
   assert.ok(keepaliveEventsSent > 0, "Keepalive events sent");
-  assert.ok(SERVER_RESPONSE_TIME > KEEPALIVE_INTERVAL, "Server response slower than keepalive");
+  assert.ok(
+    SERVER_RESPONSE_TIME > KEEPALIVE_INTERVAL,
+    "Server response slower than keepalive"
+  );
   console.log("   ✅ Slow server handled with keepalive");
   passed++;
 }
@@ -340,4 +350,8 @@ if (require.main === module) {
   runTests();
 }
 
-module.exports = { testFetchTimeout, testConnectionRefused, testPartialResponse };
+module.exports = {
+  testFetchTimeout,
+  testConnectionRefused,
+  testPartialResponse,
+};

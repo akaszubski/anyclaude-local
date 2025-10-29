@@ -70,6 +70,10 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 **KV Cache & Optimization**
 
+- **[Cache Performance Tuning](../cache-performance-tuning.md)** - NEW! Complete guide to cache optimization
+  - Configure cache size for your workload
+  - Monitor cache hit rates and cost savings
+  - Understand performance metrics
 - **[Cache Strategy](caching/CACHE_STRATEGY.md)** - Caching approach overview
 - **[Implementation Summary](caching/IMPLEMENTATION_SUMMARY.md)** - Cache implementation details
 - **[Quick Start](caching/QUICK_START.md)** - Getting started with caching
@@ -104,15 +108,15 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 ## 📊 Documentation Statistics
 
-| Category | Files | Purpose |
-|----------|-------|---------|
-| Guides | 15 | User guides and tutorials |
-| Development | 2 | Contributing and testing |
-| Debugging | 7 | Troubleshooting and analysis |
-| Architecture | 2 | Design and architecture |
-| Caching | 4 | Performance optimization |
-| Reference | 3 | Technical references |
-| **Total** | **33** | **Complete documentation** |
+| Category     | Files  | Purpose                      |
+| ------------ | ------ | ---------------------------- |
+| Guides       | 15     | User guides and tutorials    |
+| Development  | 2      | Contributing and testing     |
+| Debugging    | 7      | Troubleshooting and analysis |
+| Architecture | 2      | Design and architecture      |
+| Caching      | 5      | Performance optimization     |
+| Reference    | 3      | Technical references         |
+| **Total**    | **34** | **Complete documentation**   |
 
 ---
 
@@ -120,15 +124,36 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 **By Task**
 
-| Task | Documentation |
-|------|---------------|
-| Install anyclaude | [Installation](guides/installation.md) |
-| Configure settings | [Configuration](configuration.md) |
-| Run tests | [Testing Guide](TESTING.md) |
-| Debug issues | [Debugging Guides](debugging/) |
-| Understand architecture | [PROJECT.md](../PROJECT.md) |
-| Contribute code | [Development](development/DEVELOPMENT.md) |
-| Optimize performance | [Caching](caching/) |
+| Task                    | Documentation                                   |
+| ----------------------- | ----------------------------------------------- |
+| Install anyclaude       | [Installation](guides/installation.md)          |
+| Configure settings      | [Configuration](configuration.md)               |
+| Run tests               | [Testing Guide](TESTING.md)                     |
+| Debug issues            | [Debugging Guides](debugging/)                  |
+| Understand architecture | [PROJECT.md](../PROJECT.md)                     |
+| Contribute code         | [Development](development/DEVELOPMENT.md)       |
+| Optimize performance    | [Cache Tuning](../cache-performance-tuning.md)  |
+| Understand git hooks    | [CLAUDE.md](../CLAUDE.md#-git-automation-hooks) |
+
+---
+
+## 📝 Recent Updates (v2.1.0)
+
+### ✅ New Documentation
+
+- **[Cache Performance Tuning](../cache-performance-tuning.md)** - Complete guide to cache optimization, monitoring, and tuning
+
+### ✅ Updated Documentation
+
+- **[README.md](../README.md)** - Added latest improvements section, updated testing docs
+- **[CLAUDE.md](../CLAUDE.md)** - Added git hooks automation section
+
+### ✅ Completed Features
+
+- Streaming response safeguards (message_stop guarantee)
+- Git hooks for automated regression testing
+- Cache performance tuning (60-85% hit rate)
+- 170+ comprehensive test suite with pre-push validation
 
 ---
 
@@ -146,5 +171,5 @@ All documentation is organized per [CLAUDE.md](../CLAUDE.md) standards:
 
 ---
 
-**Last Updated**: 2025-10-29
+**Last Updated**: 2025-10-30
 **Status**: ✅ Complete and Up-to-Date

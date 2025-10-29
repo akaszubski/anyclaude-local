@@ -66,6 +66,7 @@ A **sophisticated translation layer** that sits between Claude Code and local LL
 ### Step 1: Claude Code → Proxy
 
 Claude Code sends request in **Anthropic Messages API format**:
+
 ```typescript
 {
   "system": "You are a helpful assistant. [9000 tokens of system prompt]",
@@ -107,6 +108,7 @@ Proxy converts to **OpenAI Chat Completions format**:
 ```
 
 **Transformations Applied**:
+
 - System prompt becomes first message
 - Tool schema adapted (Anthropic → OpenAI format)
 - Parameters renamed (`max_tokens` → `max_completion_tokens`)
@@ -115,6 +117,7 @@ Proxy converts to **OpenAI Chat Completions format**:
 ### Step 3: Backend → Proxy → Claude Code
 
 Backend generates response in **OpenAI streaming format**:
+
 ```
 data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}
 
@@ -124,6 +127,7 @@ data: [DONE]
 ```
 
 Proxy converts back to **Anthropic SSE format**:
+
 ```
 event: content_block_start
 data: {"type":"text","index":0}
@@ -148,6 +152,7 @@ Claude Code receives this as if it were from the real Anthropic API.
 ## Architecture Layers
 
 ### Layer 1: Provider Selection
+
 **File**: `src/main.ts`
 
 - Detects mode from CLI flags, env vars, or config file
@@ -156,6 +161,7 @@ Claude Code receives this as if it were from the real Anthropic API.
 - Spawns Claude Code with proxy URL
 
 ### Layer 2: Request Translation
+
 **Files**: `src/convert-anthropic-messages.ts`
 
 - Anthropic → AI SDK format (input)
@@ -165,6 +171,7 @@ Claude Code receives this as if it were from the real Anthropic API.
 - Cache control markers preserved
 
 ### Layer 3: HTTP Server
+
 **File**: `src/anthropic-proxy.ts` (1200+ lines)
 
 - Listens on dynamic port
@@ -175,6 +182,7 @@ Claude Code receives this as if it were from the real Anthropic API.
 - Implements keepalive during long encoding phases
 
 ### Layer 4: Streaming Conversion
+
 **File**: `src/convert-to-anthropic-stream.ts`
 
 - Transforms AI SDK stream chunks
@@ -184,6 +192,7 @@ Claude Code receives this as if it were from the real Anthropic API.
 - Converts SSE format
 
 ### Layer 5: Caching
+
 **Files**: `src/prompt-cache.ts`, `src/cache-metrics.ts`
 
 - Request-level deduplication (L2)
@@ -192,6 +201,7 @@ Claude Code receives this as if it were from the real Anthropic API.
 - Anthropic prompt cache support
 
 ### Layer 6: Tool Calling
+
 **File**: `src/tool-parsers.ts`
 
 - Detects tool call format (Hermes, Llama, Mistral)
@@ -205,22 +215,22 @@ Claude Code receives this as if it were from the real Anthropic API.
 
 ### Current Performance
 
-| Operation | Latency | Notes |
-|-----------|---------|-------|
-| First request (fresh) | 5-10s | Model encoding time |
-| Repeated request | 5-10s | No KV cache yet |
-| Tool call parsing | 10-50ms | Regex-based |
-| Message conversion | 1-5ms | Schema validation |
-| Stream transmission | 10-100ms | Depends on response size |
+| Operation             | Latency  | Notes                    |
+| --------------------- | -------- | ------------------------ |
+| First request (fresh) | 5-10s    | Model encoding time      |
+| Repeated request      | 5-10s    | No KV cache yet          |
+| Tool call parsing     | 10-50ms  | Regex-based              |
+| Message conversion    | 1-5ms    | Schema validation        |
+| Stream transmission   | 10-100ms | Depends on response size |
 
 ### Expected Performance After Optimizations
 
-| Operation | Before | After | Speedup |
-|-----------|--------|-------|---------|
-| First request (fresh) | 5-10s | 5-10s | 1x |
-| Repeated request (L1) | 5-10s | 500ms | 10-20x |
-| Repeated request (L1+L2) | 5-10s | 50ms | 100-200x |
-| 100 request session | 500-1000s | ~5s + 50×100ms | ~100x |
+| Operation                | Before    | After          | Speedup  |
+| ------------------------ | --------- | -------------- | -------- |
+| First request (fresh)    | 5-10s     | 5-10s          | 1x       |
+| Repeated request (L1)    | 5-10s     | 500ms          | 10-20x   |
+| Repeated request (L1+L2) | 5-10s     | 50ms           | 100-200x |
+| 100 request session      | 500-1000s | ~5s + 50×100ms | ~100x    |
 
 ---
 
@@ -231,6 +241,7 @@ Claude Code receives this as if it were from the real Anthropic API.
 The proxy is **transparent** to Claude Code - it doesn't know it's not talking to Anthropic.
 
 This is achieved by:
+
 - Using environment variable `ANTHROPIC_BASE_URL`
 - Responding with identical HTTP format
 - Supporting all Claude Code features
@@ -268,7 +279,7 @@ const openai = createOpenAI({
     const response = await globalThis.fetch(url, init);
     // Clone stream for logging
     return response;
-  }
+  },
 });
 ```
 
@@ -281,13 +292,14 @@ const transform = new TransformStream<AISDKChunk, AnthropicChunk>({
   transform(chunk, controller) {
     const converted = convertChunk(chunk);
     controller.enqueue(converted);
-  }
+  },
 });
 ```
 
 ### Pattern 5: Graceful Degradation
 
 Each feature has a fallback:
+
 - Tool calling unavailable? → Pass through model output as text
 - Prompt caching unavailable? → Compute every time
 - MLX not installed? → Demo mode responses
@@ -330,6 +342,7 @@ anyclaude/
 The proxy MUST correctly transform requests in both directions.
 
 **How it's validated**:
+
 - Tool call parsing with multiple model formats
 - Stream chunk type mapping (20+ types)
 - Schema validation against provider specs
@@ -340,6 +353,7 @@ The proxy MUST correctly transform requests in both directions.
 Streaming must not be buffered or truncated.
 
 **How it's ensured**:
+
 - Transfer-Encoding: chunked preserved
 - No buffering on proxy side
 - Keepalive intervals prevent timeout
@@ -350,6 +364,7 @@ Streaming must not be buffered or truncated.
 Tool calls must parse correctly for different models.
 
 **How it's achieved**:
+
 - Multi-format parser (Hermes, Llama, Mistral)
 - Fallback to text extraction
 - Schema validation
@@ -360,6 +375,7 @@ Tool calls must parse correctly for different models.
 Cache must not serve stale data.
 
 **How it's maintained**:
+
 - Hash-based deduplication (sha256)
 - TTL enforcement
 - LRU eviction
@@ -370,6 +386,7 @@ Cache must not serve stale data.
 Each backend has different capabilities.
 
 **How it's handled**:
+
 - Feature detection (tool support, caching)
 - Parameter mapping per provider
 - Graceful degradation
@@ -390,21 +407,25 @@ Each backend has different capabilities.
 ### Per-Backend Limitations
 
 **LMStudio**:
+
 - No parallel tool calls
 - No native prompt caching
 - Inconsistent streaming format
 
 **MLX-LM**:
+
 - No native tool support (must parse from text)
 - Limited to loaded model (can't change model)
 - Startup time 30-60 seconds
 
 **vLLM-MLX**:
+
 - Experimental implementation
 - Limited error recovery
 - Tool call parsing may be unreliable
 
 **Anthropic API**:
+
 - Requires valid API key
 - Not local execution
 - Prompt caching supported
@@ -414,22 +435,26 @@ Each backend has different capabilities.
 ## Testing Strategy
 
 ### Unit Tests
+
 - Message conversion (both directions)
 - Schema adaptation
 - Tool parsing
 
 ### Integration Tests
+
 - End-to-end proxy flow
 - Streaming response handling
 - Error cases
 
 ### Manual Testing
+
 - Run with `ANYCLAUDE_DEBUG=1`
 - Check trace files in `~/.anyclaude/traces/`
 - Monitor tool call parsing
 - Verify cache hits
 
 ### Performance Testing
+
 - Time first vs. second request
 - Monitor memory usage
 - Check cache hit rates
@@ -457,12 +482,14 @@ Before running in production:
 ## Future Enhancements
 
 ### Short Term (1-2 weeks)
+
 - [ ] Implement L1 KV cache (10x speedup)
 - [ ] Implement L2 request cache (100x on identical requests)
 - [ ] Add memory monitoring and auto-cleanup
 - [ ] Implement error classification
 
 ### Medium Term (1 month)
+
 - [ ] Persistent cache (SQLite or LMDB)
 - [ ] Request logging and analytics
 - [ ] Health check dashboard
@@ -470,6 +497,7 @@ Before running in production:
 - [ ] Tool versioning system
 
 ### Long Term (2-3 months)
+
 - [ ] Support more backends (Ollama, vLLM, llama.cpp)
 - [ ] Distributed caching (Redis)
 - [ ] Load balancing multiple backends
@@ -492,22 +520,26 @@ Before running in production:
 ## Questions & Debugging
 
 ### Proxy not starting?
+
 - Check port availability
 - Set `ANYCLAUDE_DEBUG=1` for logs
 - Verify backend service is running
 
 ### Tool calls not working?
+
 - Enable trace logging: `ANYCLAUDE_DEBUG=3`
 - Check `~/.anyclaude/traces/` for request details
 - Verify tool schema in request
 
 ### Slow performance?
+
 - First request is always slow (model startup)
 - Check memory usage
 - Implement caching (see PRIORITY_IMPLEMENTATION_GUIDE.md)
 - Profile with `--expose-gc`
 
 ### Streaming hangs?
+
 - Check backend service (LMStudio, MLX, etc.)
 - Set `PROXY_ONLY=true` to test proxy in isolation
 - Look for connection timeouts in logs

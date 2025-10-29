@@ -25,7 +25,10 @@ class TokenCounter {
   }
 
   estimateConversationTokens(messages) {
-    return messages.reduce((total, msg) => total + this.estimateMessageTokens(msg), 0);
+    return messages.reduce(
+      (total, msg) => total + this.estimateMessageTokens(msg),
+      0
+    );
   }
 }
 
@@ -39,7 +42,7 @@ class ContextManager {
   canAddMessage(messages, newMessage) {
     const currentTokens = this.counter.estimateConversationTokens(messages);
     const newTokens = this.counter.estimateMessageTokens(newMessage);
-    return (currentTokens + newTokens) <= this.maxTokens;
+    return currentTokens + newTokens <= this.maxTokens;
   }
 
   getAvailableTokens(messages) {
@@ -77,14 +80,16 @@ function testLargeConversationTokenCounting() {
   for (let i = 0; i < 100; i++) {
     messages.push({
       role: i % 2 === 0 ? "user" : "assistant",
-      content: "Message content with some text ".repeat(10)
+      content: "Message content with some text ".repeat(10),
     });
   }
 
   const tokens = counter.estimateConversationTokens(messages);
   assert.ok(tokens > 0, "Tokens counted");
   assert.ok(tokens < 100000, "Token count reasonable");
-  console.log(`   ✅ Large conversation token counting works (${tokens} tokens)`);
+  console.log(
+    `   ✅ Large conversation token counting works (${tokens} tokens)`
+  );
   passed++;
 }
 
@@ -97,7 +102,7 @@ function testContextManagement() {
   for (let i = 0; i < 20; i++) {
     const msg = {
       role: i % 2 === 0 ? "user" : "assistant",
-      content: "Test message with content ".repeat(50)
+      content: "Test message with content ".repeat(50),
     };
 
     if (ctx.canAddMessage(messages, msg)) {
@@ -118,13 +123,15 @@ function testAvailableTokenTracking() {
   const ctx = new ContextManager(5000);
   const messages = [
     { role: "user", content: "Hello" },
-    { role: "assistant", content: "Hi there" }
+    { role: "assistant", content: "Hi there" },
   ];
 
   const available = ctx.getAvailableTokens(messages);
   assert.ok(available < 5000, "Available tokens less than max");
   assert.ok(available > 0, "Some tokens still available");
-  console.log(`   ✅ Available token tracking works (${available} tokens remaining)`);
+  console.log(
+    `   ✅ Available token tracking works (${available} tokens remaining)`
+  );
   passed++;
 }
 
@@ -134,7 +141,7 @@ function testConversationTruncation() {
   for (let i = 0; i < 50; i++) {
     messages.push({
       role: i % 2 === 0 ? "user" : "assistant",
-      content: `Message ${i}`
+      content: `Message ${i}`,
     });
   }
 
@@ -142,7 +149,11 @@ function testConversationTruncation() {
   const truncated = ctx.truncateConversation(messages, 10);
 
   assert.strictEqual(truncated.length, 10, "Truncated to 10 messages");
-  assert.strictEqual(truncated[0].content, "Message 40", "Keeps recent messages");
+  assert.strictEqual(
+    truncated[0].content,
+    "Message 40",
+    "Keeps recent messages"
+  );
   console.log("   ✅ Conversation truncation works");
   passed++;
 }
@@ -159,7 +170,7 @@ function testLargeContextWithinLimits() {
   while (currentTokens < targetTokens) {
     const msg = {
       role: messages.length % 2 === 0 ? "user" : "assistant",
-      content: "x ".repeat(1000)
+      content: "x ".repeat(1000),
     };
     messages.push(msg);
     currentTokens += counter.estimateMessageTokens(msg);
@@ -167,7 +178,9 @@ function testLargeContextWithinLimits() {
 
   assert.ok(messages.length > 10, "Large conversation created");
   assert.ok(currentTokens > targetTokens - 500, "Token count in range");
-  console.log(`   ✅ Large context within limits works (${messages.length} messages)`);
+  console.log(
+    `   ✅ Large context within limits works (${messages.length} messages)`
+  );
   passed++;
 }
 
@@ -178,12 +191,15 @@ function testMessageSizeVariation() {
   const messages = [
     { role: "user", content: "Hi" }, // 1 token
     { role: "assistant", content: "Hello! " + "word ".repeat(1000) }, // ~250 tokens
-    { role: "user", content: "Test" } // minimal
+    { role: "user", content: "Test" }, // minimal
   ];
 
-  const tokens = messages.map(m => counter.estimateMessageTokens(m));
+  const tokens = messages.map((m) => counter.estimateMessageTokens(m));
   assert.ok(tokens[0] < tokens[1], "Larger message has more tokens");
-  assert.ok(tokens[0] < tokens[2] || tokens[0] === tokens[2], "Size variation handled");
+  assert.ok(
+    tokens[0] < tokens[2] || tokens[0] === tokens[2],
+    "Size variation handled"
+  );
   console.log("   ✅ Message size variation works");
   passed++;
 }
@@ -199,7 +215,7 @@ function testPerformanceWithManyMessages() {
   for (let i = 0; i < 1000; i++) {
     messages.push({
       role: i % 2 === 0 ? "user" : "assistant",
-      content: "Message " + i
+      content: "Message " + i,
     });
   }
 
@@ -208,7 +224,9 @@ function testPerformanceWithManyMessages() {
 
   assert.strictEqual(messages.length, 1000, "All messages created");
   assert.ok(elapsed < 1000, "Token counting is fast"); // Should complete in <1s
-  console.log(`   ✅ Performance with many messages works (1000 messages in ${elapsed}ms)`);
+  console.log(
+    `   ✅ Performance with many messages works (1000 messages in ${elapsed}ms)`
+  );
   passed++;
 }
 
@@ -221,7 +239,7 @@ function testContextFillScenario() {
   for (let i = 0; i < 100; i++) {
     const msg = {
       role: i % 2 === 0 ? "user" : "assistant",
-      content: "Sample message with some content ".repeat(20)
+      content: "Sample message with some content ".repeat(20),
     };
 
     if (ctx.canAddMessage(messages, msg)) {
@@ -234,7 +252,9 @@ function testContextFillScenario() {
   const available = ctx.getAvailableTokens(messages);
   assert.ok(available >= 0, "Non-negative available tokens");
   assert.ok(available < 500, "Context nearly full");
-  console.log(`   ✅ Context fill scenario works (${messages.length} messages, ${available} tokens left)`);
+  console.log(
+    `   ✅ Context fill scenario works (${messages.length} messages, ${available} tokens left)`
+  );
   passed++;
 }
 
@@ -247,7 +267,7 @@ function testZeroContextScenario() {
   for (let i = 0; i < 50; i++) {
     messages.push({
       role: i % 2 === 0 ? "user" : "assistant",
-      content: "x ".repeat(100)
+      content: "x ".repeat(100),
     });
   }
 
@@ -257,7 +277,7 @@ function testZeroContextScenario() {
   // Should be able to add new messages now
   const canAdd = ctx.canAddMessage(messages, {
     role: "user",
-    content: "New message"
+    content: "New message",
   });
 
   assert.ok(canAdd, "Can add messages after truncation");

@@ -111,7 +111,9 @@ async function replayTrace(
       }));
     }
 
-    console.log(`Request: ${openaiBody.messages.length} messages, ${openaiBody.tools?.length || 0} tools`);
+    console.log(
+      `Request: ${openaiBody.messages.length} messages, ${openaiBody.tools?.length || 0} tools`
+    );
 
     // Make streaming request
     const response = await fetch(`${lmstudioUrl}/v1/chat/completions`, {
@@ -178,14 +180,19 @@ async function replayTrace(
     const generationTime = firstTokenTime
       ? (endTime - firstTokenTime) / 1000
       : 0;
-    const tokensPerSecond = generationTime > 0 ? tokensGenerated / generationTime : 0;
+    const tokensPerSecond =
+      generationTime > 0 ? tokensGenerated / generationTime : 0;
 
     console.log("\n");
     console.log("─".repeat(60));
     console.log("PERFORMANCE METRICS");
     console.log("─".repeat(60));
-    console.log(`Prompt Processing:  ${timeToFirst.toFixed(2)}s  (time to first token)`);
-    console.log(`Token Generation:   ${generationTime.toFixed(2)}s  (${tokensGenerated} tokens)`);
+    console.log(
+      `Prompt Processing:  ${timeToFirst.toFixed(2)}s  (time to first token)`
+    );
+    console.log(
+      `Token Generation:   ${generationTime.toFixed(2)}s  (${tokensGenerated} tokens)`
+    );
     console.log(`Total Time:         ${totalTime.toFixed(2)}s`);
     console.log(`Generation Speed:   ${tokensPerSecond.toFixed(2)} tokens/sec`);
     console.log("─".repeat(60));

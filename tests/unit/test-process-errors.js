@@ -15,7 +15,8 @@ let failed = 0;
 function testModelPathNotExists() {
   console.log("\n✓ Test 1: Model path doesn't exist");
   const modelPath = "/nonexistent/path/model";
-  const pathExists = modelPath.startsWith("/") && !modelPath.includes("nonexistent");
+  const pathExists =
+    modelPath.startsWith("/") && !modelPath.includes("nonexistent");
   assert.ok(!pathExists, "Nonexistent path detected");
   console.log("   ✅ Missing model paths detected");
   passed++;
@@ -71,7 +72,7 @@ function testVenvCorrupted() {
     "/venv/pyvenv.cfg",
     "/venv/lib/python3.9",
   ];
-  const allExist = venvPaths.every(p => p.includes("venv"));
+  const allExist = venvPaths.every((p) => p.includes("venv"));
   assert.ok(allExist, "Venv paths valid");
   console.log("   ✅ Venv validation works");
   passed++;

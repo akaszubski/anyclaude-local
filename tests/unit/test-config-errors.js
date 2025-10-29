@@ -59,7 +59,8 @@ function testInvalidPortNumber() {
     { port: 0, valid: false },
   ];
   for (const tc of testCases) {
-    const isValid = tc.port > 0 && tc.port <= 65535 && typeof tc.port === "number";
+    const isValid =
+      tc.port > 0 && tc.port <= 65535 && typeof tc.port === "number";
     assert.strictEqual(isValid, tc.valid, `Port ${tc.port} validation correct`);
   }
   console.log("   ✅ Port validation works");
@@ -74,7 +75,8 @@ function testConflictingEnvVars() {
     VLLM_MLX_URL: "http://localhost:8081",
   };
   // Should not allow conflicting configs
-  const hasConflict = env.LMSTUDIO_URL && env.VLLM_MLX_URL && env.ANYCLAUDE_MODE !== "vllm-mlx";
+  const hasConflict =
+    env.LMSTUDIO_URL && env.VLLM_MLX_URL && env.ANYCLAUDE_MODE !== "vllm-mlx";
   if (hasConflict) {
     console.log("   [DEBUG] Conflicting env vars detected");
   }
@@ -107,7 +109,10 @@ function testPathTraversalInModel() {
   const isTraversal = maliciousPath.includes("..");
   assert.ok(isTraversal, "Path traversal detected");
   // Should be sanitized
-  const sanitized = maliciousPath.split("/").filter(p => p !== "..").join("/");
+  const sanitized = maliciousPath
+    .split("/")
+    .filter((p) => p !== "..")
+    .join("/");
   assert.ok(!sanitized.includes(".."), "Path traversal removed");
   console.log("   ✅ Path traversal prevention works");
   passed++;

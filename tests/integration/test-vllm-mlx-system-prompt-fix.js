@@ -30,11 +30,22 @@ function simulateVLLMMlxFetch(requestBody) {
   if (body.messages && Array.isArray(body.messages)) {
     for (const msg of body.messages) {
       // Clean system role messages
-      if (msg.role === "system" && msg.content && typeof msg.content === "string") {
-        msg.content = msg.content.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+      if (
+        msg.role === "system" &&
+        msg.content &&
+        typeof msg.content === "string"
+      ) {
+        msg.content = msg.content
+          .replace(/\n/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
       }
       // Also clean user messages that might contain newlines
-      if (msg.role === "user" && msg.content && typeof msg.content === "string") {
+      if (
+        msg.role === "user" &&
+        msg.content &&
+        typeof msg.content === "string"
+      ) {
         msg.content = msg.content.replace(/\r\n/g, "\n");
       }
     }
@@ -66,13 +77,13 @@ function test_fetch_interceptor_normalizes_system_prompt() {
     messages: [
       {
         role: "system",
-        content: "You are Claude.\nYou are helpful.\nBe honest."
+        content: "You are Claude.\nYou are helpful.\nBe honest.",
       },
       {
         role: "user",
-        content: "Hello"
-      }
-    ]
+        content: "Hello",
+      },
+    ],
   });
 
   const normalized = simulateVLLMMlxFetch(requestBody);
@@ -152,7 +163,9 @@ function test_claude_mode_not_affected() {
  * (proxy-level + fetch-level)
  */
 function test_double_normalization() {
-  console.log("\n✓ Test 5: Double normalization (proxy + fetch) doesn't cause issues");
+  console.log(
+    "\n✓ Test 5: Double normalization (proxy + fetch) doesn't cause issues"
+  );
 
   const systemPrompt = "You are helpful.\nBe honest.";
 
@@ -162,9 +175,7 @@ function test_double_normalization() {
 
   // Second normalization (fetch-level) - should be idempotent
   const requestBody = JSON.stringify({
-    messages: [
-      { role: "system", content: normalized }
-    ]
+    messages: [{ role: "system", content: normalized }],
   });
 
   const fetchNormalized = simulateVLLMMlxFetch(requestBody);
@@ -182,7 +193,9 @@ function test_double_normalization() {
  * Test 6: Multiline system prompt with varying whitespace
  */
 function test_complex_multiline_system_prompt() {
-  console.log("\n✓ Test 6: Complex multiline system prompt with varying whitespace");
+  console.log(
+    "\n✓ Test 6: Complex multiline system prompt with varying whitespace"
+  );
 
   const systemPrompt = `You are Claude.
 
@@ -242,7 +255,11 @@ function test_null_system_prompt() {
   const emptyResult = normalizeSystemPromptInProxy("", "vllm-mlx");
 
   assert.strictEqual(nullResult, null, "Null should be preserved");
-  assert.strictEqual(undefinedResult, undefined, "Undefined should be preserved");
+  assert.strictEqual(
+    undefinedResult,
+    undefined,
+    "Undefined should be preserved"
+  );
   assert.strictEqual(emptyResult, "", "Empty string should be preserved");
 
   console.log("   ✅ Null/undefined/empty system prompts handled correctly");
@@ -260,28 +277,32 @@ function test_realistic_request_body() {
     messages: [
       {
         role: "system",
-        content: "You are Claude Code.\nYou help with coding tasks.\nBe clear and concise."
+        content:
+          "You are Claude Code.\nYou help with coding tasks.\nBe clear and concise.",
       },
       {
         role: "user",
-        content: "Can you help me read a README file?"
-      }
+        content: "Can you help me read a README file?",
+      },
     ],
     temperature: 0.7,
     max_tokens: 2000,
     tools: [
       {
         name: "read_file",
-        description: "Read file contents"
-      }
-    ]
+        description: "Read file contents",
+      },
+    ],
   };
 
   const normalized = simulateVLLMMlxFetch(JSON.stringify(realisticRequest));
   const result = JSON.parse(normalized);
 
   // Check message normalization
-  assert.ok(result.messages[0].content.includes("Claude Code"), "System content preserved");
+  assert.ok(
+    result.messages[0].content.includes("Claude Code"),
+    "System content preserved"
+  );
   assert.ok(!result.messages[0].content.includes("\n"), "Newlines removed");
 
   // Check other fields untouched
@@ -305,7 +326,11 @@ function test_normalization_idempotency() {
   const second = normalizeSystemPromptInProxy(first, "vllm-mlx");
   const third = normalizeSystemPromptInProxy(second, "vllm-mlx");
 
-  assert.strictEqual(first, second, "Second normalization produces same result");
+  assert.strictEqual(
+    first,
+    second,
+    "Second normalization produces same result"
+  );
   assert.strictEqual(second, third, "Third normalization produces same result");
 
   console.log("   ✅ Normalization is idempotent");
@@ -342,7 +367,9 @@ function runTests() {
   console.log("╚══════════════════════════════════════════════════════════╝");
 
   if (failed === 0) {
-    console.log("\n✅ All vLLM-MLX system prompt fix integration tests passed!");
+    console.log(
+      "\n✅ All vLLM-MLX system prompt fix integration tests passed!"
+    );
     process.exit(0);
   }
   process.exit(1);

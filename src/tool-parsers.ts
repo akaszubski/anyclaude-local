@@ -9,11 +9,11 @@
  * Note: vLLM-MLX and LMStudio handle tool calling natively via OpenAI format.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export interface ToolCall {
   id: string;
-  type: 'function';
+  type: "function";
   function: {
     name: string;
     arguments: string; // JSON string of arguments
@@ -45,19 +45,23 @@ export class HermesToolParser {
 
         toolCalls.push({
           id: uuidv4(),
-          type: 'function',
+          type: "function",
           function: {
             name: toolDef.name,
             arguments: JSON.stringify(toolDef.arguments || {}),
           },
         });
       } catch (e) {
-        console.error('[ToolParser] Failed to parse Hermes tool call:', match[1], e);
+        console.error(
+          "[ToolParser] Failed to parse Hermes tool call:",
+          match[1],
+          e
+        );
       }
     }
 
     // Remove tool_call tags from remaining text
-    remainingText = text.replace(this.toolCallRegex, '').trim();
+    remainingText = text.replace(this.toolCallRegex, "").trim();
 
     return {
       toolCalls,
@@ -89,7 +93,7 @@ export class LlamaToolParser {
             if (tool.name) {
               toolCalls.push({
                 id: uuidv4(),
-                type: 'function',
+                type: "function",
                 function: {
                   name: tool.name,
                   arguments: JSON.stringify(tool.arguments || {}),
@@ -97,10 +101,10 @@ export class LlamaToolParser {
               });
             }
           });
-          workingText = workingText.replace(arrayMatch[0], '').trim();
+          workingText = workingText.replace(arrayMatch[0], "").trim();
         }
       } catch (e) {
-        console.error('[ToolParser] Failed to parse Llama array format:', e);
+        console.error("[ToolParser] Failed to parse Llama array format:", e);
       }
     }
 
@@ -112,15 +116,15 @@ export class LlamaToolParser {
           const toolDef = JSON.parse(objectMatch[0]);
           toolCalls.push({
             id: uuidv4(),
-            type: 'function',
+            type: "function",
             function: {
               name: toolDef.name,
               arguments: JSON.stringify(toolDef.arguments || {}),
             },
           });
-          workingText = workingText.replace(objectMatch[0], '').trim();
+          workingText = workingText.replace(objectMatch[0], "").trim();
         } catch (e) {
-          console.error('[ToolParser] Failed to parse Llama object format:', e);
+          console.error("[ToolParser] Failed to parse Llama object format:", e);
         }
       }
     }
@@ -155,7 +159,7 @@ export class MistralToolParser {
               const id = this.generateMistralToolId();
               toolCalls.push({
                 id,
-                type: 'function',
+                type: "function",
                 function: {
                   name: tool.name,
                   arguments: JSON.stringify(tool.arguments || {}),
@@ -163,10 +167,14 @@ export class MistralToolParser {
               });
             }
           });
-          remainingText = text.replace(match[0], '').trim();
+          remainingText = text.replace(match[0], "").trim();
         }
       } catch (e) {
-        console.error('[ToolParser] Failed to parse Mistral tool calls:', match[1], e);
+        console.error(
+          "[ToolParser] Failed to parse Mistral tool calls:",
+          match[1],
+          e
+        );
       }
     }
 
@@ -196,7 +204,7 @@ export class MultiModelToolParser {
    * Returns tool calls found + remaining text
    */
   parse(text: string, modelId?: string): ParsedToolOutput {
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       return {
         toolCalls: [],
         remainingText: text,
@@ -205,12 +213,12 @@ export class MultiModelToolParser {
     }
 
     // Try Hermes format first (most common for Qwen/current models)
-    if (text.includes('<tool_call>')) {
+    if (text.includes("<tool_call>")) {
       return this.hermesParser.parse(text);
     }
 
     // Try Mistral format
-    if (text.includes('[TOOL_CALLS]')) {
+    if (text.includes("[TOOL_CALLS]")) {
       return this.mistralParser.parse(text);
     }
 

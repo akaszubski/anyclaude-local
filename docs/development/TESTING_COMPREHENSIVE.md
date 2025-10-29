@@ -6,13 +6,13 @@ Complete documentation of the 170+ test suite covering unit, integration, end-to
 
 The anyclaude test suite provides comprehensive coverage across four levels:
 
-| Category | Tests | Coverage | Purpose |
-|----------|-------|----------|---------|
-| Unit Tests | 100 | Error handling | Detect failures early |
-| Integration Tests | 30 | Component interaction | Verify components work together |
-| End-to-End Tests | 20 | Complete workflows | Validate real-world scenarios |
-| Performance Tests | 20 | Stress & scale | Ensure reliability under load |
-| **Total** | **170+** | **Production ready** | **Full confidence** |
+| Category          | Tests    | Coverage              | Purpose                         |
+| ----------------- | -------- | --------------------- | ------------------------------- |
+| Unit Tests        | 100      | Error handling        | Detect failures early           |
+| Integration Tests | 30       | Component interaction | Verify components work together |
+| End-to-End Tests  | 20       | Complete workflows    | Validate real-world scenarios   |
+| Performance Tests | 20       | Stress & scale        | Ensure reliability under load   |
+| **Total**         | **170+** | **Production ready**  | **Full confidence**             |
 
 ---
 
@@ -54,6 +54,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 **File**: `tests/unit/test-stream-error-handling.js`, `tests/unit/test-file-io-errors.js`
 
 **Coverage**:
+
 - Stream backpressure buffer management
 - Unknown chunk handling
 - Drain listener cleanup
@@ -65,6 +66,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 - Timestamp collision handling
 
 **Key Tests**:
+
 - ✅ Backpressure detection works
 - ✅ Unknown chunks skipped without terminating stream
 - ✅ Drain listeners properly cleaned on error
@@ -76,6 +78,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 **File**: `tests/unit/test-network-errors.js`, `tests/unit/test-tool-validation-errors.js`
 
 **Coverage**:
+
 - Fetch timeout handling
 - Connection refused scenarios
 - Partial response detection
@@ -92,6 +95,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 - Tool input size limits
 
 **Key Tests**:
+
 - ✅ Fetch timeout properly aborted
 - ✅ Connection refused properly handled
 - ✅ Socket reset properly handled
@@ -103,6 +107,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 **File**: `tests/unit/test-config-errors.js`, `tests/unit/test-message-errors.js`
 
 **Coverage**:
+
 - Invalid JSON in config
 - Missing required config fields
 - Invalid backend specification
@@ -124,6 +129,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 - UTF-8 encoding issues
 
 **Key Tests**:
+
 - ✅ Invalid JSON properly detected
 - ✅ Port validation works
 - ✅ Path traversal prevention works
@@ -135,6 +141,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 **File**: `tests/unit/test-process-errors.js`, `tests/unit/test-context-errors.js`
 
 **Coverage**:
+
 - Model path existence checking
 - Server crash detection
 - Process group cleanup
@@ -157,6 +164,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 - Resource cleanup verification
 
 **Key Tests**:
+
 - ✅ Missing model paths detected
 - ✅ Server crashes detected
 - ✅ Double-kill safe (process cleanup)
@@ -168,6 +176,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 **File**: `tests/unit/test-schema-errors.js`, `tests/unit/test-proxy-errors.js`
 
 **Coverage**:
+
 - Missing required properties in schema
 - Type validation failures
 - Nested object validation
@@ -188,6 +197,7 @@ Error handling tests across 10 error categories. Each test validates that errors
 - Response stream errors
 
 **Key Tests**:
+
 - ✅ Missing properties detected
 - ✅ Type mismatches detected
 - ✅ Enum validation fails detected
@@ -205,12 +215,14 @@ Component interaction tests verifying that different parts work together correct
 **File**: `tests/integration/test-message-pipeline.js`
 
 Tests the complete message conversion pipeline:
+
 1. Anthropic format → OpenAI format
 2. Message processing
 3. OpenAI → Anthropic response conversion
 4. Round-trip validation
 
 **Key Tests**:
+
 - ✅ Basic message conversion pipeline
 - ✅ Multi-message conversation pipeline
 - ✅ OpenAI response conversion
@@ -221,6 +233,7 @@ Tests the complete message conversion pipeline:
 - ✅ Round-trip conversion works
 
 **Validates**:
+
 - Format preservation
 - Token count accuracy
 - Content block handling
@@ -232,6 +245,7 @@ Tests the complete message conversion pipeline:
 **File**: `tests/integration/test-tool-workflow.js`
 
 Tests the complete tool calling workflow:
+
 1. Tool detection in response
 2. Tool validation against registry
 3. Tool execution with input
@@ -239,6 +253,7 @@ Tests the complete tool calling workflow:
 5. State isolation
 
 **Key Tests**:
+
 - ✅ Tool detection in response
 - ✅ Tool validation in workflow
 - ✅ Tool execution in workflow
@@ -249,6 +264,7 @@ Tests the complete tool calling workflow:
 - ✅ Complete tool workflow
 
 **Validates**:
+
 - Tool registry lookup
 - Input validation
 - Execution correctness
@@ -260,6 +276,7 @@ Tests the complete tool calling workflow:
 **File**: `tests/integration/test-proxy-cycle.js`
 
 Tests the complete proxy request/response cycle:
+
 1. Client request handling
 2. Request validation
 3. Response transformation
@@ -267,6 +284,7 @@ Tests the complete proxy request/response cycle:
 5. Error propagation
 
 **Key Tests**:
+
 - ✅ Basic proxy request handling
 - ✅ Request validation
 - ✅ Response transformation
@@ -277,6 +295,7 @@ Tests the complete proxy request/response cycle:
 - ✅ Error propagation
 
 **Validates**:
+
 - Request/response cycle
 - Header management
 - Body preservation
@@ -294,6 +313,7 @@ Complete workflow tests simulating real-world usage patterns.
 **File**: `tests/e2e/test-full-conversation.js`
 
 Tests complete conversation workflows:
+
 1. Single → multi-turn conversations
 2. Context maintenance
 3. System prompt integration
@@ -301,6 +321,7 @@ Tests complete conversation workflows:
 5. Data clearing/reset
 
 **Key Tests**:
+
 - ✅ Single message conversation
 - ✅ Simple conversation exchange
 - ✅ Multi-turn conversation
@@ -313,6 +334,7 @@ Tests complete conversation workflows:
 - ✅ Complete conversation flow
 
 **Simulates**:
+
 - User → AI exchanges
 - Multi-turn interactions
 - Context awareness
@@ -323,6 +345,7 @@ Tests complete conversation workflows:
 **File**: `tests/e2e/test-tool-use-e2e.js`
 
 Tests complete tool use in conversations:
+
 1. Tool detection and selection
 2. Tool execution with results
 3. Result integration into conversation
@@ -330,6 +353,7 @@ Tests complete tool use in conversations:
 5. Error recovery
 
 **Key Tests**:
+
 - ✅ Simple tool use in conversation
 - ✅ Tool result integration
 - ✅ Multiple tool calls in workflow
@@ -342,6 +366,7 @@ Tests complete tool use in conversations:
 - ✅ Complete tool use workflow
 
 **Simulates**:
+
 - User requests tools
 - AI selects and calls tools
 - Tools return results
@@ -359,6 +384,7 @@ Stress and scale testing to ensure reliability under load.
 **File**: `tests/performance/test-large-context.js`
 
 Tests handling of large contexts and conversations:
+
 1. Large message handling (10KB+)
 2. Large conversation token counting (100+ messages)
 3. Context limit enforcement
@@ -368,6 +394,7 @@ Tests handling of large contexts and conversations:
 7. Message size variation
 
 **Key Tests**:
+
 - ✅ Large message handling works
 - ✅ Large conversation token counting works (8800+ tokens)
 - ✅ Context management works
@@ -380,6 +407,7 @@ Tests handling of large contexts and conversations:
 - ✅ Zero context/recovery scenario works
 
 **Validates**:
+
 - Token counting accuracy
 - Context limit enforcement
 - Truncation correctness
@@ -391,6 +419,7 @@ Tests handling of large contexts and conversations:
 **File**: `tests/performance/test-concurrent-requests.js`
 
 Tests handling of concurrent requests:
+
 1. Request queueing
 2. Concurrency limit enforcement
 3. Request processing
@@ -400,6 +429,7 @@ Tests handling of concurrent requests:
 7. Queue recovery
 
 **Key Tests**:
+
 - ✅ Basic request queueing
 - ✅ Concurrency limit enforcement
 - ✅ Request completion handling
@@ -412,6 +442,7 @@ Tests handling of concurrent requests:
 - ✅ Complete concurrent workflow
 
 **Validates**:
+
 - Queue management
 - Concurrency limits
 - Request isolation
@@ -486,6 +517,7 @@ Tests run automatically before commits via git hook:
 ```
 
 To skip (emergency only):
+
 ```bash
 git commit --no-verify
 ```
@@ -496,6 +528,7 @@ git commit --no-verify
 
 **Error Scenarios Covered**: 98+
 **Error Types Tested**: 10 categories
+
 - Stream errors
 - File I/O errors
 - Network errors
@@ -597,7 +630,9 @@ if (require.main === module) {
   runTests();
 }
 
-module.exports = { /* exports */ };
+module.exports = {
+  /* exports */
+};
 ```
 
 3. **Add to test runner** in `tests/run_all_tests.js`:
@@ -620,11 +655,13 @@ npm test
 ## CI/CD Integration
 
 Tests run automatically on:
+
 - ✅ Pre-commit (git hook)
 - ✅ Build (npm run build)
 - ✅ npm test command
 
 Tests must pass before:
+
 - Code can be committed
 - Build succeeds
 - CI/CD pipeline proceeds
@@ -698,6 +735,7 @@ npm test
 ---
 
 **Test Status**: ✅ **PRODUCTION READY**
+
 - 170+ tests
 - 0 failures
 - 100% pass rate

@@ -166,6 +166,7 @@ Display stats on session exit
 ### What Gets Cached
 
 1. **System Prompts** (ephemeral cache)
+
    ```json
    {
      "type": "text",
@@ -175,6 +176,7 @@ Display stats on session exit
    ```
 
 2. **User Context** (when marked)
+
    ```json
    {
      "type": "text",
@@ -188,12 +190,14 @@ Display stats on session exit
 ### Metrics Extracted
 
 From Anthropic API responses:
+
 - `cache_creation_input_tokens`: Tokens written to cache (first request)
 - `cache_read_input_tokens`: Tokens read from cache (subsequent requests)
 - `input_tokens`: Total input tokens
 - `output_tokens`: Total output tokens
 
 From requests:
+
 - Cache control headers locations
 - System vs user message distribution
 - Cache-able payload identification
@@ -203,6 +207,7 @@ From requests:
 ### Expected Results (Anthropic API)
 
 **Good Use Case:**
+
 ```
 Request 1: 2000ms (creates cache)
 Request 2: 300ms (cache hit) → 85% faster ✓
@@ -210,12 +215,14 @@ Request 3: 290ms (cache hit) → 85% faster ✓
 ```
 
 **Real Performance Gains When:**
+
 - Repeated identical prompts within 5 minutes
 - Cached content > 1000 tokens
 - Using Anthropic Claude API (not vLLM-MLX)
 - Same system instructions + different user messages
 
 **Limited Benefit When:**
+
 - One-off requests
 - Small prompts (<500 tokens)
 - Cache expired (>5 minutes)
@@ -224,12 +231,14 @@ Request 3: 290ms (cache hit) → 85% faster ✓
 ## Files Changed/Created
 
 ### New Files
+
 1. `src/cache-metrics.ts` - Core metrics tracking module
 2. `docs/caching/CACHE_STRATEGY.md` - Complete caching guide
 3. `docs/caching/IMPLEMENTATION_SUMMARY.md` - This file
 4. `scripts/test/benchmark-cache.sh` - Performance benchmark tool
 
 ### Modified Files
+
 1. `src/anthropic-proxy.ts` - Integrated cache tracking
    - Added import for cache metrics
    - Initialize tracking on proxy startup
@@ -307,11 +316,13 @@ tail -100 ~/.anyclaude/cache-metrics/*.json
 ## Debugging
 
 ### Enable Cache Logging
+
 ```bash
 ANYCLAUDE_DEBUG=2 anyclaude  # Shows cache hits/misses
 ```
 
 ### View Specific Metrics
+
 ```bash
 # Just cache hits
 cat ~/.anyclaude/cache-metrics/*.json | jq '.[] | select(.cacheHit == true)'

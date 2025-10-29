@@ -193,9 +193,7 @@ function validateTrace(trace: TraceData): {
 /**
  * Analyze a single trace file
  */
-function analyzeTrace(
-  tracePath: string
-): TraceAnalysis | { error: string } {
+function analyzeTrace(tracePath: string): TraceAnalysis | { error: string } {
   // Check file exists
   if (!fs.existsSync(tracePath)) {
     return { error: `Trace file not found: ${tracePath}` };
@@ -371,10 +369,8 @@ function compareTraces(tracePaths: string[]): void {
       toolCalls.reduce((sum, a) => sum + a.analysis.tokens.totalTokens, 0) /
       toolCalls.length;
     const avgSystem =
-      toolCalls.reduce(
-        (sum, a) => sum + a.analysis.tokens.systemPercent,
-        0
-      ) / toolCalls.length;
+      toolCalls.reduce((sum, a) => sum + a.analysis.tokens.systemPercent, 0) /
+      toolCalls.length;
     const avgTools =
       toolCalls.reduce((sum, a) => sum + a.analysis.tokens.toolPercent, 0) /
       toolCalls.length;
@@ -552,7 +548,9 @@ EXAMPLES:
       for (const tracePath of tracePaths) {
         const result = analyzeTrace(tracePath);
         if ("error" in result) {
-          console.warn(`⚠️  Skipping ${path.basename(tracePath)}: ${result.error}`);
+          console.warn(
+            `⚠️  Skipping ${path.basename(tracePath)}: ${result.error}`
+          );
         } else {
           validTraces.push(tracePath);
         }

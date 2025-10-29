@@ -25,6 +25,7 @@ python /Users/akaszubski/Documents/GitHub/anyclaude/scripts/vllm-mlx-server.py \
 ```
 
 Wait for:
+
 ```
 INFO:     Uvicorn running on http://0.0.0.0:8081
 ```
@@ -39,6 +40,7 @@ bash scripts/run-real-test.sh
 ```
 
 This will:
+
 1. ✅ Verify server is running
 2. ✅ Clear old trace files
 3. ✅ Run 3 anyclaude requests
@@ -50,6 +52,7 @@ This will:
 ## What You'll See
 
 ### Success Output:
+
 ```
 ════════════════════════════════════════════════════════════════
 📊 TRACE ANALYSIS SUMMARY
@@ -66,6 +69,7 @@ Token Summary:
 ```
 
 **This proves:**
+
 - Request 1: Created 2,048 token cache
 - Request 2: Read 2,048 from cache (saved!)
 - Request 3: Read 2,048 from cache (saved!)
@@ -89,19 +93,23 @@ python scripts/analyze-traces.py --detail 2
 ## Success Criteria Checklist
 
 ✅ **Cache Working**
+
 - Look for "Cache Hits: 2/3 (66%)"
 - Look for "Total Cached (read): 4,096 tokens"
 
 ✅ **Server Stable**
+
 - No crashes during test
 - All 3 requests complete
 - Response times reasonable
 
 ✅ **Tool Support**
+
 - Check detailed output for "Tools: 16"
 - Confirms tool definitions sent
 
 ✅ **Traces Generated**
+
 - Files in `~/.anyclaude/traces/vllm-mlx/`
 - Each contains full request/response
 
@@ -110,6 +118,7 @@ python scripts/analyze-traces.py --detail 2
 ## If It Fails
 
 ### "Server not running"
+
 ```bash
 # Check server in Terminal 1 is still outputting logs
 # If crashed, restart it:
@@ -120,6 +129,7 @@ python scripts/vllm-mlx-server.py \
 ```
 
 ### "No traces generated"
+
 ```bash
 # Verify server is responding:
 curl http://localhost:8081/v1/models
@@ -133,6 +143,7 @@ bun run build
 ```
 
 ### "Cache not working (0%)"
+
 ```bash
 # Check vLLM-MLX server has caching support:
 curl -X POST http://localhost:8081/v1/chat/completions \
@@ -146,28 +157,31 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 
 ## What Each Request Does
 
-| Request | Query | Expected | Proves |
-|---------|-------|----------|--------|
-| 1 | "Who are you?" | cache_creation_input_tokens > 0 | Cache creation works |
-| 2 | "Tell me a joke" | cache_read_input_tokens > 0 | Cache reuse works |
-| 3 | "What is 2+2?" | cache_read_input_tokens > 0 | Consistent cache hits |
+| Request | Query            | Expected                        | Proves                |
+| ------- | ---------------- | ------------------------------- | --------------------- |
+| 1       | "Who are you?"   | cache_creation_input_tokens > 0 | Cache creation works  |
+| 2       | "Tell me a joke" | cache_read_input_tokens > 0     | Cache reuse works     |
+| 3       | "What is 2+2?"   | cache_read_input_tokens > 0     | Consistent cache hits |
 
 ---
 
 ## Files That Were Created/Modified
 
 **For this test:**
+
 - `scripts/run-real-test.sh` - Automated test runner
 - `scripts/analyze-traces.py` - Results analyzer
 - `scripts/vllm-mlx-server.py` - Server with caching + tools (restored)
 
 **Documentation:**
+
 - `ENGINEERING_LOG.md` - Complete engineering record
 - `TEST_QUICKSTART.md` - 5-minute reference
 - `REAL_TEST_GUIDE.md` - Detailed guide
 - `TRACING_AND_METRICS.md` - Tracing explanation
 
 **Configuration:**
+
 - `.anyclauderc.json` - Set to vllm-mlx backend
 
 ---

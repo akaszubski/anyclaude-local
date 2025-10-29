@@ -7,6 +7,7 @@ Prompt caching helps reduce latency and costs when working with large, repetitiv
 ## Key Findings from Research
 
 ### Anthropic API Caching Benefits
+
 - **Latency Reduction**: Up to **85% faster** second request with same prompt prefix
 - **Cost Savings**: Up to **90% cost reduction** for cached tokens
   - Cache write: 25% premium over base price
@@ -14,6 +15,7 @@ Prompt caching helps reduce latency and costs when working with large, repetitiv
 - **TTL (Time-to-Live)**: 5-minute default, extendable to 1-hour
 
 ### vLLM-MLX Caching
+
 - Supports **Automatic Prefix Caching (APC)** via KV cache
 - Reduces **time-to-first-token (TTFT)** significantly
 - Does NOT reduce token generation (decoding) time
@@ -22,9 +24,11 @@ Prompt caching helps reduce latency and costs when working with large, repetitiv
 ## Current Implementation
 
 ### Cache Control Headers
+
 The proxy automatically sets cache control on:
 
 1. **System Prompts** (ephemeral cache)
+
    ```typescript
    {
      "type": "text",
@@ -58,6 +62,7 @@ The proxy automatically sets cache control on:
 ## How to Maximize Cache Benefits
 
 ### For Anthropic API (Claude Mode)
+
 ```bash
 # Use persistent cache across multiple conversations
 ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=2 anyclaude
@@ -66,17 +71,20 @@ ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=2 anyclaude
 ```
 
 **Workflow:**
+
 1. First request: Writes system prompt and context to cache
 2. Subsequent requests (within 5 min): Reuse cached content
 3. Cost: Write once (at 1.25x), read many times (at 0.1x)
 
 ### For vLLM-MLX (Local Mode)
+
 ```bash
 # Enable prefix caching in vLLM
 ANYCLAUDE_DEBUG=2 bun run src/main.ts
 ```
 
 **Benefits:**
+
 - Reduces **time-to-first-token** for second request
 - KV cache reused within vLLM session
 - Best for interactive workloads with repeated prompts
@@ -84,6 +92,7 @@ ANYCLAUDE_DEBUG=2 bun run src/main.ts
 ## Measuring Cache Performance
 
 ### Automatic Metrics
+
 anyclaude automatically tracks cache performance:
 
 ```bash
@@ -92,6 +101,7 @@ cat ~/.anyclaude/cache-metrics/*.json | jq
 ```
 
 ### Cache Metrics Output
+
 At session exit, you'll see:
 
 ```
@@ -138,6 +148,7 @@ time curl -X POST $ANTHROPIC_BASE_URL/v1/messages \
 ## Best Practices
 
 ### 1. Structure Prompts for Caching
+
 Place cacheable content in system messages:
 
 ```typescript
@@ -171,6 +182,7 @@ Place cacheable content in system messages:
 ```
 
 ### 2. Monitor Cache Efficiency
+
 ```bash
 # Check cache metrics during development
 ANYCLAUDE_DEBUG=2 anyclaude  # Shows cache hit/miss logs
@@ -182,11 +194,13 @@ cat ~/.anyclaude/cache-metrics/*.json | jq '.[] | {timestamp, cacheHit, cacheRea
 ### 3. Optimize for Your Use Case
 
 **High cache hit potential:**
+
 - Repeated queries with same context
 - Multi-turn conversations
 - Batch processing with common prompts
 
 **Low cache benefit:**
+
 - One-off queries
 - Highly variable prompts
 - Small prompts (<500 tokens)
@@ -194,6 +208,7 @@ cat ~/.anyclaude/cache-metrics/*.json | jq '.[] | {timestamp, cacheHit, cacheRea
 ## Implementation Details
 
 ### Cache Metrics Tracking
+
 Located in `src/cache-metrics.ts`:
 
 - Records every request/response pair
@@ -202,11 +217,13 @@ Located in `src/cache-metrics.ts`:
 - Displays summary statistics at exit
 
 ### Integration Points
+
 1. **Proxy**: Records metrics for all requests
 2. **Debug**: Logs cache hits/misses at debug level 2+
 3. **Exit Handler**: Displays stats when session ends
 
 ### Cache Response Headers
+
 anyclaude extracts these from Anthropic API responses:
 
 ```json
@@ -214,7 +231,7 @@ anyclaude extracts these from Anthropic API responses:
   "usage": {
     "input_tokens": 1024,
     "output_tokens": 256,
-    "cache_creation_input_tokens": 1024,  // First request
+    "cache_creation_input_tokens": 1024, // First request
     "cache_read_input_tokens": 0
   }
 }
@@ -228,7 +245,7 @@ vs (cached request):
     "input_tokens": 512,
     "output_tokens": 256,
     "cache_creation_input_tokens": 0,
-    "cache_read_input_tokens": 1024  // Reused!
+    "cache_read_input_tokens": 1024 // Reused!
   }
 }
 ```
@@ -250,16 +267,19 @@ vs (cached request):
 ## Debugging
 
 ### Enable cache logging
+
 ```bash
 ANYCLAUDE_DEBUG=2 anyclaude  # Shows cache metrics
 ```
 
 ### View metrics file
+
 ```bash
 jq . ~/.anyclaude/cache-metrics/latest.json
 ```
 
 ### Monitor in real-time
+
 ```bash
 watch -n 1 'tail ~/.anyclaude/cache-metrics/*.json | jq'
 ```

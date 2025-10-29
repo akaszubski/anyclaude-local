@@ -16,10 +16,7 @@ import {
   waitForServerReady,
   cleanupServerProcess,
 } from "./server-launcher";
-import {
-  displaySetupStatus,
-  shouldFailStartup,
-} from "./setup-checker";
+import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
 
 /**
  * Configuration file structure for .anyclauderc.json
@@ -135,14 +132,22 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
 
   // Check environment variable
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
-  if (envMode === "claude" || envMode === "lmstudio" || envMode === "vllm-mlx") {
+  if (
+    envMode === "claude" ||
+    envMode === "lmstudio" ||
+    envMode === "vllm-mlx"
+  ) {
     return envMode as AnyclaudeMode;
   }
 
   // Check config file
   if (config.backend) {
     const backend = config.backend.toLowerCase();
-    if (backend === "claude" || backend === "lmstudio" || backend === "vllm-mlx") {
+    if (
+      backend === "claude" ||
+      backend === "lmstudio" ||
+      backend === "vllm-mlx"
+    ) {
       return backend as AnyclaudeMode;
     }
   }
@@ -180,7 +185,10 @@ if (process.argv.includes("--check-setup")) {
  * Get configuration for a specific backend with priority:
  * Environment variables > config file > defaults
  */
-function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConfig["backends"]) {
+function getBackendConfig(
+  backend: AnyclaudeMode,
+  configBackends?: AnyclaudeConfig["backends"]
+) {
   if (backend === "lmstudio") {
     const defaultConfig = {
       baseURL: "http://localhost:1234/v1",
@@ -188,9 +196,18 @@ function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConf
       model: "current-model",
     };
     return {
-      baseURL: process.env.LMSTUDIO_URL || configBackends?.lmstudio?.baseUrl || defaultConfig.baseURL,
-      apiKey: process.env.LMSTUDIO_API_KEY || configBackends?.lmstudio?.apiKey || defaultConfig.apiKey,
-      model: process.env.LMSTUDIO_MODEL || configBackends?.lmstudio?.model || defaultConfig.model,
+      baseURL:
+        process.env.LMSTUDIO_URL ||
+        configBackends?.lmstudio?.baseUrl ||
+        defaultConfig.baseURL,
+      apiKey:
+        process.env.LMSTUDIO_API_KEY ||
+        configBackends?.lmstudio?.apiKey ||
+        defaultConfig.apiKey,
+      model:
+        process.env.LMSTUDIO_MODEL ||
+        configBackends?.lmstudio?.model ||
+        defaultConfig.model,
     };
   } else if (backend === "vllm-mlx") {
     const defaultConfig = {
@@ -199,9 +216,18 @@ function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConf
       model: "current-model",
     };
     return {
-      baseURL: process.env.VLLM_MLX_URL || configBackends?.["vllm-mlx"]?.baseUrl || defaultConfig.baseURL,
-      apiKey: process.env.VLLM_MLX_API_KEY || configBackends?.["vllm-mlx"]?.apiKey || defaultConfig.apiKey,
-      model: process.env.VLLM_MLX_MODEL || configBackends?.["vllm-mlx"]?.model || defaultConfig.model,
+      baseURL:
+        process.env.VLLM_MLX_URL ||
+        configBackends?.["vllm-mlx"]?.baseUrl ||
+        defaultConfig.baseURL,
+      apiKey:
+        process.env.VLLM_MLX_API_KEY ||
+        configBackends?.["vllm-mlx"]?.apiKey ||
+        defaultConfig.apiKey,
+      model:
+        process.env.VLLM_MLX_MODEL ||
+        configBackends?.["vllm-mlx"]?.model ||
+        defaultConfig.model,
     };
   }
   return null;
@@ -320,11 +346,22 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         if (body.messages && Array.isArray(body.messages)) {
           for (const msg of body.messages) {
             // Clean system role messages
-            if (msg.role === "system" && msg.content && typeof msg.content === "string") {
-              msg.content = msg.content.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+            if (
+              msg.role === "system" &&
+              msg.content &&
+              typeof msg.content === "string"
+            ) {
+              msg.content = msg.content
+                .replace(/\n/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
             }
             // Also clean user messages that might contain newlines
-            if (msg.role === "user" && msg.content && typeof msg.content === "string") {
+            if (
+              msg.role === "user" &&
+              msg.content &&
+              typeof msg.content === "string"
+            ) {
               // User messages can have newlines, but normalize them to prevent JSON issues
               msg.content = msg.content.replace(/\r\n/g, "\n");
             }
@@ -341,7 +378,10 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
 
       // Log vLLM-MLX responses when debugging
       if (isDebugEnabled() && response.body && response.ok) {
-        debug(1, `[vLLM-MLX → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`);
+        debug(
+          1,
+          `[vLLM-MLX → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`
+        );
       }
 
       return response;
@@ -382,7 +422,9 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   if (mode !== "claude") {
     const backendConfig = config.backends?.[mode];
     if (backendConfig?.baseUrl) {
-      console.log(`[anyclaude] Waiting for ${mode} backend server to be ready...`);
+      console.log(
+        `[anyclaude] Waiting for ${mode} backend server to be ready...`
+      );
       const isReady = await waitForServerReady(backendConfig.baseUrl);
       if (isReady) {
         console.log(`[anyclaude] ✓ Backend server is ready`);
@@ -392,7 +434,9 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         );
       }
     } else {
-      console.log(`[anyclaude] No baseUrl configured for ${mode}, skipping wait`);
+      console.log(
+        `[anyclaude] No baseUrl configured for ${mode}, skipping wait`
+      );
     }
   }
 
@@ -418,15 +462,21 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   if (mode === "lmstudio") {
     const endpoint = lmstudioConfig?.baseURL || "http://localhost:1234/v1";
     console.log(`[anyclaude] LMStudio endpoint: ${endpoint}`);
-    console.log(`[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in LMStudio)`);
+    console.log(
+      `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in LMStudio)`
+    );
   } else if (mode === "vllm-mlx") {
     const endpoint = vllmMlxConfig?.baseURL || "http://localhost:8081/v1";
     console.log(`[anyclaude] vLLM-MLX endpoint: ${endpoint}`);
     const modelConfig = config.backends?.["vllm-mlx"]?.model;
     if (modelConfig && modelConfig !== "current-model") {
-      console.log(`[anyclaude] Model: Auto-launching ${path.basename(modelConfig)}`);
+      console.log(
+        `[anyclaude] Model: Auto-launching ${path.basename(modelConfig)}`
+      );
     } else {
-      console.log(`[anyclaude] Model: current-model (server should be running)`);
+      console.log(
+        `[anyclaude] Model: current-model (server should be running)`
+      );
     }
     console.log(`[anyclaude] Features: prompt caching + tool calling`);
   } else if (mode === "claude") {

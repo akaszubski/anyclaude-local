@@ -7,6 +7,7 @@ This document summarizes the successful integration of MLX-LM with native KV cac
 ## What Was Fixed
 
 ### Problem Statement
+
 AnyClaude's MLX-LM mode was broken due to missing OpenAI API compatibility handling. The OpenAI SDK wasn't translating Claude Code's API requests (Anthropic format) into MLX-LM's expected format (OpenAI Chat Completions).
 
 ### Root Causes Identified
@@ -66,6 +67,7 @@ This is the same proven pattern used for LMStudio compatibility (lines 90-170).
 ## Verification
 
 ### Build Success
+
 ```bash
 npm run build
 # ✅ TypeScript compilation successful
@@ -73,6 +75,7 @@ npm run build
 ```
 
 ### Runtime Verification
+
 ```bash
 ANYCLAUDE_MODE=mlx-lm PROXY_ONLY=true ./dist/main-cli.js
 # ✅ Output:
@@ -83,6 +86,7 @@ ANYCLAUDE_MODE=mlx-lm PROXY_ONLY=true ./dist/main-cli.js
 ```
 
 ### Claude Code Integration
+
 ```bash
 ANYCLAUDE_MODE=mlx-lm ./dist/main-cli.js
 # ✅ Claude Code CLI launches successfully
@@ -92,6 +96,7 @@ ANYCLAUDE_MODE=mlx-lm ./dist/main-cli.js
 ## Architecture: How It Works
 
 ### Request Flow
+
 1. Claude Code sends request in **Anthropic Messages API format** to AnyClaude proxy
 2. AnyClaude converts to **OpenAI Chat Completions format** for MLX-LM
 3. Custom fetch handler (NEW) translates parameters:
@@ -105,17 +110,20 @@ ANYCLAUDE_MODE=mlx-lm ./dist/main-cli.js
 ### KV Cache Performance (Expected)
 
 **Without KV Cache** (per request):
+
 - System prompt (18,490 tokens): ~30 seconds
 - New tokens: ~3 seconds
 - **Total per request: ~33 seconds**
 
 **With KV Cache** (MLX-LM):
+
 - System prompt (first request): ~30 seconds (computed once, cached)
 - Cached tokens (follow-ups): ~0.01 milliseconds each
 - New tokens (follow-ups): ~3 seconds
 - **Subsequent requests: <1 second total!**
 
 **Performance Win**:
+
 - First query: ~30 seconds
 - Follow-up queries: <1 second
 - **100x speedup on follow-ups**
@@ -134,6 +142,7 @@ python3 -m mlx_lm server --port 8081 &
 ```
 
 The test script (`scripts/test/test-kv-cache-hits.sh`) measures:
+
 - Query 1 (cold start): Should be slow (~30s for system prompt computation)
 - Query 2-5 (cached): Should be fast (<1s, using KV cache)
 - Speedup factor: Should show 10-100x improvement
@@ -155,6 +164,7 @@ Query 5 (cached):        520ms - Speedup: 57x faster!
 Since different modes have different strengths:
 
 **Use MLX-LM for**:
+
 - Analysis tasks
 - Code review
 - Architecture discussions
@@ -162,6 +172,7 @@ Since different modes have different strengths:
 - Performance-critical interactive sessions
 
 **Use LMStudio for**:
+
 - File editing (full tool support)
 - Complex tool-calling scenarios
 - When you need full Claude API compatibility
@@ -187,10 +198,12 @@ ANYCLAUDE_MODE=claude claude
 ## Known Issues & Workarounds
 
 ### Issue: MLX-LM server returning 404 on certain requests
+
 **Status**: Investigating
 **Workaround**: This is a known issue with MLX-LM's HTTP implementation, not AnyClaude's request transformation. The fix properly transforms requests; MLX-LM's server has an edge case with certain request formats.
 
 ### Issue: System prompt JSON encoding with newlines
+
 **Status**: Expected behavior
 **Note**: MLX-LM's Python HTTP server has stricter JSON validation than some other servers. AnyClaude properly escapes JSON; this is a MLX-LM implementation detail.
 

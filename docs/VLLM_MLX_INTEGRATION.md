@@ -24,10 +24,12 @@ MLX Model (runs natively on Apple Silicon)
 ## Files Created/Modified
 
 ### New Files
+
 - `scripts/vllm-mlx-server.py` - Full-featured vLLM-MLX server with MLX integration
 - `scripts/vllm-mlx-server-lite.py` - Lightweight demo version (working proof-of-concept)
 
 ### Modified Files
+
 - `src/main.ts` - Added vLLM-MLX mode support
 - `src/trace-logger.ts` - Added "vllm-mlx" to AnyclaudeMode type
 - `src/server-launcher.ts` - Added vLLM-MLX server launcher
@@ -138,33 +140,40 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 ## Features
 
 ### Prompt Caching
+
 - Automatic prompt caching across requests
 - Reduces token usage and improves response time
 - Transparent to the user
 
 ### Tool/Function Calling
+
 - Full OpenAI-compatible `tools` parameter support
 - Automatic parsing of tool calls from model output
 - Works with any MLX-compatible model
 
 ### Streaming
+
 - Server-Sent Events (SSE) streaming responses
 - Works with anyclaude's streaming proxy
 
 ### Health Monitoring
+
 - `/health` endpoint returns server status
 - `/v1/models` endpoint lists available models
 
 ## Two Server Implementations
 
 ### 1. Lite Server (`vllm-mlx-server-lite.py`) - ✅ WORKING
+
 **Features:**
+
 - OpenAI-compatible API
 - Instant startup (no model loading)
 - Demonstrates all features
 - Perfect for testing and demos
 
 **When to use:**
+
 - Testing anyclaude integration
 - Understanding the architecture
 - Proof-of-concept work
@@ -172,13 +181,16 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 **Startup:** Instant
 
 ### 2. Full Server (`vllm-mlx-server.py`) - IN DEVELOPMENT
+
 **Features:**
+
 - Actual MLX model integration
 - Real inference with MLX
 - Prompt caching with MLX's KV cache
 - Full tool calling implementation
 
 **When to use:**
+
 - Production inference
 - Real model responses
 - Performance optimization
@@ -224,6 +236,7 @@ response = client.chat.completions.create(
 ## Roadmap
 
 ### ✅ Completed
+
 - vLLM-MLX server interface design
 - OpenAI-compatible API endpoints
 - Tool calling framework
@@ -232,11 +245,13 @@ response = client.chat.completions.create(
 - Lite server (working proof-of-concept)
 
 ### 🔄 In Progress
+
 - Fix MLX model loading in full server
 - Implement real prompt caching with MLX
 - Implement real tool parsing
 
 ### 📋 TODO
+
 - Performance benchmarking
 - Multi-model support
 - Quantization optimization
@@ -246,11 +261,13 @@ response = client.chat.completions.create(
 ## Troubleshooting
 
 ### Server won't start
+
 - Check Python 3.11+ installed: `python3 --version`
 - Check dependencies: `pip3 list | grep -E "fastapi|uvicorn|pydantic"`
 - Check port availability: `lsof -i :8081`
 
 ### Import errors
+
 ```bash
 # Reinstall dependencies
 pip3 install --break-system-packages --upgrade mlx-lm fastapi uvicorn
@@ -260,6 +277,7 @@ python3 -c "import mlx.core; print('MLX OK')"
 ```
 
 ### anyclaude not connecting
+
 - Check server is running: `curl http://localhost:8081/health`
 - Check config file: `.anyclauderc.json` has correct port
 - Check logs: `ANYCLAUDE_DEBUG=1 bun run ./dist/main.js`
@@ -267,6 +285,7 @@ python3 -c "import mlx.core; print('MLX OK')"
 ## Testing
 
 ### Quick test
+
 ```bash
 # Terminal 1: Start vLLM-MLX server
 python3 scripts/vllm-mlx-server-lite.py \
@@ -281,6 +300,7 @@ PROXY_ONLY=true bun run src/main.ts
 ```
 
 ### Full integration test
+
 ```bash
 # Start anyclaude with auto-launch
 bun run ./dist/main.js
@@ -315,6 +335,7 @@ bun run ./dist/main.js
 ## Support
 
 For issues or questions:
+
 1. Check the troubleshooting section
 2. Enable debug logging: `ANYCLAUDE_DEBUG=1`
 3. Check server logs in `/tmp/vllm-mlx*.log`

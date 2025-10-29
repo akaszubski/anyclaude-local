@@ -9,13 +9,13 @@
 
 ## Quick Decision Matrix
 
-| Feature | Implementation Time | Performance Impact | Complexity | Priority |
-|---------|-------------------|-------------------|-----------|----------|
-| **L1: System Prompt KV Cache** | 2-3h | 10x | Medium | 🔴 DO THIS FIRST |
-| **L2: Request Cache** | 2-3h | 5x | Low | 🟡 DO THIS SECOND |
-| **Memory Monitoring** | 2-3h | Stability | Low | 🟡 DO THIS THIRD |
-| **Error Classification** | 2h | Reliability | Low | 🟢 OPTIONAL |
-| **Metrics Collection** | 1-2h | Debugging | Low | 🟢 OPTIONAL |
+| Feature                        | Implementation Time | Performance Impact | Complexity | Priority          |
+| ------------------------------ | ------------------- | ------------------ | ---------- | ----------------- |
+| **L1: System Prompt KV Cache** | 2-3h                | 10x                | Medium     | 🔴 DO THIS FIRST  |
+| **L2: Request Cache**          | 2-3h                | 5x                 | Low        | 🟡 DO THIS SECOND |
+| **Memory Monitoring**          | 2-3h                | Stability          | Low        | 🟡 DO THIS THIRD  |
+| **Error Classification**       | 2h                  | Reliability        | Low        | 🟢 OPTIONAL       |
+| **Metrics Collection**         | 1-2h                | Debugging          | Low        | 🟢 OPTIONAL       |
 
 ---
 
@@ -34,12 +34,12 @@ When Claude Code requests with the same system prompt (9000 tokens), MLX-LM can 
 **File**: Create new `src/mlx-kv-cache.ts`
 
 ```typescript
-import * as crypto from 'crypto';
-import { debug } from './debug';
+import * as crypto from "crypto";
+import { debug } from "./debug";
 
 export interface KVCacheState {
   hash: string;
-  kvState: any;  // MLX internal KV cache object
+  kvState: any; // MLX internal KV cache object
   createdAt: number;
   lastUsedAt: number;
   hitCount: number;
@@ -48,17 +48,14 @@ export interface KVCacheState {
 
 export class MLXKVCacheManager {
   private caches = new Map<string, KVCacheState>();
-  private maxCaches = 10;  // Keep last 10 system prompts
-  private ttlMs = 3600000;  // 1 hour
+  private maxCaches = 10; // Keep last 10 system prompts
+  private ttlMs = 3600000; // 1 hour
 
   /**
    * Generate deterministic hash of system prompt
    */
   private generateHash(systemPrompt: string): string {
-    return crypto
-      .createHash('sha256')
-      .update(systemPrompt)
-      .digest('hex');
+    return crypto.createHash("sha256").update(systemPrompt).digest("hex");
   }
 
   /**
@@ -88,16 +85,15 @@ export class MLXKVCacheManager {
         return null;
       }
 
-      debug(1, `[L1 Cache] Caching system prompt (${systemPrompt.length} chars)...`);
-
-      // This is the key call - MLX computes KV cache for the prompt
-      const kvState = await mlxLm.cache_prompt(
-        model,
-        tokenizer,
-        systemPrompt
+      debug(
+        1,
+        `[L1 Cache] Caching system prompt (${systemPrompt.length} chars)...`
       );
 
-      const estimatedTokens = Math.ceil(systemPrompt.length / 4);  // Rough estimate
+      // This is the key call - MLX computes KV cache for the prompt
+      const kvState = await mlxLm.cache_prompt(model, tokenizer, systemPrompt);
+
+      const estimatedTokens = Math.ceil(systemPrompt.length / 4); // Rough estimate
 
       this.caches.set(hash, {
         hash,
@@ -105,10 +101,13 @@ export class MLXKVCacheManager {
         createdAt: Date.now(),
         lastUsedAt: Date.now(),
         hitCount: 1,
-        estimatedTokens
+        estimatedTokens,
       });
 
-      debug(1, `[L1 Cache] Cached (${estimatedTokens} tokens, hash: ${hash.slice(0, 8)}...)`);
+      debug(
+        1,
+        `[L1 Cache] Cached (${estimatedTokens} tokens, hash: ${hash.slice(0, 8)}...)`
+      );
 
       // Cleanup old caches if exceeded max
       if (this.caches.size > this.maxCaches) {
@@ -157,7 +156,10 @@ export class MLXKVCacheManager {
 
     if (oldestKey) {
       const state = this.caches.get(oldestKey)!;
-      debug(1, `[L1 Cache] Evicted LRU: ${oldestKey.slice(0, 8)}... (${state.hitCount} hits)`);
+      debug(
+        1,
+        `[L1 Cache] Evicted LRU: ${oldestKey.slice(0, 8)}... (${state.hitCount} hits)`
+      );
       this.caches.delete(oldestKey);
     }
   }
@@ -174,13 +176,16 @@ export class MLXKVCacheManager {
       cacheCount: this.caches.size,
       totalHits,
       totalTokensSaved: totalTokens * totalHits,
-      hitRate: this.caches.size > 0 ? ((totalHits - this.caches.size) / totalHits * 100).toFixed(1) : '0',
-      caches: Array.from(states).map(s => ({
-        hash: s.hash.slice(0, 8) + '...',
+      hitRate:
+        this.caches.size > 0
+          ? (((totalHits - this.caches.size) / totalHits) * 100).toFixed(1)
+          : "0",
+      caches: Array.from(states).map((s) => ({
+        hash: s.hash.slice(0, 8) + "...",
         tokens: s.estimatedTokens,
         hits: s.hitCount,
-        lastUsed: new Date(s.lastUsedAt).toISOString()
-      }))
+        lastUsed: new Date(s.lastUsedAt).toISOString(),
+      })),
     };
   }
 
@@ -203,13 +208,13 @@ export const mlxKVCacheManager = new MLXKVCacheManager();
 
 ```typescript
 // Add import at top
-import { mlxKVCacheManager } from './mlx-kv-cache';
+import { mlxKVCacheManager } from "./mlx-kv-cache";
 
 // After model is loaded (in launchBackendServer or similar):
-if (mode === 'mlx-lm') {
+if (mode === "mlx-lm") {
   // Cache the system prompt if using MLX-LM
   // This happens before first request
-  console.log('[anyclaude] Pre-caching system prompt with MLX...');
+  console.log("[anyclaude] Pre-caching system prompt with MLX...");
 
   // Get Claude Code's default system prompt
   // (you'll need to extract this - for now, we'll cache on first request)
@@ -224,10 +229,11 @@ Find the section where you process messages, and add:
 
 ```typescript
 // Near the beginning of message processing, for MLX-LM mode:
-if (providerName === 'mlx-lm' && body.system) {
-  const systemPromptStr = typeof body.system === 'string'
-    ? body.system
-    : body.system.map(s => (s as any).text).join('\n');
+if (providerName === "mlx-lm" && body.system) {
+  const systemPromptStr =
+    typeof body.system === "string"
+      ? body.system
+      : body.system.map((s) => (s as any).text).join("\n");
 
   // Cache system prompt on first request
   const systemHash = await mlxKVCacheManager.cacheSystemPrompt(
@@ -238,7 +244,10 @@ if (providerName === 'mlx-lm' && body.system) {
   );
 
   if (systemHash) {
-    debug(1, `[Request] Using cached system prompt: ${systemHash.slice(0, 8)}...`);
+    debug(
+      1,
+      `[Request] Using cached system prompt: ${systemHash.slice(0, 8)}...`
+    );
     // Note: The actual KV reuse happens inside MLX's generate function
     // We're just tracking that we've cached it
   }
@@ -251,10 +260,10 @@ if (providerName === 'mlx-lm' && body.system) {
 
 ```typescript
 // Add this route to the proxy server
-app.get('/cache/stats', (req, res) => {
+app.get("/cache/stats", (req, res) => {
   res.json({
     kv_cache_l1: mlxKVCacheManager.getStats(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 ```
@@ -316,7 +325,7 @@ export interface L2CacheEntry {
 
 export class L2CacheManager {
   private cache = new Map<string, L2CacheEntry>();
-  private maxSize = 128 * 1024 * 1024;  // 128 MB
+  private maxSize = 128 * 1024 * 1024; // 128 MB
   private currentSize = 0;
 
   /**
@@ -324,10 +333,7 @@ export class L2CacheManager {
    */
   private generateHash(system: any, tools: any[], messages: any[]): string {
     const combined = JSON.stringify({ system, tools, messages });
-    return crypto
-      .createHash('sha256')
-      .update(combined)
-      .digest('hex');
+    return crypto.createHash("sha256").update(combined).digest("hex");
   }
 
   /**
@@ -341,7 +347,10 @@ export class L2CacheManager {
 
     cached.lastUsedAt = Date.now();
     cached.hitCount++;
-    debug(1, `[L2 Cache] HIT: ${hash.slice(0, 8)}... (${cached.hitCount} hits)`);
+    debug(
+      1,
+      `[L2 Cache] HIT: ${hash.slice(0, 8)}... (${cached.hitCount} hits)`
+    );
     return cached.response;
   }
 
@@ -369,11 +378,14 @@ export class L2CacheManager {
       response,
       createdAt: Date.now(),
       lastUsedAt: Date.now(),
-      hitCount: 0
+      hitCount: 0,
     });
 
     this.currentSize += size;
-    debug(1, `[L2 Cache] Stored: ${hash.slice(0, 8)}... (${this.cache.size} entries, ${(this.currentSize / 1024 / 1024).toFixed(1)} MB)`);
+    debug(
+      1,
+      `[L2 Cache] Stored: ${hash.slice(0, 8)}... (${this.cache.size} entries, ${(this.currentSize / 1024 / 1024).toFixed(1)} MB)`
+    );
   }
 
   /**
@@ -408,8 +420,11 @@ export class L2CacheManager {
       entries: this.cache.size,
       memoryUsageMB: (this.currentSize / 1024 / 1024).toFixed(1),
       totalHits,
-      hitRate: this.cache.size > 0 ? ((totalHits / (totalHits + this.cache.size)) * 100).toFixed(1) : '0',
-      maxSizeMB: (this.maxSize / 1024 / 1024)
+      hitRate:
+        this.cache.size > 0
+          ? ((totalHits / (totalHits + this.cache.size)) * 100).toFixed(1)
+          : "0",
+      maxSizeMB: this.maxSize / 1024 / 1024,
     };
   }
 
@@ -427,13 +442,17 @@ export const l2CacheManager = new L2CacheManager();
 **File**: Modify `src/anthropic-proxy.ts`
 
 ```typescript
-import { l2CacheManager } from './prompt-cache';
+import { l2CacheManager } from "./prompt-cache";
 
 // In message handling, before calling provider:
-const cachedResponse = l2CacheManager.get(body.system, body.tools, body.messages);
+const cachedResponse = l2CacheManager.get(
+  body.system,
+  body.tools,
+  body.messages
+);
 if (cachedResponse) {
-  debug(1, '[L2 Cache] Returning cached response');
-  res.writeHead(200, { 'Content-Type': 'application/json' });
+  debug(1, "[L2 Cache] Returning cached response");
+  res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify(cachedResponse));
   return;
 }
@@ -464,14 +483,14 @@ curl http://localhost:PROXY_PORT/cache/stats
 **File**: Create `src/memory-monitor.ts`
 
 ```typescript
-import * as os from 'os';
-import { debug } from './debug';
+import * as os from "os";
+import { debug } from "./debug";
 
 export class MemoryMonitor {
   private checkInterval: NodeJS.Timeout | null = null;
   private thresholds = {
     warningPercent: 80,
-    criticalPercent: 95
+    criticalPercent: 95,
   };
 
   start() {
@@ -489,11 +508,11 @@ export class MemoryMonitor {
         debug(1, `⚠️ WARNING: Heap at ${heapPercent.toFixed(1)}%`);
       }
 
-      debug(2, '[Memory]', {
+      debug(2, "[Memory]", {
         heap: `${(usage.heapUsed / 1024 / 1024).toFixed(1)}MB / ${(usage.heapTotal / 1024 / 1024).toFixed(1)}MB`,
-        system: `${((total - free) / 1024 / 1024).toFixed(0)}MB / ${(total / 1024 / 1024).toFixed(0)}MB`
+        system: `${((total - free) / 1024 / 1024).toFixed(0)}MB / ${(total / 1024 / 1024).toFixed(0)}MB`,
       });
-    }, 30000);  // Check every 30 seconds
+    }, 30000); // Check every 30 seconds
   }
 
   stop() {
@@ -504,7 +523,7 @@ export class MemoryMonitor {
   }
 
   private clearCaches() {
-    debug(1, '[Memory] Clearing caches to free memory...');
+    debug(1, "[Memory] Clearing caches to free memory...");
     mlxKVCacheManager.clear();
     l2CacheManager.clear();
     // Force garbage collection if available
@@ -539,6 +558,7 @@ See the comprehensive guide for implementation details.
 ## Quick Start Checklist
 
 ### Phase 1: L1 KV Cache
+
 - [ ] Create `src/mlx-kv-cache.ts` with `MLXKVCacheManager`
 - [ ] Import in `src/main.ts`
 - [ ] Integrate into `src/anthropic-proxy.ts` message processing
@@ -547,18 +567,21 @@ See the comprehensive guide for implementation details.
 - [ ] Verify 10x speedup on second request
 
 ### Phase 2: L2 Request Cache
+
 - [ ] Enhance `src/prompt-cache.ts` with `L2CacheManager`
 - [ ] Integrate into `src/anthropic-proxy.ts` response handling
 - [ ] Update `/cache/stats` endpoint
 - [ ] Test L2 cache hits
 
 ### Phase 3: Memory Monitoring
+
 - [ ] Create `src/memory-monitor.ts`
 - [ ] Start monitoring on proxy startup
 - [ ] Test automatic cache clearing
 - [ ] Verify stability under memory pressure
 
 ### Phase 4: Polish (Optional)
+
 - [ ] Error classification
 - [ ] Metrics collection
 - [ ] Request logging
@@ -570,12 +593,12 @@ See the comprehensive guide for implementation details.
 
 After all 3 phases:
 
-| Scenario | Before | After | Speedup |
-|----------|--------|-------|---------|
-| First request (fresh) | 5-10s | 5-10s | 1x |
-| Repeated request (L1 + L2) | 5-10s | 50ms | 100-200x |
-| Similar request (L1 cache hit) | 5-10s | 500ms | 10-20x |
-| Long session (100 requests) | 500-1000s | ~5s + cache | ~100x |
+| Scenario                       | Before    | After       | Speedup  |
+| ------------------------------ | --------- | ----------- | -------- |
+| First request (fresh)          | 5-10s     | 5-10s       | 1x       |
+| Repeated request (L1 + L2)     | 5-10s     | 50ms        | 100-200x |
+| Similar request (L1 cache hit) | 5-10s     | 500ms       | 10-20x   |
+| Long session (100 requests)    | 500-1000s | ~5s + cache | ~100x    |
 
 ---
 

@@ -44,7 +44,9 @@ function testInvalidContentType() {
   console.log("\n✓ Test 4: Invalid Content-Type header");
   const validTypes = ["application/json", "text/plain", "multipart/form-data"];
   const request = { headers: { "content-type": "invalid/type" } };
-  const isValid = validTypes.some(t => request.headers["content-type"].startsWith(t));
+  const isValid = validTypes.some((t) =>
+    request.headers["content-type"].startsWith(t)
+  );
   assert.ok(!isValid, "Invalid Content-Type detected");
   console.log("   ✅ Invalid Content-Type detected");
   passed++;
@@ -91,7 +93,9 @@ function testRequestBodyTooLarge() {
 function testHeaderInjectionAttempt() {
   console.log("\n✓ Test 9: Header injection attempt");
   const request = { headers: { "x-custom": "value\r\nX-Injected: malicious" } };
-  const hasInjection = Object.values(request.headers).some(v => v.includes("\r\n") || v.includes("\n"));
+  const hasInjection = Object.values(request.headers).some(
+    (v) => v.includes("\r\n") || v.includes("\n")
+  );
   assert.ok(hasInjection, "Header injection detected");
   console.log("   ✅ Header injection detected");
   passed++;
@@ -102,16 +106,16 @@ function testResponseStreamError() {
   let streamClosed = false;
   let streamError = null;
   const mockStream = {
-    write: function(chunk) {
+    write: function (chunk) {
       if (streamError) throw new Error("Stream write failed");
       return true;
     },
-    end: function() {
+    end: function () {
       streamClosed = true;
     },
-    destroy: function() {
+    destroy: function () {
       streamClosed = true;
-    }
+    },
   };
 
   try {
