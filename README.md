@@ -1303,6 +1303,16 @@ The original anyclaude is excellent for multi-provider usage, but many users wan
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
 - **[CLAUDE.md](CLAUDE.md)** - Claude Code-specific instructions
 
+### Documentation & Testing
+
+**Testing** - Comprehensive 170+ test suite:
+- [Testing Guide](docs/development/TESTING_COMPREHENSIVE.md) - Complete testing documentation
+  - 100 unit tests (error handling)
+  - 30 integration tests (component interaction)
+  - 20 end-to-end tests (complete workflows)
+  - 20 performance tests (stress & scale)
+- Run with: `npm test` (auto-runs on every commit)
+
 ### Organized Guides
 
 - **[docs/](docs/)** - Complete documentation index
@@ -1346,7 +1356,7 @@ If anyclaude-local helps you build with local AI models, please:
 
 ### Roadmap
 
-- [ ] Automated testing (unit tests for converters)
+- [x] **Automated testing** (170+ tests: unit, integration, E2E, performance) ✅ **COMPLETE**
 - [ ] GitHub Actions CI/CD
 - [ ] Support for additional local model servers (Ollama, LocalAI)
 - [ ] Performance optimizations
