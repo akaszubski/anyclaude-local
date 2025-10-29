@@ -490,7 +490,10 @@ export function convertToAnthropicStream(
       // Clear the 60-second timeout since stream is completing normally
       if (messageStopTimeout) {
         clearTimeout(messageStopTimeout);
-        debug(2, `[Stream] Cleared message_stop timeout - stream completed normally`);
+        debug(
+          2,
+          `[Stream] Cleared message_stop timeout - stream completed normally`
+        );
       }
 
       // Safety net: ensure message_stop is always sent
@@ -505,7 +508,10 @@ export function convertToAnthropicStream(
         messageStopSent = true;
       } else {
         // Timeout may have fired - check if we need to actually send the message_stop
-        debug(2, `[Stream] message_stop already sent (timeout or finish event)`);
+        debug(
+          2,
+          `[Stream] message_stop already sent (timeout or finish event)`
+        );
       }
     },
   });

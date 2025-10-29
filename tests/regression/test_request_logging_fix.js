@@ -27,9 +27,7 @@ let passed = 0;
 let failed = 0;
 
 // Test 1: Verify request-logger.ts file exists
-console.log(
-  "\n[Test 1] src/request-logger.ts file exists"
-);
+console.log("\n[Test 1] src/request-logger.ts file exists");
 const loggerFile = path.join(__dirname, "../../src/request-logger.ts");
 if (fs.existsSync(loggerFile)) {
   console.log("✓ PASS: request-logger.ts file exists");
@@ -166,7 +164,10 @@ if (
 
 // Test 9: Verify log directory path is correct
 console.log("\n[Test 9] Log files are written to ~/.anyclaude/request-logs/");
-if (proxyContent.includes(".anyclaude") && proxyContent.includes("request-logs")) {
+if (
+  proxyContent.includes(".anyclaude") &&
+  proxyContent.includes("request-logs")
+) {
   console.log("✓ PASS: Correct log directory path is used");
   console.log("  → Logs in ~/.anyclaude/request-logs/");
   passed++;
@@ -238,7 +239,9 @@ if (failed === 0) {
     console.log("  • Create src/request-logger.ts module");
     console.log("  • Export logRequest(body, provider, model) function");
     console.log("  • Implement JSONL logging to ~/.anyclaude/request-logs/");
-    console.log("  • Include: timestamp, systemSize, toolCount, provider, model");
+    console.log(
+      "  • Include: timestamp, systemSize, toolCount, provider, model"
+    );
   }
   if (!proxyContent.includes("logRequest")) {
     console.log("  • Import logRequest in src/anthropic-proxy.ts");

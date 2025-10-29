@@ -1,0 +1,56 @@
+{
+  "exportedAt": "2025-10-29T20:07:19.200Z",
+  "runtime": 266689,
+  "metrics": {
+    "totalRequests": 10,
+    "cacheHits": 5,
+    "cacheMisses": 5,
+    "hitRate": "50.00",
+    "tokenSavings": "0.00",
+    "totalInputTokens": 0,
+    "cacheCreationTokens": 0,
+    "cacheReadTokens": 0
+  },
+  "topEntries": [
+    {
+      "hash": "d61a367fd605d3a2cc29aed1d15b04bc912d7277bf60854e021723beccd9ad03",
+      "tools": 0,
+      "hits": 2,
+      "misses": 1,
+      "hitRate": "66.7",
+      "cacheTokens": 0
+    },
+    {
+      "hash": "612ff39254b3bcebc87bacec55ea1ff9dfb643a3b12119e771a2ee4b0fe1a3fd",
+      "tools": 17,
+      "hits": 2,
+      "misses": 1,
+      "hitRate": "66.7",
+      "cacheTokens": 0
+    },
+    {
+      "hash": "6b2b2ccb5953dcb5e592952840ade081edba4239e843b78262d4962e9c43d3d5",
+      "tools": 0,
+      "hits": 1,
+      "misses": 1,
+      "hitRate": "50.0",
+      "cacheTokens": 0
+    },
+    {
+      "hash": "a26e5acf190754e7b10f1d2747bbfb54e26809c14e94287f47e5d745b6b063e2",
+      "tools": 0,
+      "hits": 0,
+      "misses": 1,
+      "hitRate": "0",
+      "cacheTokens": 0
+    },
+    {
+      "hash": "33817ddad6e1d6fd181671bb0c266fa9b3dad593ef2d713facd226d0ba5b52e9",
+      "tools": 0,
+      "hits": 0,
+      "misses": 1,
+      "hitRate": "0",
+      "cacheTokens": 0
+    }
+  ]
+}

@@ -432,9 +432,10 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       if (isReady) {
         console.log(`[anyclaude] ✓ Backend server is ready`);
       } else {
-        console.warn(
-          `[anyclaude] ⚠ Backend server not responding. Check logs if server was auto-launched.`
+        console.error(
+          `[anyclaude] ✗ Backend server failed to start or is not responding`
         );
+        process.exit(1);
       }
     } else {
       console.log(

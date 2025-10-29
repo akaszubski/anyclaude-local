@@ -34,7 +34,11 @@ const hasWritableEnded = proxyContent.includes("!res.writableEnded");
 const hasDrainAndClose = proxyContent.includes("drainAndClose");
 const closeHandlerRegex = /close\(\)\s*\{[\s\S]*?setImmediate/;
 
-if (hasSetImmediate && hasWritableEnded && closeHandlerRegex.test(proxyContent)) {
+if (
+  hasSetImmediate &&
+  hasWritableEnded &&
+  closeHandlerRegex.test(proxyContent)
+) {
   console.log("✓ PASS: close() uses setImmediate to delay res.end()");
   passed++;
 } else if (hasDrainAndClose && hasSetImmediate && hasWritableEnded) {
@@ -45,7 +49,9 @@ if (hasSetImmediate && hasWritableEnded && closeHandlerRegex.test(proxyContent))
   console.log("⚠ WARNING: setImmediate pattern may have been refactored");
   console.log("  Checking for alternative patterns...");
   if (hasSetImmediate && hasWritableEnded) {
-    console.log("✓ PASS: setImmediate and writableEnded check present (FIX #1)");
+    console.log(
+      "✓ PASS: setImmediate and writableEnded check present (FIX #1)"
+    );
     passed++;
   } else {
     console.log("✗ FAIL: setImmediate not found in stream handling");

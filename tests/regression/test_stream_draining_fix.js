@@ -61,12 +61,17 @@ if (drainListenerRegex.test(proxyContent)) {
 console.log("\n[Test 3] close() handler has safety timeout to prevent hanging");
 // Look for setTimeout with 5000ms anywhere near the close() handler
 // The regex looks for the pattern: FIX #1 comment, then setTimeout within next 2000 chars
-const closeHandlerRegex = /close\s*\(\s*\)\s*\{[\s\S]{0,2000}?setTimeout[\s\S]{0,200}?5000/;
+const closeHandlerRegex =
+  /close\s*\(\s*\)\s*\{[\s\S]{0,2000}?setTimeout[\s\S]{0,200}?5000/;
 if (closeHandlerRegex.test(proxyContent)) {
   console.log("✓ PASS: 5-second timeout guard is present");
   console.log("  → Prevents hanging if drain event never fires");
   passed++;
-} else if (proxyContent.includes("FIX #1") && proxyContent.includes("setTimeout") && proxyContent.includes("5000")) {
+} else if (
+  proxyContent.includes("FIX #1") &&
+  proxyContent.includes("setTimeout") &&
+  proxyContent.includes("5000")
+) {
   // Fallback: if FIX #1, setTimeout, and 5000 all exist, close handler has it
   console.log("✓ PASS: 5-second timeout guard is present");
   console.log("  → Prevents hanging if drain event never fires");

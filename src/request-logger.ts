@@ -56,7 +56,11 @@ export function logRequest(
     };
 
     // Ensure log directory exists
-    const logDir = path.join(process.env.HOME || "~", ".anyclaude", "request-logs");
+    const logDir = path.join(
+      process.env.HOME || "~",
+      ".anyclaude",
+      "request-logs"
+    );
     fs.mkdirSync(logDir, { recursive: true });
 
     // Create date-based log file name (YYYY-MM-DD.jsonl)
@@ -90,7 +94,11 @@ export function logRequest(
  * Useful for debugging and analysis
  */
 export function getRequestLogPath(): string {
-  const logDir = path.join(process.env.HOME || "~", ".anyclaude", "request-logs");
+  const logDir = path.join(
+    process.env.HOME || "~",
+    ".anyclaude",
+    "request-logs"
+  );
   const now = new Date();
   const dateString = now.toISOString().split("T")[0];
   return path.join(logDir, `${dateString}.jsonl`);

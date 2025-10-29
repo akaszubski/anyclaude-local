@@ -170,7 +170,9 @@ if (hash7a !== hash7b) {
 
 // Test 8: Verify the old algorithm would have failed
 // (just for documentation - showing why this fix was needed)
-console.log("\n[Test 8] Old algorithm would produce same hash for different tools");
+console.log(
+  "\n[Test 8] Old algorithm would produce same hash for different tools"
+);
 
 function oldBadHashAlgorithm(systemPrompt, tools) {
   // This was the broken algorithm before the fix
@@ -182,7 +184,9 @@ const oldHash8a = oldBadHashAlgorithm("System", [{ name: "a" }]);
 const oldHash8b = oldBadHashAlgorithm("System", [{ name: "b" }]); // Different tool!
 
 if (oldHash8a === oldHash8b) {
-  console.log("✓ CONFIRMED: Old algorithm produced same hash for different tools!");
+  console.log(
+    "✓ CONFIRMED: Old algorithm produced same hash for different tools!"
+  );
   console.log("  This explains the 28.6% cache hit rate bug.");
   console.log(`  Both produced: ${oldHash8a.substring(0, 16)}...`);
   passed++;

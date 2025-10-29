@@ -32,9 +32,7 @@ const streamFile = path.join(
 const streamContent = fs.readFileSync(streamFile, "utf8");
 
 // TEST 1: Verify messageStopTimeout variable is declared
-console.log(
-  "\n[Test 1] messageStopTimeout variable is declared and used"
-);
+console.log("\n[Test 1] messageStopTimeout variable is declared and used");
 if (streamContent.includes("messageStopTimeout")) {
   console.log("✓ PASS: messageStopTimeout variable is declared");
   console.log("  → Can store timeout reference for later clearing");
@@ -47,7 +45,8 @@ if (streamContent.includes("messageStopTimeout")) {
 
 // TEST 2: Verify 60-second timeout is set
 console.log("\n[Test 2] setTimeout with 60000ms (60 seconds) is configured");
-const timeoutRegex = /setTimeout\s*\(\s*(?:function|\(\)|async)[\s\S]*?60000\s*\)/;
+const timeoutRegex =
+  /setTimeout\s*\(\s*(?:function|\(\)|async)[\s\S]*?60000\s*\)/;
 const altTimeoutRegex = /setTimeout.*?60000/;
 if (timeoutRegex.test(streamContent) || altTimeoutRegex.test(streamContent)) {
   console.log("✓ PASS: 60-second timeout is configured");
@@ -78,7 +77,8 @@ if (dupCheckRegex.test(streamContent)) {
 
 // TEST 4: Verify timeout is cleared in flush() handler
 console.log("\n[Test 4] Timeout is cleared in flush() handler");
-const flushRegex = /flush\s*\([^)]*\)[\s\S]{0,500}?clearTimeout\s*\(\s*messageStopTimeout\s*\)/;
+const flushRegex =
+  /flush\s*\([^)]*\)[\s\S]{0,500}?clearTimeout\s*\(\s*messageStopTimeout\s*\)/;
 if (flushRegex.test(streamContent)) {
   console.log("✓ PASS: clearTimeout is called in flush() handler");
   console.log("  → Prevents timeout from firing after stream completes");
@@ -98,11 +98,11 @@ if (flushRegex.test(streamContent)) {
 }
 
 // TEST 5: Verify message_stop is enqueued in timeout callback
-console.log(
-  "\n[Test 5] Timeout callback enqueues message_stop event"
-);
-const enqueueRegex = /setTimeout.*?60000[\s\S]*?controller\.enqueue.*?message_stop/;
-const altEnqueueRegex = /controller\.enqueue\s*\(\s*\{\s*type\s*:\s*['""]message_stop["'"]\s*\}/;
+console.log("\n[Test 5] Timeout callback enqueues message_stop event");
+const enqueueRegex =
+  /setTimeout.*?60000[\s\S]*?controller\.enqueue.*?message_stop/;
+const altEnqueueRegex =
+  /controller\.enqueue\s*\(\s*\{\s*type\s*:\s*['""]message_stop["'"]\s*\}/;
 if (enqueueRegex.test(streamContent) || altEnqueueRegex.test(streamContent)) {
   console.log("✓ PASS: Timeout callback enqueues message_stop");
   console.log("  → Will force completion if stream stalls");
@@ -156,13 +156,13 @@ console.log(
 );
 const flushFallbackRegex = /flush\s*\([^)]*\)[\s\S]{0,500}?message_stop/;
 if (flushFallbackRegex.test(streamContent)) {
-  console.log("✓ PASS: flush() still enqueues message_stop for normal completion");
+  console.log(
+    "✓ PASS: flush() still enqueues message_stop for normal completion"
+  );
   console.log("  → Two guarantees: timeout AND flush handler");
   passed++;
 } else {
-  console.log(
-    "⚠ WARNING: Original flush() fallback may have been removed"
-  );
+  console.log("⚠ WARNING: Original flush() fallback may have been removed");
   console.log("  Only timeout would trigger message_stop (acceptable)");
   passed++;
 }
@@ -195,7 +195,9 @@ if (failed === 0) {
   console.log("\n✅ All message-stop timeout tests passed!");
   console.log("\nWhat these tests verify:");
   console.log("  • Timeout is created to force message_stop after 60 seconds");
-  console.log("  • messageStopSent flag prevents duplicate message_stop events");
+  console.log(
+    "  • messageStopSent flag prevents duplicate message_stop events"
+  );
   console.log("  • Timeout is cleared when stream completes normally");
   console.log("  • message_stop is enqueued when timeout fires");
   console.log("  • Flush handler still provides fallback message_stop");
@@ -203,7 +205,9 @@ if (failed === 0) {
   console.log("\nFIX #2 Implementation Status: ✅ READY TO IMPLEMENT");
   process.exit(0);
 } else {
-  console.log("\n⚠️  Message-stop timeout tests indicate implementation needed!");
+  console.log(
+    "\n⚠️  Message-stop timeout tests indicate implementation needed!"
+  );
   console.log("\nMissing components:");
   if (!streamContent.includes("messageStopTimeout")) {
     console.log(

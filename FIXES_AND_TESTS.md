@@ -19,6 +19,7 @@ const hash = createHash("sha256").update(hashInput).digest("hex");
 ```
 
 This caused:
+
 - **Identical prompts** to sometimes produce different hashes due to whitespace/formatting variations
 - **Different tool definitions** with the same count to produce the same hash
 - **Cache hit rate of 28.6%** instead of 100% for repeated prompts
@@ -26,6 +27,7 @@ This caused:
 ### Root Cause Analysis
 
 When Claude Code sends the same prompt twice:
+
 - Hash 1: `systemPrompt + "17"` → `a1915138...`
 - Hash 2: `systemPrompt + "17"` → `96ef3ff8...` (different!)
 
@@ -45,6 +47,7 @@ const hash = createHash("sha256").update(hashInput).digest("hex");
 ```
 
 **Files Modified**:
+
 - `src/anthropic-proxy.ts:207-214` - Non-streaming response cache metrics
 - `src/anthropic-proxy.ts:1076-1083` - Streaming response cache metrics
 
@@ -83,6 +86,7 @@ close() {
 ```
 
 When `res.write()` returned `false` due to backpressure:
+
 1. Data was queued in the internal buffer
 2. `WritableStream.close()` was called
 3. `res.end()` was called immediately
@@ -106,6 +110,7 @@ close() {
 ```
 
 **Files Modified**:
+
 - `src/anthropic-proxy.ts:1046-1050` - Added explanatory comments
 - `src/anthropic-proxy.ts:1133-1141` - Wrapped `res.end()` in `setImmediate()`
 
@@ -237,6 +242,7 @@ npm run test:regression
 ## Implementation Quality
 
 ### Code Quality
+
 - ✅ No breaking changes to existing API
 - ✅ Backward compatible
 - ✅ Proper error handling
@@ -244,12 +250,14 @@ npm run test:regression
 - ✅ Debug logging for troubleshooting
 
 ### Testing
+
 - ✅ Unit tests verify individual functions
 - ✅ Regression tests prevent future bugs
 - ✅ Integration tests verify end-to-end flows
 - ✅ 100% test pass rate
 
 ### Documentation
+
 - ✅ Inline code comments explain decisions
 - ✅ This document explains both fixes
 - ✅ Test documentation explains coverage
@@ -260,16 +268,19 @@ npm run test:regression
 ## Expected Improvements
 
 ### Performance
+
 - **Faster repeated prompts**: Cache hits eliminate redundant processing
 - **Lower token usage**: Cached system prompts don't consume input tokens
 - **Better throughput**: Less time spent on duplicate work
 
 ### Reliability
+
 - **No truncated responses**: Proper stream closure
 - **Correct cache tracking**: Accurate hit/miss metrics
 - **Better observability**: Debug logs show cache behavior
 
 ### User Experience
+
 - **Consistent results**: Same prompt always hits cache
 - **Complete responses**: No more cut-off text
 - **Faster interactions**: Repeated requests process instantly
@@ -278,9 +289,9 @@ npm run test:regression
 
 ## Summary
 
-| Issue | Problem | Fix | Impact |
-|-------|---------|-----|--------|
-| **Cache Hash** | 28.6% hit rate | Hash full system+tools JSON | ~100% hit rate expected |
+| Issue                 | Problem           | Fix                                 | Impact                       |
+| --------------------- | ----------------- | ----------------------------------- | ---------------------------- |
+| **Cache Hash**        | 28.6% hit rate    | Hash full system+tools JSON         | ~100% hit rate expected      |
 | **Stream Truncation** | Responses cut off | Delay res.end() with setImmediate() | Complete responses delivered |
 
 Both issues are now **fixed** with **comprehensive regression tests** preventing future regressions.

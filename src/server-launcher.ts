@@ -329,6 +329,21 @@ export async function waitForServerReady(
 
   while (Date.now() - startTime < timeout) {
     attempts++;
+
+    // Check if spawned server process has crashed
+    if (spawnedServerProcess && spawnedServerProcess.exitCode !== null) {
+      const exitCode = spawnedServerProcess.exitCode;
+      const signal = (spawnedServerProcess as any).signalCode;
+      console.error(`[anyclaude] ✗ Backend server crashed during startup`);
+      console.error(
+        `[anyclaude] Exit code: ${exitCode}${signal ? ` (signal: ${signal})` : ""}`
+      );
+      console.error(
+        `[anyclaude] Check logs at: ${path.join(os.homedir(), ".anyclaude", "logs", "vllm-mlx-server.log")}`
+      );
+      return false;
+    }
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);

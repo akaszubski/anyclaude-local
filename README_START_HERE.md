@@ -110,6 +110,7 @@ const log = {
 All three fixes have been successfully implemented and tested:
 
 **FIX #1: Stream Draining** ✅
+
 - Enhanced res.end() with proper backpressure handling
 - Check `res.writableLength` before closing
 - Listen for drain event to ensure buffer is flushed
@@ -117,6 +118,7 @@ All three fixes have been successfully implemented and tested:
 - Tests: 8/8 passing
 
 **FIX #2: Message-Stop Timeout** ✅
+
 - 60-second timeout to force message_stop event
 - Prevents requests from hanging indefinitely
 - Clears timeout on normal completion
@@ -124,6 +126,7 @@ All three fixes have been successfully implemented and tested:
 - Tests: 9/9 passing
 
 **FIX #3: Request Logging** ✅
+
 - JSONL logging to ~/.anyclaude/request-logs/YYYY-MM-DD.jsonl
 - Logs: timestamp, systemSize, toolCount, messageCount, streaming, provider, model
 - Safe error handling (won't crash requests)
@@ -134,13 +137,13 @@ All three fixes have been successfully implemented and tested:
 
 After fixes:
 
-| Metric              | Before        | After                      |
-| ------------------- | ------------- | -------------------------- |
-| **Truncation**      | ~5-10%        | ~0% ✅                     |
-| **Stuck requests**  | Occasional    | Never ✅                   |
-| **Visibility**      | None          | Full ✅                    |
-| **Startup latency** | 25-35s        | Still 25-35s (accept this) |
-| **Reliability**     | Unpredictable | Stable ✅                  |
+| Metric              | Before        | After                       |
+| ------------------- | ------------- | --------------------------- |
+| **Truncation**      | ~5-10%        | ~0% ✅                      |
+| **Stuck requests**  | Occasional    | Never ✅                    |
+| **Visibility**      | None          | Full ✅                     |
+| **Startup latency** | 25-35s        | Still 25-35s (accept this)  |
+| **Reliability**     | Unpredictable | Stable ✅                   |
 | **Test Coverage**   | N/A           | 27+ new regression tests ✅ |
 
 ---
