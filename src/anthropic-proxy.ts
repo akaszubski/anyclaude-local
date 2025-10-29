@@ -34,6 +34,7 @@ import {
 } from "./cache-metrics";
 import { getCachedPrompt, getCacheStats } from "./prompt-cache";
 import { cacheMonitor } from "./cache-monitor";
+import { getTimeoutConfig } from "./timeout-config";
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -363,6 +364,9 @@ export const createAnthropicProxy = ({
 
       // LMStudio mode: convert messages and route through LMStudio
       (async () => {
+        // Declare timeout early so it's available to close handler
+        let timeout: NodeJS.Timeout | null = null;
+
         const body = await new Promise<AnthropicMessagesRequest>(
           (resolve, reject) => {
             let body = "";
@@ -589,13 +593,14 @@ export const createAnthropicProxy = ({
 
           // Create AbortController for timeout protection
           const abortController = new AbortController();
-          const timeout = setTimeout(() => {
+          const timeoutConfig = getTimeoutConfig();
+          timeout = setTimeout(() => {
             debug(
               1,
-              `[Timeout] Request to ${providerName}/${model} exceeded 600 seconds (10 minutes)`
+              `[Timeout] Request to ${providerName}/${model} exceeded ${timeoutConfig.timeout}ms`
             );
             abortController.abort();
-          }, 600000); // 600 second (10 minute) timeout - needed for large models like qwen3-coder-30b
+          }, timeoutConfig.timeout); // Configurable timeout for request completion
 
           try {
             // Use .chat() for OpenAI providers (lmstudio, vllm-mlx) and .languageModel() for Anthropic
@@ -625,7 +630,7 @@ export const createAnthropicProxy = ({
                   `[streamText onFinish] Called, stop reason: ${finishReason}`
                 );
                 // Clear timeout on successful completion
-                clearTimeout(timeout);
+                if (timeout) clearTimeout(timeout);
                 // If the body is already being streamed,
                 // we don't need to do any conversion here.
                 if (body.stream) {
@@ -672,7 +677,7 @@ export const createAnthropicProxy = ({
               },
               onError: ({ error }) => {
                 // Clear timeout on error
-                clearTimeout(timeout);
+                if (timeout) clearTimeout(timeout);
                 debug(1, `Error for ${providerName}/${model}:`, error);
 
                 // Write comprehensive debug info to temp file
@@ -724,7 +729,7 @@ export const createAnthropicProxy = ({
             });
           } catch (innerError) {
             // Clear timeout on inner error
-            clearTimeout(timeout);
+            if (timeout) clearTimeout(timeout);
             throw innerError; // Re-throw to outer catch
           }
         } catch (error) {
@@ -769,6 +774,28 @@ export const createAnthropicProxy = ({
 
         res.on("error", () => {
           // In NodeJS, this needs to be handled.
+        });
+
+        // CRITICAL: Handle client disconnect early to prevent resource leaks
+        // When client closes connection, we need to clean up resources immediately
+        let isClosing = false;
+
+        res.on("close", () => {
+          debug(1, `[Client Disconnect] Connection closed by client`);
+          if (isClosing) return; // Guard against double cleanup
+          isClosing = true;
+
+          // Clear keepalive interval if still running
+          if (keepaliveInterval) {
+            clearInterval(keepaliveInterval);
+            debug(2, `[Cleanup] Cleared keepalive interval on client close`);
+          }
+
+          // Clear request timeout if still pending
+          if (timeout) {
+            clearTimeout(timeout);
+            debug(2, `[Cleanup] Cleared request timeout on client close`);
+          }
         });
 
         // Set proper SSE headers for streaming response

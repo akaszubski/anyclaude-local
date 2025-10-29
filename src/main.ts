@@ -17,6 +17,10 @@ import {
   cleanupServerProcess,
 } from "./server-launcher";
 import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
+import {
+  getTimeoutConfig,
+  getTimeoutInfoString,
+} from "./timeout-config";
 
 /**
  * Configuration file structure for .anyclauderc.json
@@ -456,6 +460,15 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   console.log(`[anyclaude] Proxy URL: ${proxyURL}`);
   if (fs.existsSync(path.join(process.cwd(), ".anyclauderc.json"))) {
     console.log(`[anyclaude] Config: .anyclauderc.json`);
+  }
+
+  // Validate and display timeout configuration
+  const timeoutConfig = getTimeoutConfig();
+  console.log(`[anyclaude] ${getTimeoutInfoString(timeoutConfig)}`);
+  if (timeoutConfig.warnings.length > 0) {
+    timeoutConfig.warnings.forEach((warning) => {
+      console.warn(`[anyclaude] ${warning}`);
+    });
   }
   console.log("");
 

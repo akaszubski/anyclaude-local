@@ -10,6 +10,7 @@ import {
   isVerboseDebugEnabled,
   isTraceDebugEnabled,
 } from "./debug";
+import { safeStringify } from "./safe-stringify";
 
 export function convertToAnthropicStream(
   stream: ReadableStream<TextStreamPart<Record<string, Tool>>>,
@@ -297,12 +298,13 @@ export function convertToAnthropicStream(
             const toolInput = (chunk as any).input;
             if (toolInput && typeof toolInput === "object") {
               // Send the complete input as a single delta
+              // Use safeStringify to handle potential circular references in tool inputs
               controller.enqueue({
                 type: "content_block_delta",
                 index: pendingTool.index,
                 delta: {
                   type: "input_json_delta",
-                  partial_json: JSON.stringify(toolInput),
+                  partial_json: safeStringify(toolInput),
                 },
               });
             }
