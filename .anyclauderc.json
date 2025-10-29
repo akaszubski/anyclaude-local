@@ -6,22 +6,26 @@
     "enableStreamLogging": false
   },
   "backends": {
-    "lmstudio": {
-      "enabled": true,
-      "baseUrl": "http://localhost:1234/v1",
-      "apiKey": "lm-studio",
-      "model": "current-model",
-      "compatibility": "legacy",
-      "description": "LMStudio - uses the model currently loaded in LMStudio. Just provide baseUrl and apiKey."
-    },
     "vllm-mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "vllm-mlx",
-      "model": "current-model",
+      "model": "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
       "serverScript": "scripts/vllm-mlx-server.py",
-      "description": "vLLM-MLX - high-performance inference server with Qwen3 Coder 30B (start manually to avoid crash dialogs)"
+      "description": "vLLM-MLX - high-performance inference server with Qwen3 Coder 30B"
+    },
+    "lmstudio": {
+      "enabled": false,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model",
+      "compatibility": "legacy",
+      "description": "LMStudio (disabled - use vllm-mlx instead)"
+    },
+    "claude": {
+      "enabled": false,
+      "description": "Real Anthropic API"
     }
   }
 }

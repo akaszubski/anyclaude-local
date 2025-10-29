@@ -41,14 +41,6 @@ interface AnyclaudeConfig {
       compatibility?: string;
       description?: string;
     };
-    "mlx-lm"?: {
-      enabled?: boolean;
-      port?: number;
-      baseUrl?: string;
-      apiKey?: string;
-      model?: string;
-      description?: string;
-    };
     "vllm-mlx"?: {
       enabled?: boolean;
       port?: number;
@@ -92,11 +84,11 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
   for (const arg of args) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (mode === "claude" || mode === "lmstudio" || mode === "mlx-lm" || mode === "vllm-mlx") {
+      if (mode === "claude" || mode === "lmstudio" || mode === "vllm-mlx") {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'mlx-lm', or 'vllm-mlx'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'vllm-mlx'.`
       );
       process.exit(1);
     }
@@ -143,20 +135,20 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
 
   // Check environment variable
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
-  if (envMode === "claude" || envMode === "lmstudio" || envMode === "mlx-lm" || envMode === "vllm-mlx") {
+  if (envMode === "claude" || envMode === "lmstudio" || envMode === "vllm-mlx") {
     return envMode as AnyclaudeMode;
   }
 
   // Check config file
   if (config.backend) {
     const backend = config.backend.toLowerCase();
-    if (backend === "claude" || backend === "lmstudio" || backend === "mlx-lm" || backend === "vllm-mlx") {
+    if (backend === "claude" || backend === "lmstudio" || backend === "vllm-mlx") {
       return backend as AnyclaudeMode;
     }
   }
 
-  // Default to lmstudio for backwards compatibility
-  return "lmstudio";
+  // Default to vllm-mlx (was lmstudio before)
+  return "vllm-mlx";
 }
 
 // Check for --test-model flag before anything else
@@ -200,17 +192,6 @@ function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConf
       apiKey: process.env.LMSTUDIO_API_KEY || configBackends?.lmstudio?.apiKey || defaultConfig.apiKey,
       model: process.env.LMSTUDIO_MODEL || configBackends?.lmstudio?.model || defaultConfig.model,
     };
-  } else if (backend === "mlx-lm") {
-    const defaultConfig = {
-      baseURL: "http://localhost:8081/v1",
-      apiKey: "mlx-lm",
-      model: "current-model",
-    };
-    return {
-      baseURL: process.env.MLX_LM_URL || configBackends?.["mlx-lm"]?.baseUrl || defaultConfig.baseURL,
-      apiKey: process.env.MLX_LM_API_KEY || configBackends?.["mlx-lm"]?.apiKey || defaultConfig.apiKey,
-      model: process.env.MLX_LM_MODEL || configBackends?.["mlx-lm"]?.model || defaultConfig.model,
-    };
   } else if (backend === "vllm-mlx") {
     const defaultConfig = {
       baseURL: "http://localhost:8081/v1",
@@ -228,7 +209,6 @@ function getBackendConfig(backend: AnyclaudeMode, configBackends?: AnyclaudeConf
 
 // Configure providers based on mode
 const lmstudioConfig = getBackendConfig("lmstudio", config.backends);
-const mlxLmConfig = getBackendConfig("mlx-lm", config.backends);
 const vllmMlxConfig = getBackendConfig("vllm-mlx", config.backends);
 
 // Launch backend server if needed (non-blocking)
@@ -317,61 +297,6 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
-  "mlx-lm": createOpenAI({
-    baseURL: mlxLmConfig?.baseURL || "http://localhost:8081/v1",
-    apiKey: mlxLmConfig?.apiKey || "mlx-lm",
-    fetch: (async (url, init) => {
-      if (init?.body && typeof init.body === "string") {
-        const body = JSON.parse(init.body);
-
-        // Remove model field for MLX-LM (always uses the loaded model)
-        // MLX-LM server validates model names against HuggingFace, which fails for "current-model"
-        delete body.model;
-
-        // Map max_tokens for compatibility
-        const maxTokens = body.max_tokens;
-        delete body.max_tokens;
-        if (typeof maxTokens !== "undefined") {
-          body.max_completion_tokens = maxTokens;
-        }
-
-        // Remove parameters that MLX-LM doesn't support
-        delete body.reasoning;
-        delete body.service_tier;
-
-        // Keep streaming enabled (don't set body.stream = false)
-        // MLX-LM handles streaming responses properly
-
-        // Clean system prompt: MLX-LM's server has strict JSON validation
-        // Normalize newlines in system prompt to avoid JSON parsing errors
-        // This handles both "system" role messages and message content
-        if (body.messages && Array.isArray(body.messages)) {
-          for (const msg of body.messages) {
-            // Clean system role messages
-            if (msg.role === "system" && msg.content && typeof msg.content === "string") {
-              msg.content = msg.content.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-            }
-            // Also clean user messages that might contain newlines
-            if (msg.role === "user" && msg.content && typeof msg.content === "string") {
-              // User messages can have newlines, but let's ensure proper formatting
-              msg.content = msg.content.replace(/\r\n/g, "\n");
-            }
-          }
-        }
-
-        init.body = JSON.stringify(body);
-      }
-
-      const response = await globalThis.fetch(url, init);
-
-      // Log MLX-LM responses when debugging
-      if (isDebugEnabled() && response.body && response.ok) {
-        debug(1, `[MLX-LM → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`);
-      }
-
-      return response;
-    }) as typeof fetch,
-  }),
   "vllm-mlx": createOpenAI({
     baseURL: vllmMlxConfig?.baseURL || "http://localhost:8081/v1",
     apiKey: vllmMlxConfig?.apiKey || "vllm-mlx",
@@ -445,13 +370,13 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   if (mode !== "claude") {
     const backendConfig = config.backends?.[mode];
     if (backendConfig?.baseUrl) {
-      console.log(`[anyclaude] Waiting for ${mode} server to be ready at ${backendConfig.baseUrl}...`);
+      console.log(`[anyclaude] Waiting for ${mode} backend server to be ready...`);
       const isReady = await waitForServerReady(backendConfig.baseUrl);
       if (isReady) {
-        console.log(`[anyclaude] ${mode} server is ready!`);
+        console.log(`[anyclaude] ✓ Backend server is ready`);
       } else {
         console.warn(
-          `[anyclaude] Backend server did not start in time. Attempting to continue...`
+          `[anyclaude] ⚠ Backend server not responding. Check logs if server was auto-launched.`
         );
       }
     } else {
@@ -465,51 +390,41 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     defaultModel:
       mode === "claude"
         ? "claude-3-5-sonnet-20241022"
-        : mode === "mlx-lm"
-          ? mlxLmConfig?.model || "current-model"
-          : mode === "vllm-mlx"
-            ? vllmMlxConfig?.model || "current-model"
-            : lmstudioConfig?.model || "current-model",
+        : mode === "vllm-mlx"
+          ? vllmMlxConfig?.model || "current-model"
+          : lmstudioConfig?.model || "current-model",
     mode,
   });
 
-  console.log(`[anyclaude] Mode: ${mode.toUpperCase()}`);
+  console.log(`[anyclaude] Backend: ${mode.toUpperCase()}`);
   console.log(`[anyclaude] Proxy URL: ${proxyURL}`);
   if (fs.existsSync(path.join(process.cwd(), ".anyclauderc.json"))) {
     console.log(`[anyclaude] Config: .anyclauderc.json`);
   }
+  console.log("");
 
   if (mode === "lmstudio") {
-    console.log(
-      `[anyclaude] LMStudio endpoint: ${lmstudioConfig?.baseURL || "http://localhost:1234/v1"}`
-    );
-    console.log(
-      `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (uses whatever is loaded in LMStudio)`
-    );
-  } else if (mode === "mlx-lm") {
-    console.log(
-      `[anyclaude] MLX-LM endpoint: ${mlxLmConfig?.baseURL || "http://localhost:8081/v1"}`
-    );
-    console.log(
-      `[anyclaude] Model: ${mlxLmConfig?.model || "current-model"} (with native KV cache)`
-    );
+    const endpoint = lmstudioConfig?.baseURL || "http://localhost:1234/v1";
+    console.log(`[anyclaude] LMStudio endpoint: ${endpoint}`);
+    console.log(`[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in LMStudio)`);
   } else if (mode === "vllm-mlx") {
-    console.log(
-      `[anyclaude] vLLM-MLX endpoint: ${vllmMlxConfig?.baseURL || "http://localhost:8081/v1"}`
-    );
-    console.log(
-      `[anyclaude] Model: ${vllmMlxConfig?.model || "current-model"} (with prompt caching + tool calling)`
-    );
+    const endpoint = vllmMlxConfig?.baseURL || "http://localhost:8081/v1";
+    console.log(`[anyclaude] vLLM-MLX endpoint: ${endpoint}`);
+    const modelConfig = config.backends?.["vllm-mlx"]?.model;
+    if (modelConfig && modelConfig !== "current-model") {
+      console.log(`[anyclaude] Model: Auto-launching ${path.basename(modelConfig)}`);
+    } else {
+      console.log(`[anyclaude] Model: current-model (server should be running)`);
+    }
+    console.log(`[anyclaude] Features: prompt caching + tool calling`);
   } else if (mode === "claude") {
-    console.log(`[anyclaude] Using real Anthropic API`);
-    console.log(
-      `[anyclaude] Model: claude-3-5-sonnet-20241022 (or as specified by Claude Code)`
-    );
+    console.log(`[anyclaude] Using real Anthropic API (Claude 3.5 Sonnet)`);
     if (process.env.ANYCLAUDE_DEBUG) {
       const traceDir = require("os").homedir() + "/.anyclaude/traces/claude";
       console.log(`[anyclaude] Trace directory: ${traceDir}`);
     }
   }
+  console.log("");
 
   if (process.env.PROXY_ONLY === "true") {
     console.log("Proxy only mode - not spawning Claude Code");

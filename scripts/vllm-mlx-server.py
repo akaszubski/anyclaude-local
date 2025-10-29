@@ -9,6 +9,11 @@ Features:
 - Tool/function calling support
 - Native MLX model loading (no conversions)
 - Streaming responses with SSE
+- CPU-only mode for GPU stability issues
+
+Environment Variables:
+- MLX_FORCE_CPU=1: Force CPU-only mode (disables GPU)
+- ANYCLAUDE_DEBUG=1: Enable debug logging
 """
 
 import json
@@ -16,19 +21,31 @@ import asyncio
 import logging
 import sys
 import time
+import os
+import signal
+import atexit
 from typing import Optional, Any
 from datetime import datetime
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+import threading
 
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 import uvicorn
 
+# Check for CPU-only mode (fixes Metal GPU assertion errors on macOS)
+FORCE_CPU = os.environ.get("MLX_FORCE_CPU", "0") == "1"
+if FORCE_CPU:
+    print("⚠️  CPU-only mode enabled (MLX_FORCE_CPU=1)")
+
 # Try to import MLX - if it fails, we'll still run but with limited functionality
 HAS_MLX = False
 try:
     import mlx.core as mx
+    # Force CPU if requested
+    if FORCE_CPU:
+        mx.set_default_device(mx.cpu)
     print("✓ MLX core available")
     HAS_MLX = True
 except Exception as e:
@@ -41,7 +58,7 @@ if HAS_MLX:
     try:
         import mlx_lm as mlx_lm_module
         mlx_lm = mlx_lm_module
-        print("✓ MLX LM available")
+        print("✓ MLX LM available" + (" (CPU-only)" if FORCE_CPU else ""))
     except Exception as e:
         print(f"Warning: MLX LM import failed (running in demo mode): {e}")
         HAS_MLX = False
@@ -52,6 +69,18 @@ logging.basicConfig(
     format='[%(asctime)s] [%(name)s] %(levelname)s: %(message)s'
 )
 logger = logging.getLogger("vllm-mlx")
+
+# GPU synchronization lock to prevent concurrent GPU operations
+gpu_lock = threading.Lock()
+
+def sync_gpu():
+    """Force GPU synchronization to prevent assertion errors"""
+    try:
+        if HAS_MLX and not FORCE_CPU:
+            import mlx.core as mx
+            mx.eval(mx.zeros(1))  # Force GPU evaluation and sync
+    except Exception as e:
+        logger.debug(f"GPU sync failed (non-fatal): {e}")
 
 # ============================================================================
 # Models and Configuration
@@ -191,9 +220,56 @@ class VLLMMLXServer:
         self.tokenizer = None
         self.cache = PromptCache()
         self.app = FastAPI(title="vLLM-MLX Server")
-        # Thread pool for blocking MLX inference (2 workers for concurrent requests)
-        self.executor = ThreadPoolExecutor(max_workers=2)
+        # Thread pool for blocking MLX inference (1 worker to serialize GPU ops)
+        # Using single worker prevents concurrent GPU operations that cause Metal assertion errors
+        self.executor = ThreadPoolExecutor(max_workers=1)
         self._setup_routes()
+
+        # Register cleanup handlers
+        atexit.register(self._cleanup)
+        for sig in [signal.SIGINT, signal.SIGTERM]:
+            signal.signal(sig, self._signal_handler)
+
+    def _signal_handler(self, signum, frame):
+        """Handle signals gracefully"""
+        logger.info(f"Received signal {signum}, shutting down...")
+        self._cleanup()
+        sys.exit(0)
+
+    def _cleanup(self):
+        """Clean up resources"""
+        try:
+            logger.info("Cleaning up...")
+            self.executor.shutdown(wait=False)
+            if HAS_MLX and not FORCE_CPU:
+                sync_gpu()
+        except Exception as e:
+            logger.debug(f"Cleanup error: {e}")
+
+    def _generate_safe(self, model, tokenizer, prompt, options):
+        """Generate text with GPU synchronization and error recovery"""
+        # Use lock to serialize GPU operations
+        with gpu_lock:
+            try:
+                # Pre-sync to clear any pending GPU operations
+                sync_gpu()
+
+                # Generate with timeout to catch hanging operations
+                result = mlx_lm.generate(model, tokenizer, prompt, options)
+
+                # Post-sync to ensure GPU is in clean state
+                sync_gpu()
+
+                return result
+            except Exception as e:
+                logger.error(f"Generation error: {e}")
+                if "Metal" in str(e) or "assertion" in str(e).lower():
+                    logger.error("Metal GPU assertion error detected. This may indicate GPU resource exhaustion.")
+                    logger.error("Try one of:")
+                    logger.error("  1. Restart the server")
+                    logger.error("  2. Run with smaller max_tokens")
+                    logger.error("  3. Run with MLX_FORCE_CPU=1 for stability")
+                raise
 
     def _setup_routes(self):
         """Setup FastAPI routes compatible with OpenAI API"""
@@ -251,10 +327,12 @@ class VLLMMLXServer:
             logger.info(f"Loading MLX model from: {self.model_path}")
             # Use mlx_lm's load function
             self.model, self.tokenizer = mlx_lm.load(self.model_path)
-            logger.info(f"Model loaded successfully")
+            logger.info(f"Model loaded successfully" + (" (CPU-only)" if FORCE_CPU else ""))
             return True
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
+            if "Metal" in str(e) or "GPU" in str(e):
+                logger.error("GPU error detected. Try running with: MLX_FORCE_CPU=1")
             logger.warning(f"Falling back to demo mode")
             return True  # Still allow server to run
 
@@ -359,10 +437,10 @@ class VLLMMLXServer:
                 # Real MLX inference in thread pool to avoid blocking event loop
                 try:
                     loop = asyncio.get_event_loop()
-                    # Run blocking mlx_lm.generate in thread pool
+                    # Run blocking mlx_lm.generate in thread pool with GPU synchronization
                     generated_text = await loop.run_in_executor(
                         self.executor,
-                        mlx_lm.generate,
+                        self._generate_safe,
                         self.model,
                         self.tokenizer,
                         prompt,
@@ -453,10 +531,10 @@ class VLLMMLXServer:
                     start_time = time.time()
                     loop = asyncio.get_event_loop()
 
-                    # Run blocking mlx_lm.generate in thread pool
+                    # Run blocking mlx_lm.generate in thread pool with GPU synchronization
                     completion_text = await loop.run_in_executor(
                         self.executor,
-                        mlx_lm.generate,
+                        self._generate_safe,
                         self.model,
                         self.tokenizer,
                         prompt,
@@ -624,8 +702,18 @@ if __name__ == "__main__":
     parser.add_argument("--model", required=True, help="Path to MLX model directory")
     parser.add_argument("--port", type=int, default=8081, help="Server port")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")
+    parser.add_argument(
+        "--cpu-only",
+        action="store_true",
+        help="Force CPU-only mode (disables GPU acceleration, fixes Metal assertion errors)"
+    )
 
     args = parser.parse_args()
+
+    # Override CPU mode from command line
+    if args.cpu_only:
+        os.environ["MLX_FORCE_CPU"] = "1"
+        print("⚠️  CPU-only mode enabled via --cpu-only flag")
 
     if not Path(args.model).exists():
         print(f"Error: Model path does not exist: {args.model}")

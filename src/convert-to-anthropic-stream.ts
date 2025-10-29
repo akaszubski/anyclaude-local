@@ -393,22 +393,24 @@ export function convertToAnthropicStream(
           break;
         default: {
           const unknownChunk = chunk as any;
+          // FIXED: Skip unknown chunk types instead of terminating the stream
+          // This prevents truncated responses when vLLM-MLX sends unexpected chunk types
           debug(
-            1,
-            `[Stream Conversion] ⚠️  Unhandled chunk type: ${unknownChunk.type}`,
+            2,
+            `[Stream Conversion] Skipping unknown chunk type: ${unknownChunk.type}`,
             {
               chunkNumber: chunkCount,
-              chunk: unknownChunk,
+              // Don't log full chunk at debug level 2 to avoid spam
             }
           );
-          const error = new Error(
-            `Unhandled chunk type: ${unknownChunk.type} (chunk ${chunkCount})`
-          );
-          debug(
-            1,
-            `[Stream Conversion] Terminating stream due to unhandled chunk`
-          );
-          controller.error(error);
+          if (isVerboseDebugEnabled()) {
+            debug(2, `[Stream Conversion] Unknown chunk details:`, {
+              type: unknownChunk.type,
+              keys: Object.keys(unknownChunk),
+            });
+          }
+          // Continue processing instead of terminating stream
+          break;
         }
       }
     },

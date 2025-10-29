@@ -93,72 +93,6 @@ export function isServerRunning(port: number): boolean {
 }
 
 /**
- * Start MLX-LM server with a specific model
- */
-export function startMLXLMServer(config: ServerLauncherConfig): void {
-  const port = config.port || 8081;
-  const modelPath = config.model;
-  const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
-
-  if (!modelPath) {
-    console.error("[anyclaude] MLX-LM model path is required in .anyclauderc.json");
-    console.error("[anyclaude] Add backends.mlx-lm.model to your config file");
-    process.exit(1);
-  }
-
-  // Check if model path exists
-  if (!fs.existsSync(modelPath)) {
-    console.error(`[anyclaude] Model path not found: ${modelPath}`);
-    process.exit(1);
-  }
-
-  console.log(`[anyclaude] Starting MLX-LM server...`);
-  console.log(`[anyclaude] Model: ${path.basename(modelPath)}`);
-  console.log(`[anyclaude] Port: ${port}`);
-  console.log(`[anyclaude] Waiting ~50 seconds for model to load...`);
-
-  // Build command to activate venv and start MLX-LM
-  const activateScript = path.join(pythonVenv, "bin", "activate");
-  const command = `source ${activateScript} && python3 -m mlx_lm server --model "${modelPath}" --port ${port}`;
-
-  const serverProcess = spawn("bash", ["-c", command], {
-    stdio: ["ignore", "pipe", "pipe"],
-    detached: true, // Create a new process group so we can kill all children
-  });
-
-  // Register process for cleanup on exit
-  registerServerProcess(serverProcess);
-
-  // Listen for output to know when server is ready
-  let isReady = false;
-  serverProcess.stdout?.on("data", (data) => {
-    const output = data.toString();
-    if (output.includes("Starting httpd") || output.includes("listening")) {
-      isReady = true;
-      debug(1, "[server-launcher] MLX-LM server started successfully");
-    }
-  });
-
-  serverProcess.stderr?.on("data", (data) => {
-    const output = data.toString();
-    if (output.includes("error") || output.includes("Error")) {
-      console.error(`[anyclaude] MLX-LM error: ${output}`);
-    }
-  });
-
-  serverProcess.on("error", (error) => {
-    console.error(`[anyclaude] Failed to start MLX-LM server: ${error.message}`);
-    process.exit(1);
-  });
-
-  // Keep the server running in the background
-  serverProcess.unref();
-
-  // Give server time to start
-  return;
-}
-
-/**
  * Start LMStudio server (assumes it's already running or started manually)
  */
 export function startLMStudioServer(config: ServerLauncherConfig): void {
@@ -179,9 +113,10 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const serverScript = "scripts/vllm-mlx-server.py";
   const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
 
-  // Silent return if no model path - don't log, just skip auto-launch
-  // (User has explicitly chosen vllm-mlx mode, server should already be running)
+  // Return early if no model path - user must provide model path for auto-launch
   if (!modelPath || modelPath === "current-model") {
+    console.log(`[anyclaude] vLLM-MLX: No model path configured in .anyclauderc.json`);
+    console.log(`[anyclaude] vLLM-MLX: Expecting server to be running at http://localhost:${port}/v1`);
     debug(1, "[server-launcher] vLLM-MLX auto-launch skipped (no model path in config)");
     return;
   }
@@ -320,7 +255,7 @@ export function launchBackendServer(
     return;
   }
 
-  const port = backendConfig.port || (mode === "mlx-lm" || mode === "vllm-mlx" ? 8081 : 1234);
+  const port = backendConfig.port || (mode === "vllm-mlx" ? 8081 : 1234);
 
   // Check if server is already running
   if (isServerRunning(port)) {
@@ -329,14 +264,7 @@ export function launchBackendServer(
   }
 
   // Launch appropriate server
-  if (mode === "mlx-lm") {
-    startMLXLMServer({
-      backend: mode,
-      port,
-      model: backendConfig.model,
-      pythonVenv: config.pythonVenv,
-    });
-  } else if (mode === "vllm-mlx") {
+  if (mode === "vllm-mlx") {
     startVLLMMLXServer({
       backend: mode,
       port,
