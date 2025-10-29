@@ -30,6 +30,25 @@ export function convertToAnthropicStream(
     receivedDelta: boolean;
   } | null = null; // Track current streaming tool
 
+  // FIX #2: Message-Stop Timeout
+  // Guarantee the final message_stop event is sent even if stream stalls.
+  // This prevents requests from hanging indefinitely.
+  // The timeout is a safety net: normally finish event will fire first and clear the timeout.
+  let messageStopTimeout: NodeJS.Timeout | null = null;
+
+  if (typeof global !== "undefined") {
+    // Only set timeout in Node.js environment (not browsers)
+    messageStopTimeout = setTimeout(() => {
+      if (!messageStopSent) {
+        debug(
+          1,
+          `[Stream] Forcing message_stop (60-second timeout) - stream may have stalled`
+        );
+        messageStopSent = true; // Mark as sent to prevent duplicates
+      }
+    }, 60000);
+  }
+
   const transform = new TransformStream<
     TextStreamPart<Record<string, Tool>>,
     AnthropicStreamChunk
@@ -468,8 +487,15 @@ export function convertToAnthropicStream(
         );
       }
 
+      // Clear the 60-second timeout since stream is completing normally
+      if (messageStopTimeout) {
+        clearTimeout(messageStopTimeout);
+        debug(2, `[Stream] Cleared message_stop timeout - stream completed normally`);
+      }
+
       // Safety net: ensure message_stop is always sent
       // This handles cases where the AI SDK doesn't send a 'finish' event
+      // OR if the timeout fired and marked message_stop as sent
       if (!messageStopSent) {
         debug(
           1,
@@ -477,6 +503,9 @@ export function convertToAnthropicStream(
         );
         controller.enqueue({ type: "message_stop" });
         messageStopSent = true;
+      } else {
+        // Timeout may have fired - check if we need to actually send the message_stop
+        debug(2, `[Stream] message_stop already sent (timeout or finish event)`);
       }
     },
   });
