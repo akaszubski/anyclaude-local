@@ -97,6 +97,37 @@ async function runAllTests() {
       file: path.join(__dirname, "unit", "test-proxy-errors.js"),
       description: "Proxy Request/Response Error Handling Tests (Phase 5)",
     },
+    // Integration Tests
+    {
+      file: path.join(__dirname, "integration", "test-message-pipeline.js"),
+      description: "Message Pipeline Integration Tests",
+    },
+    {
+      file: path.join(__dirname, "integration", "test-tool-workflow.js"),
+      description: "Tool Calling Workflow Integration Tests",
+    },
+    {
+      file: path.join(__dirname, "integration", "test-proxy-cycle.js"),
+      description: "Proxy Request/Response Cycle Integration Tests",
+    },
+    // End-to-End Tests
+    {
+      file: path.join(__dirname, "e2e", "test-full-conversation.js"),
+      description: "Full Conversation End-to-End Tests",
+    },
+    {
+      file: path.join(__dirname, "e2e", "test-tool-use-e2e.js"),
+      description: "Tool Use End-to-End Tests",
+    },
+    // Performance Tests
+    {
+      file: path.join(__dirname, "performance", "test-large-context.js"),
+      description: "Large Context Performance Tests",
+    },
+    {
+      file: path.join(__dirname, "performance", "test-concurrent-requests.js"),
+      description: "Concurrent Request Performance Tests",
+    },
     // Note: Mode detection tests require spawning the proxy, which is slow
     // We'll skip them for now and rely on manual testing
     // {
