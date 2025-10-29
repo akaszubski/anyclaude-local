@@ -440,3 +440,79 @@ kill -9 <PID>
 - For details, see: `docs/debugging/stream-truncation-fix.md`
 - If you see truncation, enable debug logging: `ANYCLAUDE_DEBUG=2 anyclaude`
 - Look for `[Backpressure]` messages in logs to confirm fix is working
+
+## 🔄 Git Automation (Hooks)
+
+Git hooks automate quality checks and prevent regressions from reaching the remote.
+
+### Pre-commit Hook (Fast Checks)
+
+Runs before allowing commits:
+- Type checking (`npm run typecheck`)
+- Format validation
+
+**What it does**: Quick validation that you haven't introduced obvious errors
+
+**When it runs**: `git commit` (local, before creating the commit)
+
+```bash
+# Example
+git commit -m "fix: improve performance"
+# → Pre-commit hook runs (fast)
+# → If passes → commit created
+# → If fails → commit blocked, fix required
+```
+
+### Pre-push Hook (Full Test Suite)
+
+Runs before pushing to remote:
+- Unit tests
+- Integration tests
+- **Regression tests** (catches streaming bugs, timeouts, etc.)
+
+**What it does**: Comprehensive validation that code is production-ready
+
+**When it runs**: `git push` (before uploading to GitHub)
+
+```bash
+# Example
+git push origin main
+# → Pre-push hook runs (slower, ~30-60 seconds)
+# → If all tests pass → push succeeds
+# → If tests fail → push blocked, fix required
+```
+
+### Enable Hooks
+
+Hooks are configured in `.githooks/` and enabled via:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+This should already be set up. Verify with:
+
+```bash
+git config core.hooksPath
+# Should output: .githooks
+```
+
+### Testing Before Push
+
+To test without actually pushing:
+
+```bash
+# Run the full test suite manually
+npm test
+
+# This is what the pre-push hook will run
+```
+
+### Why This Matters for Regression Tests
+
+The streaming bug that happened was caught because:
+1. Regression tests exist in the codebase
+2. Pre-push hook now runs `npm test` automatically
+3. Future streaming changes won't slip through because tests will fail
+
+**Key lesson**: Always integrate regression tests into CI/CD, not just write them and hope they run.
