@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-anyclaude is a translation layer for Claude Code 2.0 that enables using LMStudio local models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for LMStudio.
+anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for vLLM-MLX.
+
+**Primary Backend**: vLLM-MLX (fast, efficient, supports tool calling and prompt caching)
+
+**Legacy Support**: LMStudio (manual connection only, no auto-launch)
 
 ## 📁 File Organization Standards
 
@@ -263,20 +267,176 @@ The proxy handles Server-Sent Events (SSE) streaming:
 See `src/convert-to-anthropic-stream.ts` for stream conversion.
 See `docs/debugging/tool-calling-fix.md` for complete tool calling investigation.
 
-## Usage
+## Quick Start
 
 ```bash
-# Basic usage (uses whatever model is loaded in LMStudio)
+# One command - does everything!
 anyclaude
-
-# With debug logging
-ANYCLAUDE_DEBUG=1 anyclaude
-
-# Test proxy only (doesn't spawn Claude Code)
-PROXY_ONLY=true anyclaude
-
-# Use real Claude API (for comparison/debugging)
-ANYCLAUDE_MODE=claude anyclaude
 ```
 
-**Model Switching**: You can freely switch models in LMStudio's server tab without restarting anyclaude. The proxy always routes to whichever model is currently loaded.
+**That's it!** anyclaude will:
+
+1. **Read config** from `.anyclauderc.json` (if it exists)
+2. **Launch vLLM-MLX server** automatically with your model
+3. **Wait for server** to load the model (~30-50 seconds)
+4. **Run Claude Code** pointing to your local server
+5. **Auto-cleanup** when you exit Claude Code (type `/exit`)
+
+## Configuration & Usage
+
+### Auto-Launch Workflow (Default)
+
+When you run `anyclaude` with a `.anyclauderc.json` that specifies vLLM-MLX with a model path:
+
+```bash
+# .anyclauderc.json configured with vllm-mlx backend
+anyclaude
+# → Server launches automatically
+# → Waits for model to load
+# → Claude Code starts with local backend
+# → Type /exit to exit Claude Code and cleanup server
+```
+
+### Configuration File: `.anyclauderc.json`
+
+Create this file in your project root to configure anyclaude:
+
+```json
+{
+  "backend": "vllm-mlx",
+  "backends": {
+    "vllm-mlx": {
+      "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "vllm-mlx",
+      "model": "/path/to/your/mlx/model",
+      "serverScript": "scripts/vllm-mlx-server.py"
+    },
+    "lmstudio": {
+      "enabled": false,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model"
+    },
+    "claude": {
+      "enabled": false
+    }
+  }
+}
+```
+
+**Key fields for vllm-mlx auto-launch:**
+- `backend`: Set to `"vllm-mlx"` to use this backend
+- `model`: Full path to your MLX model (e.g., `/Users/you/.../Qwen3-Coder-30B-A3B-Instruct-MLX-4bit`)
+  - If model path is configured, anyclaude auto-launches the server
+  - If missing or set to `"current-model"`, expects server to be running already
+- `port`: Where to run the server (default: 8081)
+
+### Auto-Launch Workflow
+
+When you run `anyclaude` with vllm-mlx configured:
+
+1. **Check**: Is a server already running on port 8081?
+2. **If no**: Auto-launch the vLLM-MLX server with your configured model
+3. **Wait**: Wait for server to load the model (30-50 seconds)
+4. **Launch**: Spawn Claude Code with proxy pointing to your local server
+5. **Run**: Use Claude Code normally
+6. **Exit**: When you exit Claude Code (type `/exit`), server shuts down automatically
+
+### Manual Server Mode
+
+If you want to run the server separately:
+
+```bash
+# Terminal 1: Start server manually
+python3 scripts/vllm-mlx-server.py \
+  --model /path/to/model \
+  --port 8081
+
+# Terminal 2: Run anyclaude (uses running server)
+anyclaude
+```
+
+Or set the model to `"current-model"` in `.anyclauderc.json` to prevent auto-launch.
+
+### Advanced Options
+
+```bash
+# Override backend mode
+anyclaude --mode=claude          # Use real Claude API instead
+anyclaude --mode=lmstudio        # Force LMStudio
+
+# Debug logging
+ANYCLAUDE_DEBUG=1 anyclaude      # Basic debug
+ANYCLAUDE_DEBUG=2 anyclaude      # Verbose
+ANYCLAUDE_DEBUG=3 anyclaude      # Trace with tool calls
+
+# Test proxy only (no Claude Code)
+PROXY_ONLY=true anyclaude
+
+# Disable auto-launch (server must be running)
+ANYCLAUDE_NO_AUTO_LAUNCH=1 anyclaude
+
+# Check setup status
+anyclaude --check-setup
+
+# Test model compatibility
+anyclaude --test-model
+```
+
+### Environment Variables
+
+**vLLM-MLX Configuration:**
+- `VLLM_MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
+- `VLLM_MLX_MODEL`: Model name/path (overrides config file)
+- `VLLM_MLX_API_KEY`: API key (default: `vllm-mlx`)
+
+**LMStudio Configuration:**
+- `LMSTUDIO_URL`: Server URL (default: `http://localhost:1234/v1`)
+- `LMSTUDIO_MODEL`: Model name (default: `current-model`)
+- `LMSTUDIO_API_KEY`: API key (default: `lm-studio`)
+
+**Mode & Debug:**
+- `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | vllm-mlx)
+- `ANYCLAUDE_DEBUG`: Debug level (0-3)
+- `ANYCLAUDE_NO_AUTO_LAUNCH`: Disable server auto-launch
+- `ANYCLAUDE_SKIP_SETUP_CHECK`: Skip dependency checks
+- `PROXY_ONLY`: Run proxy without Claude Code
+
+### Troubleshooting
+
+**Server fails to start:**
+```bash
+# Check server logs
+tail ~/.anyclaude/logs/vllm-mlx-server.log
+
+# Try with more debug output
+ANYCLAUDE_DEBUG=2 anyclaude
+```
+
+**Port already in use:**
+```bash
+# Check what's using port 8081
+lsof -i :8081
+
+# Kill it if needed
+kill -9 <PID>
+
+# Or configure different port in .anyclauderc.json
+```
+
+**Server takes too long to load:**
+- This is normal for large models (30-50 seconds for 30B models)
+- Anyclaude waits up to 2 minutes (120 seconds)
+- Check `~/.anyclaude/logs/vllm-mlx-server.log` for progress
+
+**Responses are truncated mid-stream:**
+- This was fixed in v3.0+ by implementing proper backpressure handling
+- The fix includes:
+  - Handling `res.write()` return value for backpressure
+  - Adding `X-Accel-Buffering: no` header to prevent proxy buffering
+  - Using `Transfer-Encoding: chunked` for proper SSE streaming
+- For details, see: `docs/debugging/stream-truncation-fix.md`
+- If you see truncation, enable debug logging: `ANYCLAUDE_DEBUG=2 anyclaude`
+- Look for `[Backpressure]` messages in logs to confirm fix is working

@@ -835,6 +835,8 @@ export const createAnthropicProxy = ({
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          "X-Accel-Buffering": "no", // Disable proxy buffering that causes truncation
+          "Transfer-Encoding": "chunked", // Use chunked encoding for SSE
         });
 
         // Send immediate message_start event to prevent client timeout
@@ -880,6 +882,9 @@ export const createAnthropicProxy = ({
 
         try {
           debug(1, `[Streaming] Starting stream conversion and pipe for ${providerName}/${model}`);
+
+          // CRITICAL: Create a WritableStream that properly handles backpressure
+          // This prevents truncation when res.write() returns false (buffer full)
           await convertToAnthropicStream(stream.fullStream, true).pipeTo(
             new WritableStream({
               write(chunk) {
@@ -912,10 +917,32 @@ export const createAnthropicProxy = ({
                   });
                 }
 
-                // Write chunk to stream
-                res.write(
-                  `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`
-                );
+                // CRITICAL FIX: Handle backpressure properly
+                // res.write() returns false when internal buffer is full
+                // In this case, return a Promise that resolves when 'drain' is emitted
+                const data = `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`;
+                const canContinue = res.write(data);
+
+                if (!canContinue) {
+                  debug(2, `[Backpressure] Buffer full, waiting for drain event`);
+                  // Return a Promise that resolves when the response is ready for more data
+                  return new Promise((resolve, reject) => {
+                    const onDrain = () => {
+                      debug(2, `[Backpressure] Drain event received, resuming writes`);
+                      res.removeListener('drain', onDrain);
+                      res.removeListener('error', onError);
+                      resolve();
+                    };
+                    const onError = (err: Error) => {
+                      debug(1, `[Backpressure] Error while waiting for drain:`, err);
+                      res.removeListener('drain', onDrain);
+                      res.removeListener('error', onError);
+                      reject(err);
+                    };
+                    res.once('drain', onDrain);
+                    res.once('error', onError);
+                  });
+                }
               },
               close() {
                 // Clear keepalive on completion
@@ -928,6 +955,16 @@ export const createAnthropicProxy = ({
                   `[Request Complete] ${providerName}/${model}: ${totalDuration}ms`
                 );
                 res.end();
+              },
+              abort(reason) {
+                // Handle stream abort
+                debug(1, `[Stream Abort] Stream aborted:`, reason);
+                if (keepaliveInterval) {
+                  clearInterval(keepaliveInterval);
+                }
+                if (!res.writableEnded) {
+                  res.end();
+                }
               },
             })
           );
