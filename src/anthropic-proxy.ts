@@ -27,6 +27,7 @@ import {
 } from "./context-manager";
 import { getModelContextLength } from "./lmstudio-info";
 import { logTrace, type AnyclaudeMode } from "./trace-logger";
+import { logRequest } from "./request-logger";
 import {
   initializeCacheTracking,
   getCacheTracker,
@@ -437,6 +438,9 @@ export const createAnthropicProxy = ({
         // Use default provider and model (LMStudio)
         const providerName = defaultProvider;
         const model = defaultModel;
+
+        // FIX #3: Log the request for observability and debugging
+        logRequest(body, providerName, model);
 
         const provider = providers[providerName];
         if (!provider) {
@@ -1149,11 +1153,17 @@ export const createAnthropicProxy = ({
 
                 // Check if there's buffered data waiting to be written
                 if (res.writableLength > 0) {
-                  debug(2, `[Backpressure] ${res.writableLength} bytes buffered, waiting for drain`);
+                  debug(
+                    2,
+                    `[Backpressure] ${res.writableLength} bytes buffered, waiting for drain`
+                  );
 
                   // Wait for drain event (buffer ready for more data) before closing
                   res.once("drain", () => {
-                    debug(2, `[Backpressure] Drain event fired, closing stream`);
+                    debug(
+                      2,
+                      `[Backpressure] Drain event fired, closing stream`
+                    );
                     setImmediate(drainAndClose);
                   });
 
@@ -1161,7 +1171,10 @@ export const createAnthropicProxy = ({
                   // This prevents hanging if there's an edge case we haven't considered
                   const drainTimeout = setTimeout(() => {
                     if (!res.writableEnded) {
-                      debug(1, `[Backpressure] Drain timeout (5s), force closing stream`);
+                      debug(
+                        1,
+                        `[Backpressure] Drain timeout (5s), force closing stream`
+                      );
                       drainAndClose();
                     }
                   }, 5000);
