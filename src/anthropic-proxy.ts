@@ -1091,9 +1091,7 @@ export const createAnthropicProxy = ({
 
                     // In streaming mode, we're always using vLLM-MLX or LMStudio
                     // Infer cache hits from repeated request hashes
-                    const currentEntry = monitor
-                      .getMetrics()
-                      .entries.get(hash);
+                    const currentEntry = monitor.getMetrics().entries.get(hash);
 
                     if (currentEntry && currentEntry.misses > 0) {
                       // We've seen this hash before - backend likely cached it
@@ -1121,7 +1119,11 @@ export const createAnthropicProxy = ({
                       }
                     );
                   } catch (error) {
-                    debug(1, "[Cache Metrics] Failed to record streaming metrics:", error);
+                    debug(
+                      1,
+                      "[Cache Metrics] Failed to record streaming metrics:",
+                      error
+                    );
                   }
                 } else if (!finalUsageData) {
                   debug(
@@ -1130,15 +1132,48 @@ export const createAnthropicProxy = ({
                   );
                 }
 
-                // Delay res.end() to allow Node.js to finish writing buffered data
-                // If res.write() had returned false (backpressure), some data may still be in the buffer
-                // Calling res.end() too early can truncate the response
-                setImmediate(() => {
+                // FIX #1: Enhanced Stream Draining
+                // Ensure all buffered data is written before closing the response.
+                // This prevents truncation when backpressure causes data to buffer.
+                //
+                // If res.write() had returned false (backpressure), some data may still be in the buffer.
+                // We must check for buffered data and wait for the 'drain' event before calling res.end().
+                // Calling res.end() too early truncates the response.
+
+                const drainAndClose = () => {
                   if (!res.writableEnded) {
                     debug(2, `[Stream] Ending response stream after flush`);
                     res.end();
                   }
-                });
+                };
+
+                // Check if there's buffered data waiting to be written
+                if (res.writableLength > 0) {
+                  debug(2, `[Backpressure] ${res.writableLength} bytes buffered, waiting for drain`);
+
+                  // Wait for drain event (buffer ready for more data) before closing
+                  res.once("drain", () => {
+                    debug(2, `[Backpressure] Drain event fired, closing stream`);
+                    setImmediate(drainAndClose);
+                  });
+
+                  // Safety timeout: if drain event never fires, force close after 5 seconds
+                  // This prevents hanging if there's an edge case we haven't considered
+                  const drainTimeout = setTimeout(() => {
+                    if (!res.writableEnded) {
+                      debug(1, `[Backpressure] Drain timeout (5s), force closing stream`);
+                      drainAndClose();
+                    }
+                  }, 5000);
+
+                  // If stream ends normally, clear the timeout
+                  res.once("finish", () => {
+                    clearTimeout(drainTimeout);
+                  });
+                } else {
+                  // No buffered data, safe to close immediately with setImmediate delay
+                  setImmediate(drainAndClose);
+                }
               },
               abort(reason) {
                 // Handle stream abort
