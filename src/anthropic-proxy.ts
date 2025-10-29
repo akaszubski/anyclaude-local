@@ -204,7 +204,11 @@ export const createAnthropicProxy = ({
                     }
                     const systemPromptLength = systemPrompt.length;
                     const toolCount = body.tools ? body.tools.length : 0;
-                    const hashInput = systemPrompt + String(toolCount);
+                    // Hash the full system prompt + tools to ensure identical prompts get same hash
+                    const hashInput = JSON.stringify({
+                      system: systemPrompt,
+                      tools: body.tools || [],
+                    });
                     const hash = createHash("sha256")
                       .update(hashInput)
                       .digest("hex");
@@ -227,7 +231,9 @@ export const createAnthropicProxy = ({
                     } else {
                       // vLLM-MLX: infer cache hits from repeated request hashes
                       // Track this request for pattern detection
-                      const currentEntry = monitor.getMetrics().entries.get(hash);
+                      const currentEntry = monitor
+                        .getMetrics()
+                        .entries.get(hash);
 
                       if (currentEntry && currentEntry.misses > 0) {
                         // We've seen this hash before - vLLM-MLX likely cached it
@@ -902,12 +908,35 @@ export const createAnthropicProxy = ({
 
           // CRITICAL: Create a WritableStream that properly handles backpressure
           // This prevents truncation when res.write() returns false (buffer full)
-          await convertToAnthropicStream(stream.fullStream, true).pipeTo(
+          const convertedStream = convertToAnthropicStream(
+            stream.fullStream,
+            true
+          );
+
+          let totalChunksWritten = 0;
+          let totalBytesWritten = 0;
+          let finalUsageData: any = null;
+
+          await convertedStream.pipeTo(
             new WritableStream({
               write(chunk) {
+                totalChunksWritten++;
+                const data = `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`;
+                totalBytesWritten += data.length;
+
+                // Capture usage data from message_delta events for cache metrics
+                if (chunk.type === "message_delta" && chunk.usage) {
+                  finalUsageData = chunk.usage;
+                  debug(
+                    2,
+                    `[Cache Metrics] Captured usage from message_delta:`,
+                    finalUsageData
+                  );
+                }
+
                 debug(
                   2,
-                  `[WritableStream] Received chunk of type: ${chunk.type}`
+                  `[WritableStream] Chunk #${totalChunksWritten} of type: ${chunk.type} (${data.length} bytes, total: ${totalBytesWritten} bytes)`
                 );
                 // Clear keepalive on first chunk (stream has started)
                 if (keepaliveInterval) {
@@ -940,8 +969,12 @@ export const createAnthropicProxy = ({
                 // CRITICAL FIX: Handle backpressure properly
                 // res.write() returns false when internal buffer is full
                 // In this case, return a Promise that resolves when 'drain' is emitted
-                const data = `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`;
                 const canContinue = res.write(data);
+
+                debug(
+                  2,
+                  `[WritableStream] Written chunk type: ${chunk.type}, buffer ok: ${canContinue}`
+                );
 
                 if (!canContinue) {
                   debug(
@@ -949,7 +982,7 @@ export const createAnthropicProxy = ({
                     `[Backpressure] Buffer full, waiting for drain event`
                   );
                   // Return a Promise that resolves when the response is ready for more data
-                  return new Promise((resolve, reject) => {
+                  return new Promise<void>((resolve, reject) => {
                     let drainTimeout: NodeJS.Timeout | null = null;
                     let cleaned = false;
 
@@ -1006,8 +1039,16 @@ export const createAnthropicProxy = ({
                     res.once("close", onClose);
                   });
                 }
+
+                // Return a resolved promise if no backpressure (for proper typing)
+                return Promise.resolve();
               },
               close() {
+                // CRITICAL: Delay calling res.end() until after all data has been flushed
+                // The WritableStream is closing, which means all chunks have been queued for writing
+                // but may not have been fully sent to the client yet. Calling res.end() immediately
+                // can truncate the response if there's still buffered data.
+
                 // Clear keepalive on completion
                 if (keepaliveInterval) {
                   clearInterval(keepaliveInterval);
@@ -1015,9 +1056,89 @@ export const createAnthropicProxy = ({
                 const totalDuration = Date.now() - requestStartTime;
                 debug(
                   1,
-                  `[Request Complete] ${providerName}/${model}: ${totalDuration}ms`
+                  `[Request Complete] ${providerName}/${model}: ${totalDuration}ms (${totalChunksWritten} chunks, ${totalBytesWritten} bytes)`
                 );
-                res.end();
+
+                // Record cache metrics for streaming responses
+                if (finalUsageData && body) {
+                  try {
+                    const inputTokens = finalUsageData.input_tokens || 0;
+                    const outputTokens = finalUsageData.output_tokens || 0;
+                    const cacheReadTokens =
+                      finalUsageData.cache_read_input_tokens || 0;
+                    const cacheCreationTokens =
+                      finalUsageData.cache_creation_input_tokens || 0;
+
+                    // Calculate hash from system prompt and tools for per-prompt tracking
+                    let systemPrompt = "";
+                    if (typeof body.system === "string") {
+                      systemPrompt = body.system;
+                    } else if (Array.isArray(body.system)) {
+                      systemPrompt = JSON.stringify(body.system);
+                    }
+                    const systemPromptLength = systemPrompt.length;
+                    const toolCount = body.tools ? body.tools.length : 0;
+                    // Hash the full system prompt + tools to ensure identical prompts get same hash
+                    const hashInput = JSON.stringify({
+                      system: systemPrompt,
+                      tools: body.tools || [],
+                    });
+                    const hash = createHash("sha256")
+                      .update(hashInput)
+                      .digest("hex");
+
+                    const monitor = getCacheMonitor();
+
+                    // In streaming mode, we're always using vLLM-MLX or LMStudio
+                    // Infer cache hits from repeated request hashes
+                    const currentEntry = monitor
+                      .getMetrics()
+                      .entries.get(hash);
+
+                    if (currentEntry && currentEntry.misses > 0) {
+                      // We've seen this hash before - backend likely cached it
+                      monitor.recordHit(hash, inputTokens, 0);
+                    } else {
+                      // First time seeing this hash
+                      monitor.recordMiss(
+                        hash,
+                        inputTokens,
+                        0,
+                        systemPromptLength,
+                        toolCount
+                      );
+                    }
+
+                    debug(
+                      1,
+                      `[Cache Metrics] Recorded streaming response metrics`,
+                      {
+                        hash: hash.substring(0, 8),
+                        inputTokens,
+                        outputTokens,
+                        cacheReadTokens,
+                        cacheCreationTokens,
+                      }
+                    );
+                  } catch (error) {
+                    debug(1, "[Cache Metrics] Failed to record streaming metrics:", error);
+                  }
+                } else if (!finalUsageData) {
+                  debug(
+                    1,
+                    `[Cache Metrics] No usage data captured (stream may have failed)`
+                  );
+                }
+
+                // Delay res.end() to allow Node.js to finish writing buffered data
+                // If res.write() had returned false (backpressure), some data may still be in the buffer
+                // Calling res.end() too early can truncate the response
+                setImmediate(() => {
+                  if (!res.writableEnded) {
+                    debug(2, `[Stream] Ending response stream after flush`);
+                    res.end();
+                  }
+                });
               },
               abort(reason) {
                 // Handle stream abort
@@ -1090,6 +1211,11 @@ export const createAnthropicProxy = ({
         debug(2, `[Prompt Cache] Cached entries:`, cacheStats.entries);
       }
     }
+
+    // Display cache monitoring dashboard
+    const monitor = getCacheMonitor();
+    monitor.save();
+    monitor.displayReport();
   });
 
   const address = proxy.address();
