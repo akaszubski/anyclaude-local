@@ -20,9 +20,11 @@ npm run test:integration:cache
 ## Test Suites Overview
 
 ### 1. Unit Tests (26 tests)
+
 Location: `tests/unit/`
 
 Tests core functionality in isolation:
+
 - Trace logger
 - JSON schema transformation
 - Trace analyzer
@@ -30,14 +32,17 @@ Tests core functionality in isolation:
 - Tool calling edge cases
 
 Run with:
+
 ```bash
 npm run test:unit
 ```
 
 ### 2. Regression Tests (27 tests)
+
 Location: `tests/regression/`
 
 Tests that ensure fixes don't break:
+
 - Stream draining (fix #1)
 - Message-stop timeout (fix #2)
 - Request logging (fix #3)
@@ -45,16 +50,19 @@ Tests that ensure fixes don't break:
 - Stream completion
 
 Run with:
+
 ```bash
 npm run test:regression
 ```
 
 ### 3. Integration Tests - Format Validation
+
 Location: `tests/integration/test_claude_code_e2e.js`
 
 **Purpose**: Validates that anyclaude handles the exact message formats Claude Code expects.
 
 **10 Test Groups** (25 assertions):
+
 1. **Basic Connectivity** - Proxy is reachable
 2. **Message Format** - System prompts, messages, roles
 3. **Tool Calling** - Tool use IDs, inputs, results
@@ -67,11 +75,13 @@ Location: `tests/integration/test_claude_code_e2e.js`
 10. **Proxy Behavior** - Runtime detection
 
 Run with:
+
 ```bash
 npm run test:integration:format
 ```
 
 ### 4. Integration Tests - Cache Validation (UAT)
+
 Location: `tests/integration/test_genai_cache_validation.js`
 
 **Purpose**: User Acceptance Testing (UAT) for cache behavior and consistent GenAI results.
@@ -79,33 +89,39 @@ Location: `tests/integration/test_genai_cache_validation.js`
 **8 Test Suites** (28 assertions):
 
 #### Suite 1: Message Format Validation
+
 - System message role and content
 - User message format
 - Multiple content blocks
 
 #### Suite 2: Cache Control Validation
+
 - Cache control headers
 - Ephemeral cache type
 - Cache with large system prompts
 
 #### Suite 3: Cache Metrics Validation
+
 - Cache creation tokens
 - Cache read tokens
 - Cache hit rate calculation
 - Token usage breakdown
 
 #### Suite 4: Cache Consistency
+
 - Request sequence (miss → hit → hit)
 - Cache key consistency
 - Cache expiration handling
 
 #### Suite 5: Request Logging and Metrics
+
 - Log directory creation
 - JSONL format validation
 - Log entry structure
 - Cache metrics aggregation
 
 #### Suite 6: Response Consistency
+
 - Message ID format
 - Response role
 - Content blocks
@@ -113,17 +129,20 @@ Location: `tests/integration/test_genai_cache_validation.js`
 - Usage statistics
 
 #### Suite 7: Tool Call Validation
+
 - Tool use ID format
 - Tool names
 - Tool input validation
 - Tool result handling
 
 #### Suite 8: Streaming Validation
+
 - Event sequence
 - Text delta chunks
 - Text reconstruction
 
 Run with:
+
 ```bash
 npm run test:integration:cache
 ```
@@ -159,12 +178,14 @@ Time: ~30-60 seconds
 ## Testing With a Running Proxy
 
 ### Option 1: Quick Format Check (No Proxy Needed)
+
 ```bash
 npm run test:integration:format
 # Tests without connecting to proxy (25 assertions pass)
 ```
 
 ### Option 2: Full Integration (With Proxy)
+
 ```bash
 # Terminal 1: Start the proxy
 PROXY_ONLY=true bun run src/main.ts
@@ -174,6 +195,7 @@ ANYCLAUDE_PROXY_PORT=60877 npm run test:integration:format
 ```
 
 ### Option 3: Full End-to-End (With vLLM-MLX)
+
 ```bash
 # Terminal 1: Start vLLM-MLX server
 python3 scripts/vllm-mlx-server.py --model /path/to/model
@@ -194,6 +216,7 @@ tail -f ~/.anyclaude/request-logs/*.jsonl | jq .
 ## Reading Test Output
 
 ### Passing Test Output
+
 ```
 ════════════════════════════════════════════════════════════════════════════════
   GENAI CACHE VALIDATION - USER ACCEPTANCE TESTING (UAT)
@@ -225,6 +248,7 @@ tail -f ~/.anyclaude/request-logs/*.jsonl | jq .
 ## Test Coverage
 
 ### Message Formats ✅
+
 - [x] System prompts with cache control
 - [x] User/assistant messages
 - [x] Multiple content blocks
@@ -232,6 +256,7 @@ tail -f ~/.anyclaude/request-logs/*.jsonl | jq .
 - [x] Error responses
 
 ### Cache Behavior ✅
+
 - [x] Cache control headers
 - [x] Cache metrics collection
 - [x] Cache hit rate tracking
@@ -239,6 +264,7 @@ tail -f ~/.anyclaude/request-logs/*.jsonl | jq .
 - [x] Cache consistency across requests
 
 ### Streaming ✅
+
 - [x] Server-Sent Events (SSE) format
 - [x] Event sequencing
 - [x] Text delta chunks
@@ -246,6 +272,7 @@ tail -f ~/.anyclaude/request-logs/*.jsonl | jq .
 - [x] Stream completion
 
 ### Request Logging ✅
+
 - [x] JSONL format
 - [x] Request metadata
 - [x] Cache metrics
@@ -282,6 +309,7 @@ jq -s '
 ```
 
 Output:
+
 ```json
 {
   "total": 42,
@@ -315,11 +343,13 @@ In Claude Code, try using tools:
 ```
 
 Claude Code will:
+
 1. Ask to use the file_create tool
 2. Send tool result back to model
 3. The request will be logged with tool metrics
 
 Check logs:
+
 ```bash
 jq 'select(.toolCount > 0)' ~/.anyclaude/request-logs/*.jsonl | head -1
 ```
@@ -327,9 +357,11 @@ jq 'select(.toolCount > 0)' ~/.anyclaude/request-logs/*.jsonl | head -1
 ## Debugging Failed Tests
 
 ### Test: "Connection error"
+
 This is expected if the proxy isn't running. The test gracefully handles this.
 
 To run with proxy:
+
 ```bash
 PROXY_ONLY=true bun run src/main.ts &
 sleep 2
@@ -337,17 +369,21 @@ ANYCLAUDE_PROXY_PORT=60877 npm run test:integration:format
 ```
 
 ### Test: Cache metrics mismatch
+
 The test expects cache hits from repeated requests. On first run, cache hit rate will be low.
 
 To see cache behavior:
+
 1. Run `anyclaude` multiple times with similar prompts
 2. Check logs for cache metrics
 3. Run test again - should show higher cache hit rate
 
 ### Test: Missing log directory
+
 On first run, logs haven't been created yet. This is expected.
 
 To generate logs:
+
 ```bash
 # Start proxy and run a request through it
 PROXY_ONLY=true bun run src/main.ts &
@@ -359,18 +395,22 @@ ls -la ~/.anyclaude/request-logs/
 ## Performance Expectations
 
 ### Test Execution Time
+
 - Unit tests: ~5-10 seconds
 - Regression tests: ~10-15 seconds
 - Integration tests: ~5 seconds
 - Total: ~20-30 seconds
 
 ### Claude Code Interaction
+
 When running `anyclaude`:
+
 - First request: 2-5 seconds (cache miss, system prompt cached)
 - Subsequent requests: 1-2 seconds (cache hit)
 - Large file operations: 5-10 seconds
 
 ### Cache Performance
+
 - First request: ~100% of tokens charged
 - Subsequent requests: ~25% of tokens charged (75% savings from cache)
 - Cache expires after 5 minutes of inactivity
@@ -390,6 +430,7 @@ git push origin main
 ```
 
 To skip hooks (not recommended):
+
 ```bash
 git push --no-verify  # Skip all hooks
 ```
@@ -410,26 +451,31 @@ nodemon --ext ts,js --watch src --watch tests npm test
 ## What These Tests Validate
 
 ✅ **Message Format**
+
 - Claude Code can send messages in the exact format
 - System prompts are properly formatted
 - Tool calls are in the correct structure
 
 ✅ **Cache Behavior**
+
 - Cache control headers are understood
 - Cache metrics are collected
 - Cache hit rates improve on repeated requests
 
 ✅ **Streaming**
+
 - Responses stream correctly via SSE
 - Events arrive in proper sequence
 - Large responses don't get truncated
 
 ✅ **Request Logging**
+
 - All requests are logged to JSONL
 - Metrics are properly recorded
 - Cache performance is tracked
 
 ✅ **Real Claude Code**
+
 - Proxy handles actual Claude Code requests
 - Tool calling works end-to-end
 - Responses are formatted correctly
@@ -437,19 +483,25 @@ nodemon --ext ts,js --watch src --watch tests npm test
 ## Troubleshooting
 
 ### "Tests pass locally but fail in CI"
+
 Make sure CI environment has:
+
 - Node.js 18+
 - TypeScript 5+
 - No firewall blocking localhost:60877
 
 ### "Cache tests fail but manual testing works"
+
 Cache behavior depends on timing. Run tests sequentially:
+
 ```bash
 npm run test:integration:cache -- --no-parallel
 ```
 
 ### "Streaming tests fail"
+
 Ensure vLLM-MLX or LMStudio isn't returning truncated responses:
+
 ```bash
 # Check server logs
 tail -f ~/.anyclaude/logs/vllm-mlx-server.log

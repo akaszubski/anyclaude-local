@@ -295,7 +295,10 @@ function testCacheMetricsValidation() {
       totalInput);
 
   log.metric("Regular input tokens", totalInput);
-  log.metric("Cache creation tokens", responseWithMetrics.usage.cache_creation_input_tokens);
+  log.metric(
+    "Cache creation tokens",
+    responseWithMetrics.usage.cache_creation_input_tokens
+  );
   log.metric(
     "Cache read tokens",
     responseWithMetrics.usage.cache_read_input_tokens
@@ -305,7 +308,9 @@ function testCacheMetricsValidation() {
   if (cacheRate >= 0.3) {
     log.pass(`Good cache hit rate: ${(cacheRate * 100).toFixed(1)}%`);
   } else {
-    log.info(`Cache hit rate is lower than expected: ${(cacheRate * 100).toFixed(1)}%`);
+    log.info(
+      `Cache hit rate is lower than expected: ${(cacheRate * 100).toFixed(1)}%`
+    );
   }
 
   log.end();
@@ -355,7 +360,9 @@ function testCacheConsistency() {
 
   log.test("Cache key consistency");
   if (systemPromptHash) {
-    log.pass(`System prompt hash is consistent: ${systemPromptHash.substring(0, 8)}...`);
+    log.pass(
+      `System prompt hash is consistent: ${systemPromptHash.substring(0, 8)}...`
+    );
   } else {
     log.fail("Cache key hash failed");
   }
@@ -540,7 +547,11 @@ function testResponseConsistency() {
   }
 
   log.test("Stop reason");
-  if (["end_turn", "max_tokens", "tool_use", "stop_sequence"].includes(validResponse.stop_reason)) {
+  if (
+    ["end_turn", "max_tokens", "tool_use", "stop_sequence"].includes(
+      validResponse.stop_reason
+    )
+  ) {
     log.pass(`Stop reason is valid: ${validResponse.stop_reason}`);
   } else {
     log.fail("Stop reason is invalid");
@@ -695,9 +706,7 @@ function testStreamingValidation() {
   if (JSON.stringify(eventTypes) === JSON.stringify(expectedSequence)) {
     log.pass("Streaming event sequence is correct");
   } else {
-    log.info(
-      `Event sequence: ${eventTypes.join(" → ")}`
-    );
+    log.info(`Event sequence: ${eventTypes.join(" → ")}`);
   }
 
   log.test("Text delta chunks");
@@ -731,15 +740,11 @@ function testStreamingValidation() {
 
 function runAllTests() {
   console.log("");
-  console.log(
-    `${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`
-  );
+  console.log(`${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`);
   console.log(
     `${colors.bold}${colors.cyan}  GENAI CACHE VALIDATION - USER ACCEPTANCE TESTING (UAT)${colors.reset}`
   );
-  console.log(
-    `${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`
-  );
+  console.log(`${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`);
   console.log(
     `\n${colors.dim}Testing Claude Code integration with anyclaude proxy${colors.reset}`
   );
@@ -757,27 +762,21 @@ function runAllTests() {
     testToolCallValidation();
     testStreamingValidation();
   } catch (error) {
-    console.error(`${colors.red}Unexpected error: ${error.message}${colors.reset}`);
+    console.error(
+      `${colors.red}Unexpected error: ${error.message}${colors.reset}`
+    );
     console.error(error.stack);
   }
 
   // Final Summary
-  console.log(
-    `\n${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`
-  );
+  console.log(`\n${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`);
   console.log(`${colors.bold}${colors.cyan}  TEST SUMMARY${colors.reset}`);
-  console.log(
-    `${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`
-  );
+  console.log(`${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`);
   console.log(
     `  ${colors.green}${colors.bold}Passed:${colors.reset} ${passed}`
   );
-  console.log(
-    `  ${colors.red}${colors.bold}Failed:${colors.reset} ${failed}`
-  );
-  console.log(
-    `${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`
-  );
+  console.log(`  ${colors.red}${colors.bold}Failed:${colors.reset} ${failed}`);
+  console.log(`${colors.bold}${colors.cyan}${"═".repeat(80)}${colors.reset}`);
 
   if (failed === 0) {
     console.log(
@@ -789,18 +788,14 @@ function runAllTests() {
     );
   }
 
-  console.log(
-    `\n${colors.bold}Next Steps:${colors.reset}`
-  );
+  console.log(`\n${colors.bold}Next Steps:${colors.reset}`);
   console.log(
     `  1. Start proxy: ${colors.cyan}PROXY_ONLY=true bun run src/main.ts${colors.reset}`
   );
   console.log(
     `  2. Start server: ${colors.cyan}python3 scripts/vllm-mlx-server.py --model <path>${colors.reset}`
   );
-  console.log(
-    `  3. Test with Claude: ${colors.cyan}anyclaude${colors.reset}`
-  );
+  console.log(`  3. Test with Claude: ${colors.cyan}anyclaude${colors.reset}`);
   console.log(
     `  4. View logs: ${colors.cyan}tail -f ~/.anyclaude/request-logs/*.jsonl${colors.reset}`
   );

@@ -42,9 +42,7 @@ let tests = [];
 
 const log = {
   section: (title) => {
-    console.log(
-      `\n${colors.bold}${colors.blue}${title}${colors.reset}`
-    );
+    console.log(`\n${colors.bold}${colors.blue}${title}${colors.reset}`);
   },
   test: (name) => {
     console.log(`  Testing: ${name}...`);
@@ -202,10 +200,7 @@ async function testToolCallFormat() {
     }
 
     log.test("Tool input validation");
-    if (
-      expectedToolCall.input &&
-      typeof expectedToolCall.input === "object"
-    ) {
+    if (expectedToolCall.input && typeof expectedToolCall.input === "object") {
       log.pass("Tool input is properly formatted");
     } else {
       log.fail("Tool input format is incorrect");
@@ -237,7 +232,8 @@ async function testStreamingFormat() {
   log.section("Test 4: Streaming Response Format");
 
   // This is the Server-Sent Events (SSE) format Claude Code expects
-  const sseChunk = "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n";
+  const sseChunk =
+    'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Hello"}}\n\n';
 
   try {
     log.test("SSE format parsing");
@@ -425,7 +421,9 @@ async function testRequestLogging() {
     if (fs.existsSync(logDir)) {
       log.pass("Request log directory exists");
     } else {
-      log.info("Request log directory not created yet (will be on first request)");
+      log.info(
+        "Request log directory not created yet (will be on first request)"
+      );
     }
 
     log.test("JSONL log format");
@@ -514,10 +512,7 @@ async function testMessageRoundTrip() {
 
   try {
     log.test("Message content preservation");
-    if (
-      originalMessage.content &&
-      originalMessage.content[0].type === "text"
-    ) {
+    if (originalMessage.content && originalMessage.content[0].type === "text") {
       log.pass("Message content is preserved through conversion");
     } else {
       log.fail("Message content lost during conversion");
@@ -575,9 +570,7 @@ async function testProxyActualBehavior() {
         log.pass(`Proxy returned status ${response.status}`);
       } catch (e) {
         log.test("Proxy responds to API calls");
-        log.info(
-          "Proxy not responding (expected if not running during test)"
-        );
+        log.info("Proxy not responding (expected if not running during test)");
       }
     } else {
       log.test("Proxy runtime detection");
@@ -602,9 +595,7 @@ async function runAllTests() {
   console.log("\n" + "=".repeat(80));
   console.log("CLAUDE CODE END-TO-END INTERACTION TESTS");
   console.log("=".repeat(80));
-  console.log(
-    "\nThese tests verify that anyclaude handles the exact message"
-  );
+  console.log("\nThese tests verify that anyclaude handles the exact message");
   console.log(
     "formats and behaviors that Claude Code expects from the Anthropic API.\n"
   );
@@ -636,9 +627,7 @@ async function runAllTests() {
     console.log(
       `\n${colors.green}${colors.bold}✅ All Claude Code interaction tests passed!${colors.reset}`
     );
-    console.log(
-      "\nTo test with a running proxy, start it with:"
-    );
+    console.log("\nTo test with a running proxy, start it with:");
     console.log("  PROXY_ONLY=true bun run src/main.ts");
     console.log(
       "\nThen in another terminal, run this test with the proxy port set:"
@@ -652,9 +641,7 @@ async function runAllTests() {
     );
   }
 
-  console.log(
-    "\nTo test actual Claude Code with the proxy, run:"
-  );
+  console.log("\nTo test actual Claude Code with the proxy, run:");
   console.log("  anyclaude");
   console.log("\nThe proxy will:");
   console.log("  1. Start a local LMStudio/vLLM-MLX server");

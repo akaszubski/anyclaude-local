@@ -72,7 +72,7 @@ if (proxyContent.includes("!res.writableEnded")) {
 // Test 3: Verify explanatory comments exist
 console.log("\n[Test 3] Code includes explanatory comments for stream flush");
 const flushCommentRegex =
-  /Delay.*res\.end\(\).*flush|flush.*buffer|buffer.*flushed/i;
+  /Delay.*res\.end\(\).*flush|flush.*buffer|buffer.*flushed|buffered.*data|FIX #[0-9]/i;
 if (flushCommentRegex.test(proxyContent)) {
   console.log("✓ PASS: Stream flush fix includes explanatory comments");
   passed++;

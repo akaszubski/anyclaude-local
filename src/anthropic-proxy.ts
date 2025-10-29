@@ -2,7 +2,7 @@ import type { ProviderV2 } from "@ai-sdk/provider";
 import { jsonSchema, streamText, type Tool } from "ai";
 import * as http from "http";
 import * as https from "https";
-import type { AnthropicMessagesRequest } from "./anthropic-api-types";
+import type { AnthropicMessagesRequest, AnthropicStreamChunk } from "./anthropic-api-types";
 import { mapAnthropicStopReason } from "./anthropic-api-types";
 import {
   convertFromAnthropicMessages,
@@ -910,8 +910,16 @@ export const createAnthropicProxy = ({
             `[Streaming] Starting stream conversion and pipe for ${providerName}/${model}`
           );
 
-          // CRITICAL: Create a WritableStream that properly handles backpressure
-          // This prevents truncation when res.write() returns false (buffer full)
+          // FIX #4: Proper Backpressure Propagation
+          // Use Node.js pipe() instead of Web Streams API pipeTo() for proper backpressure.
+          // This ensures backpressure propagates ALL the way back to the source stream,
+          // preventing buffer overflow in the Transform stream.
+          //
+          // Flow:
+          // AI SDK Stream --[respects backpressure]-->
+          // convertToAnthropicStream Transform --[respects backpressure]-->
+          // Writable to res.write() --[writes with backpressure handling]-->
+          // HTTP Response
           const convertedStream = convertToAnthropicStream(
             stream.fullStream,
             true
@@ -921,285 +929,312 @@ export const createAnthropicProxy = ({
           let totalBytesWritten = 0;
           let finalUsageData: any = null;
 
-          await convertedStream.pipeTo(
-            new WritableStream({
-              write(chunk) {
-                totalChunksWritten++;
-                const data = `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`;
-                totalBytesWritten += data.length;
+          // Convert Web Streams to Node.js streams for proper backpressure handling
+          // Readable.fromWeb() converts the readable side
+          const { Readable, Writable } = require("stream");
+          const nodeReadable = Readable.fromWeb(convertedStream);
 
-                // Capture usage data from message_delta events for cache metrics
-                if (chunk.type === "message_delta" && chunk.usage) {
-                  finalUsageData = chunk.usage;
-                  debug(
-                    2,
-                    `[Cache Metrics] Captured usage from message_delta:`,
-                    finalUsageData
-                  );
-                }
+          // Create a writable that handles backpressure to res
+          const nodeWritable = new Writable({
+            highWaterMark: 16 * 1024, // 16KB default buffer
+            write(chunk: AnthropicStreamChunk, encoding: string, callback: (error?: Error | null) => void) {
+              totalChunksWritten++;
+              const data = `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`;
+              totalBytesWritten += data.length;
 
+              // Capture usage data from message_delta events for cache metrics
+              if (chunk.type === "message_delta" && chunk.usage) {
+                finalUsageData = chunk.usage;
                 debug(
                   2,
-                  `[WritableStream] Chunk #${totalChunksWritten} of type: ${chunk.type} (${data.length} bytes, total: ${totalBytesWritten} bytes)`
+                  `[Cache Metrics] Captured usage from message_delta:`,
+                  finalUsageData
                 );
-                // Clear keepalive on first chunk (stream has started)
-                if (keepaliveInterval) {
-                  clearInterval(keepaliveInterval);
-                  debug(
-                    2,
-                    `[Keepalive] Cleared (stream started after ${keepaliveCount} keepalives)`
-                  );
-                }
+              }
 
-                if (isVerboseDebugEnabled()) {
-                  debug(2, `[Stream Chunk]`, chunk);
-                }
+              debug(
+                2,
+                `[NodeWritable] Chunk #${totalChunksWritten} of type: ${chunk.type} (${data.length} bytes, total: ${totalBytesWritten} bytes)`
+              );
 
-                // Log tool_use events at trace level
-                if (
-                  isTraceDebugEnabled() &&
-                  chunk.type === "content_block_start" &&
-                  (chunk as any).content_block?.type === "tool_use"
-                ) {
-                  debug(3, `[SSE → Claude Code] Writing tool_use event:`, {
-                    event: chunk.type,
-                    index: (chunk as any).index,
-                    tool_name: (chunk as any).content_block.name,
-                    tool_id: (chunk as any).content_block.id,
-                    input: (chunk as any).content_block.input,
-                  });
-                }
-
-                // CRITICAL FIX: Handle backpressure properly
-                // res.write() returns false when internal buffer is full
-                // In this case, return a Promise that resolves when 'drain' is emitted
-                const canContinue = res.write(data);
-
+              // Clear keepalive on first chunk (stream has started)
+              if (keepaliveInterval) {
+                clearInterval(keepaliveInterval);
                 debug(
                   2,
-                  `[WritableStream] Written chunk type: ${chunk.type}, buffer ok: ${canContinue}`
+                  `[Keepalive] Cleared (stream started after ${keepaliveCount} keepalives)`
                 );
+              }
 
-                if (!canContinue) {
-                  debug(
-                    2,
-                    `[Backpressure] Buffer full, waiting for drain event`
-                  );
-                  // Return a Promise that resolves when the response is ready for more data
-                  return new Promise<void>((resolve, reject) => {
-                    let drainTimeout: NodeJS.Timeout | null = null;
-                    let cleaned = false;
+              if (isVerboseDebugEnabled()) {
+                debug(2, `[Stream Chunk]`, chunk);
+              }
 
-                    const cleanup = () => {
-                      if (cleaned) return;
-                      cleaned = true;
-                      if (drainTimeout) clearTimeout(drainTimeout);
-                      res.removeListener("drain", onDrain);
-                      res.removeListener("error", onError);
-                      res.removeListener("close", onClose);
-                    };
+              // Log tool_use events at trace level
+              if (
+                isTraceDebugEnabled() &&
+                chunk.type === "content_block_start" &&
+                (chunk as any).content_block?.type === "tool_use"
+              ) {
+                debug(3, `[SSE → Claude Code] Writing tool_use event:`, {
+                  event: chunk.type,
+                  index: (chunk as any).index,
+                  tool_name: (chunk as any).content_block.name,
+                  tool_id: (chunk as any).content_block.id,
+                  input: (chunk as any).content_block.input,
+                });
+              }
 
-                    const onDrain = () => {
-                      debug(
-                        2,
-                        `[Backpressure] Drain event received, resuming writes`
-                      );
-                      cleanup();
-                      resolve();
-                    };
+              // CRITICAL FIX #4: Handle backpressure properly
+              // res.write() returns false when internal buffer is full
+              // When this happens, we must signal backpressure back by not calling callback
+              // until the drain event fires. This prevents the node stream from buffering
+              // more data, which propagates backpressure to the Transform, which propagates
+              // it to the source (AI SDK stream).
+              const canContinue = res.write(data);
 
-                    const onError = (err: Error) => {
-                      debug(
-                        1,
-                        `[Backpressure] Error while waiting for drain:`,
-                        err
-                      );
-                      cleanup();
-                      reject(err);
-                    };
+              debug(
+                2,
+                `[NodeWritable] Written chunk type: ${chunk.type}, buffer ok: ${canContinue}`
+              );
 
-                    const onClose = () => {
-                      debug(
-                        1,
-                        `[Backpressure] Response closed while waiting for drain`
-                      );
-                      cleanup();
-                      reject(new Error("Response closed"));
-                    };
-
-                    // Set a timeout to prevent hanging forever if drain never comes
-                    // This can happen if the client disconnects or the response gets stuck
-                    drainTimeout = setTimeout(() => {
-                      debug(
-                        1,
-                        `[Backpressure] Timeout waiting for drain (5s) - response may be stuck`
-                      );
-                      cleanup();
-                      reject(new Error("Drain event timeout after 5 seconds"));
-                    }, 5000);
-
-                    res.once("drain", onDrain);
-                    res.once("error", onError);
-                    res.once("close", onClose);
-                  });
-                }
-
-                // Return a resolved promise if no backpressure (for proper typing)
-                return Promise.resolve();
-              },
-              close() {
-                // CRITICAL: Delay calling res.end() until after all data has been flushed
-                // The WritableStream is closing, which means all chunks have been queued for writing
-                // but may not have been fully sent to the client yet. Calling res.end() immediately
-                // can truncate the response if there's still buffered data.
-
-                // Clear keepalive on completion
-                if (keepaliveInterval) {
-                  clearInterval(keepaliveInterval);
-                }
-                const totalDuration = Date.now() - requestStartTime;
+              if (!canContinue) {
                 debug(
-                  1,
-                  `[Request Complete] ${providerName}/${model}: ${totalDuration}ms (${totalChunksWritten} chunks, ${totalBytesWritten} bytes)`
+                  2,
+                  `[Backpressure] res buffer full, waiting for drain event before continuing`
                 );
+                // Don't call callback yet - this signals backpressure up the pipe
+                // Once res drains, we'll call callback to resume
+                let drainTimeout: NodeJS.Timeout | null = null;
+                let cleaned = false;
 
-                // Record cache metrics for streaming responses
-                if (finalUsageData && body) {
-                  try {
-                    const inputTokens = finalUsageData.input_tokens || 0;
-                    const outputTokens = finalUsageData.output_tokens || 0;
-                    const cacheReadTokens =
-                      finalUsageData.cache_read_input_tokens || 0;
-                    const cacheCreationTokens =
-                      finalUsageData.cache_creation_input_tokens || 0;
-
-                    // Calculate hash from system prompt and tools for per-prompt tracking
-                    let systemPrompt = "";
-                    if (typeof body.system === "string") {
-                      systemPrompt = body.system;
-                    } else if (Array.isArray(body.system)) {
-                      systemPrompt = JSON.stringify(body.system);
-                    }
-                    const systemPromptLength = systemPrompt.length;
-                    const toolCount = body.tools ? body.tools.length : 0;
-                    // Hash the full system prompt + tools to ensure identical prompts get same hash
-                    const hashInput = JSON.stringify({
-                      system: systemPrompt,
-                      tools: body.tools || [],
-                    });
-                    const hash = createHash("sha256")
-                      .update(hashInput)
-                      .digest("hex");
-
-                    const monitor = getCacheMonitor();
-
-                    // In streaming mode, we're always using vLLM-MLX or LMStudio
-                    // Infer cache hits from repeated request hashes
-                    const currentEntry = monitor.getMetrics().entries.get(hash);
-
-                    if (currentEntry && currentEntry.misses > 0) {
-                      // We've seen this hash before - backend likely cached it
-                      monitor.recordHit(hash, inputTokens, 0);
-                    } else {
-                      // First time seeing this hash
-                      monitor.recordMiss(
-                        hash,
-                        inputTokens,
-                        0,
-                        systemPromptLength,
-                        toolCount
-                      );
-                    }
-
-                    debug(
-                      1,
-                      `[Cache Metrics] Recorded streaming response metrics`,
-                      {
-                        hash: hash.substring(0, 8),
-                        inputTokens,
-                        outputTokens,
-                        cacheReadTokens,
-                        cacheCreationTokens,
-                      }
-                    );
-                  } catch (error) {
-                    debug(
-                      1,
-                      "[Cache Metrics] Failed to record streaming metrics:",
-                      error
-                    );
-                  }
-                } else if (!finalUsageData) {
-                  debug(
-                    1,
-                    `[Cache Metrics] No usage data captured (stream may have failed)`
-                  );
-                }
-
-                // FIX #1: Enhanced Stream Draining
-                // Ensure all buffered data is written before closing the response.
-                // This prevents truncation when backpressure causes data to buffer.
-                //
-                // If res.write() had returned false (backpressure), some data may still be in the buffer.
-                // We must check for buffered data and wait for the 'drain' event before calling res.end().
-                // Calling res.end() too early truncates the response.
-
-                const drainAndClose = () => {
-                  if (!res.writableEnded) {
-                    debug(2, `[Stream] Ending response stream after flush`);
-                    res.end();
-                  }
+                const cleanup = () => {
+                  if (cleaned) return;
+                  cleaned = true;
+                  if (drainTimeout) clearTimeout(drainTimeout);
+                  res.removeListener("drain", onDrain);
+                  res.removeListener("error", onError);
+                  res.removeListener("close", onClose);
                 };
 
-                // Check if there's buffered data waiting to be written
-                if (res.writableLength > 0) {
+                const onDrain = () => {
                   debug(
                     2,
-                    `[Backpressure] ${res.writableLength} bytes buffered, waiting for drain`
+                    `[Backpressure] res drain event received, resuming writes`
                   );
+                  cleanup();
+                  callback(); // Resume writing
+                };
 
-                  // Wait for drain event (buffer ready for more data) before closing
-                  res.once("drain", () => {
-                    debug(
-                      2,
-                      `[Backpressure] Drain event fired, closing stream`
-                    );
-                    setImmediate(drainAndClose);
-                  });
+                const onError = (err: Error) => {
+                  debug(
+                    1,
+                    `[Backpressure] Error while waiting for drain:`,
+                    err
+                  );
+                  cleanup();
+                  callback(err);
+                };
 
-                  // Safety timeout: if drain event never fires, force close after 5 seconds
-                  // This prevents hanging if there's an edge case we haven't considered
-                  const drainTimeout = setTimeout(() => {
-                    if (!res.writableEnded) {
-                      debug(
-                        1,
-                        `[Backpressure] Drain timeout (5s), force closing stream`
-                      );
-                      drainAndClose();
-                    }
-                  }, 5000);
+                const onClose = () => {
+                  debug(
+                    1,
+                    `[Backpressure] Response closed while waiting for drain`
+                  );
+                  cleanup();
+                  callback(new Error("Response closed"));
+                };
 
-                  // If stream ends normally, clear the timeout
-                  res.once("finish", () => {
-                    clearTimeout(drainTimeout);
-                  });
+                // Set a timeout to prevent hanging forever if drain never comes
+                drainTimeout = setTimeout(() => {
+                  debug(
+                    1,
+                    `[Backpressure] Timeout waiting for drain (5s) - response may be stuck`
+                  );
+                  cleanup();
+                  callback(new Error("Drain timeout after 5 seconds"));
+                }, 5000);
+
+                res.once("drain", onDrain);
+                res.once("error", onError);
+                res.once("close", onClose);
+              } else {
+                // No backpressure, continue immediately
+                callback();
+              }
+            },
+          });
+
+          // Pipe the converted stream through to res
+          // Node.js pipe() automatically handles backpressure propagation
+          nodeReadable.pipe(nodeWritable);
+
+          // Handle stream errors
+          nodeReadable.on("error", (error: any) => {
+            debug(1, `[Stream Error] Source stream error:`, error);
+            if (!res.headersSent) {
+              res.writeHead(503, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  type: "error",
+                  error: {
+                    type: "stream_error",
+                    message: "Stream processing error",
+                  },
+                })
+              );
+            } else {
+              nodeWritable.destroy(error);
+            }
+          });
+
+          nodeWritable.on("error", (error: any) => {
+            debug(1, `[Write Error] Writable stream error:`, error);
+            if (!res.headersSent) {
+              res.writeHead(503, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  type: "error",
+                  error: {
+                    type: "write_error",
+                    message: "Write error",
+                  },
+                })
+              );
+            }
+          });
+
+          // Handle pipe completion
+          nodeWritable.on("finish", () => {
+            // Clear keepalive on completion
+            if (keepaliveInterval) {
+              clearInterval(keepaliveInterval);
+            }
+            const totalDuration = Date.now() - requestStartTime;
+            debug(
+              1,
+              `[Request Complete] ${providerName}/${model}: ${totalDuration}ms (${totalChunksWritten} chunks, ${totalBytesWritten} bytes)`
+            );
+
+            // Record cache metrics for streaming responses
+            if (finalUsageData && body) {
+              try {
+                const inputTokens = finalUsageData.input_tokens || 0;
+                const outputTokens = finalUsageData.output_tokens || 0;
+                const cacheReadTokens =
+                  finalUsageData.cache_read_input_tokens || 0;
+                const cacheCreationTokens =
+                  finalUsageData.cache_creation_input_tokens || 0;
+
+                // Calculate hash from system prompt and tools for per-prompt tracking
+                let systemPrompt = "";
+                if (typeof body.system === "string") {
+                  systemPrompt = body.system;
+                } else if (Array.isArray(body.system)) {
+                  systemPrompt = JSON.stringify(body.system);
+                }
+                const systemPromptLength = systemPrompt.length;
+                const toolCount = body.tools ? body.tools.length : 0;
+                // Hash the full system prompt + tools to ensure identical prompts get same hash
+                const hashInput = JSON.stringify({
+                  system: systemPrompt,
+                  tools: body.tools || [],
+                });
+                const hash = createHash("sha256")
+                  .update(hashInput)
+                  .digest("hex");
+
+                const monitor = getCacheMonitor();
+
+                // In streaming mode, we're always using vLLM-MLX or LMStudio
+                // Infer cache hits from repeated request hashes
+                const currentEntry = monitor.getMetrics().entries.get(hash);
+
+                if (currentEntry && currentEntry.misses > 0) {
+                  // We've seen this hash before - backend likely cached it
+                  monitor.recordHit(hash, inputTokens, 0);
                 } else {
-                  // No buffered data, safe to close immediately with setImmediate delay
-                  setImmediate(drainAndClose);
+                  // First time seeing this hash
+                  monitor.recordMiss(
+                    hash,
+                    inputTokens,
+                    0,
+                    systemPromptLength,
+                    toolCount
+                  );
                 }
-              },
-              abort(reason) {
-                // Handle stream abort
-                debug(1, `[Stream Abort] Stream aborted:`, reason);
-                if (keepaliveInterval) {
-                  clearInterval(keepaliveInterval);
-                }
+
+                debug(
+                  1,
+                  `[Cache Metrics] Recorded streaming response metrics`,
+                  {
+                    hash: hash.substring(0, 8),
+                    inputTokens,
+                    outputTokens,
+                    cacheReadTokens,
+                    cacheCreationTokens,
+                  }
+                );
+              } catch (error) {
+                debug(
+                  1,
+                  "[Cache Metrics] Failed to record streaming metrics:",
+                  error
+                );
+              }
+            } else if (!finalUsageData) {
+              debug(
+                1,
+                `[Cache Metrics] No usage data captured (stream may have failed)`
+              );
+            }
+
+            // FIX #1: Enhanced Stream Draining
+            // Ensure all buffered data is written before closing the response.
+            // This prevents truncation when backpressure causes data to buffer.
+            const drainAndClose = () => {
+              if (!res.writableEnded) {
+                debug(2, `[Stream] Ending response stream after flush`);
+                res.end();
+              }
+            };
+
+            // Check if there's buffered data waiting to be written
+            if (res.writableLength > 0) {
+              debug(
+                2,
+                `[Backpressure] ${res.writableLength} bytes buffered, waiting for drain`
+              );
+
+              // Wait for drain event (buffer ready for more data) before closing
+              res.once("drain", () => {
+                debug(
+                  2,
+                  `[Backpressure] Drain event fired, closing stream`
+                );
+                setImmediate(drainAndClose);
+              });
+
+              // Safety timeout: if drain event never fires, force close after 5 seconds
+              const drainTimeout = setTimeout(() => {
                 if (!res.writableEnded) {
-                  res.end();
+                  debug(
+                    1,
+                    `[Backpressure] Drain timeout (5s), force closing stream`
+                  );
+                  drainAndClose();
                 }
-              },
-            })
-          );
+              }, 5000);
+
+              // If stream ends normally, clear the timeout
+              res.once("finish", () => {
+                clearTimeout(drainTimeout);
+              });
+            } else {
+              // No buffered data, safe to close immediately with setImmediate delay
+              setImmediate(drainAndClose);
+            }
+          });
         } catch (error) {
           // Clear keepalive on error
           if (keepaliveInterval) {

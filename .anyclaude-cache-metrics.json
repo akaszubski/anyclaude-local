@@ -1,11 +1,11 @@
 {
-  "exportedAt": "2025-10-29T20:07:19.200Z",
-  "runtime": 266689,
+  "exportedAt": "2025-10-29T20:17:29.077Z",
+  "runtime": 171293,
   "metrics": {
-    "totalRequests": 10,
-    "cacheHits": 5,
-    "cacheMisses": 5,
-    "hitRate": "50.00",
+    "totalRequests": 6,
+    "cacheHits": 2,
+    "cacheMisses": 4,
+    "hitRate": "33.33",
     "tokenSavings": "0.00",
     "totalInputTokens": 0,
     "cacheCreationTokens": 0,
@@ -13,23 +13,15 @@
   },
   "topEntries": [
     {
-      "hash": "d61a367fd605d3a2cc29aed1d15b04bc912d7277bf60854e021723beccd9ad03",
-      "tools": 0,
-      "hits": 2,
-      "misses": 1,
-      "hitRate": "66.7",
-      "cacheTokens": 0
-    },
-    {
-      "hash": "612ff39254b3bcebc87bacec55ea1ff9dfb643a3b12119e771a2ee4b0fe1a3fd",
+      "hash": "3cf0dd71465c386be85df1dae257a510aea045c73781cfe28789d270f308c805",
       "tools": 17,
-      "hits": 2,
+      "hits": 1,
       "misses": 1,
-      "hitRate": "66.7",
+      "hitRate": "50.0",
       "cacheTokens": 0
     },
     {
-      "hash": "6b2b2ccb5953dcb5e592952840ade081edba4239e843b78262d4962e9c43d3d5",
+      "hash": "d61a367fd605d3a2cc29aed1d15b04bc912d7277bf60854e021723beccd9ad03",
       "tools": 0,
       "hits": 1,
       "misses": 1,
@@ -37,7 +29,7 @@
       "cacheTokens": 0
     },
     {
-      "hash": "a26e5acf190754e7b10f1d2747bbfb54e26809c14e94287f47e5d745b6b063e2",
+      "hash": "6e5872e7c0e5b41441e728cf7f80725bf682eee90d5eb09f50090bbb04e33e3f",
       "tools": 0,
       "hits": 0,
       "misses": 1,
@@ -45,7 +37,7 @@
       "cacheTokens": 0
     },
     {
-      "hash": "33817ddad6e1d6fd181671bb0c266fa9b3dad593ef2d713facd226d0ba5b52e9",
+      "hash": "ef3d1b460f1b9cc659bcc1cd891c0d29a0b6ef464beda82cad73c92207f5e2ea",
       "tools": 0,
       "hits": 0,
       "misses": 1,
