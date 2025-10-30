@@ -2,7 +2,10 @@ import type { ProviderV2 } from "@ai-sdk/provider";
 import { jsonSchema, streamText, type Tool } from "ai";
 import * as http from "http";
 import * as https from "https";
-import type { AnthropicMessagesRequest, AnthropicStreamChunk } from "./anthropic-api-types";
+import type {
+  AnthropicMessagesRequest,
+  AnthropicStreamChunk,
+} from "./anthropic-api-types";
 import { mapAnthropicStopReason } from "./anthropic-api-types";
 import {
   convertFromAnthropicMessages,
@@ -478,11 +481,13 @@ export const createAnthropicProxy = ({
           }
         }
 
-        // Normalize system prompt for vLLM-MLX strict JSON validation
-        // vLLM-MLX rejects newlines/excess whitespace in system prompt
-        if (system && providerName === "vllm-mlx") {
-          system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-        }
+        // Note: Previously attempted to normalize system prompt by removing newlines,
+        // but this mangled the carefully structured Claude Code instructions.
+        // vLLM-MLX actually handles newlines fine in the system prompt.
+        // Disabling this normalization to preserve system prompt structure.
+        // if (system && providerName === "vllm-mlx") {
+        //   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+        // }
 
         // Log Claude Code's original tool schemas (TRACE level)
         if (isTraceDebugEnabled() && body.tools) {
@@ -937,7 +942,11 @@ export const createAnthropicProxy = ({
           // Create a writable that handles backpressure to res
           const nodeWritable = new Writable({
             highWaterMark: 16 * 1024, // 16KB default buffer
-            write(chunk: AnthropicStreamChunk, encoding: string, callback: (error?: Error | null) => void) {
+            write(
+              chunk: AnthropicStreamChunk,
+              encoding: string,
+              callback: (error?: Error | null) => void
+            ) {
               totalChunksWritten++;
               const data = `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`;
               totalBytesWritten += data.length;
@@ -1208,10 +1217,7 @@ export const createAnthropicProxy = ({
 
               // Wait for drain event (buffer ready for more data) before closing
               res.once("drain", () => {
-                debug(
-                  2,
-                  `[Backpressure] Drain event fired, closing stream`
-                );
+                debug(2, `[Backpressure] Drain event fired, closing stream`);
                 setImmediate(drainAndClose);
               });
 
