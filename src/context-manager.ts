@@ -17,6 +17,7 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   "deepseek-coder-33b": 16384,
   "qwen2.5-coder-7b": 32768,
   "qwen2.5-coder-32b": 32768,
+  "qwen3-coder-30b": 262144, // Qwen3 Coder 30B - 262K context
   "mistral-7b": 32768,
 
   // Add more as needed

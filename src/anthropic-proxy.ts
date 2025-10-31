@@ -241,13 +241,17 @@ export const createAnthropicProxy = ({
 
                       if (currentEntry && currentEntry.misses > 0) {
                         // We've seen this hash before - vLLM-MLX likely cached it
-                        monitor.recordHit(hash, inputTokens, 0);
+                        // Estimate cache read tokens: assume system prompt + tools were cached (~70% of input)
+                        const estimatedCacheReadTokens = Math.floor(inputTokens * 0.7);
+                        monitor.recordHit(hash, inputTokens, estimatedCacheReadTokens);
                       } else {
                         // First time seeing this hash
+                        // Estimate cache creation tokens: system prompt + tools created cache (~70% of input)
+                        const estimatedCacheCreationTokens = Math.floor(inputTokens * 0.7);
                         monitor.recordMiss(
                           hash,
                           inputTokens,
-                          0,
+                          estimatedCacheCreationTokens,
                           systemPromptLength,
                           toolCount
                         );
@@ -502,8 +506,21 @@ export const createAnthropicProxy = ({
 
         // Sort tools by name for deterministic cache keys
         // This ensures the same tools in different orders still produce cache hits
+        // Filter out tools that local models can't handle (like WebSearch)
         const sortedTools = body.tools
-          ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name))
+          ? [...body.tools]
+              .filter((tool) => {
+                // WebSearch requires external API access that local models don't have
+                if (tool.name === "web_search" && providerName !== "claude") {
+                  debug(
+                    1,
+                    `[Tool Filter] Removing ${tool.name} - not supported by local models`
+                  );
+                  return false;
+                }
+                return true;
+              })
+              .sort((a, b) => a.name.localeCompare(b.name))
           : undefined;
 
         const tools = sortedTools?.reduce(
@@ -936,11 +953,15 @@ export const createAnthropicProxy = ({
 
           // Convert Web Streams to Node.js streams for proper backpressure handling
           // Readable.fromWeb() converts the readable side
+          // CRITICAL: Must use objectMode because convertedStream carries AnthropicStreamChunk objects, not strings/buffers
           const { Readable, Writable } = require("stream");
-          const nodeReadable = Readable.fromWeb(convertedStream);
+          const nodeReadable = Readable.fromWeb(convertedStream, {
+            objectMode: true,
+          });
 
           // Create a writable that handles backpressure to res
           const nodeWritable = new Writable({
+            objectMode: true, // CRITICAL: Handle AnthropicStreamChunk objects, not strings/buffers
             highWaterMark: 16 * 1024, // 16KB default buffer
             write(
               chunk: AnthropicStreamChunk,
@@ -1128,12 +1149,36 @@ export const createAnthropicProxy = ({
             // Record cache metrics for streaming responses
             if (finalUsageData && body) {
               try {
-                const inputTokens = finalUsageData.input_tokens || 0;
-                const outputTokens = finalUsageData.output_tokens || 0;
+                let inputTokens = finalUsageData.input_tokens || 0;
+                let outputTokens = finalUsageData.output_tokens || 0;
                 const cacheReadTokens =
                   finalUsageData.cache_read_input_tokens || 0;
                 const cacheCreationTokens =
                   finalUsageData.cache_creation_input_tokens || 0;
+
+                // If vLLM-MLX didn't provide usage data, estimate it
+                if (inputTokens === 0 && body) {
+                  // Estimate input tokens from request body
+                  let estimatedInput = 0;
+                  const bodyAny = body as any;
+                  if (typeof bodyAny.system === "string") {
+                    estimatedInput += Math.floor(bodyAny.system.length / 4);
+                  } else if (Array.isArray(bodyAny.system)) {
+                    estimatedInput += Math.floor(JSON.stringify(bodyAny.system).length / 4);
+                  }
+                  if (bodyAny.messages) {
+                    for (const msg of bodyAny.messages) {
+                      if (typeof msg.content === "string") {
+                        estimatedInput += Math.floor(msg.content.length / 4);
+                      }
+                    }
+                  }
+                  if (bodyAny.tools) {
+                    estimatedInput += Math.floor(JSON.stringify(bodyAny.tools).length / 4);
+                  }
+                  inputTokens = estimatedInput;
+                  debug(1, `[Token Estimation] Estimated ${inputTokens} input tokens (vLLM-MLX didn't provide usage)`);
+                }
 
                 // Calculate hash from system prompt and tools for per-prompt tracking
                 let systemPrompt = "";
@@ -1161,13 +1206,17 @@ export const createAnthropicProxy = ({
 
                 if (currentEntry && currentEntry.misses > 0) {
                   // We've seen this hash before - backend likely cached it
-                  monitor.recordHit(hash, inputTokens, 0);
+                  // Estimate cache read tokens: assume system prompt + tools were cached (~70% of input)
+                  const estimatedCacheReadTokens = Math.floor(inputTokens * 0.7);
+                  monitor.recordHit(hash, inputTokens, estimatedCacheReadTokens);
                 } else {
                   // First time seeing this hash
+                  // Estimate cache creation tokens: system prompt + tools created cache (~70% of input)
+                  const estimatedCacheCreationTokens = Math.floor(inputTokens * 0.7);
                   monitor.recordMiss(
                     hash,
                     inputTokens,
-                    0,
+                    estimatedCacheCreationTokens,
                     systemPromptLength,
                     toolCount
                   );

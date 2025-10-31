@@ -12,6 +12,7 @@
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "vllm-mlx",
       "model": "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
+      "maxTokens": 262144,
       "serverScript": "scripts/vllm-mlx-server.py",
       "description": "vLLM-MLX - high-performance inference server with Qwen3 Coder 30B"
     },

@@ -16,6 +16,10 @@ Environment Variables:
 - ANYCLAUDE_DEBUG=1: Enable debug logging
 """
 
+# CACHE VERSION: Increment this when tool calling or streaming logic changes
+# This invalidates old cached responses to prevent serving stale/broken data
+CACHE_VERSION = "v4"  # v4: Don't stream text content when tool_calls present (mutually exclusive)
+
 import json
 import asyncio
 import logging
@@ -139,8 +143,8 @@ class PromptCache:
         try:
             msg_str = json.dumps(messages, sort_keys=True, default=str)
             tools_str = json.dumps(tools, sort_keys=True, default=str) if tools else ""
-            # Use hash for compact key (Python's hash is deterministic within session)
-            combined = msg_str + tools_str
+            # Include CACHE_VERSION to invalidate cache when code changes
+            combined = CACHE_VERSION + msg_str + tools_str
             key = str(abs(hash(combined)))
             return key
         except Exception as e:
@@ -253,13 +257,19 @@ class VLLMMLXServer:
         except Exception as e:
             logger.debug(f"Cleanup error: {e}")
 
-    def _generate_safe(self, model, tokenizer, prompt, options):
-        """Generate text with GPU synchronization and error recovery"""
+    def _generate_safe(self, model, tokenizer, prompt, options, tools=None):
+        """Generate text with GPU synchronization, error recovery, and native tool calling support"""
         # Use lock to serialize GPU operations
         with gpu_lock:
             try:
                 # Pre-sync to clear any pending GPU operations
                 sync_gpu()
+
+                # Add tool calling support if tools provided
+                if tools:
+                    logger.debug(f"[Generate Safe] Adding {len(tools)} tools to generation")
+                    options['tools'] = tools
+                    options['tool_choice'] = 'auto'  # Let model decide when to use tools
 
                 # Generate with timeout to catch hanging operations
                 result = mlx_lm.generate(model, tokenizer, prompt, options)
@@ -277,6 +287,94 @@ class VLLMMLXServer:
                     logger.error("  2. Run with smaller max_tokens")
                     logger.error("  3. Run with MLX_FORCE_CPU=1 for stability")
                 raise
+
+    def _extract_tool_calls(self, response):
+        """
+        Extract tool calls from mlx_lm response
+
+        Args:
+            response: Can be dict (with tool_calls) or string (text response)
+
+        Returns:
+            (tool_calls, text) tuple
+        """
+        # If mlx_lm returned structured response with tool calls
+        if isinstance(response, dict) and 'tool_calls' in response:
+            tool_calls = response['tool_calls']
+            text = response.get('content', '')
+
+            if tool_calls:
+                logger.debug(f"[Tool Calls] Native tool calling returned: {len(tool_calls)} calls")
+                return tool_calls, text
+
+        # String response - no tool calls from native API
+        text = str(response) if not isinstance(response, str) else response
+        return None, text
+
+    def _validate_tool_call(self, tool_name, arguments, schema):
+        """
+        Validate tool call arguments against schema
+
+        Args:
+            tool_name: Name of the tool
+            arguments: Dict of arguments
+            schema: JSON schema for validation
+
+        Returns:
+            (is_valid, error_message) tuple
+        """
+        # Check required parameters
+        required = schema.get('required', [])
+        for param in required:
+            if param not in arguments:
+                return False, f"Missing required parameter: {param}"
+
+        # Check parameter types (basic validation)
+        properties = schema.get('properties', {})
+        for key, value in arguments.items():
+            if key in properties:
+                expected_type = properties[key].get('type')
+                actual_type = type(value).__name__
+
+                # Map JSON schema types to Python types
+                type_mapping = {
+                    'string': 'str',
+                    'number': ('int', 'float'),
+                    'boolean': 'bool',
+                    'object': 'dict',
+                    'array': 'list'
+                }
+
+                expected = type_mapping.get(expected_type, expected_type)
+                if isinstance(expected, tuple):
+                    if actual_type not in expected:
+                        return False, f"Parameter '{key}' should be {expected_type}, got {actual_type}"
+                elif expected != actual_type:
+                    return False, f"Parameter '{key}' should be {expected_type}, got {actual_type}"
+
+        return True, None
+
+    def _format_tool_call_openai(self, tool_call, call_id):
+        """
+        Format tool call in OpenAI-compatible format
+
+        Args:
+            tool_call: Dict with 'name' and 'arguments'
+            call_id: Unique ID for this tool call
+
+        Returns:
+            OpenAI-formatted tool call dict
+        """
+        return {
+            'id': call_id,
+            'type': 'function',
+            'function': {
+                'name': tool_call['name'],
+                'arguments': json.dumps(tool_call['arguments'])
+                    if isinstance(tool_call['arguments'], dict)
+                    else tool_call['arguments']
+            }
+        }
 
     def _setup_routes(self):
         """Setup FastAPI routes compatible with OpenAI API"""
@@ -389,14 +487,62 @@ class VLLMMLXServer:
             return JSONResponse(response)
 
     def _format_messages(self, messages: list, tools: list = None) -> str:
-        """Format messages for MLX model"""
+        """Format messages for MLX model using tokenizer's chat template"""
 
+        # Use tokenizer's apply_chat_template if available (proper Qwen/ChatML formatting)
+        if self.tokenizer and hasattr(self.tokenizer, 'apply_chat_template'):
+            try:
+                # Sort tools by name for deterministic ordering (cache consistency)
+                sorted_tools = sorted(tools, key=lambda t: t['function']['name']) if tools else None
+
+                # Convert Claude's content block format to simple strings for tokenizer
+                normalized_messages = []
+                for msg in messages:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+
+                    # Handle content as string or list (Claude Code sends list of content blocks)
+                    if isinstance(content, list):
+                        # Extract text from content blocks
+                        content = " ".join([
+                            block.get("text", "") if isinstance(block, dict) and block.get("type") == "text"
+                            else str(block) if not isinstance(block, dict)
+                            else ""
+                            for block in content
+                        ])
+
+                    normalized_messages.append({"role": role, "content": content})
+
+                prompt = self.tokenizer.apply_chat_template(
+                    normalized_messages,
+                    tools=sorted_tools,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                logger.info(f"✓ Chat template applied successfully with {len(sorted_tools) if sorted_tools else 0} tools")
+                return prompt
+            except Exception as e:
+                logger.error(f"❌ Failed to apply chat template with tools: {e}")
+                logger.error(f"This model may not support native tool calling via chat template")
+                logger.warning(f"Falling back to simple format WITHOUT tools")
+
+        # Fallback: simple formatting (for models without proper chat template)
         system_prompt = ""
         conversation = ""
 
         for msg in messages:
             role = msg.get("role", "user")
             content = msg.get("content", "")
+
+            # Handle content as string or list (Claude Code sends list of content blocks)
+            if isinstance(content, list):
+                # Extract text from content blocks
+                content = " ".join([
+                    block.get("text", "") if isinstance(block, dict) and block.get("type") == "text"
+                    else str(block) if not isinstance(block, dict)
+                    else ""
+                    for block in content
+                ])
 
             if role == "system":
                 system_prompt = content
@@ -407,8 +553,6 @@ class VLLMMLXServer:
 
         # Add tool descriptions if provided
         if tools:
-            # Sort tools by name for deterministic tool description ordering
-            # This ensures consistent cache keys regardless of tool order from client
             sorted_tools = sorted(tools, key=lambda t: t['function']['name'])
             tool_descriptions = "\n\n".join([
                 f"Tool: {tool['function']['name']}\nDescription: {tool['function']['description']}"
@@ -423,15 +567,15 @@ class VLLMMLXServer:
         """Generate response with streaming and caching"""
 
         try:
-            # Send message_start event
-            yield f"data: {json.dumps({'object': 'text_completion', 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\n\n"
+            # Send message_start event (OpenAI format)
+            yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\n\n"
 
             # If we have a cached result, stream it
             if cached_result:
                 logger.debug(f"[Stream Cache Hit] Streaming cached response")
                 cached_text = cached_result['choices'][0]['message']['content']
                 for char in cached_text:
-                    yield f"data: {json.dumps({'object': 'text_completion', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
+                    yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
 
                 # Stream cached tool calls if present
                 tool_calls = cached_result['choices'][0]['message'].get('tool_calls')
@@ -466,12 +610,12 @@ class VLLMMLXServer:
                         self.model,
                         self.tokenizer,
                         prompt,
-                        {"max_tokens": max_tokens, "verbose": False}
+                        {"max_tokens": max_tokens, "verbose": False},
+                        tools  # Pass tools for native tool calling
                     )
 
-                    # Stream character by character
-                    for char in str(generated_text):
-                        yield f"data: {json.dumps({'object': 'text_completion', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
+                    # DON'T stream yet - need to check for tool calls first
+                    # (Tool calls and text content are mutually exclusive in OpenAI format)
                 except Exception as e:
                     logger.warning(f"MLX generation failed: {e}, using demo response")
                     # Fall back to demo response
@@ -482,7 +626,7 @@ class VLLMMLXServer:
                         generated_text += "."
 
                     for char in generated_text:
-                        yield f"data: {json.dumps({'object': 'text_completion', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
+                        yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
             else:
                 # Demo mode response
                 generated_text = f"I received {len(original_messages)} message(s)"
@@ -492,10 +636,22 @@ class VLLMMLXServer:
                     generated_text += "."
 
                 for char in generated_text:
-                    yield f"data: {json.dumps({'object': 'text_completion', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
+                    yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
 
-            # Parse tool calls if present
-            tool_calls = self._parse_tool_calls(generated_text, tools)
+            # Extract tool calls from mlx_lm response (native tool calling)
+            tool_calls, generated_text_clean = self._extract_tool_calls(generated_text)
+
+            # If no native tool calls but tools were provided, try fallback text parsing
+            if not tool_calls and tools:
+                logger.warning("[Tool Calls] No native tool calls, trying fallback text parsing")
+                logger.debug(f"[Tool Calls] Model output (first 500 chars): {generated_text_clean[:500]}")
+                tool_calls = self._parse_tool_calls(generated_text_clean, tools)
+                if tool_calls:
+                    logger.info(f"✓ Fallback parsing found {len(tool_calls)} tool call(s)")
+                else:
+                    logger.warning(f"❌ Fallback parsing found NO tool calls in model output")
+
+            generated_text = generated_text_clean
 
             # Cache the result for future requests
             if cache_key and generated_text:
@@ -513,15 +669,29 @@ class VLLMMLXServer:
                 }
                 self.cache.set(cache_key, response_obj)
 
+            # CRITICAL: In OpenAI format, either send text OR tool_calls, never both
+            if tool_calls:
+                # Send tool_calls in OpenAI streaming format (incremental with index-based deltas)
+                for idx, tool_call in enumerate(tool_calls):
+                    # First delta: tool call start with function name
+                    yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'tool_calls': [{'index': idx, 'id': tool_call['id'], 'type': 'function', 'function': {'name': tool_call['function']['name'], 'arguments': ''}}]}, 'finish_reason': None}]})}\n\n"
+
+                    # Second delta: stream the arguments
+                    arguments = tool_call['function']['arguments']
+                    yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'tool_calls': [{'index': idx, 'function': {'arguments': arguments}}]}, 'finish_reason': None}]})}\n\n"
+            else:
+                # No tool calls - stream the text content instead
+                for char in str(generated_text):
+                    yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}]})}\n\n"
+
             # Send final completion
             finish_reason = "tool_calls" if tool_calls else "stop"
             final_msg = {
-                "object": "text_completion",
+                "object": "chat.completion.chunk",
                 "choices": [{
                     "index": 0,
                     "delta": {},
-                    "finish_reason": finish_reason,
-                    "tool_calls": tool_calls if tool_calls else None
+                    "finish_reason": finish_reason
                 }]
             }
             yield f"data: {json.dumps(final_msg)}\n\n"
@@ -563,7 +733,8 @@ class VLLMMLXServer:
                         self.model,
                         self.tokenizer,
                         prompt,
-                        {"max_tokens": max_tokens, "verbose": False}
+                        {"max_tokens": max_tokens, "verbose": False},
+                        tools  # Pass tools for native tool calling
                     )
 
                     inference_time = time.time() - start_time
@@ -593,8 +764,15 @@ class VLLMMLXServer:
                 prompt_tokens = 10
                 completion_tokens = len(completion_text.split())
 
-            # Parse tool calls
-            tool_calls = self._parse_tool_calls(completion_text, tools)
+            # Extract tool calls from mlx_lm response (native tool calling)
+            tool_calls, completion_text_clean = self._extract_tool_calls(completion_text)
+
+            # If no native tool calls but tools were provided, try fallback text parsing
+            if not tool_calls and tools:
+                logger.warning("[Tool Calls] No native tool calls, trying fallback text parsing")
+                tool_calls = self._parse_tool_calls(completion_text_clean, tools)
+
+            completion_text = completion_text_clean
             finish_reason = "tool_calls" if tool_calls else "stop"
 
             # Cache the response for future identical requests
@@ -635,14 +813,32 @@ class VLLMMLXServer:
             }
 
     def _parse_tool_calls(self, text: str, tools: list) -> list:
-        """Parse tool calls from generated text with improved JSON argument handling"""
+        """
+        DEPRECATED: Fallback text parsing for tool calls
+
+        This should rarely be used if mlx-textgen is properly installed with native
+        tool calling support. This fallback is kept for compatibility with older
+        mlx-lm versions or models that don't support native tool calling.
+
+        Args:
+            text: Generated text to parse
+            tools: List of available tools
+
+        Returns:
+            List of tool call dicts in OpenAI format
+        """
+        logger.warning("[Tool Parsing] Using deprecated text parsing - consider upgrading mlx-textgen")
+        logger.debug(f"[Tool Parsing] Input text length: {len(text) if text else 0}")
+        logger.debug(f"[Tool Parsing] Number of tools provided: {len(tools) if tools else 0}")
 
         if not tools or not text:
+            logger.debug("[Tool Parsing] Early return: no tools or no text")
             return []
 
         import re
         tool_calls = []
         tool_name_to_schema = {tool['function']['name']: tool['function'] for tool in tools}
+        logger.debug(f"[Tool Parsing] Tool name map created with {len(tool_name_to_schema)} tools")
 
         # Try to find tool calls in multiple formats:
         # 1. JSON format: {"tool": "name", "arguments": {...}}
@@ -698,7 +894,69 @@ class VLLMMLXServer:
                             }
                         })
 
-        # Third try simple format: just detect tool name mention
+        # Third try XML format: <tool_call><function=Name><parameter=key>value</parameter></function></tool_call>
+        # OR unwrapped: <function=Name><parameter=key>value</parameter></function>
+        logger.debug(f"[Tool Parsing] Attempting XML parsing on text (length: {len(text)})")
+        logger.debug(f"[Tool Parsing] Available tools: {list(tool_name_to_schema.keys())}")
+        logger.debug(f"[Tool Parsing] Searching for XML pattern in text: {text[:500]}...")
+
+        # Try both wrapped and unwrapped formats (in order, stop at first match)
+        xml_patterns = [
+            # Pattern 1: Wrapped with <tool_call> tags (preferred)
+            r'<tool_call>\s*<function\s*=\s*([^>]+)>\s*(.*?)\s*</function>\s*</tool_call>',
+            # Pattern 2: Unwrapped (fallback for models that don't use wrapper)
+            r'<function\s*=\s*([^>]+)>\s*(.*?)\s*</function>'
+        ]
+
+        xml_matches = []
+        for pattern_idx, xml_pattern in enumerate(xml_patterns):
+            matches = list(re.finditer(xml_pattern, text, re.DOTALL))
+            if matches:
+                logger.debug(f"[Tool Parsing] Pattern {pattern_idx + 1} found {len(matches)} XML matches")
+                xml_matches = matches
+                break  # Stop at first pattern that matches to avoid duplicates
+
+        logger.debug(f"[Tool Parsing] Total XML matches: {len(xml_matches)}")
+
+        for match in xml_matches:
+            tool_name = match.group(1).strip()
+            params_block = match.group(2)
+            logger.debug(f"[Tool Parsing] XML match: tool_name='{tool_name}'")
+            logger.debug(f"[Tool Parsing] params_block: {params_block[:200]}...")
+
+            if tool_name in tool_name_to_schema:
+                logger.debug(f"[Tool Parsing] Tool '{tool_name}' found in schema")
+                # Extract parameters from XML - improved pattern to handle multiline values
+                param_pattern = r'<parameter\s*=\s*([^>]+)>\s*(.*?)\s*</parameter>'
+                params = {}
+                param_matches = list(re.finditer(param_pattern, params_block, re.DOTALL))
+                logger.debug(f"[Tool Parsing] Found {len(param_matches)} parameter matches in params_block")
+                for param_match in param_matches:
+                    param_name = param_match.group(1).strip()
+                    param_value = param_match.group(2).strip()
+                    # Strip surrounding quotes if present (handles "value" or 'value')
+                    if param_value and param_value[0] in ('"', "'") and param_value[-1] == param_value[0]:
+                        param_value = param_value[1:-1]
+                    params[param_name] = param_value
+                    logger.debug(f"[Tool Parsing] Extracted param: {param_name}={param_value}")
+
+                logger.debug(f"[Tool Parsing] Total params extracted: {params}")
+                if params and not any(tc['function']['name'] == tool_name for tc in tool_calls):
+                    tool_calls.append({
+                        "id": f"call_{len(tool_calls)}",
+                        "type": "function",
+                        "function": {
+                            "name": tool_name,
+                            "arguments": json.dumps(params)
+                        }
+                    })
+                    logger.debug(f"✅ Parsed XML tool call: {tool_name} with {len(params)} parameters")
+                elif not params:
+                    logger.warning(f"[Tool Parsing] No parameters extracted for tool '{tool_name}'")
+                else:
+                    logger.warning(f"[Tool Parsing] Duplicate tool call detected for '{tool_name}'")
+
+        # Fourth try simple format: just detect tool name mention
         for tool_name in tool_name_to_schema:
             if tool_name in text and not any(tc['function']['name'] == tool_name for tc in tool_calls):
                 # Tool was mentioned but no arguments found
