@@ -19,9 +19,7 @@ const { Readable, Transform } = require("stream");
 
 console.log("\n" + "=".repeat(80));
 console.log("STREAM TRUNCATION DETECTION TEST");
-console.log(
-  "Tests that large responses complete fully without truncation\n"
-);
+console.log("Tests that large responses complete fully without truncation\n");
 console.log("=".repeat(80));
 
 let passed = 0;
@@ -32,9 +30,7 @@ let failed = 0;
  * Simulates Claude Code receiving a large response while reading slowly
  */
 async function testLargeResponseWithBackpressure() {
-  console.log(
-    "\n[Test 1] Large response (5KB) with backpressure handling"
-  );
+  console.log("\n[Test 1] Large response (5KB) with backpressure handling");
 
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -67,7 +63,9 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text
         (sum, chunk) => sum + Buffer.byteLength(chunk),
         0
       );
-      console.log(`  → Sending ${responseChunks.length} chunks (~${totalSize} bytes)`);
+      console.log(
+        `  → Sending ${responseChunks.length} chunks (~${totalSize} bytes)`
+      );
 
       responseChunks.forEach((chunk) => {
         res.write(chunk);
@@ -152,9 +150,7 @@ async function testMultipleRapidRequests() {
       // Smaller response for stress test
       const chunks = [];
       for (let i = 0; i < 50; i++) {
-        chunks.push(
-          `event: chunk_${i}\ndata: {"index":${i},"size":1000}\n\n`
-        );
+        chunks.push(`event: chunk_${i}\ndata: {"index":${i},"size":1000}\n\n`);
       }
 
       res.writeHead(200, {
@@ -245,9 +241,7 @@ async function testBackpressureHandling() {
 
         if (!canContinue) {
           // Backpressure detected - wait for drain
-          console.log(
-            `  → Backpressure at chunk ${chunksSent}/${totalChunks}`
-          );
+          console.log(`  → Backpressure at chunk ${chunksSent}/${totalChunks}`);
           res.once("drain", sendChunk);
         } else {
           // Continue immediately if no backpressure
@@ -269,8 +263,9 @@ async function testBackpressureHandling() {
         res.on("data", (chunk) => {
           totalBytes += chunk.length;
           const chunkLines = chunk.toString().split("\n");
-          receivedChunks += chunkLines.filter((l) => l.includes("event: data_"))
-            .length;
+          receivedChunks += chunkLines.filter((l) =>
+            l.includes("event: data_")
+          ).length;
         });
 
         res.on("end", () => {
@@ -279,7 +274,9 @@ async function testBackpressureHandling() {
           );
           if (receivedChunks >= 180) {
             // Allow 10% loss tolerance for stream errors
-            console.log("✓ PASS: Backpressure handling preserved data integrity");
+            console.log(
+              "✓ PASS: Backpressure handling preserved data integrity"
+            );
             passed++;
           } else {
             console.log(

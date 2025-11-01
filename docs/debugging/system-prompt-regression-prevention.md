@@ -3,6 +3,7 @@
 ## Problem Summary
 
 When you ran the `test` command in Claude Code, the model was generating garbage instead of responding:
+
 - Strings of repeated digits: `0000000000...`, `1111111...`
 - Escaped newlines: `]\n\n\n...`
 - Malformed JSON fragments: Starting with `]` instead of proper text
@@ -127,9 +128,11 @@ This means:
 ## Files Changed
 
 **Fixes:**
+
 - `src/anthropic-proxy.ts` - Disabled problematic newline stripping
 
 **Tests Added:**
+
 - `tests/regression/test_system_prompt_regression.js` - Comprehensive regression test
 - `package.json` - Added npm scripts for running the test
 

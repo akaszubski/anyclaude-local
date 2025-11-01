@@ -246,7 +246,9 @@ async function testAnyclaudeProxyStreaming() {
           const hasMessageStop = eventTypes.includes("message_stop");
           const hasMessageStart = eventTypes.includes("message_start");
 
-          console.log(`  → Received ${receivedEvents.length} events (${totalBytes} bytes)`);
+          console.log(
+            `  → Received ${receivedEvents.length} events (${totalBytes} bytes)`
+          );
           console.log(`  → Event types: ${eventTypes.join(", ")}`);
 
           // Check for truncation
@@ -255,7 +257,8 @@ async function testAnyclaudeProxyStreaming() {
 
           if (!hasMessageStart) {
             isTruncated = true;
-            truncationReason = "Missing message_start (response started mid-stream)";
+            truncationReason =
+              "Missing message_start (response started mid-stream)";
           }
 
           if (!hasMessageStop) {
@@ -271,10 +274,7 @@ async function testAnyclaudeProxyStreaming() {
             }
           });
 
-          if (
-            receivedText.length > 0 &&
-            !receivedText.endsWith("!")
-          ) {
+          if (receivedText.length > 0 && !receivedText.endsWith("!")) {
             // Should end with "!"
             isTruncated = true;
             truncationReason = `Text truncated: "${receivedText.substring(receivedText.length - 50)}" (missing end)`;
@@ -292,7 +292,9 @@ async function testAnyclaudeProxyStreaming() {
             console.log(
               `✓ PASS: Complete response received (${receivedText.length} chars of text)`
             );
-            console.log("  → All events from message_start to message_stop present");
+            console.log(
+              "  → All events from message_start to message_stop present"
+            );
             passed++;
           }
 
@@ -316,7 +318,9 @@ async function testAnyclaudeProxyStreaming() {
  * This is critical - Claude Code hangs if message_stop doesn't arrive
  */
 async function testMessageStopEvent() {
-  console.log("\n[Test 2] message_stop event always arrives (even with backpressure)");
+  console.log(
+    "\n[Test 2] message_stop event always arrives (even with backpressure)"
+  );
 
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -382,7 +386,9 @@ async function testMessageStopEvent() {
  * Truncated tool calls break Claude Code's tool execution
  */
 async function testCompleteToolCalls() {
-  console.log("\n[Test 3] Tool call events remain complete (not truncated mid-call)");
+  console.log(
+    "\n[Test 3] Tool call events remain complete (not truncated mid-call)"
+  );
 
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -393,7 +399,9 @@ async function testCompleteToolCalls() {
       });
 
       // Large text chunk followed by tool call
-      res.write(`event: content_block_delta\ndata: {"delta":{"text":"${"x".repeat(2000)}"}}\n\n`);
+      res.write(
+        `event: content_block_delta\ndata: {"delta":{"text":"${"x".repeat(2000)}"}}\n\n`
+      );
 
       // Complete tool call event
       const toolCall = {

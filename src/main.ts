@@ -89,7 +89,12 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
   for (const arg of args) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (mode === "claude" || mode === "lmstudio" || mode === "vllm-mlx" || mode === "openrouter") {
+      if (
+        mode === "claude" ||
+        mode === "lmstudio" ||
+        mode === "vllm-mlx" ||
+        mode === "openrouter"
+      ) {
         return mode as AnyclaudeMode;
       }
       console.error(
@@ -180,7 +185,10 @@ const mode: AnyclaudeMode = detectMode(config);
 
 // Enable trace logging by default for claude and openrouter modes (unless explicitly disabled)
 // This allows users to analyze Claude Code's prompts and tool usage patterns
-if ((mode === "claude" || mode === "openrouter") && !process.env.ANYCLAUDE_DEBUG) {
+if (
+  (mode === "claude" || mode === "openrouter") &&
+  !process.env.ANYCLAUDE_DEBUG
+) {
   process.env.ANYCLAUDE_DEBUG = "3";
   console.log(
     `[anyclaude] Trace logging enabled for ${mode} mode (prompts will be saved to ~/.anyclaude/traces/${mode}/)`
@@ -565,10 +573,13 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     const modelName = openrouterConfig?.model || "z-ai/glm-4.6";
     console.log(`[anyclaude] Using OpenRouter API`);
     console.log(`[anyclaude] Model: ${modelName}`);
-    console.log(`[anyclaude] Base URL: ${openrouterConfig?.baseURL || "https://openrouter.ai/api/v1"}`);
+    console.log(
+      `[anyclaude] Base URL: ${openrouterConfig?.baseURL || "https://openrouter.ai/api/v1"}`
+    );
     console.log(`[anyclaude] Features: tool calling + streaming`);
     if (process.env.ANYCLAUDE_DEBUG) {
-      const traceDir = require("os").homedir() + "/.anyclaude/traces/openrouter";
+      const traceDir =
+        require("os").homedir() + "/.anyclaude/traces/openrouter";
       console.log(`[anyclaude] Trace directory: ${traceDir}`);
     }
   } else if (mode === "claude") {

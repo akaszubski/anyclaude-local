@@ -242,12 +242,20 @@ export const createAnthropicProxy = ({
                       if (currentEntry && currentEntry.misses > 0) {
                         // We've seen this hash before - vLLM-MLX likely cached it
                         // Estimate cache read tokens: assume system prompt + tools were cached (~70% of input)
-                        const estimatedCacheReadTokens = Math.floor(inputTokens * 0.7);
-                        monitor.recordHit(hash, inputTokens, estimatedCacheReadTokens);
+                        const estimatedCacheReadTokens = Math.floor(
+                          inputTokens * 0.7
+                        );
+                        monitor.recordHit(
+                          hash,
+                          inputTokens,
+                          estimatedCacheReadTokens
+                        );
                       } else {
                         // First time seeing this hash
                         // Estimate cache creation tokens: system prompt + tools created cache (~70% of input)
-                        const estimatedCacheCreationTokens = Math.floor(inputTokens * 0.7);
+                        const estimatedCacheCreationTokens = Math.floor(
+                          inputTokens * 0.7
+                        );
                         monitor.recordMiss(
                           hash,
                           inputTokens,
@@ -1164,7 +1172,9 @@ export const createAnthropicProxy = ({
                   if (typeof bodyAny.system === "string") {
                     estimatedInput += Math.floor(bodyAny.system.length / 4);
                   } else if (Array.isArray(bodyAny.system)) {
-                    estimatedInput += Math.floor(JSON.stringify(bodyAny.system).length / 4);
+                    estimatedInput += Math.floor(
+                      JSON.stringify(bodyAny.system).length / 4
+                    );
                   }
                   if (bodyAny.messages) {
                     for (const msg of bodyAny.messages) {
@@ -1174,10 +1184,15 @@ export const createAnthropicProxy = ({
                     }
                   }
                   if (bodyAny.tools) {
-                    estimatedInput += Math.floor(JSON.stringify(bodyAny.tools).length / 4);
+                    estimatedInput += Math.floor(
+                      JSON.stringify(bodyAny.tools).length / 4
+                    );
                   }
                   inputTokens = estimatedInput;
-                  debug(1, `[Token Estimation] Estimated ${inputTokens} input tokens (vLLM-MLX didn't provide usage)`);
+                  debug(
+                    1,
+                    `[Token Estimation] Estimated ${inputTokens} input tokens (vLLM-MLX didn't provide usage)`
+                  );
                 }
 
                 // Calculate hash from system prompt and tools for per-prompt tracking
@@ -1207,12 +1222,20 @@ export const createAnthropicProxy = ({
                 if (currentEntry && currentEntry.misses > 0) {
                   // We've seen this hash before - backend likely cached it
                   // Estimate cache read tokens: assume system prompt + tools were cached (~70% of input)
-                  const estimatedCacheReadTokens = Math.floor(inputTokens * 0.7);
-                  monitor.recordHit(hash, inputTokens, estimatedCacheReadTokens);
+                  const estimatedCacheReadTokens = Math.floor(
+                    inputTokens * 0.7
+                  );
+                  monitor.recordHit(
+                    hash,
+                    inputTokens,
+                    estimatedCacheReadTokens
+                  );
                 } else {
                   // First time seeing this hash
                   // Estimate cache creation tokens: system prompt + tools created cache (~70% of input)
-                  const estimatedCacheCreationTokens = Math.floor(inputTokens * 0.7);
+                  const estimatedCacheCreationTokens = Math.floor(
+                    inputTokens * 0.7
+                  );
                   monitor.recordMiss(
                     hash,
                     inputTokens,

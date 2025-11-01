@@ -67,7 +67,9 @@ function createMockTransform() {
  * Test: Backpressure from slow WritableStream propagates to Source
  */
 async function testBackpressurePropagation() {
-  console.log("\n[Test 1] Backpressure propagates from response back to source");
+  console.log(
+    "\n[Test 1] Backpressure propagates from response back to source"
+  );
 
   return new Promise((resolve) => {
     let sourceChunksGenerated = 0;
@@ -162,7 +164,9 @@ async function testBackpressurePropagation() {
         const allWritten = writableChunksReceived >= 95; // Allow 5% loss
 
         if (allGenerated && allProcessed && allWritten) {
-          console.log("✓ PASS: All chunks flowed through with backpressure handling");
+          console.log(
+            "✓ PASS: All chunks flowed through with backpressure handling"
+          );
           passed++;
         } else {
           console.log(
@@ -415,9 +419,7 @@ async function testCloseHandlerDraining() {
     console.log("  • WritableStream doesn't wait for drain events");
     console.log("  • Chunks are lost when buffers overflow");
     console.log("\nRecommendation:");
-    console.log(
-      "  Check anthropic-proxy.ts WritableStream.write() handler"
-    );
+    console.log("  Check anthropic-proxy.ts WritableStream.write() handler");
     console.log("  Ensure backpressure propagates to source stream");
   }
 

@@ -145,7 +145,10 @@ function isGarbageOutput(text) {
   // Pattern: Many consecutive repeated characters (8+ in a row, at least 25% of text)
   const repeatedCharsPattern = /(.)\1{7,}/g;
   const repeatedMatches = text.match(repeatedCharsPattern) || [];
-  const repeatedCharLength = repeatedMatches.reduce((sum, m) => sum + m.length, 0);
+  const repeatedCharLength = repeatedMatches.reduce(
+    (sum, m) => sum + m.length,
+    0
+  );
 
   if (repeatedCharLength > text.length * 0.25) {
     return true;
@@ -176,7 +179,10 @@ function testSystemPromptPreservation() {
   // The new code should NOT strip newlines
   const preserved = LARGE_SYSTEM_PROMPT; // This is what the fixed code does
 
-  const tests = validateSystemPromptPreservation(LARGE_SYSTEM_PROMPT, preserved);
+  const tests = validateSystemPromptPreservation(
+    LARGE_SYSTEM_PROMPT,
+    preserved
+  );
 
   let allPass = true;
   for (const test of tests) {
@@ -374,9 +380,7 @@ function testNoNewlineStrippingInProxy() {
       );
     }
 
-    console.log(
-      `  ✓ Newline stripping is disabled (commented out in code)`
-    );
+    console.log(`  ✓ Newline stripping is disabled (commented out in code)`);
     console.log(`  ✓ System prompt newlines are preserved\n`);
   } catch (error) {
     if (error.code === "ENOENT") {
@@ -391,7 +395,9 @@ function testNoNewlineStrippingInProxy() {
 }
 
 async function runTests() {
-  console.log("\n╔════════════════════════════════════════════════════════════╗");
+  console.log(
+    "\n╔════════════════════════════════════════════════════════════╗"
+  );
   console.log("║    SYSTEM PROMPT REGRESSION TESTS                         ║");
   console.log("║                                                            ║");
   console.log("║  Issue: Large system prompts were having newlines          ║");
@@ -399,7 +405,9 @@ async function runTests() {
   console.log("║  Result: Model generated garbage instead of responses.     ║");
   console.log("║                                                            ║");
   console.log("║  Fix: Disabled problematic newline stripping.              ║");
-  console.log("╚════════════════════════════════════════════════════════════╝\n");
+  console.log(
+    "╚════════════════════════════════════════════════════════════╝\n"
+  );
 
   let passed = 0;
   let failed = 0;

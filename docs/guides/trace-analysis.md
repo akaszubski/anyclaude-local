@@ -14,16 +14,19 @@ When using `--mode=claude` or `--mode=openrouter`, anyclaude automatically saves
 ## Automatic Trace Logging
 
 **Enabled by default for:**
+
 - `anyclaude --mode=claude`
 - `anyclaude --mode=openrouter`
 
 **Trace location:**
+
 ```bash
 ~/.anyclaude/traces/claude/         # Claude API traces
 ~/.anyclaude/traces/openrouter/     # OpenRouter traces
 ```
 
 **Disable if needed:**
+
 ```bash
 ANYCLAUDE_DEBUG=0 anyclaude --mode=claude
 ```
@@ -122,6 +125,7 @@ jq -r '.response.body.content[] |
 ```
 
 Example output:
+
 ```
   45 Read
   23 Write
@@ -176,6 +180,7 @@ jq -r '.request.body.system' ~/.anyclaude/traces/claude/trace-*.json |
 ```
 
 Look for:
+
 - How it describes its capabilities
 - Constraint handling
 - Tool usage guidelines
@@ -194,6 +199,7 @@ jq -r '.response.body.content[] |
 ```
 
 Example sequences:
+
 ```
 Read Edit Write        # Modify existing file
 Glob Grep Read Edit    # Find, search, modify
@@ -250,16 +256,19 @@ tar -czf claude-traces.tar.gz ~/.anyclaude/traces/claude/*.json
 ## Privacy & Security
 
 **What's Redacted:**
+
 - ✅ API keys (Authorization headers)
 - ✅ Sensitive headers
 
 **What's NOT Redacted:**
+
 - ⚠️ Your prompts/questions
 - ⚠️ Code snippets
 - ⚠️ File paths
 - ⚠️ Tool responses
 
 **Best Practices:**
+
 - Don't share traces publicly if they contain sensitive code
 - Review traces before sharing
 - Use trace management to remove old/sensitive data

@@ -32,6 +32,7 @@ npm test -- test_backpressure_propagation
 ```
 
 Results show:
+
 - Generated: 100 chunks
 - Processed: 96 chunks
 - **Lost: 4 chunks** due to broken drain handling
@@ -90,6 +91,7 @@ This should work automatically with `pipeTo()`, but may need explicit handling i
 ## Why It's Subtle
 
 Your code already has:
+
 - ✅ Backpressure handling in WritableStream (waits for drain)
 - ✅ Backpressure handling in Transform (checks `this.push()` return)
 - ✅ Drain event listeners registered
@@ -126,6 +128,7 @@ npm test -- test_backpressure_propagation
 ```
 
 Should show:
+
 - Generated: 100 chunks
 - Processed: 100 chunks (no loss)
 - No pipeline timeout

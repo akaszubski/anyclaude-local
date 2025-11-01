@@ -5,11 +5,13 @@ Access 400+ AI models through OpenRouter at a fraction of Claude API costs.
 ## Why OpenRouter?
 
 **Cost Savings:**
+
 - GLM-4.6: $0.60/$2 per 1M tokens (vs Claude $3/$15) - **84% cheaper**
 - Qwen 2.5 72B: $0.35/$0.70 per 1M tokens - **Even cheaper!**
 - Many models with **FREE tiers**
 
 **Features:**
+
 - ✅ 200K context window (GLM-4.6)
 - ✅ Tool calling support (Read, Write, Edit, Bash, etc.)
 - ✅ Streaming responses
@@ -28,12 +30,14 @@ Access 400+ AI models through OpenRouter at a fraction of Claude API costs.
 ### 2. Configure anyclaude
 
 **Option A: Copy example config (recommended)**
+
 ```bash
 cd /path/to/your/project
 cp .anyclauderc.example-openrouter.json .anyclauderc.json
 ```
 
 Edit `.anyclauderc.json` and add your API key:
+
 ```json
 {
   "backend": "openrouter",
@@ -49,6 +53,7 @@ Edit `.anyclauderc.json` and add your API key:
 ```
 
 **Option B: Use environment variable**
+
 ```bash
 export OPENROUTER_API_KEY="sk-or-v1-YOUR_KEY_HERE"
 anyclaude --mode=openrouter
@@ -61,6 +66,7 @@ anyclaude
 ```
 
 You should see:
+
 ```
 [anyclaude] Backend: OPENROUTER
 [anyclaude] Using OpenRouter API
@@ -75,18 +81,22 @@ You should see:
 ### Recommended for Coding
 
 **GLM-4.6** (Default)
+
 ```json
 "model": "z-ai/glm-4.6"
 ```
+
 - **Cost**: $0.60/$2 per 1M tokens
 - **Context**: 200K tokens
 - **Best for**: Coding, long context
 - **Strengths**: Excellent code generation, huge context window
 
 **Qwen 2.5 72B Instruct**
+
 ```json
 "model": "qwen/qwen-2.5-72b-instruct"
 ```
+
 - **Cost**: $0.35/$0.70 per 1M tokens
 - **Context**: 128K tokens
 - **Best for**: Budget-conscious coding
@@ -95,9 +105,11 @@ You should see:
 ### Free Models
 
 **Gemini 2.0 Flash Experimental**
+
 ```json
 "model": "google/gemini-2.0-flash-exp:free"
 ```
+
 - **Cost**: FREE
 - **Context**: 32K tokens
 - **Best for**: Testing, simple tasks
@@ -106,17 +118,21 @@ You should see:
 ### Premium Models (via OpenRouter)
 
 **Claude 3.5 Sonnet**
+
 ```json
 "model": "anthropic/claude-3.5-sonnet"
 ```
+
 - **Cost**: $3/$15 per 1M tokens (same as direct API)
 - **Context**: 200K tokens
 - **Note**: Use direct Claude API instead (anyclaude --mode=claude)
 
 **GPT-4**
+
 ```json
 "model": "openai/gpt-4"
 ```
+
 - **Cost**: $10/$30 per 1M tokens
 - **Context**: 128K tokens
 
@@ -166,11 +182,13 @@ export ANYCLAUDE_DEBUG=3  # Trace logging
 ## Cost Tracking
 
 OpenRouter provides usage tracking in their dashboard:
+
 1. Visit [openrouter.ai/activity](https://openrouter.ai/activity)
 2. View requests, tokens used, and costs
 3. Set spending limits
 
 **Typical coding session cost (50K input + 10K output):**
+
 - GLM-4.6: $0.05
 - Qwen 2.5 72B: $0.03
 - Claude (direct): $0.30
@@ -214,7 +232,7 @@ You can't switch models mid-session. Exit Claude Code and edit `.anyclauderc.jso
 {
   "backends": {
     "openrouter": {
-      "model": "qwen/qwen-2.5-72b-instruct"  // Changed from glm-4.6
+      "model": "qwen/qwen-2.5-72b-instruct" // Changed from glm-4.6
     }
   }
 }
@@ -253,21 +271,22 @@ OPENROUTER_MODEL="google/gemini-2.0-flash-exp:free" anyclaude
 ### Slow Responses
 
 Some free/cheap models may have:
+
 - Rate limiting during high usage
 - Slower inference times
 - Try premium models or local models instead
 
 ## Comparison: OpenRouter vs Local vs Claude
 
-| Feature | OpenRouter | Local (vLLM-MLX) | Claude API |
-|---------|-----------|------------------|------------|
-| Cost | $0.05/session | Free | $0.30/session |
-| Privacy | Cloud (sent to OpenRouter) | 100% local | Cloud (sent to Anthropic) |
-| Setup | Easy (API key only) | Medium (model download) | Easy (API key only) |
-| Speed | Fast | Very fast | Fast |
-| Model choice | 400+ models | Your models only | Claude only |
-| Context | Up to 200K | Depends on hardware | 200K |
-| Tool calling | ✅ Yes | ✅ Yes | ✅ Yes |
+| Feature      | OpenRouter                 | Local (vLLM-MLX)        | Claude API                |
+| ------------ | -------------------------- | ----------------------- | ------------------------- |
+| Cost         | $0.05/session              | Free                    | $0.30/session             |
+| Privacy      | Cloud (sent to OpenRouter) | 100% local              | Cloud (sent to Anthropic) |
+| Setup        | Easy (API key only)        | Medium (model download) | Easy (API key only)       |
+| Speed        | Fast                       | Very fast               | Fast                      |
+| Model choice | 400+ models                | Your models only        | Claude only               |
+| Context      | Up to 200K                 | Depends on hardware     | 200K                      |
+| Tool calling | ✅ Yes                     | ✅ Yes                  | ✅ Yes                    |
 
 ## Next Steps
 

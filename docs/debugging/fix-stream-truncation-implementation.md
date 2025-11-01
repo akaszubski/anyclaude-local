@@ -29,7 +29,7 @@ The issue wasn't in Claude Code or the proxy's HTTP buffering - it was in **how 
 
 ### Why Tests Missed It
 
-- ✅ Structure tests verified code *contained* backpressure handling
+- ✅ Structure tests verified code _contained_ backpressure handling
 - ✅ Integration tests used small responses (no backpressure triggered)
 - ❌ No functional tests verified **complete chunks arrived end-to-end**
 
@@ -40,22 +40,26 @@ The backpressure handling was implemented, but not **properly coordinated** betw
 ### Changed: `src/anthropic-proxy.ts` (lines 907-1237)
 
 **Before**:
+
 ```typescript
 // Used Web Streams API pipeTo() - doesn't propagate backpressure to source
-await convertedStream.pipeTo(new WritableStream({
-  write(chunk) {
-    const canContinue = res.write(data);
-    if (!canContinue) {
-      // Wait for res drain, but Transform doesn't know to pause source!
-      return new Promise((resolve) => {
-        res.once("drain", resolve);
-      });
-    }
-  }
-}));
+await convertedStream.pipeTo(
+  new WritableStream({
+    write(chunk) {
+      const canContinue = res.write(data);
+      if (!canContinue) {
+        // Wait for res drain, but Transform doesn't know to pause source!
+        return new Promise((resolve) => {
+          res.once("drain", resolve);
+        });
+      }
+    },
+  })
+);
 ```
 
 **After**:
+
 ```typescript
 // Use Node.js pipe() - automatically handles backpressure propagation
 const nodeReadable = Readable.fromWeb(convertedStream);
@@ -69,7 +73,7 @@ const nodeWritable = new Writable({
     } else {
       callback(); // Continue immediately
     }
-  }
+  },
 });
 nodeReadable.pipe(nodeWritable);
 ```
@@ -108,6 +112,7 @@ HTTP Response (res)
 ```
 
 When res buffer fills:
+
 1. `res.write()` returns false
 2. Writable **doesn't call callback** (signals backpressure)
 3. `pipe()` pauses reading from Transform
@@ -199,12 +204,14 @@ anyclaude
 ### What to Look For
 
 Before the fix:
+
 ```
 ⏺ Claude Code is a CLI tool that helps users with...
   [cuts off mid-sentence]
 ```
 
 After the fix:
+
 ```
 ⏺ Claude Code is a CLI tool that helps users with...
 [complete response with all paragraphs]

@@ -1,6 +1,7 @@
 # Documentation Index
 
 Complete documentation for anyclaude - the translation layer enabling Claude Code with:
+
 - **Local models** (vLLM-MLX, LMStudio) for 100% privacy
 - **Cloud models** (OpenRouter) for 400+ models at 84% lower cost than Claude API
 - **Official Claude API** for full features
@@ -13,8 +14,8 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 - **[Installation Guide](guides/installation.md)** - Get up and running in 5 minutes
 - **[Debug Quick Start](guides/debug-quick-start.md)** - Troubleshooting basics
-- **[Testing Guide](TESTING.md)** - Running the 170+ test suite
-- **[Configuration Guide](configuration.md)** - Setup and configuration options
+- **[Testing Guide](testing/TESTING.md)** - Running the 170+ test suite
+- **[Configuration Guide](guides/configuration.md)** - Setup and configuration options
 
 ---
 
@@ -23,7 +24,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 **Understanding How It Works**
 
 - **[PROJECT.md](../PROJECT.md)** - Complete architectural deep-dive and translation layer design
-- **[Architecture Summary](ARCHITECTURE_SUMMARY.md)** - System overview and design patterns
+- **[Architecture Summary](architecture/ARCHITECTURE_SUMMARY.md)** - System overview and design patterns
 - **[Model Adapters](architecture/model-adapters.md)** - Model-specific handling and optimization
 - **[Tool Calling Enhancement](architecture/tool-calling-enhancement.md)** - Tool system implementation
 
@@ -47,7 +48,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 **Contributing & Test Documentation**
 
-- **[Testing Guide](TESTING.md)** - Overview of 170+ test suite
+- **[Testing Guide](testing/TESTING.md)** - Overview of 170+ test suite
 - **[Comprehensive Testing](development/TESTING_COMPREHENSIVE.md)** - Detailed test documentation
   - Unit tests (100 error handling)
   - Integration tests (30 component interactions)
@@ -75,7 +76,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 **KV Cache & Optimization**
 
-- **[Cache Performance Tuning](../cache-performance-tuning.md)** - NEW! Complete guide to cache optimization
+- **[Cache Performance Tuning](caching/cache-performance-tuning.md)** - Complete guide to cache optimization
   - Configure cache size for your workload
   - Monitor cache hit rates and cost savings
   - Understand performance metrics
@@ -131,13 +132,13 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 | Task                    | Documentation                                   |
 | ----------------------- | ----------------------------------------------- |
-| Install anyclaude       | [Installation](guides/installation.md)          |
-| Configure settings      | [Configuration](configuration.md)               |
-| Run tests               | [Testing Guide](TESTING.md)                     |
-| Debug issues            | [Debugging Guides](debugging/)                  |
-| Understand architecture | [PROJECT.md](../PROJECT.md)                     |
-| Contribute code         | [Development](development/DEVELOPMENT.md)       |
-| Optimize performance    | [Cache Tuning](../cache-performance-tuning.md)  |
+| Install anyclaude       | [Installation](guides/installation.md)               |
+| Configure settings      | [Configuration](guides/configuration.md)             |
+| Run tests               | [Testing Guide](testing/TESTING.md)                  |
+| Debug issues            | [Debugging Guides](debugging/)                       |
+| Understand architecture | [PROJECT.md](../PROJECT.md)                          |
+| Contribute code         | [Development](development/DEVELOPMENT.md)            |
+| Optimize performance    | [Cache Tuning](caching/cache-performance-tuning.md)  |
 | Understand git hooks    | [CLAUDE.md](../CLAUDE.md#-git-automation-hooks) |
 
 ---
@@ -146,7 +147,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 ### ✅ New Documentation
 
-- **[Cache Performance Tuning](../cache-performance-tuning.md)** - Complete guide to cache optimization, monitoring, and tuning
+- **[Cache Performance Tuning](caching/cache-performance-tuning.md)** - Complete guide to cache optimization, monitoring, and tuning
 
 ### ✅ Updated Documentation
 

@@ -6,6 +6,7 @@
 **Run Claude Code with local models (mlx-lm, LMStudio) OR cheap cloud models (OpenRouter) - flexible, private, affordable**
 
 An intelligent translation layer ported from [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of:
+
 - **Local models** (vLLM-MLX, LMStudio) for 100% privacy
 - **OpenRouter** for access to 400+ cloud models at fraction of Claude API cost
 - **9x faster on Apple Silicon** with mlx-lm's native KV cache!
@@ -13,18 +14,21 @@ An intelligent translation layer ported from [anyclaude](https://github.com/code
 ## ✨ Features
 
 ### Local Models (Privacy First)
+
 - 🏠 **100% Local** - No cloud API keys required
 - 🔒 **Privacy First** - Your code never leaves your machine
 - ⚡ **vLLM-MLX Support** - Auto-launches server, prompt caching (40-50% faster), tool calling
 - 🧩 **LMStudio Support** - Works with Qwen Coder, Mistral, Llama, DeepSeek
 
 ### Cloud Models (Cost Effective)
+
 - 💰 **OpenRouter Integration** - Access 400+ models at fraction of Claude API cost
 - 🌟 **GLM-4.6** - 200K context, $0.60/$2 per 1M tokens (vs Claude's $3/$15)
 - 🎁 **Free Models** - Many models with free tiers available
 - 📊 **Trace Logging** - Analyze Claude Code prompts to learn effective patterns
 
 ### General
+
 - 🚀 **Simple Setup** - Running in under 5 minutes
 - 🎯 **Multi-Mode** - Switch between vLLM-MLX, LMStudio, OpenRouter, and real Claude API
 - 🛑 **Auto-Cleanup** - Server processes terminate cleanly when you exit
@@ -1401,7 +1405,7 @@ The original anyclaude is excellent for multi-provider usage, but many users wan
 
 ### Performance Documentation
 
-- **[Cache Performance Tuning](docs/cache-performance-tuning.md)** - NEW!
+- **[Cache Performance Tuning](docs/caching/cache-performance-tuning.md)** - NEW!
   - Configure cache size for your workload
   - Monitor cache hit rates and cost savings
   - Understand cache metrics and optimization
