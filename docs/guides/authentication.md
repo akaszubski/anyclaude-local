@@ -1,8 +1,21 @@
-# Authentication Guide: API Key vs Claude Max Plan
+# Authentication Guide
 
-## ✨ Dual Authentication Support
+## ✨ Multiple Authentication Methods
 
-anyclaude supports **both** authentication methods automatically:
+anyclaude supports **four backend modes** with different authentication methods:
+
+1. **Claude API** - Traditional API key or Claude Max Plan (session-based)
+2. **OpenRouter** - API key for 400+ models at lower cost
+3. **vLLM-MLX** - No authentication (local server)
+4. **LMStudio** - No authentication (local server)
+
+This guide covers cloud modes (Claude API and OpenRouter). Local modes require no authentication.
+
+---
+
+## Claude API Authentication
+
+anyclaude supports **both** Claude authentication methods automatically:
 
 1. **Traditional API Key** - For users with Anthropic API accounts
 2. **Claude Max Plan** - For users with claude.ai subscriptions (session-based)
@@ -102,16 +115,149 @@ const proxyToAnthropic = (body) => {
 
 **We don't care which auth method - we just pass everything!**
 
-## Comparison
+---
 
-| Feature               | API Key                     | Claude Max Plan             |
-| --------------------- | --------------------------- | --------------------------- |
-| **Cost**              | Pay per token               | $20/month unlimited         |
-| **Setup**             | Export ANTHROPIC_API_KEY    | Already logged in           |
-| **Best For**          | API development, automation | Interactive Claude Code use |
-| **Authentication**    | x-api-key header            | Bearer token / session      |
-| **anyclaude Support** | ✅ Yes                      | ✅ Yes                      |
-| **Trace Logging**     | ✅ Yes (redacted)           | ✅ Yes (redacted)           |
+## OpenRouter Authentication
+
+### What is OpenRouter?
+
+[OpenRouter](https://openrouter.ai) is a unified API providing access to 400+ AI models through one endpoint:
+
+- **Cost savings**: GLM-4.6 at $0.60/$2 per 1M tokens (vs Claude $3/$15) - **84% cheaper**
+- **Model choice**: Access Claude, GPT-4, Qwen, GLM, and 400+ other models
+- **Same features**: Tool calling, streaming, large context windows
+- **One API key**: Works with all models
+
+### Who Uses This
+
+- Users who want cheaper cloud models than Claude API
+- Users who want to try different models (Qwen, GLM-4.6, etc.)
+- Users who want flexibility to switch models without changing code
+- Users who want access to Claude via API without Anthropic API key
+
+### How to Set Up
+
+**Step 1: Get OpenRouter API Key**
+
+1. Visit [openrouter.ai](https://openrouter.ai)
+2. Sign up for free account
+3. Add credits ($5 minimum recommended)
+4. Generate API key from dashboard
+
+**Step 2: Configure anyclaude**
+
+Add to `.anyclauderc.json`:
+
+```json
+{
+  "backend": "openrouter",
+  "backends": {
+    "openrouter": {
+      "enabled": true,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-YOUR_API_KEY_HERE",
+      "model": "z-ai/glm-4.6"
+    }
+  }
+}
+```
+
+Or use environment variable:
+
+```bash
+export OPENROUTER_API_KEY="sk-or-v1-YOUR_KEY_HERE"
+anyclaude --mode=openrouter
+```
+
+**Step 3: Run**
+
+```bash
+# Using config file
+anyclaude
+
+# Or override with env var
+OPENROUTER_API_KEY="sk-or-v1-..." anyclaude --mode=openrouter
+```
+
+### Security: API Keys Redacted
+
+OpenRouter API keys are **automatically redacted** in trace files, just like Claude API keys:
+
+```json
+{
+  "request": {
+    "headers": {
+      "authorization": "[REDACTED]",
+      "http-referer": "https://github.com/...",
+      "x-title": "anyclaude"
+    }
+  }
+}
+```
+
+**Safe to share**: Trace files don't expose your OpenRouter credentials!
+
+### Popular Models
+
+**Recommended for Coding** (default):
+
+```json
+"model": "z-ai/glm-4.6"  // $0.60/$2 per 1M, 200K context
+```
+
+**Cheaper Alternative**:
+
+```json
+"model": "qwen/qwen-2.5-72b-instruct"  // $0.35/$0.70 per 1M
+```
+
+**Free Tier** (testing):
+
+```json
+"model": "google/gemini-2.0-flash-exp:free"  // FREE
+```
+
+**Premium Models**:
+
+```json
+"model": "anthropic/claude-3.5-sonnet"  // $3/$15 per 1M (same as direct API)
+"model": "openai/gpt-4"  // $10/$30 per 1M
+```
+
+See [OpenRouter Setup Guide](openrouter-setup.md) for complete model list and cost comparison.
+
+### Troubleshooting OpenRouter
+
+**"Invalid API key"**:
+
+1. Check API key starts with `sk-or-v1-`
+2. Verify key is correct in `.anyclauderc.json` or environment
+3. Check OpenRouter dashboard for key status
+
+**"Insufficient credits"**:
+
+1. Visit [openrouter.ai/credits](https://openrouter.ai/credits)
+2. Add more credits ($5 minimum)
+3. Wait 1-2 minutes for credits to be available
+
+**"Model not found"**:
+
+1. Check exact model ID at [openrouter.ai/models](https://openrouter.ai/models)
+2. Model IDs are case-sensitive (e.g., `z-ai/glm-4.6` not `glm-4.6`)
+
+---
+
+## Comparison: All Authentication Methods
+
+| Feature               | Claude API Key               | Claude Max Plan             | OpenRouter                 | Local Models (vLLM/LM)    |
+| --------------------- | ---------------------------- | --------------------------- | -------------------------- | ------------------------- |
+| **Cost**              | $3/$15 per 1M tokens         | $20/month unlimited         | $0.60/$2 per 1M (GLM-4.6)  | Free (hardware only)      |
+| **Setup**             | Export ANTHROPIC_API_KEY     | Already logged in           | OPENROUTER_API_KEY         | No auth needed            |
+| **Best For**          | API development              | Interactive Claude Code use | Cost savings, model choice | Privacy, offline use      |
+| **Authentication**    | x-api-key header             | Bearer token / session      | Authorization header       | None (local)              |
+| **anyclaude Support** | ✅ Yes                       | ✅ Yes                      | ✅ Yes                     | ✅ Yes                    |
+| **Trace Logging**     | ✅ Yes (auto, redacted)      | ✅ Yes (auto, redacted)     | ✅ Yes (auto, redacted)    | ⚠️ Manual (DEBUG=3)       |
+| **Privacy**           | Cloud (Anthropic)            | Cloud (Anthropic)           | Cloud (OpenRouter)         | 100% local                |
 
 ## Testing Both Methods
 
@@ -320,16 +466,51 @@ ANYCLAUDE_MODE=claude anyclaude
 
 ## Summary
 
-✅ **API Key Auth**: Supported - set `ANTHROPIC_API_KEY`
-✅ **Session Auth (Max Plan)**: Supported - just login via `claude auth login`
-✅ **Both work**: anyclaude passes through whatever auth headers Claude Code sends
-✅ **Secure**: All credentials redacted in trace files
-✅ **Simple**: No configuration needed, just works!
+✅ **Claude API Key**: Supported - set `ANTHROPIC_API_KEY`
+✅ **Claude Max Plan**: Supported - login via `claude auth login`
+✅ **OpenRouter API**: Supported - set `OPENROUTER_API_KEY` or use `.anyclauderc.json`
+✅ **Local Models**: No authentication needed
+✅ **Secure**: All credentials automatically redacted in trace files
+✅ **Simple**: Multiple auth methods, choose what works for you!
 
-**For your use case (Max plan)**: Just run `ANYCLAUDE_MODE=claude anyclaude` and you're good to go! 🎉
+### Quick Start by Use Case
+
+**I want the cheapest cloud option**:
+
+```bash
+# OpenRouter with GLM-4.6 (84% cheaper than Claude)
+export OPENROUTER_API_KEY="sk-or-v1-..."
+anyclaude --mode=openrouter
+```
+
+**I have Claude Max subscription**:
+
+```bash
+# Use your existing Claude Max plan
+anyclaude --mode=claude
+```
+
+**I have Claude API key**:
+
+```bash
+# Use traditional API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+anyclaude --mode=claude
+```
+
+**I want 100% privacy**:
+
+```bash
+# Use local models (no cloud, no auth)
+anyclaude  # defaults to vllm-mlx if configured
+```
 
 ---
 
-**Implementation**: Already complete - no changes needed!
-**Testing**: Ready to use right now
-**Security**: Credentials automatically protected in traces
+**Related Guides**:
+
+- **[OpenRouter Setup](openrouter-setup.md)** - Complete OpenRouter configuration
+- **[Mode Switching](mode-switching.md)** - Switch between backends
+- **[Trace Analysis](trace-analysis.md)** - Analyze prompts and tool usage
+
+**Status**: ✅ All authentication methods fully supported and tested

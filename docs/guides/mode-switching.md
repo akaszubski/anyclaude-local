@@ -1,308 +1,469 @@
-# Mode Switching Quick Start Guide
+# Mode Switching Guide
 
-## ✨ New Feature: Claude vs LMStudio Mode
+## ✨ Four Backend Modes
 
-anyclaude now supports two modes:
+anyclaude supports **four backend modes** to fit your needs:
 
-1. **LMStudio Mode** (default) - Use local models via LMStudio
-2. **Claude Mode** - Use real Anthropic API with trace logging for reverse engineering
+1. **vLLM-MLX** (default) - Local models on Apple Silicon with auto-launch
+2. **LMStudio** - Local models cross-platform, manual server management
+3. **OpenRouter** - 400+ cloud models at fraction of Claude API cost
+4. **Claude** - Real Anthropic API for full features and reverse engineering
 
-## Why Use This Feature?
+## Why Switch Modes?
 
-**Problem**: Tool calling fails with Qwen3-Coder-30B in complex schemas
-**Solution**: Compare Claude's tool schemas/responses with LMStudio to fix conversion
+**Use vLLM-MLX when**:
 
-## Quick Start
+- You have Apple Silicon (M1/M2/M3)
+- You want the fastest local experience
+- You want auto-launch and prompt caching
+- Privacy is critical (100% local)
 
-### Test LMStudio Mode (Default)
+**Use LMStudio when**:
+
+- You're on Windows/Linux (or macOS without MLX support)
+- You want GUI model management
+- You prefer manual server control
+
+**Use OpenRouter when**:
+
+- You want cloud convenience at low cost (84% cheaper than Claude)
+- You want to try different models (GLM-4.6, Qwen, etc.)
+- You want Claude-like quality without Anthropic API key
+- You need cost savings for frequent use
+
+**Use Claude when**:
+
+- You need official Claude API features
+- You want to reverse-engineer Claude Code's prompts
+- You have Claude Max subscription or API key
+- You're comparing local model behavior to Claude
+
+---
+
+## Quick Mode Switching
+
+### Method 1: CLI Flag (Temporary Override)
 
 ```bash
-# Normal usage - uses LMStudio
+# Override mode for this session only
+anyclaude --mode=vllm-mlx
+anyclaude --mode=lmstudio
+anyclaude --mode=openrouter
+anyclaude --mode=claude
+```
+
+### Method 2: Environment Variable
+
+```bash
+# Set for current terminal session
+export ANYCLAUDE_MODE=openrouter
 anyclaude
 
-# Explicit mode selection
-ANYCLAUDE_MODE=lmstudio anyclaude
+# Or inline (one-time)
+ANYCLAUDE_MODE=claude anyclaude
+```
 
-# Or with CLI flag
+### Method 3: Configuration File (Persistent)
+
+Edit `.anyclauderc.json`:
+
+```json
+{
+  "backend": "openrouter",  // ← Change this to switch default mode
+  "backends": {
+    "vllm-mlx": {
+      "enabled": true,
+      "model": "/path/to/your/model"
+    },
+    "lmstudio": {
+      "enabled": true
+    },
+    "openrouter": {
+      "enabled": true,
+      "apiKey": "sk-or-v1-...",
+      "model": "z-ai/glm-4.6"
+    },
+    "claude": {
+      "enabled": true
+    }
+  }
+}
+```
+
+**Priority**: CLI flag > Environment variable > Config file > Default (vllm-mlx)
+
+---
+
+## Mode Details
+
+### vLLM-MLX Mode (Default)
+
+**Setup**:
+
+```json
+{
+  "backend": "vllm-mlx",
+  "backends": {
+    "vllm-mlx": {
+      "enabled": true,
+      "port": 8081,
+      "model": "/path/to/your/mlx/model",
+      "serverScript": "scripts/vllm-mlx-server.py"
+    }
+  }
+}
+```
+
+**Run**:
+
+```bash
+# Auto-launches server if model is configured
+anyclaude
+
+# Or explicit mode
+anyclaude --mode=vllm-mlx
+```
+
+**Output**:
+
+```
+[anyclaude] Backend: VLLM-MLX
+[anyclaude] Port: 8081
+[anyclaude] Model: /path/to/model
+[anyclaude] Server: auto-launch enabled
+[anyclaude] Starting vLLM-MLX server...
+[anyclaude] Waiting for server to load model (30-50 seconds)...
+[anyclaude] Server ready! 🚀
+```
+
+**Features**:
+
+- ✅ Auto-launch and auto-cleanup
+- ✅ Prompt caching (KV cache)
+- ✅ 200K context window
+- ✅ Tool calling support
+- ✅ Streaming responses
+- ✅ 100% local (no cloud)
+
+---
+
+### LMStudio Mode
+
+**Setup**: Start LMStudio manually and load a model
+
+**Run**:
+
+```bash
 anyclaude --mode=lmstudio
 ```
 
 **Output**:
 
 ```
-[anyclaude] Mode: LMSTUDIO
-[anyclaude] LMStudio endpoint: http://localhost:1234/v1
-[anyclaude] Model: current-model (uses whatever is loaded in LMStudio)
+[anyclaude] Backend: LMSTUDIO
+[anyclaude] Base URL: http://localhost:1234/v1
+[anyclaude] Model: current-model (uses whatever is loaded)
 ```
 
-### Test Claude Mode (for Reverse Engineering)
+**Features**:
+
+- ✅ Cross-platform (Windows/Linux/macOS)
+- ✅ GUI model management
+- ✅ Manual server control
+- ✅ Tool calling support
+- ✅ 100% local (no cloud)
+
+**Note**: You must start LMStudio server manually before running anyclaude.
+
+---
+
+### OpenRouter Mode
+
+**Setup**:
+
+1. Get API key from [openrouter.ai](https://openrouter.ai)
+2. Add to `.anyclauderc.json`:
+
+```json
+{
+  "backend": "openrouter",
+  "backends": {
+    "openrouter": {
+      "enabled": true,
+      "apiKey": "sk-or-v1-YOUR_API_KEY_HERE",
+      "model": "z-ai/glm-4.6"
+    }
+  }
+}
+```
+
+Or use environment variable:
 
 ```bash
-# Set your Anthropic API key
-export ANTHROPIC_API_KEY=sk-ant-your-key-here
+export OPENROUTER_API_KEY="sk-or-v1-..."
+```
 
-# Run in Claude mode
-ANYCLAUDE_MODE=claude anyclaude
+**Run**:
 
-# Or with CLI flag (overrides env var)
+```bash
+anyclaude --mode=openrouter
+```
+
+**Output**:
+
+```
+[anyclaude] Backend: OPENROUTER
+[anyclaude] Using OpenRouter API
+[anyclaude] Model: z-ai/glm-4.6
+[anyclaude] Base URL: https://openrouter.ai/api/v1
+[anyclaude] Features: tool calling + streaming
+[anyclaude] Trace logging enabled for openrouter mode (prompts will be saved to ~/.anyclaude/traces/openrouter/)
+```
+
+**Features**:
+
+- ✅ 400+ models available
+- ✅ 84% cheaper than Claude API (GLM-4.6: $0.60/$2 per 1M tokens)
+- ✅ Tool calling support
+- ✅ Streaming responses
+- ✅ Large context windows (up to 200K)
+- ✅ Automatic trace logging
+- ⚠️ Cloud-based (data sent to OpenRouter)
+
+**Popular Models**:
+
+- `z-ai/glm-4.6` - $0.60/$2 per 1M, 200K context (recommended)
+- `qwen/qwen-2.5-72b-instruct` - $0.35/$0.70 per 1M (cheaper)
+- `google/gemini-2.0-flash-exp:free` - FREE (limited)
+- `anthropic/claude-3.5-sonnet` - $3/$15 per 1M (same as direct API)
+
+See [OpenRouter Setup Guide](openrouter-setup.md) for complete list.
+
+---
+
+### Claude Mode
+
+**Setup**:
+
+Option A: Claude Max Plan (session-based)
+
+```bash
+# Already logged in via Claude CLI? Just run:
+anyclaude --mode=claude
+```
+
+Option B: API Key
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+anyclaude --mode=claude
+```
+
+**Run**:
+
+```bash
 anyclaude --mode=claude
 ```
 
 **Output**:
 
 ```
-[anyclaude] Mode: CLAUDE
-[anyclaude] Using real Anthropic API
-[anyclaude] Trace logging: ~/.anyclaude/traces/claude/
+[anyclaude] Backend: CLAUDE
+[anyclaude] Using Anthropic API (real Claude)
+[anyclaude] Authentication: detected
+[anyclaude] Trace logging enabled for claude mode (prompts will be saved to ~/.anyclaude/traces/claude/)
 ```
 
-## Reverse Engineering Workflow
+**Features**:
 
-### Step 1: Capture Claude's Behavior
+- ✅ Official Claude API
+- ✅ Highest quality responses
+- ✅ Full Claude Code feature support
+- ✅ Automatic trace logging for reverse engineering
+- ✅ Support for both API key and Max Plan auth
+- ⚠️ Most expensive ($3/$15 per 1M tokens)
+- ⚠️ Cloud-based (data sent to Anthropic)
+
+**Use Cases**:
+
+- Reverse-engineering Claude Code's prompts and tool usage
+- Comparing local model behavior to Claude
+- When you need the best quality responses
+- When you have Claude Max subscription
+
+---
+
+## Mode Comparison
+
+| Feature              | vLLM-MLX          | LMStudio          | OpenRouter           | Claude               |
+| -------------------- | ----------------- | ----------------- | -------------------- | -------------------- |
+| **Cost**             | Free              | Free              | $0.60-$2/1M tokens   | $3-$15/1M tokens     |
+| **Privacy**          | 100% local        | 100% local        | Cloud                | Cloud                |
+| **Platform**         | macOS (M1/M2/M3)  | All platforms     | All platforms        | All platforms        |
+| **Auto-launch**      | ✅ Yes            | ❌ Manual         | ✅ Cloud             | ✅ Cloud             |
+| **Prompt Caching**   | ✅ Yes            | ⚠️ Limited        | ✅ Yes               | ✅ Yes               |
+| **Tool Calling**     | ✅ Yes            | ✅ Yes            | ✅ Yes               | ✅ Yes               |
+| **Context Window**   | Up to 200K        | Varies by model   | Up to 200K           | 200K                 |
+| **Speed**            | Very fast         | Fast              | Fast                 | Fast                 |
+| **Model Choice**     | Your MLX models   | Any LMStudio      | 400+ models          | Claude only          |
+| **Trace Logging**    | Manual (DEBUG=3)  | Manual (DEBUG=3)  | ✅ Auto (redacted)   | ✅ Auto (redacted)   |
+| **Best For**         | Privacy, speed    | Cross-platform    | Cost savings, choice | Quality, analysis    |
+
+---
+
+## Common Workflows
+
+### Workflow 1: Daily Development (Cost-Conscious)
 
 ```bash
-# Start in Claude mode with trace logging
-ANYCLAUDE_MODE=claude ANTHROPIC_API_KEY=sk-ant-... anyclaude
+# Use cheap cloud model for most work
+export OPENROUTER_API_KEY="sk-or-v1-..."
+anyclaude --mode=openrouter  # GLM-4.6 at $0.60/$2 per 1M
+
+# Switch to Claude for critical tasks
+anyclaude --mode=claude  # Uses Max Plan subscription
 ```
 
-### Step 2: Test Tool Calling in Claude Code
+**Cost**: ~$0.05 per session (OpenRouter) vs $0.30 (Claude direct)
 
-In Claude Code, test the same scenarios that fail with Qwen3:
-
-```
-> What files have changed in the repository?
-> Read the README.md file
-> Run git status and explain the output
-```
-
-### Step 3: Check Trace Files
+### Workflow 2: Privacy-First Development
 
 ```bash
-# List all traces
-ls -lth ~/.anyclaude/traces/claude/
+# Use local model for all work
+anyclaude  # defaults to vllm-mlx
 
-# View latest trace (pretty printed)
-cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1) | jq .
+# Only use cloud when absolutely needed
+anyclaude --mode=claude  # for trace analysis
 ```
 
-**Trace Format**:
+**Privacy**: 95% of work stays local
+
+### Workflow 3: Reverse Engineering
+
+```bash
+# Step 1: Capture Claude's behavior
+anyclaude --mode=claude
+# Test: "What files changed?" → Check traces
+
+# Step 2: Test local model
+anyclaude --mode=vllm-mlx
+# Test same: "What files changed?"
+
+# Step 3: Compare
+cat ~/.anyclaude/traces/claude/*.json | jq .
+# Fix conversion based on differences
+```
+
+### Workflow 4: Model Comparison
+
+```bash
+# Test same prompt across all modes
+PROMPT="Refactor this function to use async/await"
+
+# Test each mode
+anyclaude --mode=openrouter  # GLM-4.6
+anyclaude --mode=openrouter  # Switch model to Qwen
+anyclaude --mode=vllm-mlx    # Local model
+anyclaude --mode=claude      # Official Claude
+
+# Compare results and costs
+```
+
+---
+
+## Quick Switch Aliases
+
+Add to `~/.bashrc` or `~/.zshrc`:
+
+```bash
+# Quick mode switching
+alias ac-local='anyclaude --mode=vllm-mlx'
+alias ac-lm='anyclaude --mode=lmstudio'
+alias ac-or='anyclaude --mode=openrouter'
+alias ac-claude='anyclaude --mode=claude'
+
+# With specific models
+alias ac-cheap='OPENROUTER_MODEL="qwen/qwen-2.5-72b-instruct" anyclaude --mode=openrouter'
+alias ac-free='OPENROUTER_MODEL="google/gemini-2.0-flash-exp:free" anyclaude --mode=openrouter'
+```
+
+Then use:
+
+```bash
+ac-local   # vLLM-MLX
+ac-or      # OpenRouter with GLM-4.6
+ac-cheap   # OpenRouter with Qwen (cheaper)
+ac-claude  # Real Claude API
+```
+
+---
+
+## Troubleshooting
+
+### Mode Not Switching
+
+**Issue**: anyclaude still uses old mode
+
+**Fix**:
+
+1. Check CLI flag: `anyclaude --mode=openrouter` overrides everything
+2. Check env var: `echo $ANYCLAUDE_MODE`
+3. Check config: `cat .anyclauderc.json | jq .backend`
+4. Priority: CLI > env > config
+
+### "Backend not enabled"
+
+**Issue**: Mode is set but backend is disabled
+
+**Fix**: Enable in `.anyclauderc.json`:
 
 ```json
 {
-  "timestamp": "2025-10-26T14:30:45.123Z",
-  "request": {
-    "method": "POST",
-    "url": "/v1/messages",
-    "headers": {
-      "x-api-key": "[REDACTED]",  // Automatically sanitized!
-      "anthropic-version": "2023-06-01"
-    },
-    "body": {
-      "model": "claude-3-5-sonnet-20241022",
-      "max_tokens": 4096,
-      "tools": [
-        {
-          "name": "Bash",
-          "description": "Executes a bash command...",
-          "input_schema": {
-            "type": "object",
-            "properties": {
-              "command": {"type": "string", "description": "..."},
-              "description": {"type": "string", "description": "..."},
-              "timeout": {"type": "number", "description": "..."}
-              // Full schema from Claude Code!
-            },
-            "required": ["command"],
-            "additionalProperties": false
-          }
-        }
-      ],
-      "messages": [...]
-    }
-  },
-  "response": {
-    "statusCode": 200,
-    "headers": {...},
-    "body": {
-      "id": "msg_123",
-      "type": "message",
-      "role": "assistant",
-      "content": [
-        {
-          "type": "tool_use",
-          "id": "toolu_456",
-          "name": "Bash",
-          "input": {
-            "command": "git status",
-            "description": "Check repository status"
-          }
-        }
-      ],
-      "stop_reason": "tool_use"
+  "backends": {
+    "openrouter": {
+      "enabled": true  // ← Set to true
     }
   }
 }
 ```
 
-### Step 4: Compare with LMStudio Traces
+### "Missing API key"
+
+**Issue**: OpenRouter or Claude mode needs API key
+
+**Fix**:
 
 ```bash
-# Run same test in LMStudio mode with trace logging (level 3)
-ANYCLAUDE_DEBUG=3 anyclaude 2> lmstudio-trace.log
+# For OpenRouter
+export OPENROUTER_API_KEY="sk-or-v1-..."
 
-# In Claude Code, run same commands
-> What files have changed in the repository?
+# For Claude
+export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Compare outputs
-diff <(jq . ~/.anyclaude/traces/claude/latest.json) \
-     <(grep "Tool" lmstudio-trace.log)
+# Or add to .anyclauderc.json
 ```
 
-### Step 5: Analyze Differences
+### vLLM-MLX Server Won't Start
 
-**What to look for**:
+**Issue**: Auto-launch fails
 
-1. **Tool Schema Differences**
-   - Does Claude send same schema we send to LMStudio?
-   - Are there missing/extra properties?
-   - Different descriptions?
+**Fix**:
 
-2. **Tool Call Format**
-   - How does Claude format tool calls?
-   - What parameters does it provide?
-   - Does it handle optional params differently?
-
-3. **Response Format**
-   - How does Claude structure responses?
-   - Are there extra fields we're missing?
-   - Different stop_reason values?
-
-## Security Notes
-
-**API Key Protection**: ✅ Automatically redacted in traces
-
-- Headers: `x-api-key`, `Authorization`, `api-key`, etc.
-- Body: Any field containing `api_key`, `apiKey`, `API_KEY`, etc.
-- Nested objects: Recursive sanitization
-
-**File Permissions**: ✅ Restrictive by default
-
-- Trace files: `0600` (rw-------)
-- Trace directories: `0700` (rwx------)
-
-**Safe to share**: Trace files can be uploaded to GitHub issues without leaking API keys!
-
-## Common Use Cases
-
-### Use Case 1: Debug Tool Schema Conversion
-
-**Problem**: Qwen3 fails to call tools, but simple test works
-
-**Solution**:
-
-1. Capture Claude's exact tool schema
-2. Compare with what we send to LMStudio
-3. Fix conversion in `src/json-schema.ts`
-
-### Use Case 2: Understand Tool Response Format
-
-**Problem**: Tool results not recognized by Claude Code
-
-**Solution**:
-
-1. Capture Claude's tool response format
-2. Compare with our conversion
-3. Fix in `src/convert-to-anthropic-stream.ts`
-
-### Use Case 3: Test New Tool
-
-**Problem**: Want to add new tool, don't know format
-
-**Solution**:
-
-1. Use Claude mode to see how tool is called
-2. Implement same format for LMStudio
-3. Test with both modes
-
-## Tips & Tricks
-
-### Quick Mode Switch
-
-Add to `~/.bashrc` or `~/.zshrc`:
-
-```bash
-alias anyclaude-lm='anyclaude --mode=lmstudio'
-alias anyclaude-claude='ANTHROPIC_API_KEY=$CLAUDE_KEY anyclaude --mode=claude'
-```
-
-### Auto-Compare Traces
-
-```bash
-# Create comparison script
-cat > compare-traces.sh << 'EOF'
-#!/bin/bash
-CLAUDE_TRACE=$(ls -t ~/.anyclaude/traces/claude/ | head -1)
-echo "Claude trace: $CLAUDE_TRACE"
-jq '{tools: .request.body.tools, response: .response.body.content}' \
-   ~/.anyclaude/traces/claude/$CLAUDE_TRACE
-EOF
-chmod +x compare-traces.sh
-```
-
-### Clear Old Traces
-
-```bash
-# Delete traces older than 7 days
-find ~/.anyclaude/traces/claude/ -type f -mtime +7 -delete
-
-# Or delete all traces
-rm -rf ~/.anyclaude/traces/claude/*
-```
-
-## Troubleshooting
-
-### "Missing ANTHROPIC_API_KEY in Claude mode"
-
-```bash
-# Set your key
-export ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# Or pass inline
-ANTHROPIC_API_KEY=sk-ant-... anyclaude --mode=claude
-```
-
-### "Trace directory not created"
-
-```bash
-# Create manually
-mkdir -p ~/.anyclaude/traces/claude
-chmod 700 ~/.anyclaude/traces
-chmod 700 ~/.anyclaude/traces/claude
-```
-
-### "Can't read trace files"
-
-```bash
-# Check permissions
-ls -la ~/.anyclaude/traces/claude/
-
-# Fix if needed
-chmod 600 ~/.anyclaude/traces/claude/*
-```
-
-## Next Steps
-
-1. **Capture traces** in both modes
-2. **Analyze differences** in tool schemas and responses
-3. **Fix conversion** in anyclaude to match Claude's format
-4. **Test** with Qwen3-Coder-30B
-5. **Measure improvement** in tool calling success rate
-
-**Goal**: 30% → 90% tool calling success with local models!
+1. Check model path: `ls /path/to/model`
+2. Check port: `lsof -i :8081` (should be free)
+3. Check logs: `~/.anyclaude/logs/vllm-mlx-server.log`
+4. Manual start: `python3 scripts/vllm-mlx-server.py --model /path/to/model`
 
 ---
 
-**Feature implemented by**: Autonomous orchestrator agent
-**Time taken**: ~25 minutes
-**Test coverage**: 100% (unit + security tests)
-**Documentation**: Complete
+## Related Guides
+
+- **[Authentication Guide](authentication.md)** - Setup API keys for cloud modes
+- **[OpenRouter Setup](openrouter-setup.md)** - Complete OpenRouter configuration
+- **[Trace Analysis](trace-analysis.md)** - Analyze Claude Code's prompts
+- **[vLLM-MLX Setup](vllm-mlx-setup.md)** - Configure local MLX models
+
+---
+
+**Status**: ✅ All modes fully supported and tested
+**Last Updated**: 2025-11-01
