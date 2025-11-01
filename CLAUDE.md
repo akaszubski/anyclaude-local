@@ -335,7 +335,8 @@ Create this file in your project root to configure anyclaude:
 }
 ```
 
-**See `.anyclauderc.example-openrouter.json` for a complete OpenRouter configuration example.**
+**See `.anyclauderc.example.json` for a complete configuration example with all backends.**
+**See `.anyclauderc.example-openrouter.json` for OpenRouter-specific quick start.**
 
 **Key fields for vllm-mlx auto-launch:**
 
@@ -375,6 +376,7 @@ Or set the model to `"current-model"` in `.anyclauderc.json` to prevent auto-lau
 ### OpenRouter Configuration (Cloud Models)
 
 OpenRouter provides access to 400+ AI models through a single API, including:
+
 - **GLM-4.6** (200K context, $0.60/$2 per 1M tokens) - Great for coding
 - **Qwen 2.5 72B** ($0.35/$0.70 per 1M tokens) - Even cheaper!
 - **Claude 3.5 Sonnet** via OpenRouter ($3/$15 per 1M tokens)
@@ -389,6 +391,7 @@ OpenRouter provides access to 400+ AI models through a single API, including:
 4. Run: `anyclaude`
 
 **Example config:**
+
 ```json
 {
   "backend": "openrouter",
@@ -404,6 +407,7 @@ OpenRouter provides access to 400+ AI models through a single API, including:
 ```
 
 **Popular models:**
+
 - `z-ai/glm-4.6` - 200K context, excellent coding ($0.60/$2)
 - `qwen/qwen-2.5-72b-instruct` - Cheaper alternative ($0.35/$0.70)
 - `google/gemini-2.0-flash-exp:free` - **Free!**
@@ -413,6 +417,7 @@ OpenRouter provides access to 400+ AI models through a single API, including:
 See [openrouter.ai/models](https://openrouter.ai/models) for full list.
 
 **Features:**
+
 - ✅ **Trace logging enabled by default** (analyze prompts in `~/.anyclaude/traces/openrouter/`)
 - ✅ Tool calling support (Read, Write, Edit, Bash, etc.)
 - ✅ Streaming responses
@@ -420,6 +425,7 @@ See [openrouter.ai/models](https://openrouter.ai/models) for full list.
 - ✅ Much cheaper than Claude API
 
 **Environment variables:**
+
 - `OPENROUTER_API_KEY`: Your OpenRouter API key
 - `OPENROUTER_MODEL`: Override model (e.g., `qwen/qwen-2.5-72b-instruct`)
 - `OPENROUTER_BASE_URL`: Custom base URL (default: https://openrouter.ai/api/v1)
@@ -556,6 +562,7 @@ grep -l "tool_use" ~/.anyclaude/traces/claude/*.json
 ### Analyzing Prompting Patterns
 
 **Study effective system prompts:**
+
 ```bash
 # Extract all system prompts into one file
 for f in ~/.anyclaude/traces/claude/*.json; do
@@ -566,6 +573,7 @@ done
 ```
 
 **Analyze tool calling patterns:**
+
 ```bash
 # Find successful tool calls and their parameters
 jq -r '.response.body.content[] |
@@ -574,6 +582,7 @@ jq -r '.response.body.content[] |
 ```
 
 **Compare traces from different tasks:**
+
 ```bash
 # Trace from simple question
 anyclaude --mode=claude  # Ask: "What is 2+2?"
