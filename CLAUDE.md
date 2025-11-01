@@ -223,6 +223,9 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
 **Debug:**
 
 - `ANYCLAUDE_DEBUG`: Enable debug logging (1=basic, 2=verbose, 3=trace with tool calls)
+  - **Note**: When using `--mode=claude`, trace logging (level 3) is **enabled by default**
+  - This saves full prompts and responses to `~/.anyclaude/traces/claude/` for analysis
+  - To disable: `ANYCLAUDE_DEBUG=0 anyclaude --mode=claude`
 - `PROXY_ONLY`: Run proxy server without spawning Claude Code
 - `ANYCLAUDE_MODE`: claude | lmstudio (default: lmstudio)
 
@@ -321,10 +324,18 @@ Create this file in your project root to configure anyclaude:
     },
     "claude": {
       "enabled": false
+    },
+    "openrouter": {
+      "enabled": false,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-...",
+      "model": "z-ai/glm-4.6"
     }
   }
 }
 ```
+
+**See `.anyclauderc.example-openrouter.json` for a complete OpenRouter configuration example.**
 
 **Key fields for vllm-mlx auto-launch:**
 
@@ -361,12 +372,66 @@ anyclaude
 
 Or set the model to `"current-model"` in `.anyclauderc.json` to prevent auto-launch.
 
+### OpenRouter Configuration (Cloud Models)
+
+OpenRouter provides access to 400+ AI models through a single API, including:
+- **GLM-4.6** (200K context, $0.60/$2 per 1M tokens) - Great for coding
+- **Qwen 2.5 72B** ($0.35/$0.70 per 1M tokens) - Even cheaper!
+- **Claude 3.5 Sonnet** via OpenRouter ($3/$15 per 1M tokens)
+- **GPT-4** via OpenRouter ($10/$30 per 1M tokens)
+- Many open models with **free tiers**!
+
+**Quick Start:**
+
+1. Get an API key from [openrouter.ai](https://openrouter.ai)
+2. Copy `.anyclauderc.example-openrouter.json` to `.anyclauderc.json`
+3. Add your API key to the config
+4. Run: `anyclaude`
+
+**Example config:**
+```json
+{
+  "backend": "openrouter",
+  "backends": {
+    "openrouter": {
+      "enabled": true,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-YOUR_KEY_HERE",
+      "model": "z-ai/glm-4.6"
+    }
+  }
+}
+```
+
+**Popular models:**
+- `z-ai/glm-4.6` - 200K context, excellent coding ($0.60/$2)
+- `qwen/qwen-2.5-72b-instruct` - Cheaper alternative ($0.35/$0.70)
+- `google/gemini-2.0-flash-exp:free` - **Free!**
+- `anthropic/claude-3.5-sonnet` - Via OpenRouter
+- `openai/gpt-4` - Via OpenRouter
+
+See [openrouter.ai/models](https://openrouter.ai/models) for full list.
+
+**Features:**
+- ✅ **Trace logging enabled by default** (analyze prompts in `~/.anyclaude/traces/openrouter/`)
+- ✅ Tool calling support (Read, Write, Edit, Bash, etc.)
+- ✅ Streaming responses
+- ✅ 200K context window (GLM-4.6)
+- ✅ Much cheaper than Claude API
+
+**Environment variables:**
+- `OPENROUTER_API_KEY`: Your OpenRouter API key
+- `OPENROUTER_MODEL`: Override model (e.g., `qwen/qwen-2.5-72b-instruct`)
+- `OPENROUTER_BASE_URL`: Custom base URL (default: https://openrouter.ai/api/v1)
+
 ### Advanced Options
 
 ```bash
 # Override backend mode
-anyclaude --mode=claude          # Use real Claude API instead
-anyclaude --mode=lmstudio        # Force LMStudio
+anyclaude --mode=claude          # Use real Claude API
+anyclaude --mode=openrouter      # Use OpenRouter (cloud models)
+anyclaude --mode=vllm-mlx        # Use local vLLM-MLX
+anyclaude --mode=lmstudio        # Use local LMStudio
 
 # Debug logging
 ANYCLAUDE_DEBUG=1 anyclaude      # Basic debug
@@ -448,6 +513,94 @@ kill -9 <PID>
 - For details, see: `docs/debugging/stream-truncation-fix.md`
 - If you see truncation, enable debug logging: `ANYCLAUDE_DEBUG=2 anyclaude`
 - Look for `[Backpressure]` messages in logs to confirm fix is working
+
+## 🔍 Analyzing Claude Code Prompts (Reverse Engineering)
+
+When you run anyclaude in `--mode=claude`, **trace logging is enabled by default**. This records every prompt, system instruction, and tool call to help you understand how Claude Code achieves good coding outcomes.
+
+### What Gets Recorded
+
+Full request/response traces saved to `~/.anyclaude/traces/claude/`:
+
+- ✅ **Complete system prompts** - the exact instructions Claude Code uses
+- ✅ **Tool definitions** - schemas for Read, Write, Edit, Bash, etc.
+- ✅ **User messages** - your requests to Claude Code
+- ✅ **Model responses** - how Claude responds, including tool calls
+- ✅ **Tool parameters** - what arguments Claude uses when calling tools
+
+### Viewing Traces
+
+```bash
+# Run Claude Code with tracing (enabled by default)
+anyclaude --mode=claude
+
+# List all trace files
+ls -lht ~/.anyclaude/traces/claude/
+
+# View latest trace (pretty-printed JSON)
+cat ~/.anyclaude/traces/claude/trace-*.json | tail -1 | jq .
+
+# Extract system prompt from latest trace
+jq -r '.request.body.system' ~/.anyclaude/traces/claude/trace-*.json | tail -1
+
+# Extract tool definitions
+jq '.request.body.tools[]' ~/.anyclaude/traces/claude/trace-*.json | less
+
+# See what tools Claude actually called
+jq '.response.body.content[] | select(.type == "tool_use")' ~/.anyclaude/traces/claude/trace-*.json
+
+# Find traces with specific tool usage
+grep -l "tool_use" ~/.anyclaude/traces/claude/*.json
+```
+
+### Analyzing Prompting Patterns
+
+**Study effective system prompts:**
+```bash
+# Extract all system prompts into one file
+for f in ~/.anyclaude/traces/claude/*.json; do
+  echo "=== Trace: $(basename $f) ===" >> system-prompts.txt
+  jq -r '.request.body.system' "$f" >> system-prompts.txt
+  echo "" >> system-prompts.txt
+done
+```
+
+**Analyze tool calling patterns:**
+```bash
+# Find successful tool calls and their parameters
+jq -r '.response.body.content[] |
+  select(.type == "tool_use") |
+  "\(.name): \(.input)"' ~/.anyclaude/traces/claude/*.json
+```
+
+**Compare traces from different tasks:**
+```bash
+# Trace from simple question
+anyclaude --mode=claude  # Ask: "What is 2+2?"
+
+# Trace from coding task
+anyclaude --mode=claude  # Ask: "Write a function to reverse a string"
+
+# Compare the system prompts and tool usage
+```
+
+### Disable Trace Logging
+
+If you don't want traces recorded:
+
+```bash
+# Disable for one session
+ANYCLAUDE_DEBUG=0 anyclaude --mode=claude
+
+# Or set in your shell config
+export ANYCLAUDE_DEBUG=0
+```
+
+### Privacy Note
+
+- ✅ API keys are automatically redacted from traces
+- ✅ Traces are stored locally in `~/.anyclaude/traces/` (never uploaded)
+- ⚠️ Your prompts and code are saved in plaintext - be mindful of sensitive data
 
 ## 🔄 Git Automation (Hooks)
 

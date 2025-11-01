@@ -3,19 +3,31 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/stars/akaszubski/anyclaude-local?style=social)](https://github.com/akaszubski/anyclaude-local)
 
-**Run Claude Code with local models (mlx-lm, LMStudio) - zero cloud dependency, full privacy**
+**Run Claude Code with local models (mlx-lm, LMStudio) OR cheap cloud models (OpenRouter) - flexible, private, affordable**
 
-An intelligent translation layer ported from [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of local models as if they were the real Claude API. **9x faster on Apple Silicon with mlx-lm's native KV cache!**
+An intelligent translation layer ported from [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of:
+- **Local models** (vLLM-MLX, LMStudio) for 100% privacy
+- **OpenRouter** for access to 400+ cloud models at fraction of Claude API cost
+- **9x faster on Apple Silicon** with mlx-lm's native KV cache!
 
 ## ✨ Features
 
+### Local Models (Privacy First)
 - 🏠 **100% Local** - No cloud API keys required
-- 🚀 **Simple Setup** - Running in under 5 minutes with auto-launch
 - 🔒 **Privacy First** - Your code never leaves your machine
-- 🧩 **Works with LMStudio Models** - Tested with Qwen Coder, Mistral, Llama, DeepSeek (performance depends on your hardware: GPU, VRAM, RAM)
 - ⚡ **vLLM-MLX Support** - Auto-launches server, prompt caching (40-50% faster), tool calling
-- 🎯 **Multi-Mode** - Switch between vLLM-MLX, LMStudio, mlx-lm, and real Claude API
-- 🛑 **Auto-Cleanup** - Server processes terminate cleanly when you exit (no orphaned processes)
+- 🧩 **LMStudio Support** - Works with Qwen Coder, Mistral, Llama, DeepSeek
+
+### Cloud Models (Cost Effective)
+- 💰 **OpenRouter Integration** - Access 400+ models at fraction of Claude API cost
+- 🌟 **GLM-4.6** - 200K context, $0.60/$2 per 1M tokens (vs Claude's $3/$15)
+- 🎁 **Free Models** - Many models with free tiers available
+- 📊 **Trace Logging** - Analyze Claude Code prompts to learn effective patterns
+
+### General
+- 🚀 **Simple Setup** - Running in under 5 minutes
+- 🎯 **Multi-Mode** - Switch between vLLM-MLX, LMStudio, OpenRouter, and real Claude API
+- 🛑 **Auto-Cleanup** - Server processes terminate cleanly when you exit
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
 - 💻 **Global Command** - Install once, run `anyclaude` from anywhere
 - 🧪 **Automated Testing** - 170+ tests with regression detection via git hooks

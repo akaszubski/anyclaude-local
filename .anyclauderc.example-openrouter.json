@@ -1,0 +1,17 @@
+{
+  "backend": "openrouter",
+  "backends": {
+    "openrouter": {
+      "enabled": true,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-YOUR_OPENROUTER_API_KEY_HERE",
+      "model": "z-ai/glm-4.6",
+      "description": "OpenRouter with GLM-4.6 (200K context, $0.60/$2 per 1M tokens)"
+    }
+  },
+  "debug": {
+    "level": 3,
+    "enableTraces": true,
+    "enableStreamLogging": false
+  }
+}

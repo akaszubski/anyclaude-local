@@ -52,6 +52,13 @@ interface AnyclaudeConfig {
       enabled?: boolean;
       description?: string;
     };
+    openrouter?: {
+      enabled?: boolean;
+      baseUrl?: string;
+      apiKey?: string;
+      model?: string;
+      description?: string;
+    };
   };
 }
 
@@ -82,11 +89,11 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
   for (const arg of args) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (mode === "claude" || mode === "lmstudio" || mode === "vllm-mlx") {
+      if (mode === "claude" || mode === "lmstudio" || mode === "vllm-mlx" || mode === "openrouter") {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'vllm-mlx'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'vllm-mlx', or 'openrouter'.`
       );
       process.exit(1);
     }
@@ -136,7 +143,8 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
   if (
     envMode === "claude" ||
     envMode === "lmstudio" ||
-    envMode === "vllm-mlx"
+    envMode === "vllm-mlx" ||
+    envMode === "openrouter"
   ) {
     return envMode as AnyclaudeMode;
   }
@@ -147,7 +155,8 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
     if (
       backend === "claude" ||
       backend === "lmstudio" ||
-      backend === "vllm-mlx"
+      backend === "vllm-mlx" ||
+      backend === "openrouter"
     ) {
       return backend as AnyclaudeMode;
     }
@@ -168,6 +177,19 @@ const config = loadConfig();
 
 // Detect mode before configuring providers
 const mode: AnyclaudeMode = detectMode(config);
+
+// Enable trace logging by default for claude and openrouter modes (unless explicitly disabled)
+// This allows users to analyze Claude Code's prompts and tool usage patterns
+if ((mode === "claude" || mode === "openrouter") && !process.env.ANYCLAUDE_DEBUG) {
+  process.env.ANYCLAUDE_DEBUG = "3";
+  console.log(
+    `[anyclaude] Trace logging enabled for ${mode} mode (prompts will be saved to ~/.anyclaude/traces/${mode}/)`
+  );
+  console.log(
+    `[anyclaude] To disable: ANYCLAUDE_DEBUG=0 anyclaude --mode=${mode}`
+  );
+  console.log("");
+}
 
 // Check dependencies early and fail with helpful message if needed
 if (!process.env.ANYCLAUDE_SKIP_SETUP_CHECK) {
@@ -230,6 +252,26 @@ function getBackendConfig(
         configBackends?.["vllm-mlx"]?.model ||
         defaultConfig.model,
     };
+  } else if (backend === "openrouter") {
+    const defaultConfig = {
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.OPENROUTER_API_KEY || "",
+      model: "z-ai/glm-4.6", // Default to GLM-4.6
+    };
+    return {
+      baseURL:
+        process.env.OPENROUTER_BASE_URL ||
+        configBackends?.openrouter?.baseUrl ||
+        defaultConfig.baseURL,
+      apiKey:
+        process.env.OPENROUTER_API_KEY ||
+        configBackends?.openrouter?.apiKey ||
+        defaultConfig.apiKey,
+      model:
+        process.env.OPENROUTER_MODEL ||
+        configBackends?.openrouter?.model ||
+        defaultConfig.model,
+    };
   }
   return null;
 }
@@ -237,6 +279,7 @@ function getBackendConfig(
 // Configure providers based on mode
 const lmstudioConfig = getBackendConfig("lmstudio", config.backends);
 const vllmMlxConfig = getBackendConfig("vllm-mlx", config.backends);
+const openrouterConfig = getBackendConfig("openrouter", config.backends);
 
 // Launch backend server if needed (non-blocking)
 launchBackendServer(mode, config);
@@ -388,6 +431,30 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
+  openrouter: createOpenAI({
+    baseURL: openrouterConfig?.baseURL || "https://openrouter.ai/api/v1",
+    apiKey: openrouterConfig?.apiKey || process.env.OPENROUTER_API_KEY || "",
+    fetch: (async (url, init) => {
+      if (init?.body && typeof init.body === "string") {
+        const body = JSON.parse(init.body);
+
+        // Map max_tokens for OpenRouter compatibility
+        const maxTokens = body.max_tokens;
+        delete body.max_tokens;
+        if (typeof maxTokens !== "undefined") {
+          body.max_completion_tokens = maxTokens;
+        }
+
+        // Remove parameters that some OpenRouter models don't support
+        delete body.reasoning;
+        delete body.service_tier;
+
+        init.body = JSON.stringify(body);
+      }
+
+      return await globalThis.fetch(url, init);
+    }) as typeof fetch,
+  }),
   claude: createAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY || "",
   }) as any,
@@ -450,9 +517,11 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     defaultModel:
       mode === "claude"
         ? "claude-3-5-sonnet-20241022"
-        : mode === "vllm-mlx"
-          ? vllmMlxConfig?.model || "current-model"
-          : lmstudioConfig?.model || "current-model",
+        : mode === "openrouter"
+          ? openrouterConfig?.model || "z-ai/glm-4.6"
+          : mode === "vllm-mlx"
+            ? vllmMlxConfig?.model || "current-model"
+            : lmstudioConfig?.model || "current-model",
     mode,
   });
 
@@ -492,6 +561,16 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       );
     }
     console.log(`[anyclaude] Features: prompt caching + tool calling`);
+  } else if (mode === "openrouter") {
+    const modelName = openrouterConfig?.model || "z-ai/glm-4.6";
+    console.log(`[anyclaude] Using OpenRouter API`);
+    console.log(`[anyclaude] Model: ${modelName}`);
+    console.log(`[anyclaude] Base URL: ${openrouterConfig?.baseURL || "https://openrouter.ai/api/v1"}`);
+    console.log(`[anyclaude] Features: tool calling + streaming`);
+    if (process.env.ANYCLAUDE_DEBUG) {
+      const traceDir = require("os").homedir() + "/.anyclaude/traces/openrouter";
+      console.log(`[anyclaude] Trace directory: ${traceDir}`);
+    }
   } else if (mode === "claude") {
     console.log(`[anyclaude] Using real Anthropic API (Claude 3.5 Sonnet)`);
     if (process.env.ANYCLAUDE_DEBUG) {

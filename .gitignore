@@ -87,6 +87,11 @@ debug-logs/
 test-model-detection.js
 AUTONOMOUS-DEV-ENHANCEMENTS.md
 
+# User configuration files (personal settings, API keys, local paths)
+.anyclauderc.json
+.anyclauderc
+.anyclaude-cache-metrics.json
+
 # Build artifacts and npm packages
 *.tgz
 anyclaude
