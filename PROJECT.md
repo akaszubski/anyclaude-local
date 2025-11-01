@@ -415,11 +415,13 @@ Run `curl http://localhost:8080/anthropic/v1/models` to see available MLX models
 **Setup**:
 
 ```bash
-# Start MLX-LM server with local model
-python -m mlx_lm.server --model-path /path/to/Qwen3-Coder-30B-MLX
+# vLLM-MLX auto-launches when you run anyclaude
+# Just configure .anyclauderc.json with your model path
+anyclaude  # Server starts automatically
 
-# Use with anyclaude
-ANYCLAUDE_MODE=mlx-lm anyclaude
+# OR start manually:
+source ~/.venv-mlx/bin/activate
+python3 scripts/vllm-mlx-server.py --model /path/to/Qwen3-Coder-30B-MLX --port 8081
 ```
 
 ### Architecture Layers
@@ -436,55 +438,55 @@ ANYCLAUDE_MODE=mlx-lm anyclaude
 ┌─────────────────────────────────────────────────────────────────┐
 │ Layer 1: HTTP Proxy (src/anthropic-proxy.ts)                   │
 │ • Intercepts requests to api.anthropic.com                      │
-│ • Routes based on mode: claude | lmstudio | mlx-lm | mlx-omni   │
+│ • Routes based on mode: claude | lmstudio | vllm-mlx | openrouter│
 │ • Provides debug logging and trace capture                      │
 └────────────────────────┬────────────────────────────────────────┘
                          │
      ┌───────────────────┼───────────────────┬───────────────┐
      ▼                   ▼                   ▼               ▼
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ Claude Mode  │  │ LMStudio Mode│  │ MLX-LM Mode  │  │ MLX-Omni Mode│
-│ • Passthrough│  │ • Full xform │  │ • KV cache   │  │ • KV cache   │
-│ • Auth xform │  │ • Streaming  │  │ • No tools   │  │ • With tools │
+│ Claude Mode  │  │ LMStudio Mode│  │ vLLM-MLX Mode│  │OpenRouter Mde│
+│ • Passthrough│  │ • Full xform │  │ • KV cache   │  │ • Cloud API  │
+│ • Trace log  │  │ • Streaming  │  │ • Auto-launch│  │ • 400+ models│
 └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
        │                 │                 │                 │
        ▼                 ▼                 ▼                 ▼
 ┌──────────────┐  ┌──────────────────────────────────────────────┐
-│ Real Claude  │  │ Layer 2: Message Format (all local modes)    │
+│ Real Claude  │  │ Layer 2: Message Format (local modes)        │
 │ API          │  │ (convert-anthropic-messages.ts)              │
 └──────────────┘  │ • Anthropic → OpenAI conversion              │
                   │ • Context window truncation                  │
-                  │ • System prompt handling                     │
-                  └──────────────────┬───────────────────────────┘
-                                     │
-                   ┌─────────────────┼─────────────────┐
-                   ▼                 ▼                 ▼
-          ┌──────────────────┐ ┌──────────────┐ ┌──────────────┐
-          │ Layer 3: Schemas │ │ Layer 4: MLX │ │Layer 4: Tool │
-          │ (json-schema.ts) │ │  KV Cache    │ │ Call Support │
-          │ • Conversion     │ │ • Hash-based │ │ • Prompt fmt │
-          │ • Simplification │ │ • 1hr TTL    │ │ • Streaming  │
-          └────────┬─────────┘ └──────┬───────┘ └──────┬───────┘
-                   │                  │                │
-                   └──────────────────┼────────────────┘
-                                      ▼
-                        ┌──────────────────────────┐
-                        │ Layer 5: AI SDK Provider │
-                        │ (main.ts)                │
-                        │ • OpenAI-compatible      │
-                        │ • Streaming enabled      │
-                        │ • Tool use support       │
-                        └──────────┬───────────────┘
-                                   │
-           ┌───────────────────────┼───────────────────────┐
-           ▼                       ▼                       ▼
-    ┌─────────────────┐    ┌──────────────────┐   ┌──────────────┐
-    │ LMStudio Server │    │ MLX-LM Server    │   │MLX-Omni Srv  │
-    │ :1234/v1        │    │ :8080/v1         │   │ :8080/anth.. │
-    │ • Any model     │    │ • With KV cache  │   │ • KV + Tools │
-    │ • Hot-swap      │    │ • Fast follow-up │   │ • Qwen3-Code │
-    └────────┬────────┘    └────────┬─────────┘   └────────┬─────┘
-             │                      │                      │
+┌──────────────┐  │ • System prompt handling                     │
+│ OpenRouter   │  └──────────────────┬───────────────────────────┘
+│ API          │                     │
+└──────────────┘   ┌─────────────────┴─────────────────┐
+                   ▼                                     ▼
+          ┌──────────────────┐                  ┌──────────────┐
+          │ Layer 3: Schemas │                  │Layer 4: vLLM │
+          │ (json-schema.ts) │                  │  KV Cache    │
+          │ • Conversion     │                  │ • Auto hash  │
+          │ • Simplification │                  │ • Persistent │
+          └────────┬─────────┘                  └──────┬───────┘
+                   │                                   │
+                   └───────────────┬───────────────────┘
+                                   ▼
+                     ┌──────────────────────────┐
+                     │ Layer 5: AI SDK Provider │
+                     │ (main.ts)                │
+                     │ • OpenAI-compatible      │
+                     │ • Streaming enabled      │
+                     │ • Tool use support       │
+                     └──────────┬───────────────┘
+                                │
+                ┌───────────────┴───────────────┐
+                ▼                               ▼
+    ┌─────────────────┐             ┌──────────────────┐
+    │ LMStudio Server │             │ vLLM-MLX Server  │
+    │ :1234/v1        │             │ :8081/v1         │
+    │ • Any model     │             │ • Auto-launch    │
+    │ • Hot-swap      │             │ • KV cache       │
+    └────────┬────────┘             └────────┬─────────┘
+             │                               │
              └──────────────────────┼──────────────────────┘
                                     ▼
                         ┌──────────────────────────┐
@@ -863,7 +865,7 @@ CLI Flags > Environment Variables > Configuration File > Defaults
 
 ```bash
 # .anyclauderc.json says: backend = "lmstudio"
-# Environment says: export ANYCLAUDE_MODE=mlx-lm
+# Environment says: export ANYCLAUDE_MODE=vllm-mlx
 # CLI says: anyclaude --mode=claude
 
 # Result: Claude mode is used (CLI has highest priority)
@@ -875,26 +877,33 @@ Place in project root with structure:
 
 ```json
 {
-  "backend": "mlx-lm",
+  "backend": "vllm-mlx",
   "debug": {
     "level": 1,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "lmstudio": {
+    "vllm-mlx": {
       "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "vllm-mlx",
+      "model": "/path/to/your/mlx/model",
+      "serverScript": "scripts/vllm-mlx-server.py"
+    },
+    "lmstudio": {
+      "enabled": false,
       "port": 1234,
       "baseUrl": "http://localhost:1234/v1",
       "apiKey": "lm-studio",
       "model": "current-model"
     },
-    "mlx-lm": {
-      "enabled": true,
-      "port": 8081,
-      "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "mlx-lm",
-      "model": "current-model"
+    "openrouter": {
+      "enabled": false,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-YOUR_API_KEY_HERE",
+      "model": "z-ai/glm-4.6"
     }
   }
 }
@@ -980,42 +989,46 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
    - Combines KV cache + tool calling
    - Installation successful via pip
 
-3. ✅ **Hybrid Approach**: Proven, working solution
-   - MLX-LM (port 8081): Fast analysis with KV cache, no tools
-   - LMStudio (port 1234): Full features with all tools
-   - Single env var to switch: `ANYCLAUDE_MODE`
+3. ✅ **Current Implementation**: Four-mode architecture
+   - vLLM-MLX (port 8081, default): Auto-launch, KV cache, tools
+   - LMStudio (port 1234): Manual, cross-platform, tools
+   - OpenRouter: Cloud 400+ models, 84% cheaper
+   - Claude API: Official, trace logging
 
-### Architecture: Three-Mode Strategy
+### Architecture: Four-Mode System
 
-#### Mode 1: MLX-LM (Fast Analysis) - Recommended Default
+#### Mode 1: vLLM-MLX (Default) - Recommended
 
-**Purpose**: Ultra-fast analysis tasks with native KV cache
+**Purpose**: Auto-launch local inference with prompt caching
 
 ```
 Performance:
-- First query:      30 seconds (system prompt computed and cached)
-- Follow-ups:       0.3 seconds (KV cache hit!) = 100x faster
-- 10 query session: ~32 seconds total
+- First query:      20-30 seconds (system prompt computed and cached)
+- Follow-ups:       5-10 seconds (KV cache hit!) = 3-6x faster
+- Auto-launch:      Server starts automatically
+- Auto-cleanup:     Server stops when you exit
 
-Trade-off: No tool calling (analysis-only mode)
+Features: Full tool calling support
 ```
 
 **Best For**:
 
-- Code review and analysis
-- Documentation generation
-- Brainstorming and planning
-- Follow-up questions on same context
+- Privacy-first development (100% local)
+- Cost-free unlimited queries
+- Apple Silicon users (M1/M2/M3/M4)
+- Automatic server management
 
 **Setup**:
 
 ```bash
+# One-time setup
+python3 -m venv ~/.venv-mlx
 source ~/.venv-mlx/bin/activate
-python3 -m mlx_lm server \
-  --model "/path/to/Qwen3-Coder-30B-MLX-4bit" \
-  --port 8081 &
+pip install mlx-lm fastapi uvicorn pydantic
 
-ANYCLAUDE_MODE=mlx-lm anyclaude
+# Configure .anyclauderc.json with model path
+# Then just run:
+anyclaude  # Server auto-launches!
 ```
 
 #### Mode 2: LMStudio (Full Features) - For Editing
@@ -1043,31 +1056,77 @@ Performance:
 ANYCLAUDE_MODE=lmstudio anyclaude
 ```
 
-#### Mode 3: Claude Mode - Baseline Comparison
+#### Mode 3: OpenRouter - Cloud Cost Savings
 
-**Purpose**: Real Claude API for debugging and comparison
+**Purpose**: Access 400+ cloud models at 84% lower cost than Claude API
 
-```bash
-ANYCLAUDE_MODE=claude ANTHROPIC_API_KEY=sk-ant-... anyclaude
+```
+Performance:
+- GLM-4.6: $0.60 input / $2.00 output per 1M tokens
+- Qwen 2.5 72B: $0.35 input / $0.70 output per 1M tokens
+- Compare to Claude: $3 input / $15 output per 1M tokens = 84% savings
+
+Features: 200K context, streaming, tool calling
 ```
 
-### Why Hybrid Mode Works Best
+**Best For**:
+
+- Cost-conscious cloud development
+- Model experimentation (try 400+ models)
+- When local hardware insufficient
+- When you need cloud but want to save 84%
+
+**Setup**:
+
+```bash
+export OPENROUTER_API_KEY="sk-or-v1-..."
+anyclaude --mode=openrouter
+```
+
+#### Mode 4: Claude API - Trace Logging & Analysis
+
+**Purpose**: Official Anthropic API with trace logging for reverse engineering
+
+```
+Features:
+- Highest quality responses
+- Auto-enabled trace logging (ANYCLAUDE_DEBUG=3)
+- Records all prompts/responses to ~/.anyclaude/traces/claude/
+- Analyze Claude Code's prompting patterns
+```
+
+**Best For**:
+
+- Debugging local model behavior
+- Learning Claude Code's patterns
+- Reverse-engineering effective prompts
+- When quality matters more than cost
+
+**Setup**:
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+anyclaude --mode=claude
+```
+
+### Why Multi-Mode Works Best
 
 **Performance Comparison**:
 
 ```
 Scenario: Code review → bug fix → verification
 
-Using Single Mode (LMStudio):
+Using Single Mode (LMStudio only):
 - Review: 30s + 30s + 30s = 90s
 - Fix bugs: 30s + 30s = 60s
 - Verify: 30s + 30s = 60s
 Total: 210 seconds
 
-Using Hybrid Mode (MLX-LM + LMStudio):
-- Review in MLX-LM: 30s + 0.3s + 0.3s = 30.6s
-- Switch to LMStudio
-- Fix bugs: 30s + 30s = 60s
+Using vLLM-MLX (cached prompts):
+- Review: 30s + 5s + 5s = 40s
+- Fix bugs: 5s + 5s = 10s (tools supported!)
+- Verify: 5s + 5s = 10s
+Total: 60 seconds = 3.5x faster
 - Switch back to MLX-LM
 - Verify: 30s + 0.3s = 30.3s
 Total: 120.9 seconds ← 1.7x faster!
