@@ -101,3 +101,45 @@ anyclaude-*
 /test-hang.mjs
 /test-trace.json
 /1
+
+# Large files and datasets
+*.mlx
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.h5
+*.pkl
+*.pickle
+*.parquet
+
+# Model files and weights
+models/
+weights/
+checkpoints/
+
+# Large trace/log files
+*.jsonl
+*.ndjson
+traces/
+request-logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Archive files
+*.tar
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# Video/media files (in case of test assets)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
