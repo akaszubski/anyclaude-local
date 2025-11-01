@@ -220,91 +220,96 @@ anyclaude --mode=claude
 
 ---
 
-## ⚡ Hybrid Mode: Fast Analysis + Full Features
+## ⚡ Four Backend Modes: Choose Your Workflow
 
-AnyClaude now supports 3 modes for optimal performance and features:
+AnyClaude supports **4 modes** to fit your workflow - from free local privacy to cheap cloud models:
 
-### Quick Start (3 modes available)
+### Quick Start (4 modes available)
 
 ```bash
-# Terminal 1: Start MLX-Omni (RECOMMENDED - has both KV cache + tools!)
-export MLX_MODEL="/path/to/Qwen3-Coder-30B"
-mlx-omni-server --port 8080
+# MODE 1: vLLM-MLX (default, recommended for Apple Silicon)
+# Auto-launches server, has tools + KV cache
+anyclaude  # Uses .anyclauderc.json config
 
-# Terminal 2: Run AnyClaude with MLX-Omni
-ANYCLAUDE_MODE=mlx-omni ./dist/main-cli.js
+# MODE 2: LMStudio (cross-platform local)
+# Start LMStudio first, then:
+anyclaude --mode=lmstudio
 
-# Alternative: Use MLX-LM (fast analysis only, no tools)
-source ~/.venv-mlx/bin/activate
-python3 -m mlx_lm server --port 8081 &
-MLX_LM_URL="http://localhost:8081/v1" ANYCLAUDE_MODE=mlx-lm anyclaude
+# MODE 3: OpenRouter (cheap cloud, 400+ models)
+# 84% cheaper than Claude API
+export OPENROUTER_API_KEY="sk-or-v1-..."
+anyclaude --mode=openrouter
 
-# Alternative: Use LMStudio (full features, slower)
-# LMStudio should be running (start in app)
-LMSTUDIO_URL="http://localhost:1234/v1" ANYCLAUDE_MODE=lmstudio anyclaude
+# MODE 4: Claude API (official, for analysis)
+# Uses your Claude Max subscription or API key
+anyclaude --mode=claude
 ```
 
-### Performance Comparison
+### Mode Comparison
 
-| Mode            | Speed            | Tools  | KV Cache | Best For             |
-| --------------- | ---------------- | ------ | -------- | -------------------- |
-| **MLX-Omni** ⭐ | <1s follow-ups   | ✅ Yes | ✅ Yes   | **Analysis + Tools** |
-| **MLX-LM**      | <1s follow-ups\* | ❌ No  | ✅ Yes   | Analysis only        |
-| **LMStudio**    | 30s all requests | ✅ Yes | ❌ No    | Editing, git         |
+| Mode            | Cost             | Privacy    | Tools  | Cache   | Best For                |
+| --------------- | ---------------- | ---------- | ------ | ------- | ----------------------- |
+| **vLLM-MLX** ⭐ | Free             | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
+| **LMStudio**    | Free             | 100% local | ✅ Yes | Limited | **Cross-platform**      |
+| **OpenRouter**  | $0.60-$2/1M (84% less) | Cloud | ✅ Yes | ✅ Yes  | **Cost savings**        |
+| **Claude API**  | $3-$15/1M        | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
 
-_0.3-1s after first 30s request (100x faster due to KV cache)_
+### Cost Example (50K input + 10K output tokens)
 
-### Real-World Example
-
-```
-Scenario: Code review → bug fix → verification
-
-1. "Review my code"          → MLX-LM (fast, 0.3s follow-ups)
-2. "What are the bugs?"      → MLX-LM (0.3s, cached!)
-3. "Fix the bugs now"        → Switch to LMStudio (has tools)
-   - Edit files              → LMStudio (30s)
-   - Git commit              → LMStudio (30s)
-4. "Is the fix correct?"     → Switch back to MLX-LM (0.3s)
-
-Total time: ~95 seconds with optimal modes
-(vs 300+ seconds using one mode)
-```
-
-### Key Benefits
-
-✅ **100x faster follow-ups** - KV cache (MLX-LM mode)
-✅ **Full tool support** - Read, write, git, search (LMStudio mode)
-✅ **Easy switching** - Just change env var, no restarts
-✅ **Best of both** - Choose right tool for each task
-✅ **Production-ready** - Proven in real use
+- **vLLM-MLX**: $0 (free, local)
+- **LMStudio**: $0 (free, local)
+- **OpenRouter (GLM-4.6)**: $0.05 (84% cheaper!)
+- **Claude API**: $0.30 (premium)
 
 ### When to Use Each Mode
 
-**MLX-LM Mode (Recommended Default)**
+**vLLM-MLX (Default)**
+- Privacy-first development (100% local)
+- Apple Silicon users (M1/M2/M3)
+- Fast iteration with prompt caching
+- Auto-launch convenience
 
-- Code analysis and review
-- Questions about existing code
-- Documentation generation
-- Brainstorming and planning
-- **Performance**: 0.3 seconds per follow-up! ⚡
+**LMStudio**
+- Windows/Linux users
+- GUI model management
+- Testing different models
+- Privacy-focused development
 
-**LMStudio Mode (When Needed)**
+**OpenRouter**
+- Cost-conscious cloud development
+- Model experimentation (GLM-4.6, Qwen, etc.)
+- When you need cloud but want to save 84%
+- Reverse-engineering Claude prompts (auto trace logging)
 
-- File creation and editing
-- Git operations
-- Web search
-- Test execution
-- **Trade-off**: 30s per request but has all tools
+**Claude API**
+- Highest quality responses
+- Debugging local model behavior
+- Learning Claude Code's patterns
+- When cost isn't a concern
+
+### Switching Modes
+
+```bash
+# Via CLI flag (overrides config)
+anyclaude --mode=openrouter
+
+# Via environment variable
+export ANYCLAUDE_MODE=claude
+anyclaude
+
+# Via config file (.anyclauderc.json)
+{
+  "backend": "vllm-mlx",  // Change this
+  "backends": { ... }
+}
+```
 
 ### Full Documentation
 
-See `PRODUCTION-HYBRID-SETUP.md` for complete setup guide including:
-
-- Detailed troubleshooting
-- Performance monitoring
-- Environment variable reference
-- Quick-start scripts
-- Production checklist
+- **[Mode Switching Guide](docs/guides/mode-switching.md)** - Complete guide to all 4 modes
+- **[OpenRouter Setup](docs/guides/openrouter-setup.md)** - Access 400+ models cheaply
+- **[Authentication Guide](docs/guides/authentication.md)** - API keys for cloud modes
+- **[Trace Analysis](docs/guides/trace-analysis.md)** - Analyze Claude Code prompts
 
 ---
 

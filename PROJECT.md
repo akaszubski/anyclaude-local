@@ -2,33 +2,38 @@
 
 ## Project Vision
 
-**Make Claude Code work seamlessly with local LMStudio models as if they were the real Claude API.**
+**Make Claude Code work seamlessly with any AI backend - local, cloud, or hybrid.**
 
-AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and local/alternative AI providers. Whether you're using Claude Max (session-based auth), Claude API (API keys), or local LMStudio models, anyclaude provides a unified, privacy-focused development experience.
+AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and multiple AI providers. Whether you're using local models (vLLM-MLX, LMStudio), cloud models (OpenRouter with 400+ options), or official Claude API (Max subscription or API key), anyclaude provides a unified, flexible development experience optimized for your needs.
 
 ## Origins: A Port for Privacy
 
 This project is a **port of the original anyclaude** concept, reimagined specifically for **Claude Code 2.0** compatibility. The goal is to enable developers to:
 
-1. **Use Claude Code offline** with local models via LMStudio
-2. **Maintain privacy** by keeping code and conversations on-device
-3. **Avoid API costs** while retaining Claude Code's excellent developer experience
-4. **Work seamlessly** - local models should "just work" like real Claude
-5. **Support both auth methods** - Claude Max (session tokens) and Claude API (API keys)
+1. **Choose their backend** - local models (vLLM-MLX, LMStudio), cheap cloud (OpenRouter), or official Claude API
+2. **Maintain privacy** when needed by keeping code and conversations on-device with local models
+3. **Control costs** - from free (local) to 84% cheaper than Claude API (OpenRouter) to premium (Claude)
+4. **Work seamlessly** - all backends "just work" like real Claude with full tool calling support
+5. **Switch dynamically** - change modes via CLI flag, env var, or config file
 
 ### Why Claude Code 2.0?
 
-Claude Code represents Anthropic's vision for AI-powered development - sophisticated tool use, multi-step reasoning, and seamless integration with development workflows. However, it requires either:
+Claude Code represents Anthropic's vision for AI-powered development - sophisticated tool use, multi-step reasoning, and seamless integration with development workflows. However, the official version requires:
 
 - **Claude Max subscription** ($20-200/month) with session-based auth, OR
-- **Claude API access** with pay-per-token pricing
+- **Claude API access** ($3/$15 per 1M tokens) with pay-per-token pricing
 
-AnyClaude makes this premium experience accessible with:
+AnyClaude expands your options with **four backend modes**:
 
-- **Free local models** via LMStudio (Qwen, DeepSeek, etc.)
-- **Complete privacy** - your code never leaves your machine
-- **No API costs** - run unlimited queries on your hardware
-- **Offline capability** - work without internet access
+1. **vLLM-MLX** (default) - Free local models on Apple Silicon with auto-launch and prompt caching
+2. **LMStudio** - Free local models, cross-platform, manual server management
+3. **OpenRouter** - Cloud models at fraction of Claude cost ($0.60/$2 per 1M for GLM-4.6 = 84% cheaper)
+4. **Claude API** - Official Anthropic API with trace logging for reverse engineering
+
+**Benefits by mode**:
+- **Local (vLLM-MLX/LMStudio)**: 100% privacy, no API costs, offline capability
+- **OpenRouter**: 400+ models, Claude-like quality at 84% lower cost, still cloud-based
+- **Claude API**: Highest quality, full feature support, automatic trace logging
 
 ## Core Principle: Active Translation, Not Simple Passthrough
 
@@ -38,71 +43,233 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 
 1. **Bidirectional Format Translation**
    - Claude Code sends: Anthropic Messages API format
-   - LMStudio expects: OpenAI Chat Completions format
+   - Local models (vLLM-MLX/LMStudio) expect: OpenAI Chat Completions format
    - We translate in both directions, preserving semantics
+   - OpenRouter/Claude: Native format passthrough (both use Anthropic-compatible API)
 
 2. **Streaming Protocol Adaptation**
    - Claude Code expects: Server-Sent Events (SSE) with specific event types
-   - LMStudio sends: OpenAI streaming format via AI SDK
-   - We convert chunk-by-chunk in real-time
+   - Local models send: OpenAI streaming format via AI SDK
+   - We convert chunk-by-chunk in real-time with backpressure handling
+   - OpenRouter/Claude: Native SSE streaming
 
 3. **Tool Call Translation**
    - Claude Code uses: Atomic tool calls (complete parameters at once)
    - AI SDK sends: Streaming tool parameters (progressive updates)
    - We buffer and consolidate to match expectations
+   - Deduplicates redundant tool-call events
 
 4. **Authentication Flexibility**
-   - Claude Max: Session-based Bearer tokens
-   - Claude API: API keys in headers
-   - Both: Transparent passthrough in "claude" mode
+   - Claude Max: Session-based Bearer tokens (passthrough)
+   - Claude API: API keys in headers (passthrough)
+   - OpenRouter: API key with custom headers (HTTP-Referer, X-Title)
+   - Local models: No authentication required
 
 5. **Context Window Management**
-   - Claude: 200K tokens
-   - Local models: Often 8K-128K
-   - We automatically truncate to fit model capacity
+   - Claude/OpenRouter: Up to 200K tokens (model-dependent)
+   - Local models: Often 8K-128K tokens
+   - We automatically estimate and track token usage
+   - Context manager handles overflow gracefully
 
-6. **Schema Adaptation** (planned)
-   - Simplify complex tool schemas for weaker models
-   - Validate and correct tool parameters
-   - Provide model-specific hints and guidance
+6. **Trace Logging & Analysis**
+   - Auto-enabled for cloud modes (claude, openrouter)
+   - Records full request/response pairs with API keys redacted
+   - Enables reverse-engineering Claude Code's prompting patterns
+   - Saved to `~/.anyclaude/traces/{mode}/` for analysis
 
 ## Architecture
 
-### Dual-Mode Design
+### Four-Mode Design
 
-#### Claude Mode (`ANYCLAUDE_MODE=claude`)
+anyclaude supports **four backend modes**, each optimized for different use cases:
 
-**Purpose**: Baseline comparison and debugging
+#### 1. vLLM-MLX Mode (`ANYCLAUDE_MODE=vllm-mlx`, default)
 
-- Transparently passes through to `api.anthropic.com`
-- Works with both Claude Max (Bearer tokens) and API keys
-- Logs all requests/responses for comparison
-- Shows how real Claude handles the same scenarios
-- Used to identify translation gaps
+**Purpose**: High-performance local inference on Apple Silicon with auto-launch
+
+**Features**:
+- Auto-launches vLLM-MLX server when model path is configured
+- Routes to local server (default: `http://localhost:8081/v1`)
+- Native MLX acceleration for M1/M2/M3 chips
+- Prompt caching (KV cache) for 10-100x speedup on follow-ups
+- Full translation layer (Anthropic format → OpenAI format)
+- Supports tool calling (Read, Write, Edit, Bash, etc.)
+- Auto-cleanup when Claude Code exits
+
+**Architecture**:
+```
+Claude Code → AnyClaude Proxy → vLLM-MLX Server → MLX Model
+(Anthropic API)  (Translation)   (OpenAI API)      (Local file)
+```
 
 **Use Cases**:
+- Privacy-first development (100% local, no cloud)
+- Cost-free unlimited queries
+- Offline development
+- Fast iteration with prompt caching
 
-- Debugging: Compare local model behavior vs real Claude
-- Verification: Ensure our passthrough doesn't break anything
-- Learning: Understand how Claude uses tools
-- Testing: Validate authentication handling
+**Configuration**:
+```json
+{
+  "backend": "vllm-mlx",
+  "backends": {
+    "vllm-mlx": {
+      "enabled": true,
+      "port": 8081,
+      "model": "/path/to/your/mlx/model",
+      "serverScript": "scripts/vllm-mlx-server.py"
+    }
+  }
+}
+```
 
-#### LMStudio Mode (`ANYCLAUDE_MODE=lmstudio`, default)
+---
 
-**Purpose**: Production use with local models via LMStudio
+#### 2. LMStudio Mode (`ANYCLAUDE_MODE=lmstudio`)
 
-- Full translation layer with all adaptations
-- Routes to local LMStudio server (default: `http://localhost:1234/v1`)
-- Applies message format conversion, streaming translation, context management
+**Purpose**: Cross-platform local inference with GUI model management
+
+**Features**:
+- Manual server management via LMStudio GUI
+- Routes to LMStudio server (default: `http://localhost:1234/v1`)
 - Model-agnostic: works with whatever model LMStudio has loaded
 - Hot-swappable: switch models in LMStudio without restarting anyclaude
+- Full translation layer (Anthropic format → OpenAI format)
+- Supports tool calling
+
+**Architecture**:
+```
+Claude Code → AnyClaude Proxy → LMStudio Server → Loaded Model
+(Anthropic API)  (Translation)   (OpenAI API)     (Any format)
+```
 
 **Use Cases**:
+- Windows/Linux development (non-Apple platforms)
+- GUI-based model switching
+- Privacy-focused development (100% local)
+- Testing different models easily
 
-- Development: Privacy-focused coding with local models
-- Experimentation: Test different models easily
-- Cost savings: Unlimited queries without API charges
-- Offline work: No internet required
+**Configuration**:
+```json
+{
+  "backend": "lmstudio",
+  "backends": {
+    "lmstudio": {
+      "enabled": true,
+      "baseUrl": "http://localhost:1234/v1",
+      "model": "current-model"
+    }
+  }
+}
+```
+
+**Note**: Start LMStudio server manually before running anyclaude.
+
+---
+
+#### 3. OpenRouter Mode (`ANYCLAUDE_MODE=openrouter`)
+
+**Purpose**: Cloud models at fraction of Claude API cost with 400+ model choices
+
+**Features**:
+- Routes to OpenRouter API (`https://openrouter.ai/api/v1`)
+- Access to 400+ models through one API key
+- 84% cheaper than Claude API (GLM-4.6: $0.60/$2 vs Claude: $3/$15 per 1M tokens)
+- Native Anthropic-compatible API (minimal translation needed)
+- Automatic trace logging (prompts saved for analysis)
+- Full tool calling and streaming support
+- Large context windows (up to 200K tokens)
+
+**Architecture**:
+```
+Claude Code → AnyClaude Proxy → OpenRouter API → Selected Model
+(Anthropic API)  (Passthrough+)   (Multi-provider)  (GLM/Qwen/Claude/GPT/etc.)
+```
+
+**Use Cases**:
+- Cost-conscious cloud development (84% savings vs Claude)
+- Model experimentation (try GLM-4.6, Qwen, etc.)
+- Claude-like quality without Anthropic API key
+- Reverse-engineering Claude Code prompts (auto trace logging)
+
+**Popular Models**:
+- `z-ai/glm-4.6` - $0.60/$2 per 1M, 200K context (recommended)
+- `qwen/qwen-2.5-72b-instruct` - $0.35/$0.70 per 1M (cheaper)
+- `google/gemini-2.0-flash-exp:free` - FREE (limited)
+- `anthropic/claude-3.5-sonnet` - $3/$15 per 1M (same as direct API)
+
+**Configuration**:
+```json
+{
+  "backend": "openrouter",
+  "backends": {
+    "openrouter": {
+      "enabled": true,
+      "apiKey": "sk-or-v1-YOUR_API_KEY_HERE",
+      "model": "z-ai/glm-4.6"
+    }
+  }
+}
+```
+
+---
+
+#### 4. Claude Mode (`ANYCLAUDE_MODE=claude`)
+
+**Purpose**: Official Anthropic API with trace logging for analysis and reverse engineering
+
+**Features**:
+- Transparently passes through to `api.anthropic.com`
+- Works with both Claude Max (Bearer tokens) and API keys
+- Automatic trace logging (prompts saved for analysis)
+- Highest quality responses (official Claude)
+- Used to identify translation gaps with local models
+- Full feature support
+
+**Architecture**:
+```
+Claude Code → AnyClaude Proxy → Anthropic API → Claude Model
+(Anthropic API)  (Passthrough)   (api.anthropic.com)  (Official)
+```
+
+**Use Cases**:
+- Debugging: Compare local model behavior vs real Claude
+- Reverse engineering: Analyze Claude Code's prompting patterns
+- Learning: Understand how Claude uses tools
+- Premium quality: When you need the best responses
+- Trace analysis: Study effective agent behaviors
+
+**Configuration**:
+```bash
+# Option A: Claude Max Plan (session-based)
+anyclaude --mode=claude  # Uses existing claude auth login
+
+# Option B: API Key
+export ANTHROPIC_API_KEY="sk-ant-..."
+anyclaude --mode=claude
+```
+
+---
+
+### Mode Comparison Table
+
+| Feature              | vLLM-MLX          | LMStudio          | OpenRouter           | Claude               |
+| -------------------- | ----------------- | ----------------- | -------------------- | -------------------- |
+| **Cost**             | Free              | Free              | $0.60-$2/1M tokens   | $3-$15/1M tokens     |
+| **Privacy**          | 100% local        | 100% local        | Cloud                | Cloud                |
+| **Platform**         | macOS (M1/M2/M3)  | All platforms     | All platforms        | All platforms        |
+| **Auto-launch**      | ✅ Yes            | ❌ Manual         | ✅ Cloud             | ✅ Cloud             |
+| **Prompt Caching**   | ✅ Yes (KV)       | ⚠️ Limited        | ✅ Yes               | ✅ Yes               |
+| **Tool Calling**     | ✅ Yes            | ✅ Yes            | ✅ Yes               | ✅ Yes               |
+| **Context Window**   | Up to 200K        | Varies by model   | Up to 200K           | 200K                 |
+| **Speed**            | Very fast         | Fast              | Fast                 | Fast                 |
+| **Model Choice**     | Your MLX models   | Any LMStudio      | 400+ models          | Claude only          |
+| **Trace Logging**    | Manual (DEBUG=3)  | Manual (DEBUG=3)  | ✅ Auto (redacted)   | ✅ Auto (redacted)   |
+| **Best For**         | Privacy, speed    | Cross-platform    | Cost savings, choice | Quality, analysis    |
+
+### Deprecated Modes
+
+**Note**: The following modes (MLX-LM, MLX-Omni) have been superseded by vLLM-MLX which combines the best of both: tool calling + KV cache + local model support. See archived documentation for details.
 
 #### MLX-LM Mode (`ANYCLAUDE_MODE=mlx-lm`)
 
