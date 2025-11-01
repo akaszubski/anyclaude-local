@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2025-11-02
+
+### Fixed
+
+- **E2E Test Reliability** - Fixed integration test that failed in CI when proxy wasn't running
+  - Test 1 now gracefully skips when `ANYCLAUDE_PROXY_PORT` env var not set
+  - Matches pattern from Test 10 (conditional execution based on environment)
+  - Prevents pre-push hook from blocking legitimate commits
+  - Full E2E testing still available when proxy is running locally
+
+### Documentation
+
+- **Attribution & Credits** - Enhanced open-source attribution for production quality
+  - Added comprehensive `NOTICE` file with formal attribution to original anyclaude project
+  - Updated `LICENSE` with proper copyright chain (Coder Technologies Inc. → akaszubski)
+  - Added detailed Credits section to README.md explaining fork relationship
+  - Documented all significant enhancements vs. original project
+  - Acknowledged all key contributors and dependency projects
+
+- **Test Count Accuracy** - Updated documentation to reflect actual test coverage
+  - Changed "170+ tests" to "1,400+ tests across 60 files" throughout docs
+  - Updated PROJECT.md success metrics (test count was 8x underreported)
+  - Updated README.md feature highlights
+
+### Changed
+
+- **Autonomous-Dev Plugin** - Synced to latest version from source
+  - Updated file organization enforcement to respect CLAUDE.md standards
+  - Scripts migrated from `scripts/` to `hooks/` directory
+  - GenAI-enhanced validation with graceful fallback to heuristics
+
+### Removed
+
+- **Temporary Test Files** - Cleaned up development artifacts
+  - Removed `test-cache.ts`, `test-cache-fix.ts`, `test-model-detection.js`
+  - These were temporary scripts not part of formal test suite
+  - File organization validation now passes cleanly
+
 ## [2.1.0] - 2025-11-01
 
 ### Fixed

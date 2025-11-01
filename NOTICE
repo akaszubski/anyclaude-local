@@ -1,0 +1,81 @@
+NOTICE - anyclaude-local
+
+This project is an enhanced fork of the original anyclaude project.
+
+================================================================================
+
+ORIGINAL PROJECT: anyclaude
+Copyright (c) 2024 Coder Technologies Inc.
+Licensed under the MIT License
+Repository: https://github.com/coder/anyclaude
+
+================================================================================
+
+FORK: anyclaude-local
+Copyright (c) 2025 akaszubski
+Licensed under the MIT License
+Repository: https://github.com/akaszubski/anyclaude-local
+
+================================================================================
+
+ATTRIBUTION STATEMENT
+
+This software is based on anyclaude, originally developed by Coder Technologies Inc.
+The original project provided the core proxy architecture for translating between
+the Anthropic Messages API and OpenAI Chat Completions format.
+
+Significant enhancements in this fork include:
+- vLLM-MLX auto-launch support with prompt caching
+- OpenRouter integration for cloud model access
+- Comprehensive automated test suite (1,400+ tests)
+- Enhanced tool calling reliability
+- Trace logging system for prompt analysis
+- Multi-mode architecture (vllm-mlx, lmstudio, openrouter, claude)
+
+================================================================================
+
+THIRD-PARTY COMPONENTS
+
+This project uses the following open-source dependencies:
+(See package.json for complete list with versions)
+
+Core Dependencies:
+- @anthropic-ai/sdk - Anthropic API client (MIT License)
+- @ai-sdk/openai-compatible - OpenAI-compatible server support (Apache 2.0)
+- express - Web application framework (MIT License)
+
+Development Dependencies:
+- TypeScript - Static type checking (Apache 2.0)
+- Prettier - Code formatter (MIT License)
+- Bun - JavaScript runtime and bundler (MIT License)
+
+For a complete list of dependencies and their licenses, see:
+https://github.com/akaszubski/anyclaude-local/network/dependencies
+
+================================================================================
+
+MIT LICENSE COMPLIANCE
+
+This project complies with the MIT License terms from the original anyclaude
+project. All modifications and enhancements are released under the same MIT
+License to maintain compatibility and ease of use.
+
+The MIT License permits commercial use, modification, distribution, and private
+use, with the only requirement being preservation of copyright and license
+notices in all copies or substantial portions of the software.
+
+================================================================================
+
+ACKNOWLEDGMENTS
+
+Special thanks to:
+- Coder Technologies Inc. for creating the original anyclaude project
+- The Anthropic team for Claude Code 2.0
+- The vLLM-MLX team for fast Apple Silicon inference
+- The LMStudio team for local model serving
+- OpenRouter for providing access to diverse AI models
+- All contributors to the open-source dependencies used in this project
+
+================================================================================
+
+Last Updated: 2025-11-02

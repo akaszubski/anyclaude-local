@@ -1473,12 +1473,67 @@ This fork doesn't just remove features - it adds new capabilities while simplify
 
 ---
 
+## 🙏 Credits & Attribution
+
+This project is an **enhanced fork** of [anyclaude](https://github.com/coder/anyclaude) by **Coder Technologies Inc.**
+
+### Original Project
+
+**anyclaude** - created by Coder Technologies Inc.
+- Repository: https://github.com/coder/anyclaude
+- License: MIT License
+- Copyright (c) 2024 Coder Technologies Inc.
+
+The original anyclaude provided the foundational proxy architecture for translating between the Anthropic Messages API and OpenAI Chat Completions format, enabling Claude Code to work with alternative model providers.
+
+### What We Enhanced in This Fork
+
+**anyclaude-local** builds upon the original with significant enhancements:
+
+- ✅ **vLLM-MLX Auto-Launch** - Automatic server startup with model loading and health checks
+- ✅ **OpenRouter Integration** - Access to 400+ cloud models at 84% lower cost than Claude API
+- ✅ **Comprehensive Testing** - 1,400+ automated tests (unit, integration, regression, E2E, performance)
+- ✅ **Enhanced Tool Calling** - Improved reliability for complex multi-tool workflows
+- ✅ **Trace Logging System** - Record and analyze Claude Code prompts for learning effective patterns
+- ✅ **Multi-Mode Architecture** - Seamless switching between vllm-mlx, lmstudio, openrouter, and claude modes
+- ✅ **Git Automation** - Pre-commit and pre-push hooks with regression detection
+- ✅ **Improved Streaming** - Backpressure handling and message_stop safeguards
+
+### What Stayed the Same
+
+The core architecture from the original anyclaude remains:
+
+- 🔄 Proxy server design for API translation
+- 🔌 Anthropic Messages API compatibility
+- 📡 Server-Sent Events (SSE) streaming support
+- 🛠️ Tool calling framework
+- 📋 MIT License for maximum freedom
+
+### Acknowledgments
+
+**Special thanks to:**
+
+- **Coder Technologies Inc.** - For creating the original anyclaude project and making it open source
+- **Anthropic Team** - For Claude Code 2.0 and the powerful AI assistant it provides
+- **vLLM-MLX Team** - For fast, efficient Apple Silicon inference with prompt caching
+- **LMStudio Team** - For accessible local model serving with a great UI
+- **OpenRouter** - For democratizing access to diverse AI models at affordable prices
+- **Open Source Contributors** - To all the dependency projects that make this possible
+
+### Formal Attribution
+
+For complete attribution details, see the [NOTICE](NOTICE) file.
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
 
-**Copyright (c) 2025 Coder Technologies Inc.** (Original anyclaude project)
-**Copyright (c) 2025 akaszubski** (anyclaude-local fork)
+**Copyright (c) 2024 Coder Technologies Inc.** (Original anyclaude project)
+**Copyright (c) 2025 akaszubski and contributors** (anyclaude-local fork)
+
+This fork maintains the same MIT License as the original project to ensure compatibility and ease of use. The MIT License permits commercial use, modification, distribution, and private use.
 
 ---
 
