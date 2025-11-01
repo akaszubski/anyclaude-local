@@ -34,7 +34,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 - 🛑 **Auto-Cleanup** - Server processes terminate cleanly when you exit
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
 - 💻 **Global Command** - Install once, run `anyclaude` from anywhere
-- 🧪 **Automated Testing** - 170+ tests with regression detection via git hooks
+- 🧪 **Automated Testing** - 1,400+ tests across 60 files with regression detection via git hooks
 
 ---
 
@@ -1367,7 +1367,7 @@ This is an **enhanced port** of the original anyclaude project, adapted for Clau
 | **Trace Logging**    | ❌ Not supported                         | ✅ Auto-enabled for cloud modes      |
 | **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed (simpler, 4-mode system)  |
 | **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable                    |
-| **Test Coverage**    | Limited                                  | ✅ 170+ tests (unit/integration/E2E) |
+| **Test Coverage**    | Limited                                  | ✅ 1,400+ tests across 60 files (unit/integration/E2E) |
 | **Setup Complexity** | Moderate (multiple providers)            | Simple (one config file)             |
 | **Use Case**         | Multi-cloud flexibility                  | Local privacy OR cheap cloud (84% ↓) |
 
@@ -1401,7 +1401,7 @@ This project is an **enhanced port** of [anyclaude](https://github.com/coder/any
 - ✅ **OpenRouter integration** - 400+ models at 84% lower cost than Claude API
 - ✅ **Trace logging system** - Auto-capture Claude Code prompts for analysis
 - ✅ **Cache monitoring** - Performance metrics, hit rate tracking
-- ✅ **170+ test suite** - Unit, integration, regression, E2E tests
+- ✅ **1,400+ test suite** - 60 test files covering unit, integration, regression, E2E tests
 - ✅ **Setup validation** - Dependency checking before launch
 - ✅ **4-mode architecture** - vllm-mlx (default), lmstudio, openrouter, claude
 
@@ -1421,7 +1421,7 @@ The original anyclaude is excellent for multi-cloud usage, but this fork takes a
 2. **Local-first with cloud option** - Privacy (vLLM-MLX/LMStudio) OR cost savings (OpenRouter 84% cheaper)
 3. **Auto-launch convenience** - Server lifecycle management handled automatically
 4. **Enhanced debugging** - Trace logging to reverse-engineer Claude Code's patterns
-5. **Production-ready** - 170+ tests, regression detection, git hooks
+5. **Production-ready** - 1,400+ tests across 60 files, regression detection, git hooks
 
 This fork doesn't just remove features - it adds new capabilities while simplifying the configuration.
 
@@ -1438,7 +1438,7 @@ This fork doesn't just remove features - it adds new capabilities while simplify
 
 ### Documentation & Testing
 
-**Testing** - Comprehensive 170+ test suite:
+**Testing** - Comprehensive 1,400+ test suite across 60 files:
 
 - [Testing Guide](docs/development/TESTING_COMPREHENSIVE.md) - Complete testing documentation
   - 100 unit tests (error handling)
@@ -1497,7 +1497,7 @@ If anyclaude-local helps you build with local AI models, please:
 
 ### Completed Milestones ✅
 
-- [x] **Automated testing** (170+ tests: unit, integration, E2E, performance) ✅ **COMPLETE**
+- [x] **Automated testing** (1,400+ tests across 60 files: unit, integration, E2E, performance) ✅ **COMPLETE**
 - [x] **Git hooks automation** (pre-commit, pre-push with regression detection) ✅ **COMPLETE**
 - [x] **Streaming response safeguards** (message_stop guarantee) ✅ **COMPLETE**
 - [x] **Cache performance tuning** (256-entry cache, 60-85% hit rate) ✅ **COMPLETE**

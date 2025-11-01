@@ -38,7 +38,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 - ✅ **Functionality**: Tool calling works 100% (0 errors in production)
 - ✅ **Performance**: 60-85% cache hit rate, 30-50% token reduction
-- ✅ **Quality**: 170+ tests (unit, integration, regression, E2E)
+- ✅ **Quality**: 1,400+ tests across 60 test files (unit, integration, regression, E2E)
 - 🎯 **User Adoption**: Enable 1000+ developers to use local models with Claude Code
 - 🎯 **Cost Savings**: Help users save $100-1000/month on AI API costs
 
@@ -47,6 +47,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 ### IN SCOPE
 
 **Core Functionality**:
+
 - ✅ Translation between Anthropic Messages API and OpenAI Chat Completions format
 - ✅ Support for 4 backend modes: vllm-mlx, lmstudio, openrouter, claude
 - ✅ Full tool calling translation (streaming and atomic formats)
@@ -55,24 +56,28 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 - ✅ Trace logging for cloud modes (auto-enabled, API keys redacted)
 
 **Supported Platforms**:
+
 - ✅ macOS (Apple Silicon and Intel)
 - ✅ Linux (tested with LMStudio)
 - ⚠️ Windows (should work, community-tested)
 
 **Supported Models** (verified working):
+
 - ✅ Qwen3 Coder 30B, GPT-OSS 20B, DeepSeek Coder
 - ✅ Mistral, Llama variants with tool calling support
 - ✅ Any MLX-quantized model (4-bit, 6-bit, 8-bit)
 - ✅ OpenRouter: GLM-4.6, Qwen 2.5 72B, 400+ others
 
 **Testing & Quality**:
-- ✅ 170+ automated tests (unit, integration, regression, E2E)
+
+- ✅ 1,400+ automated tests across 60 test files (unit, integration, regression, E2E)
 - ✅ Git hooks (pre-commit: fast checks, pre-push: full suite)
 - ✅ Regression prevention (streaming bugs caught before push)
 
 ### OUT OF SCOPE
 
 **Will NOT Support**:
+
 - ❌ Multi-cloud provider orchestration (use original anyclaude for this)
 - ❌ Complex failover systems (removed for simplicity)
 - ❌ GPT-5 specific features (reasoning controls, service tiers)
@@ -80,6 +85,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 - ❌ GUI configuration tools (CLI-first approach)
 
 **Explicitly NOT Goals**:
+
 - ❌ Replicating Claude's intelligence (we translate, not replace)
 - ❌ Supporting every LLM format (focus on OpenAI-compatible)
 - ❌ Building a model marketplace (use LMStudio/HF for discovery)
@@ -88,6 +94,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 ### Future Considerations
 
 **May Add Later** (based on user demand):
+
 - 🔄 Ollama support (if users request cross-platform alternatives)
 - 🔄 Enhanced model adapters (per-model schema optimizations)
 - 🔄 Response quality improvements (retry logic, formatting fixes)
@@ -95,6 +102,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 - 🔄 Additional authentication methods (OAuth, custom headers)
 
 **Community Contributions Welcome**:
+
 - Testing on Windows platform
 - Support for additional local model servers
 - Model-specific prompt templates
@@ -105,6 +113,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 ### Technical Constraints
 
 **Hardware Requirements**:
+
 - **Apple Silicon (vLLM-MLX)**: M1/M2/M3/M4 with 16GB+ RAM recommended
   - 32GB+ for 30B models, 64GB+ for best performance
   - GPU cores impact speed (more cores = faster inference)
@@ -112,18 +121,21 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
   - Larger models require more VRAM or CPU-only mode (slower)
 
 **Context Window Limits**:
+
 - Local models: 8K-128K tokens (model-dependent)
 - Claude/OpenRouter: Up to 200K tokens
 - System prompts from Claude Code: ~18,500 tokens per request
 - Automatic truncation when limits exceeded
 
 **Performance Expectations**:
+
 - First request: 20-50 seconds (includes system prompt processing)
 - Follow-ups (with cache): 5-10 seconds (vLLM-MLX) or 25-35 seconds (LMStudio)
 - Token generation: 2-8 tokens/sec (hardware-dependent)
 - **This is normal** - local models process sequentially, not in parallel like cloud APIs
 
 **Model Compatibility**:
+
 - Must support OpenAI Chat Completions format
 - Tool calling requires function calling support in model
 - Not all LMStudio models work - verify tool calling before use
@@ -131,17 +143,20 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 ### Architectural Constraints
 
 **Single Translation Layer**:
+
 - Supports ONE backend mode at a time per process
 - Switch modes by restarting with different `ANYCLAUDE_MODE`
 - No automatic failover between backends (by design - simplicity)
 
 **Dependency on External Servers**:
+
 - vLLM-MLX: Python 3.9+, MLX library, FastAPI, uvicorn
 - LMStudio: Requires GUI app running on port 1234
 - OpenRouter: Internet connection and API key
 - Cannot work offline in cloud modes
 
 **TypeScript/Node.js Platform**:
+
 - Requires Node.js 18+ for runtime
 - Bun for building (faster than npm)
 - Cannot be compiled to native binary (interpreter needed)
@@ -149,16 +164,19 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 ### Development Constraints
 
 **Testing Limitations**:
+
 - Full E2E tests require running Claude Code (manual)
 - Cannot mock LMStudio server realistically (integration tests limited)
 - Hardware-dependent performance tests (inconsistent across machines)
 
 **Documentation Maintenance**:
+
 - README.md must stay in sync with PROJECT.md
 - Breaking changes require updating 15+ doc files
 - Manual sync (no automation for doc consistency yet)
 
 **Compatibility Boundaries**:
+
 - Tightly coupled to Claude Code 2.0 format
 - Breaking changes in Anthropic API require immediate updates
 - LMStudio API changes may break compatibility
@@ -166,16 +184,19 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 ### Resource Constraints
 
 **Disk Space**:
+
 - Models: 2-30GB per MLX model (depending on size and quantization)
 - Traces: Can accumulate to several GB (auto-saved to `~/.anyclaude/traces/`)
 - Logs: Debug mode generates large log files
 
 **Network**:
+
 - OpenRouter mode: ~20-50KB per request/response
 - Model downloads: 2-30GB for initial MLX model download
 - vLLM-MLX: No network after model download (fully offline)
 
 **Time Investment**:
+
 - Initial setup: 5-30 minutes (including model download)
 - Per-session overhead: 30-50 seconds for first request
 - Mode switching: Instant (just restart with env var)
@@ -183,17 +204,20 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 ### Security Constraints
 
 **Privacy Guarantees**:
+
 - ✅ Local modes (vLLM-MLX, LMStudio): No data leaves machine
 - ⚠️ Cloud modes (OpenRouter, Claude): Data sent to third parties
 - ✅ Trace files: API keys auto-redacted
 - ❌ No encryption for local trace files (trust user's OS security)
 
 **Authentication Limitations**:
+
 - Bearer tokens passed through transparently (cannot validate)
 - API keys not validated before sending to backend
 - No rate limiting or quota management
 
 **Code Execution Risk**:
+
 - Bash tool allows arbitrary command execution (trust model output)
 - Write/Edit tools allow file system modifications
 - No sandboxing of tool calls (inherits Claude Code's trust model)
@@ -479,142 +503,7 @@ anyclaude --mode=claude
 
 ### Deprecated Modes
 
-**Note**: The following modes (MLX-LM, MLX-Omni) have been superseded by vLLM-MLX which combines the best of both: tool calling + KV cache + local model support. See archived documentation for details.
-
-#### MLX-LM Mode (`ANYCLAUDE_MODE=mlx-lm`)
-
-**Purpose**: Faster performance with native KV cache support (Apple Silicon optimized)
-
-- Uses MLX library for CPU/GPU acceleration on Apple Silicon
-- Native prompt caching (KV cache) for 10-100x speedup on follow-ups
-- Routes to mlx-lm server (default: `http://localhost:8080/v1`)
-- Streaming enabled but no tool calling support
-- Best for: Conversations without tool use
-
-**Performance**:
-
-- First request: Standard latency
-- Follow-up requests: Massive speedup via KV cache (cached prompts reused)
-- Trade-off: No tool calling support (read-only mode)
-
-**Use Cases**:
-
-- Code review and analysis (no tools needed)
-- Documentation generation
-- Brainstorming and planning
-- Follow-up questions on same context
-
-#### MLX-Omni Mode (`ANYCLAUDE_MODE=mlx-omni`)
-
-**Status**: ✅ **Functional** - Works with HuggingFace MLX models, supports both KV cache AND tool calling
-
-**What Works**:
-
-- ✅ Native Anthropic API format (no translation layer needed)
-- ✅ KV cache support for 30-100x faster follow-ups
-- ✅ Full tool calling support (Read, Edit, Bash, Git, etc.)
-- ✅ Streaming responses
-- ✅ Proper error handling and authentication
-
-**Architecture**:
-
-```
-Claude Code → AnyClaude Proxy → MLX-Omni-Server → MLX Models
-(Anthropic API)  (Passthrough)  (Anthropic API)  (HuggingFace IDs)
-```
-
-**Key Limitation - Local Model Paths Not Supported**:
-
-MLX-Omni-Server **only accepts HuggingFace model IDs**, not local file paths:
-
-```bash
-# ✅ WORKS - HuggingFace model ID
-export MLX_MODEL="mlx-community/Qwen2.5-1.5B-Instruct-4bit"
-mlx-omni-server --port 8080
-
-# ❌ FAILS - Local path (authentication error)
-export MLX_MODEL="/path/to/local/Qwen3-Coder-30B"
-mlx-omni-server --port 8080
-# Error: 401 Client Error: Unauthorized
-# https://huggingface.co/api/models/path/to/local/Qwen3-Coder-30B
-```
-
-**Available Models** (auto-downloaded from HuggingFace):
-
-Run `curl http://localhost:8080/anthropic/v1/models` to see available MLX models:
-
-- mlx-community/Qwen2.5-1.5B-Instruct-4bit
-- mlx-community/Qwen2.5-0.5B-Instruct-4bit
-- mlx-community/Qwen2.5-3B-Instruct-4bit
-- mlx-community/Llama-3.2-1B-Instruct-4bit
-- mlx-community/Llama-3.2-3B-Instruct-4bit
-- And more... (all HuggingFace MLX models)
-
-**When to Use MLX-Omni**:
-
-- You want tool calling + fast follow-ups (KV cache)
-- You don't mind using HuggingFace models (internet required to download)
-- Model size/speed is more important than local control
-- Your use case requires both features
-
-**When NOT to Use MLX-Omni**:
-
-- You need to use a specific local MLX model file
-- You want complete offline capability (model download on first run)
-- You prefer full control over model path/loading
-
----
-
-#### MLX-LM Mode Optimized (`ANYCLAUDE_MODE=mlx-lm`, recommended for speed)
-
-**Purpose**: Maximum performance with KV cache (trade-off: no tool calling)
-
-**What Works**:
-
-- ✅ MLX library with native KV cache (10-100x speedup on follow-ups)
-- ✅ Local model support (uses model paths directly)
-- ✅ Apple Silicon optimized inference
-- ✅ Streaming responses
-- ✅ Privacy-focused (completely offline)
-
-**Trade-off**:
-
-- ❌ No tool calling support
-- ⚠️ Read-only mode (analysis, review, planning only)
-
-**Performance vs LMStudio**:
-
-- First request: ~same as LMStudio
-- Follow-up requests: 10-100x faster (native KV cache)
-- Follow-ups without system prompt: Nearly instant
-- Best case: 100x speedup on repeated queries
-
-**Use Cases** (Perfect For):
-
-- Code analysis and review (no file modifications)
-- Documentation generation and summarization
-- Brainstorming and planning sessions
-- Follow-up questions on same context
-- Educational explanations
-
-**When Not to Use**:
-
-- If you need file operations (read/write)
-- If you need git commands
-- If you need web search or other tool use
-- For full Claude Code workflows
-
-**Setup**:
-
-```bash
-# vLLM-MLX auto-launches when you run anyclaude
-# Just configure .anyclauderc.json with your model path
-anyclaude  # Server starts automatically
-
-# OR start manually:
-source ~/.venv-mlx/bin/activate
-python3 scripts/vllm-mlx-server.py --model /path/to/Qwen3-Coder-30B-MLX --port 8081
-```
+**Note**: MLX-LM mode has been superseded by vLLM-MLX which provides both tool calling AND KV cache support. See archived documentation for legacy MLX-LM setup details.
 
 ### Architecture Layers
 
@@ -1350,22 +1239,6 @@ Total: 120.9 seconds ← 1.7x faster!
 - LMStudio: All tools working perfectly
 - Mode switching: Seamless with no restart needed
 
-### Historical Investigation: MLX-Omni-Server
-
-**Investigation Complete**: MLX-Omni-Server Unsupported for Local Use
-
-**Why It Didn't Work**:
-
-- ❌ Only supports HuggingFace model IDs, not local paths
-- ❌ Server tries to download from HuggingFace API
-- ❌ Failed with `401 Unauthorized` for local models
-- ❌ Fundamental mismatch: Cloud-oriented, not offline-capable
-
-**Lessons Learned**:
-
-- Don't wait for perfect solutions when good ones exist
-- Hybrid approach often beats single-solution pursuit
-- User value: Deploy working solution now, optimize later
 
 ### Files Ready for Deployment
 
@@ -1524,28 +1397,27 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 - ✅ Context window management
 - ✅ Hot model switching
 - ✅ Both auth methods (Claude Max + API keys)
-- ✅ MLX-LM mode with KV cache support (read-only, no tools)
-- ❌ MLX-Omni mode (incompatible with local models - HF-only)
-- 🔄 Prompt caching for system prompt reuse (implemented, testing)
+- ✅ vLLM-MLX mode with KV cache and tool calling support
+- ✅ Prompt caching for system prompt reuse (60-85% cache hit rate)
 - 🔄 Schema adaptation for weaker models (in progress)
 - ⏳ Parameter validation and correction (planned)
 
 ### Performance Targets
 
 - ✅ LMStudio: Baseline local inference with full tool support
-- ✅ MLX-LM: 10-100x faster on follow-ups (KV cache, read-only mode)
-- ❌ MLX-Omni: Not viable for local offline use
-- **Realistic Goal**: Make Claude Code 2.0 faster with MLX-LM for analysis tasks; use LMStudio for tool-heavy work
+- ✅ vLLM-MLX: 3-6x faster on follow-ups with KV cache + full tool calling
+- ✅ OpenRouter: Cloud models at 84% cost savings vs Claude API
+- **Achieved**: Multi-mode architecture optimized for speed (vLLM-MLX), cost (OpenRouter), or compatibility (LMStudio)
 
 ### Compatibility
 
 - ✅ Claude Code 2.0 (latest version)
-- ✅ LMStudio server (`mlx-lm` mode)
-- ✅ MLX-LM server (Apple Silicon optimized)
-- 🔄 MLX-Omni server (tool support in progress)
-- ✅ MacOS (primary platform)
+- ✅ vLLM-MLX server (Apple Silicon optimized, auto-launch)
+- ✅ LMStudio server (cross-platform)
+- ✅ OpenRouter API (400+ cloud models)
+- ✅ MacOS (primary platform, full testing)
 - ✅ Linux (tested with LMStudio)
-- ⏳ Windows (untested but should work)
+- ⏳ Windows (should work, community-tested)
 - ✅ Qwen3-Coder-30B (primary test model)
 - ✅ GPT-OSS-20B, Mistral, Llama (compatible)
 
