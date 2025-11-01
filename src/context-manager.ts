@@ -98,10 +98,7 @@ export function getContextLimit(
 
   // 4. Conservative default
   const defaultLimit = MODEL_CONTEXT_LIMITS["current-model"] ?? 32768;
-  debug(
-    1,
-    `[Context] Using conservative default: ${defaultLimit} tokens`
-  );
+  debug(1, `[Context] Using conservative default: ${defaultLimit} tokens`);
   return defaultLimit;
 }
 
