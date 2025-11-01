@@ -1358,18 +1358,18 @@ CMD ["anyclaude"]
 
 This is an **enhanced port** of the original anyclaude project, adapted for Claude Code 2.0.
 
-| Feature              | Original anyclaude                       | anyclaude-local (this fork)          |
-| -------------------- | ---------------------------------------- | ------------------------------------ |
-| **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ✅ OpenRouter (400+ models)          |
-| **Local Backends**   | ✅ LMStudio via failover                 | ✅ vLLM-MLX (auto-launch) + LMStudio |
-| **MLX Support**      | ❌ Not supported                         | ✅ vLLM-MLX (auto-launch, KV cache)  |
-| **Auto-launch**      | ❌ Manual server setup                   | ✅ vLLM-MLX auto-starts/stops        |
-| **Trace Logging**    | ❌ Not supported                         | ✅ Auto-enabled for cloud modes      |
-| **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed (simpler, 4-mode system)  |
-| **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable                    |
+| Feature              | Original anyclaude                       | anyclaude-local (this fork)                            |
+| -------------------- | ---------------------------------------- | ------------------------------------------------------ |
+| **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ✅ OpenRouter (400+ models)                            |
+| **Local Backends**   | ✅ LMStudio via failover                 | ✅ vLLM-MLX (auto-launch) + LMStudio                   |
+| **MLX Support**      | ❌ Not supported                         | ✅ vLLM-MLX (auto-launch, KV cache)                    |
+| **Auto-launch**      | ❌ Manual server setup                   | ✅ vLLM-MLX auto-starts/stops                          |
+| **Trace Logging**    | ❌ Not supported                         | ✅ Auto-enabled for cloud modes                        |
+| **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed (simpler, 4-mode system)                    |
+| **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable                                      |
 | **Test Coverage**    | Limited                                  | ✅ 1,400+ tests across 60 files (unit/integration/E2E) |
-| **Setup Complexity** | Moderate (multiple providers)            | Simple (one config file)             |
-| **Use Case**         | Multi-cloud flexibility                  | Local privacy OR cheap cloud (84% ↓) |
+| **Setup Complexity** | Moderate (multiple providers)            | Simple (one config file)                               |
+| **Use Case**         | Multi-cloud flexibility                  | Local privacy OR cheap cloud (84% ↓)                   |
 
 **Choose Original anyclaude if**: You need OpenAI, Google, xAI, or GPT-5 specific features
 
