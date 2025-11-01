@@ -1,6 +1,9 @@
 # Documentation Index
 
-Complete documentation for anyclaude - the translation layer enabling Claude Code with local LMStudio and vLLM-MLX models.
+Complete documentation for anyclaude - the translation layer enabling Claude Code with:
+- **Local models** (vLLM-MLX, LMStudio) for 100% privacy
+- **Cloud models** (OpenRouter) for 400+ models at 84% lower cost than Claude API
+- **Official Claude API** for full features
 
 ---
 
@@ -32,9 +35,11 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 - **[Installation](guides/installation.md)** - Complete setup instructions
 - **[Authentication](guides/authentication.md)** - API key setup and modes
-- **[Mode Switching](guides/mode-switching.md)** - Claude vs LMStudio vs MLX modes
+- **[OpenRouter Setup](guides/openrouter-setup.md)** - **NEW!** 400+ models at fraction of Claude cost
+- **[Mode Switching](guides/mode-switching.md)** - Switch between local, OpenRouter, and Claude modes
 - **[Auto-Launch](guides/auto-launch.md)** - Server auto-launch configuration
 - **[Crash Fix Guide](guides/crash-fix.md)** - Fixing vLLM-MLX server crashes
+- **[Trace Analysis](guides/trace-analysis.md)** - **NEW!** Analyzing Claude Code prompts
 
 ---
 

@@ -7,7 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **OpenRouter Integration** - Access 400+ cloud models at 84% lower cost than Claude API
+  - New backend: `--mode=openrouter` for cloud models via OpenRouter
+  - Default model: GLM-4.6 (200K context, $0.60/$2 per 1M tokens)
+  - Popular models: Qwen 2.5 72B ($0.35/$0.70), Gemini 2.0 Flash (FREE)
+  - Full tool calling support (Read, Write, Edit, Bash, etc.)
+  - Streaming responses via SSE
+  - Configuration: `.anyclauderc.json` with openrouter backend
+  - Environment vars: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`
+  - Documentation: `docs/guides/openrouter-setup.md`
+
+- **Trace Logging by Default** - Analyze Claude Code's prompts automatically
+  - Auto-enabled for `claude` and `openrouter` modes (ANYCLAUDE_DEBUG=3)
+  - Saves all prompts/responses to `~/.anyclaude/traces/{mode}/`
+  - Helps reverse-engineer effective agent patterns
+  - Study system prompts, tool usage, and parameter patterns
+  - Disable with: `ANYCLAUDE_DEBUG=0`
+  - Documentation: `docs/guides/trace-analysis.md`
+
+- **Configuration Consolidation** - Simplified config management
+  - New: `.anyclauderc.example.json` - comprehensive example with all 4 backends
+  - New: `.anyclauderc.example-openrouter.json` - quick start for OpenRouter
+  - Removed: `.anyclauderc` (old text format), `.env.example` (superseded)
+  - All configuration now in JSON format with inline documentation
+  - Better .gitignore handling for user config files
+
+- **Documentation Reorganization** - Cleaner project structure
+  - Moved 16 historical docs from root to `docs/archive/`
+  - Created `docs/archive/README.md` index
+  - Root directory now has 7 essential markdown files (meets standards)
+  - New guides: OpenRouter Setup, Trace Analysis
+  - Updated all documentation for 4-mode system (vllm-mlx, lmstudio, openrouter, claude)
+
+### Changed
+
+- **Trace logging** - Now enabled by default for cloud modes (claude, openrouter)
+- **Mode detection** - Updated to support openrouter mode via CLI, env var, and config file
+- **Startup messages** - Added OpenRouter backend information
+- **Documentation** - Updated README.md and CLAUDE.md to highlight OpenRouter
+
+### Removed
+
+- **Web Search** - Removed DuckDuckGo web search (unreliable, not needed)
+  - WebSearch tool filtered out for local models (vllm-mlx, lmstudio, openrouter)
+  - Use `--mode=claude` if web search capability needed
+  - Removed: `src/web-search-handler.ts`, related tests
+- **Legacy config files** - Removed old configuration formats
+  - Removed: `.anyclauderc` (text format)
+  - Removed: `.env.example` (superseded by .anyclauderc.json)
+  - Local `.env` files can be deleted (already gitignored)
+
 ### Fixed
+
 - **Tool calling streaming format** - Fixed OpenAI streaming compatibility
   - Changed `object: "text_completion"` to `object: "chat.completion.chunk"` (correct OpenAI format)
   - Tool calls now stream incrementally with index-based deltas (AI SDK requirement)
@@ -35,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Result**: No more crashes when Claude Code requests web searches
 
 ### Changed
+
 - vLLM-MLX streaming now buffers response before sending to check for tool calls
 - Tool call deltas sent incrementally per OpenAI spec (name first, then arguments)
 
@@ -100,6 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 
 **Files Modified**:
+
 - `scripts/vllm-mlx-server.py`: ~100 lines changed (70 new, 30 modified)
   - Line 256: Updated `_generate_safe()` signature to accept tools
   - Lines 265-268: Add tools to mlx_lm.generate() options
@@ -110,11 +165,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Lines 743-751: Updated non-streaming response handling
 
 **Architecture**:
+
 ```
 Claude Code → anyclaude proxy → vllm-mlx-server.py → mlx_lm.generate(tools) → MLX framework
 ```
 
 **Methodology**:
+
 - TDD (Test-Driven Development): Tests written before implementation
 - Comprehensive test coverage: Unit, integration, system, UAT
 - Best practices: Software engineering standards, proper documentation
