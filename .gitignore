@@ -53,10 +53,15 @@ __pycache__/
 dist/
 build/
 
-# Environment variables
+# Environment variables (SECRETS - never commit)
 .env
-.env.*
-*.env
+.env.local
+.env.production
+.env.test
+.env.*.local
+
+# BUT allow .env.example (template with no secrets)
+!.env.example
 
 # IDE
 .vscode/*
@@ -73,10 +78,10 @@ build/
 .DS_Store
 Thumbs.db
 
-# Traces
+# Traces (contains prompts/responses - can be large)
 .anyclaude/
 
-# Claude Code config (autonomous-dev)
+# Claude Code config (autonomous-dev - user-specific)
 .claude/
 
 # Test outputs
@@ -87,10 +92,12 @@ debug-logs/
 test-model-detection.js
 AUTONOMOUS-DEV-ENHANCEMENTS.md
 
-# User configuration files (personal settings, API keys, local paths)
-.anyclauderc.json
-.anyclauderc
+# User-specific runtime files
 .anyclaude-cache-metrics.json
+
+# NOTE: .anyclauderc.json SHOULD be committed (it's the main config)
+# Only ignore user-specific overrides:
+.anyclauderc.local.json
 
 # Build artifacts and npm packages
 *.tgz

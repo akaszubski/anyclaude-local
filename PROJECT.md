@@ -6,6 +6,198 @@
 
 AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and multiple AI providers. Whether you're using local models (vLLM-MLX, LMStudio), cloud models (OpenRouter with 400+ options), or official Claude API (Max subscription or API key), anyclaude provides a unified, flexible development experience optimized for your needs.
 
+## GOALS
+
+### Primary Goals
+
+1. **Enable Privacy-First Development**
+   - Run Claude Code completely offline with local models (vLLM-MLX, LMStudio)
+   - Zero data transmission to cloud services
+   - Full control over code and conversations
+   - Support for Apple Silicon (M1/M2/M3/M4) with MLX optimization
+
+2. **Reduce AI Development Costs**
+   - Free: Local models (vLLM-MLX, LMStudio) with no API costs
+   - 84% savings: OpenRouter ($0.60-$2/1M tokens vs Claude $3-$15/1M)
+   - Flexible: Switch modes based on task requirements
+   - Efficient: Prompt caching reduces token usage by 30-50%
+
+3. **Seamless Claude Code Experience**
+   - Full tool calling support (Read, Write, Edit, Bash, Git, etc.)
+   - Streaming responses with proper backpressure handling
+   - Authentication compatibility (Claude Max + API keys)
+   - Hot-swappable models without restart
+
+4. **Developer Productivity**
+   - Auto-launch vLLM-MLX server for zero-config experience
+   - 3-6x faster follow-up responses via KV cache
+   - Mode switching via CLI flag, env var, or config file
+   - Comprehensive debug logging (3 levels) for troubleshooting
+
+### Success Metrics
+
+- ✅ **Functionality**: Tool calling works 100% (0 errors in production)
+- ✅ **Performance**: 60-85% cache hit rate, 30-50% token reduction
+- ✅ **Quality**: 170+ tests (unit, integration, regression, E2E)
+- 🎯 **User Adoption**: Enable 1000+ developers to use local models with Claude Code
+- 🎯 **Cost Savings**: Help users save $100-1000/month on AI API costs
+
+## SCOPE
+
+### IN SCOPE
+
+**Core Functionality**:
+- ✅ Translation between Anthropic Messages API and OpenAI Chat Completions format
+- ✅ Support for 4 backend modes: vllm-mlx, lmstudio, openrouter, claude
+- ✅ Full tool calling translation (streaming and atomic formats)
+- ✅ Streaming response adaptation (AI SDK → Anthropic SSE)
+- ✅ Context window management with automatic truncation
+- ✅ Trace logging for cloud modes (auto-enabled, API keys redacted)
+
+**Supported Platforms**:
+- ✅ macOS (Apple Silicon and Intel)
+- ✅ Linux (tested with LMStudio)
+- ⚠️ Windows (should work, community-tested)
+
+**Supported Models** (verified working):
+- ✅ Qwen3 Coder 30B, GPT-OSS 20B, DeepSeek Coder
+- ✅ Mistral, Llama variants with tool calling support
+- ✅ Any MLX-quantized model (4-bit, 6-bit, 8-bit)
+- ✅ OpenRouter: GLM-4.6, Qwen 2.5 72B, 400+ others
+
+**Testing & Quality**:
+- ✅ 170+ automated tests (unit, integration, regression, E2E)
+- ✅ Git hooks (pre-commit: fast checks, pre-push: full suite)
+- ✅ Regression prevention (streaming bugs caught before push)
+
+### OUT OF SCOPE
+
+**Will NOT Support**:
+- ❌ Multi-cloud provider orchestration (use original anyclaude for this)
+- ❌ Complex failover systems (removed for simplicity)
+- ❌ GPT-5 specific features (reasoning controls, service tiers)
+- ❌ Non-OpenAI-compatible servers (e.g., native HuggingFace API)
+- ❌ GUI configuration tools (CLI-first approach)
+
+**Explicitly NOT Goals**:
+- ❌ Replicating Claude's intelligence (we translate, not replace)
+- ❌ Supporting every LLM format (focus on OpenAI-compatible)
+- ❌ Building a model marketplace (use LMStudio/HF for discovery)
+- ❌ Cloud-hosted proxy service (local-first philosophy)
+
+### Future Considerations
+
+**May Add Later** (based on user demand):
+- 🔄 Ollama support (if users request cross-platform alternatives)
+- 🔄 Enhanced model adapters (per-model schema optimizations)
+- 🔄 Response quality improvements (retry logic, formatting fixes)
+- 🔄 Performance optimizations (connection pooling, compression)
+- 🔄 Additional authentication methods (OAuth, custom headers)
+
+**Community Contributions Welcome**:
+- Testing on Windows platform
+- Support for additional local model servers
+- Model-specific prompt templates
+- Documentation improvements
+
+## CONSTRAINTS
+
+### Technical Constraints
+
+**Hardware Requirements**:
+- **Apple Silicon (vLLM-MLX)**: M1/M2/M3/M4 with 16GB+ RAM recommended
+  - 32GB+ for 30B models, 64GB+ for best performance
+  - GPU cores impact speed (more cores = faster inference)
+- **Intel/AMD (LMStudio)**: 8GB+ VRAM for GPU acceleration
+  - Larger models require more VRAM or CPU-only mode (slower)
+
+**Context Window Limits**:
+- Local models: 8K-128K tokens (model-dependent)
+- Claude/OpenRouter: Up to 200K tokens
+- System prompts from Claude Code: ~18,500 tokens per request
+- Automatic truncation when limits exceeded
+
+**Performance Expectations**:
+- First request: 20-50 seconds (includes system prompt processing)
+- Follow-ups (with cache): 5-10 seconds (vLLM-MLX) or 25-35 seconds (LMStudio)
+- Token generation: 2-8 tokens/sec (hardware-dependent)
+- **This is normal** - local models process sequentially, not in parallel like cloud APIs
+
+**Model Compatibility**:
+- Must support OpenAI Chat Completions format
+- Tool calling requires function calling support in model
+- Not all LMStudio models work - verify tool calling before use
+
+### Architectural Constraints
+
+**Single Translation Layer**:
+- Supports ONE backend mode at a time per process
+- Switch modes by restarting with different `ANYCLAUDE_MODE`
+- No automatic failover between backends (by design - simplicity)
+
+**Dependency on External Servers**:
+- vLLM-MLX: Python 3.9+, MLX library, FastAPI, uvicorn
+- LMStudio: Requires GUI app running on port 1234
+- OpenRouter: Internet connection and API key
+- Cannot work offline in cloud modes
+
+**TypeScript/Node.js Platform**:
+- Requires Node.js 18+ for runtime
+- Bun for building (faster than npm)
+- Cannot be compiled to native binary (interpreter needed)
+
+### Development Constraints
+
+**Testing Limitations**:
+- Full E2E tests require running Claude Code (manual)
+- Cannot mock LMStudio server realistically (integration tests limited)
+- Hardware-dependent performance tests (inconsistent across machines)
+
+**Documentation Maintenance**:
+- README.md must stay in sync with PROJECT.md
+- Breaking changes require updating 15+ doc files
+- Manual sync (no automation for doc consistency yet)
+
+**Compatibility Boundaries**:
+- Tightly coupled to Claude Code 2.0 format
+- Breaking changes in Anthropic API require immediate updates
+- LMStudio API changes may break compatibility
+
+### Resource Constraints
+
+**Disk Space**:
+- Models: 2-30GB per MLX model (depending on size and quantization)
+- Traces: Can accumulate to several GB (auto-saved to `~/.anyclaude/traces/`)
+- Logs: Debug mode generates large log files
+
+**Network**:
+- OpenRouter mode: ~20-50KB per request/response
+- Model downloads: 2-30GB for initial MLX model download
+- vLLM-MLX: No network after model download (fully offline)
+
+**Time Investment**:
+- Initial setup: 5-30 minutes (including model download)
+- Per-session overhead: 30-50 seconds for first request
+- Mode switching: Instant (just restart with env var)
+
+### Security Constraints
+
+**Privacy Guarantees**:
+- ✅ Local modes (vLLM-MLX, LMStudio): No data leaves machine
+- ⚠️ Cloud modes (OpenRouter, Claude): Data sent to third parties
+- ✅ Trace files: API keys auto-redacted
+- ❌ No encryption for local trace files (trust user's OS security)
+
+**Authentication Limitations**:
+- Bearer tokens passed through transparently (cannot validate)
+- API keys not validated before sending to backend
+- No rate limiting or quota management
+
+**Code Execution Risk**:
+- Bash tool allows arbitrary command execution (trust model output)
+- Write/Edit tools allow file system modifications
+- No sandboxing of tool calls (inherits Claude Code's trust model)
+
 ## Origins: A Port for Privacy
 
 This project is a **port of the original anyclaude** concept, reimagined specifically for **Claude Code 2.0** compatibility. The goal is to enable developers to:

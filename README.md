@@ -882,13 +882,13 @@ Request 3+: Reuse cache → ~5-10s consistently
 
 **Performance Comparison (Same Model, Same Hardware):**
 
-| Metric              | LMStudio      | vLLM-MLX      | Improvement      |
-| ------------------- | ------------- | ------------- | ---------------- |
-| First Request       | 50s           | 20-30s        | 2x faster        |
-| Second Request      | 44s           | 5-10s         | **4-9x faster**  |
-| Subsequent Requests | 40s+ (varies) | 5-10s (stable)| **4-8x faster**  |
-| Cache Reuse         | ❌ None       | ✅ Automatic  | Critical         |
-| Auto-launch         | ❌ Manual     | ✅ Yes        | Convenience      |
+| Metric              | LMStudio      | vLLM-MLX       | Improvement     |
+| ------------------- | ------------- | -------------- | --------------- |
+| First Request       | 50s           | 20-30s         | 2x faster       |
+| Second Request      | 44s           | 5-10s          | **4-9x faster** |
+| Subsequent Requests | 40s+ (varies) | 5-10s (stable) | **4-8x faster** |
+| Cache Reuse         | ❌ None       | ✅ Automatic   | Critical        |
+| Auto-launch         | ❌ Manual     | ✅ Yes         | Convenience     |
 
 **Why This Matters:**
 
@@ -1358,18 +1358,18 @@ CMD ["anyclaude"]
 
 This is an **enhanced port** of the original anyclaude project, adapted for Claude Code 2.0.
 
-| Feature              | Original anyclaude                       | anyclaude-local (this fork)           |
-| -------------------- | ---------------------------------------- | ------------------------------------- |
-| **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ✅ OpenRouter (400+ models)           |
-| **Local Backends**   | ✅ LMStudio via failover                 | ✅ vLLM-MLX (auto-launch) + LMStudio  |
-| **MLX Support**      | ❌ Not supported                         | ✅ vLLM-MLX (auto-launch, KV cache)   |
-| **Auto-launch**      | ❌ Manual server setup                   | ✅ vLLM-MLX auto-starts/stops         |
-| **Trace Logging**    | ❌ Not supported                         | ✅ Auto-enabled for cloud modes       |
-| **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed (simpler, 4-mode system)   |
-| **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable                     |
-| **Test Coverage**    | Limited                                  | ✅ 170+ tests (unit/integration/E2E)  |
-| **Setup Complexity** | Moderate (multiple providers)            | Simple (one config file)              |
-| **Use Case**         | Multi-cloud flexibility                  | Local privacy OR cheap cloud (84% ↓)  |
+| Feature              | Original anyclaude                       | anyclaude-local (this fork)          |
+| -------------------- | ---------------------------------------- | ------------------------------------ |
+| **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ✅ OpenRouter (400+ models)          |
+| **Local Backends**   | ✅ LMStudio via failover                 | ✅ vLLM-MLX (auto-launch) + LMStudio |
+| **MLX Support**      | ❌ Not supported                         | ✅ vLLM-MLX (auto-launch, KV cache)  |
+| **Auto-launch**      | ❌ Manual server setup                   | ✅ vLLM-MLX auto-starts/stops        |
+| **Trace Logging**    | ❌ Not supported                         | ✅ Auto-enabled for cloud modes      |
+| **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed (simpler, 4-mode system)  |
+| **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable                    |
+| **Test Coverage**    | Limited                                  | ✅ 170+ tests (unit/integration/E2E) |
+| **Setup Complexity** | Moderate (multiple providers)            | Simple (one config file)             |
+| **Use Case**         | Multi-cloud flexibility                  | Local privacy OR cheap cloud (84% ↓) |
 
 **Choose Original anyclaude if**: You need OpenAI, Google, xAI, or GPT-5 specific features
 
@@ -1390,11 +1390,13 @@ This project is an **enhanced port** of [anyclaude](https://github.com/coder/any
 ### This Fork (anyclaude-local) - What Changed
 
 **Removed:**
+
 - ❌ Multi-cloud providers (OpenAI, Google, xAI, Azure)
 - ❌ Complex failover systems (~1,500 lines)
 - ❌ GPT-5 specific features
 
 **Added:**
+
 - ✅ **vLLM-MLX auto-launch** - Server starts/stops automatically
 - ✅ **OpenRouter integration** - 400+ models at 84% lower cost than Claude API
 - ✅ **Trace logging system** - Auto-capture Claude Code prompts for analysis
@@ -1404,6 +1406,7 @@ This project is an **enhanced port** of [anyclaude](https://github.com/coder/any
 - ✅ **4-mode architecture** - vllm-mlx (default), lmstudio, openrouter, claude
 
 **Philosophy:**
+
 - **Not simplified** - Enhanced with new features (auto-launch, OpenRouter, traces)
 - **Local OR cloud** - Choose 100% privacy (local) or 84% cost savings (OpenRouter)
 - **Optimized for Claude Code 2.0** - Designed for tool-heavy agent workflows

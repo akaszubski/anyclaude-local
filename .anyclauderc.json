@@ -1,0 +1,39 @@
+{
+  "backend": "vllm-mlx",
+  "debug": {
+    "level": 0,
+    "enableTraces": false,
+    "enableStreamLogging": false
+  },
+  "backends": {
+    "vllm-mlx": {
+      "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "vllm-mlx",
+      "model": "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
+      "maxTokens": 262144,
+      "serverScript": "scripts/vllm-mlx-server.py",
+      "description": "vLLM-MLX - high-performance inference server with Qwen3 Coder 30B"
+    },
+    "lmstudio": {
+      "enabled": false,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model",
+      "compatibility": "legacy",
+      "description": "LMStudio (disabled - use vllm-mlx instead)"
+    },
+    "claude": {
+      "enabled": false,
+      "description": "Real Anthropic API"
+    },
+    "openrouter": {
+      "enabled": false,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "",
+      "model": "z-ai/glm-4.6",
+      "description": "OpenRouter - 400+ models at fraction of Claude cost (GLM-4.6: $0.60/$2 per 1M tokens)"
+    }
+  }
+}
