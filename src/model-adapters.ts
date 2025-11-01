@@ -61,7 +61,7 @@ export function getModelConfig(modelId: string): ModelConfig {
   );
 
   if (fuzzyMatch) {
-    return MODEL_CONFIGS[fuzzyMatch];
+    return MODEL_CONFIGS[fuzzyMatch] ?? {};
   }
 
   // No special handling needed
@@ -143,7 +143,7 @@ export function simplifyDescriptionForModel(
   }
 
   // Extract first paragraph or first N characters
-  const firstParagraph = description.split("\n\n")[0];
+  const firstParagraph = description.split("\n\n")[0] ?? description;
 
   if (firstParagraph.length <= config.maxDescriptionLength) {
     return firstParagraph;

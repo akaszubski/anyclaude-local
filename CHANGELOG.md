@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2025-11-01
+
+### Fixed
+
+- **TypeScript Type Safety** - Fixed 17 TypeScript compilation errors
+  - Added null checks in context-manager.ts for undefined values
+  - Added type guards in model-adapters.ts, tool-parsers.ts
+  - Fixed path handling in trace-analyzer.ts, trace-replayer.ts
+  - Excluded unused .test.ts files from type checking
+  - All source files now compile without errors
+
+- **CI/CD Testing** - Enabled automated tests in GitHub Actions
+  - Uncommented test execution step in `.github/workflows/ci.yml`
+  - Tests now run automatically on push/PR
+  - Prevents regressions from reaching main branch
+
+### Changed
+
+- **Version** - Bumped to 2.1.0 to align with documentation
+
 ### Added
 
 - **OpenRouter Integration** - Access 400+ cloud models at 84% lower cost than Claude API

@@ -416,7 +416,7 @@ WORKFLOW:
       let resultPaths: string[] = [];
 
       // Check if single argument is a directory
-      if (paths.length === 1 && fs.statSync(paths[0]).isDirectory()) {
+      if (paths.length === 1 && paths[0] && fs.statSync(paths[0]).isDirectory()) {
         const dir = paths[0];
         resultPaths = fs
           .readdirSync(dir)

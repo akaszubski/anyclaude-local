@@ -4,6 +4,10 @@
  * Tests for ensuring SSE responses are not truncated mid-stream.
  * This suite validates that backpressure handling and buffering headers
  * prevent data loss when streaming large responses.
+ *
+ * Note: This file is not currently used (project uses .js test files).
+ * Keeping for future Jest migration.
+ * @ts-nocheck
  */
 
 import http from "http";

@@ -40,7 +40,8 @@ export class HermesToolParser {
 
     while ((match = this.toolCallRegex.exec(text)) !== null) {
       try {
-        const jsonStr = match[1].trim();
+        const jsonStr = match[1]?.trim();
+        if (!jsonStr) continue;
         const toolDef = JSON.parse(jsonStr);
 
         toolCalls.push({
@@ -149,7 +150,7 @@ export class MistralToolParser {
     let remainingText = text;
 
     const match = text.match(this.tokenRegex);
-    if (match) {
+    if (match && match[1]) {
       try {
         const toolsArray = JSON.parse(match[1]);
         if (Array.isArray(toolsArray)) {

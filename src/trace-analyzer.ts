@@ -519,7 +519,7 @@ EXAMPLES:
       let tracePaths: string[] = [];
 
       // Check if single argument is a directory
-      if (paths.length === 1) {
+      if (paths.length === 1 && paths[0]) {
         try {
           if (fs.statSync(paths[0]).isDirectory()) {
             const dir = paths[0];

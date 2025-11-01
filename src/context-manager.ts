@@ -97,11 +97,12 @@ export function getContextLimit(
   }
 
   // 4. Conservative default
+  const defaultLimit = MODEL_CONTEXT_LIMITS["current-model"] ?? 32768;
   debug(
     1,
-    `[Context] Using conservative default: ${MODEL_CONTEXT_LIMITS["current-model"]} tokens`
+    `[Context] Using conservative default: ${defaultLimit} tokens`
   );
-  return MODEL_CONTEXT_LIMITS["current-model"];
+  return defaultLimit;
 }
 
 /**
@@ -226,11 +227,14 @@ export function truncateMessages(
 
   // Start from end (most recent) and work backwards
   for (let i = messages.length - 1; i >= 0; i--) {
-    const msgTokens = countMessageTokens([messages[i]]);
+    const message = messages[i];
+    if (!message) continue; // Skip if undefined
+
+    const msgTokens = countMessageTokens([message]);
 
     // Always keep minimum recent messages
     if (truncatedMessages.length < MIN_MESSAGES_TO_KEEP) {
-      truncatedMessages.unshift(messages[i]);
+      truncatedMessages.unshift(message);
       currentTokens += msgTokens;
       continue;
     }
@@ -240,7 +244,7 @@ export function truncateMessages(
       break; // Stop, we've hit the limit
     }
 
-    truncatedMessages.unshift(messages[i]);
+    truncatedMessages.unshift(message);
     currentTokens += msgTokens;
   }
 
