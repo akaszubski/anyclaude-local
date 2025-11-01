@@ -247,12 +247,12 @@ anyclaude --mode=claude
 
 ### Mode Comparison
 
-| Mode            | Cost             | Privacy    | Tools  | Cache   | Best For                |
-| --------------- | ---------------- | ---------- | ------ | ------- | ----------------------- |
-| **vLLM-MLX** ⭐ | Free             | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
-| **LMStudio**    | Free             | 100% local | ✅ Yes | Limited | **Cross-platform**      |
-| **OpenRouter**  | $0.60-$2/1M (84% less) | Cloud | ✅ Yes | ✅ Yes  | **Cost savings**        |
-| **Claude API**  | $3-$15/1M        | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
+| Mode            | Cost                   | Privacy    | Tools  | Cache   | Best For                |
+| --------------- | ---------------------- | ---------- | ------ | ------- | ----------------------- |
+| **vLLM-MLX** ⭐ | Free                   | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
+| **LMStudio**    | Free                   | 100% local | ✅ Yes | Limited | **Cross-platform**      |
+| **OpenRouter**  | $0.60-$2/1M (84% less) | Cloud      | ✅ Yes | ✅ Yes  | **Cost savings**        |
+| **Claude API**  | $3-$15/1M              | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
 
 ### Cost Example (50K input + 10K output tokens)
 
@@ -264,24 +264,28 @@ anyclaude --mode=claude
 ### When to Use Each Mode
 
 **vLLM-MLX (Default)**
+
 - Privacy-first development (100% local)
 - Apple Silicon users (M1/M2/M3)
 - Fast iteration with prompt caching
 - Auto-launch convenience
 
 **LMStudio**
+
 - Windows/Linux users
 - GUI model management
 - Testing different models
 - Privacy-focused development
 
 **OpenRouter**
+
 - Cost-conscious cloud development
 - Model experimentation (GLM-4.6, Qwen, etc.)
 - When you need cloud but want to save 84%
 - Reverse-engineering Claude prompts (auto trace logging)
 
 **Claude API**
+
 - Highest quality responses
 - Debugging local model behavior
 - Learning Claude Code's patterns

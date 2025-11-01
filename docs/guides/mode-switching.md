@@ -69,7 +69,7 @@ Edit `.anyclauderc.json`:
 
 ```json
 {
-  "backend": "openrouter",  // ← Change this to switch default mode
+  "backend": "openrouter", // ← Change this to switch default mode
   "backends": {
     "vllm-mlx": {
       "enabled": true,
@@ -295,19 +295,19 @@ anyclaude --mode=claude
 
 ## Mode Comparison
 
-| Feature              | vLLM-MLX          | LMStudio          | OpenRouter           | Claude               |
-| -------------------- | ----------------- | ----------------- | -------------------- | -------------------- |
-| **Cost**             | Free              | Free              | $0.60-$2/1M tokens   | $3-$15/1M tokens     |
-| **Privacy**          | 100% local        | 100% local        | Cloud                | Cloud                |
-| **Platform**         | macOS (M1/M2/M3)  | All platforms     | All platforms        | All platforms        |
-| **Auto-launch**      | ✅ Yes            | ❌ Manual         | ✅ Cloud             | ✅ Cloud             |
-| **Prompt Caching**   | ✅ Yes            | ⚠️ Limited        | ✅ Yes               | ✅ Yes               |
-| **Tool Calling**     | ✅ Yes            | ✅ Yes            | ✅ Yes               | ✅ Yes               |
-| **Context Window**   | Up to 200K        | Varies by model   | Up to 200K           | 200K                 |
-| **Speed**            | Very fast         | Fast              | Fast                 | Fast                 |
-| **Model Choice**     | Your MLX models   | Any LMStudio      | 400+ models          | Claude only          |
-| **Trace Logging**    | Manual (DEBUG=3)  | Manual (DEBUG=3)  | ✅ Auto (redacted)   | ✅ Auto (redacted)   |
-| **Best For**         | Privacy, speed    | Cross-platform    | Cost savings, choice | Quality, analysis    |
+| Feature            | vLLM-MLX         | LMStudio         | OpenRouter           | Claude             |
+| ------------------ | ---------------- | ---------------- | -------------------- | ------------------ |
+| **Cost**           | Free             | Free             | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
+| **Privacy**        | 100% local       | 100% local       | Cloud                | Cloud              |
+| **Platform**       | macOS (M1/M2/M3) | All platforms    | All platforms        | All platforms      |
+| **Auto-launch**    | ✅ Yes           | ❌ Manual        | ✅ Cloud             | ✅ Cloud           |
+| **Prompt Caching** | ✅ Yes           | ⚠️ Limited       | ✅ Yes               | ✅ Yes             |
+| **Tool Calling**   | ✅ Yes           | ✅ Yes           | ✅ Yes               | ✅ Yes             |
+| **Context Window** | Up to 200K       | Varies by model  | Up to 200K           | 200K               |
+| **Speed**          | Very fast        | Fast             | Fast                 | Fast               |
+| **Model Choice**   | Your MLX models  | Any LMStudio     | 400+ models          | Claude only        |
+| **Trace Logging**  | Manual (DEBUG=3) | Manual (DEBUG=3) | ✅ Auto (redacted)   | ✅ Auto (redacted) |
+| **Best For**       | Privacy, speed   | Cross-platform   | Cost savings, choice | Quality, analysis  |
 
 ---
 
@@ -421,7 +421,7 @@ ac-claude  # Real Claude API
 {
   "backends": {
     "openrouter": {
-      "enabled": true  // ← Set to true
+      "enabled": true // ← Set to true
     }
   }
 }

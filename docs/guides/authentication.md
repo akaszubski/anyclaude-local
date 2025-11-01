@@ -249,15 +249,15 @@ See [OpenRouter Setup Guide](openrouter-setup.md) for complete model list and co
 
 ## Comparison: All Authentication Methods
 
-| Feature               | Claude API Key               | Claude Max Plan             | OpenRouter                 | Local Models (vLLM/LM)    |
-| --------------------- | ---------------------------- | --------------------------- | -------------------------- | ------------------------- |
-| **Cost**              | $3/$15 per 1M tokens         | $20/month unlimited         | $0.60/$2 per 1M (GLM-4.6)  | Free (hardware only)      |
-| **Setup**             | Export ANTHROPIC_API_KEY     | Already logged in           | OPENROUTER_API_KEY         | No auth needed            |
-| **Best For**          | API development              | Interactive Claude Code use | Cost savings, model choice | Privacy, offline use      |
-| **Authentication**    | x-api-key header             | Bearer token / session      | Authorization header       | None (local)              |
-| **anyclaude Support** | ✅ Yes                       | ✅ Yes                      | ✅ Yes                     | ✅ Yes                    |
-| **Trace Logging**     | ✅ Yes (auto, redacted)      | ✅ Yes (auto, redacted)     | ✅ Yes (auto, redacted)    | ⚠️ Manual (DEBUG=3)       |
-| **Privacy**           | Cloud (Anthropic)            | Cloud (Anthropic)           | Cloud (OpenRouter)         | 100% local                |
+| Feature               | Claude API Key           | Claude Max Plan             | OpenRouter                 | Local Models (vLLM/LM) |
+| --------------------- | ------------------------ | --------------------------- | -------------------------- | ---------------------- |
+| **Cost**              | $3/$15 per 1M tokens     | $20/month unlimited         | $0.60/$2 per 1M (GLM-4.6)  | Free (hardware only)   |
+| **Setup**             | Export ANTHROPIC_API_KEY | Already logged in           | OPENROUTER_API_KEY         | No auth needed         |
+| **Best For**          | API development          | Interactive Claude Code use | Cost savings, model choice | Privacy, offline use   |
+| **Authentication**    | x-api-key header         | Bearer token / session      | Authorization header       | None (local)           |
+| **anyclaude Support** | ✅ Yes                   | ✅ Yes                      | ✅ Yes                     | ✅ Yes                 |
+| **Trace Logging**     | ✅ Yes (auto, redacted)  | ✅ Yes (auto, redacted)     | ✅ Yes (auto, redacted)    | ⚠️ Manual (DEBUG=3)    |
+| **Privacy**           | Cloud (Anthropic)        | Cloud (Anthropic)           | Cloud (OpenRouter)         | 100% local             |
 
 ## Testing Both Methods
 

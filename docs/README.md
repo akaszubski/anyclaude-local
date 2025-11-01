@@ -130,16 +130,16 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 **By Task**
 
-| Task                    | Documentation                                   |
-| ----------------------- | ----------------------------------------------- |
-| Install anyclaude       | [Installation](guides/installation.md)               |
-| Configure settings      | [Configuration](guides/configuration.md)             |
-| Run tests               | [Testing Guide](testing/TESTING.md)                  |
-| Debug issues            | [Debugging Guides](debugging/)                       |
-| Understand architecture | [PROJECT.md](../PROJECT.md)                          |
-| Contribute code         | [Development](development/DEVELOPMENT.md)            |
-| Optimize performance    | [Cache Tuning](caching/cache-performance-tuning.md)  |
-| Understand git hooks    | [CLAUDE.md](../CLAUDE.md#-git-automation-hooks) |
+| Task                    | Documentation                                       |
+| ----------------------- | --------------------------------------------------- |
+| Install anyclaude       | [Installation](guides/installation.md)              |
+| Configure settings      | [Configuration](guides/configuration.md)            |
+| Run tests               | [Testing Guide](testing/TESTING.md)                 |
+| Debug issues            | [Debugging Guides](debugging/)                      |
+| Understand architecture | [PROJECT.md](../PROJECT.md)                         |
+| Contribute code         | [Development](development/DEVELOPMENT.md)           |
+| Optimize performance    | [Cache Tuning](caching/cache-performance-tuning.md) |
+| Understand git hooks    | [CLAUDE.md](../CLAUDE.md#-git-automation-hooks)     |
 
 ---
 
