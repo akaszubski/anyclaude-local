@@ -45,10 +45,12 @@ Restart service daily.
 ## Features
 
 ### Implemented
+
 - ✅ Basic translation
 - ✅ Error handling
 
 ### Coming Soon (Roadmap)
+
 - 🔄 Advanced caching (planned for Q4 2024)
 - 🔄 Multi-tenant support (planned for Q1 2025)
 
@@ -57,6 +59,7 @@ Restart service daily.
 Compatible with v1.2.0 and above.
 
 ### Core Technologies
+
 - Node.js 18.x
 - Express 4.18
 - TypeScript 5.2
@@ -64,6 +67,7 @@ Compatible with v1.2.0 and above.
 ## File Organization
 
 Standard structure:
+
 - src/ - Source code
 - tests/ - Test files
 - docs/ - Documentation

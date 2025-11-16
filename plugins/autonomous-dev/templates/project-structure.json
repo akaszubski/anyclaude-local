@@ -5,12 +5,7 @@
     "src/": {
       "description": "All source code",
       "required": true,
-      "examples": [
-        "src/main.py",
-        "src/app/",
-        "src/lib/",
-        "src/utils/"
-      ]
+      "examples": ["src/main.py", "src/app/", "src/lib/", "src/utils/"]
     },
     "tests/": {
       "description": "All test files organized by type",

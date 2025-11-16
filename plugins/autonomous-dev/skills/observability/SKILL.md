@@ -27,12 +27,14 @@ Developer-focused observability: logging, debugging, profiling, and performance 
 ### Why Structured Logging?
 
 **Traditional (unstructured)**:
+
 ```python
 print(f"User {user_id} logged in from {ip_address}")
 # Hard to parse, search, filter
 ```
 
 **Structured (JSON)**:
+
 ```python
 logger.info("user_login", extra={
     "user_id": user_id,
@@ -43,6 +45,7 @@ logger.info("user_login", extra={
 ```
 
 **Benefits**:
+
 - ✅ Easy to search/filter
 - ✅ Machine-readable
 - ✅ Aggregate metrics
@@ -81,15 +84,16 @@ logger.error("Failed to process request", exc_info=True)
 
 ### Log Levels
 
-| Level | Value | Use When | Example |
-|-------|-------|----------|---------|
-| **DEBUG** | 10 | Development, detailed tracing | Variable values, function calls |
-| **INFO** | 20 | Normal operations | User logged in, request processed |
-| **WARNING** | 30 | Unexpected but handled | Deprecated API used, slow query |
-| **ERROR** | 40 | Error occurred | Failed to save file, API error |
-| **CRITICAL** | 50 | System failure | Database down, disk full |
+| Level        | Value | Use When                      | Example                           |
+| ------------ | ----- | ----------------------------- | --------------------------------- |
+| **DEBUG**    | 10    | Development, detailed tracing | Variable values, function calls   |
+| **INFO**     | 20    | Normal operations             | User logged in, request processed |
+| **WARNING**  | 30    | Unexpected but handled        | Deprecated API used, slow query   |
+| **ERROR**    | 40    | Error occurred                | Failed to save file, API error    |
+| **CRITICAL** | 50    | System failure                | Database down, disk full          |
 
 **Usage**:
+
 ```python
 logger.debug(f"Processing item: {item}")           # Development only
 logger.info(f"User {user_id} logged in")           # Normal event
@@ -128,6 +132,7 @@ logger.info("user_login", extra={
 ```
 
 **Output**:
+
 ```json
 {
   "asctime": "2025-10-24 12:00:00,000",
@@ -243,6 +248,7 @@ def process_data(data):
 ```
 
 **Use temporary, remove before commit**:
+
 ```python
 # ✅ GOOD: Temporary debug
 print(f"[DEBUG] value={value}")  # Remove before commit
@@ -276,6 +282,7 @@ def buggy_function(x, y):
 ```
 
 **Breakpoint (Python 3.7+)**:
+
 ```python
 def buggy_function(x, y):
     result = x + y
@@ -303,6 +310,7 @@ def buggy_function(x, y):
 ```
 
 **Commands**:
+
 ```
 (ipdb) p x              # Print x
 (ipdb) pp x             # Pretty-print x
@@ -336,6 +344,7 @@ except:
 ```
 
 **Automatic on uncaught exception**:
+
 ```python
 import sys
 import pdb
@@ -382,6 +391,7 @@ stats.print_stats(10)  # Top 10 slowest functions
 ```
 
 **Output**:
+
 ```
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
        10    0.500    0.050    0.800    0.080 mymodule.py:10(slow_function)
@@ -389,6 +399,7 @@ stats.print_stats(10)  # Top 10 slowest functions
 ```
 
 **Sort options**:
+
 - `cumulative` - Total time (includes subfunctions)
 - `time` - Internal time (excludes subfunctions)
 - `calls` - Number of calls
@@ -453,6 +464,7 @@ profiler.print_stats()
 ```
 
 **Output**:
+
 ```
 Line #      Hits         Time  Per Hit   % Time  Line Contents
 ==============================================================
@@ -485,6 +497,7 @@ memory_hog()
 ```
 
 **Output**:
+
 ```
 Line #    Mem usage    Increment  Occurrences   Line Contents
 =============================================================
@@ -511,6 +524,7 @@ py-spy record -o profile.svg --pid 12345
 ```
 
 **Advantages**:
+
 - ✅ No code modification
 - ✅ Profile production code
 - ✅ Low overhead
@@ -532,6 +546,7 @@ except Exception as e:
 ```
 
 **Capture to string**:
+
 ```python
 import traceback
 
@@ -565,6 +580,7 @@ buggy_function()
 ```
 
 **Shows**:
+
 - ✅ Syntax highlighted code
 - ✅ Local variables at each frame
 - ✅ Clear error message
@@ -756,8 +772,8 @@ def debug_binary_search():
 
 **Explain code out loud (or to a rubber duck)**:
 
-1. Describe what code *should* do
-2. Explain what code *actually* does
+1. Describe what code _should_ do
+2. Explain what code _actually_ does
 3. Often you'll spot the bug while explaining!
 
 ---
@@ -834,6 +850,7 @@ logger.info("Database crashed")  # Should be CRITICAL
 ## Quick Reference
 
 ### Logging
+
 ```python
 logger.debug("Detailed trace")
 logger.info("Normal event")
@@ -843,6 +860,7 @@ logger.critical("System failure")
 ```
 
 ### Debugging
+
 ```python
 breakpoint()              # Start debugger
 pdb.set_trace()          # Start debugger (old way)
@@ -850,6 +868,7 @@ traceback.print_exc()    # Print stack trace
 ```
 
 ### Profiling
+
 ```python
 # CPU
 python -m cProfile -s cumulative script.py
@@ -863,6 +882,7 @@ py-spy top --pid 12345
 ```
 
 ### Timing
+
 ```python
 @timer
 def func(): pass

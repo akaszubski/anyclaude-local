@@ -31,6 +31,7 @@ The project-progress-tracker agent analyzes your strategic direction:
 ### Analysis Phase
 
 The agent:
+
 - ✅ Reads PROJECT.md goals, scope, constraints
 - ✅ Scans session logs for completed features
 - ✅ Analyzes git history for feature implementation
@@ -41,11 +42,12 @@ The agent:
 ### Report Phase
 
 Shows you:
+
 - 📊 **Goal Progress**: Visual bars for each goal
 - ✅ **Completed Features**: What's been accomplished
 - ⏳ **In Progress**: What's currently being worked on
 - 💡 **Strategic Recommendations**: What to do next
-- ⚠️  **Risk Flags**: Neglected or drifting goals
+- ⚠️ **Risk Flags**: Neglected or drifting goals
 
 ---
 
@@ -136,24 +138,28 @@ Next week: Focus on Performance to balance progress
 ## What the Agent Analyzes
 
 ### Goal Completion
+
 - Counts completed features per goal
 - Calculates percentage (features done / total planned)
 - Marks goals 100% complete with ✅
 - Flags goals under 20% as "neglected"
 
 ### Strategic Balance
+
 - Are we completing goals evenly?
 - Are some goals being neglected?
 - Is there a risk of missing strategic direction?
 - What would provide best overall progress?
 
 ### Next Priorities
+
 - Which goal is closest to 100%? (finish it!)
 - Which goal is neglected? (start balancing)
 - What provides strategic value?
 - What should we work on next?
 
 ### Risk Flags
+
 - ⚠️ Goals under 20% progress (neglected)
 - 🚨 Goals completely untouched (risk)
 - 📉 Goals stalled for 7+ days
@@ -216,6 +222,7 @@ Enhanced UX: [██████████] 100% ✅ COMPLETE
 ## When to Use
 
 **Run /status when**:
+
 - 📊 Starting your day (see progress on strategic goals)
 - ✅ Completing a feature (see updated progress)
 - 🤔 Deciding what to work on next (gets strategic recommendations)
@@ -223,6 +230,7 @@ Enhanced UX: [██████████] 100% ✅ COMPLETE
 - 👥 Team meetings (show project progress)
 
 **Output tells you**:
+
 - Where are we strategically?
 - What goals need attention?
 - What should we do next?
@@ -252,21 +260,25 @@ After using `/auto-implement` to complete a feature:
 The agent prioritizes based on:
 
 **Priority 1**: Finish nearly-complete goals
+
 - Goal at 80% or higher? Finish it!
 - Psychology: Completing goals is motivating
 - Impact: Full credit for strategic goal
 
 **Priority 2**: Balance neglected goals
+
 - Goal under 20%? Start making progress
 - Risk: Neglected goals become technical debt
 - Impact: Distribute effort across strategic areas
 
 **Priority 3**: Address dependencies
+
 - Some features unlock others
 - Agent considers ordering
 - Maximizes velocity
 
 **Priority 4**: Effort vs. Impact
+
 - Quick wins motivate teams
 - High-impact features deliver value
 - Balance between quick wins and deep work
@@ -297,6 +309,7 @@ The agent prioritizes based on:
 ### "No goals detected"
 
 PROJECT.md exists but has no GOALS section:
+
 ```bash
 # Update PROJECT.md with goals
 vim PROJECT.md
@@ -308,6 +321,7 @@ vim PROJECT.md
 ### "Progress not updating"
 
 Progress is tracked in PROJECT.md. After completing features:
+
 ```bash
 # Update PROJECT.md with completed features
 # Then check status

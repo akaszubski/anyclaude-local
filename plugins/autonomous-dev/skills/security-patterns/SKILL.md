@@ -11,6 +11,7 @@ auto_activate: true
 Security best practices and patterns for [PROJECT_NAME] project.
 
 ## When This Activates
+
 - API key handling
 - User input validation
 - File operations
@@ -20,6 +21,7 @@ Security best practices and patterns for [PROJECT_NAME] project.
 ## API Keys & Secrets
 
 ### Environment Variables (REQUIRED)
+
 ```python
 import os
 from pathlib import Path
@@ -43,6 +45,7 @@ api_key = "sk-ant-1234567890abcdef"  # NEVER DO THIS!
 ```
 
 ### .env File Setup
+
 ```bash
 # .env (must be in .gitignore!)
 ANTHROPIC_API_KEY=sk-ant-your-key-here
@@ -51,6 +54,7 @@ HUGGINGFACE_TOKEN=hf_your-token-here
 ```
 
 ### .gitignore MUST Include
+
 ```
 # .gitignore
 .env
@@ -62,6 +66,7 @@ secrets/
 ```
 
 ### Secure API Key Validation
+
 ```python
 import re
 
@@ -98,6 +103,7 @@ def validate_anthropic_key(api_key: str) -> bool:
 ## Input Validation
 
 ### Path Traversal Prevention
+
 ```python
 from pathlib import Path
 
@@ -142,6 +148,7 @@ content = load_safe_file("../../etc/passwd", Path("/data"))  # ValueError!
 ```
 
 ### Command Injection Prevention
+
 ```python
 import subprocess
 import shlex
@@ -183,6 +190,7 @@ def run_command_unsafe(user_input: str):
 ```
 
 ### SQL Injection Prevention
+
 ```python
 import sqlite3
 
@@ -208,6 +216,7 @@ def get_user_unsafe(db, username):
 ## File Operations Security
 
 ### Secure File Permissions
+
 ```python
 from pathlib import Path
 import os
@@ -244,6 +253,7 @@ create_secure_file(config_file, api_key)
 ```
 
 ### File Upload Validation
+
 ```python
 from pathlib import Path
 
@@ -284,6 +294,7 @@ def validate_upload(file_path: Path) -> None:
 ## Cryptographic Operations
 
 ### Secure Random Generation
+
 ```python
 import secrets
 
@@ -305,6 +316,7 @@ token = str(random.randint(0, 999999))  # NEVER for security!
 ```
 
 ### Password Hashing (if needed)
+
 ```python
 import hashlib
 import secrets
@@ -352,6 +364,7 @@ def verify_password(
 ## Model Download Security
 
 ### Validate HuggingFace Repo
+
 ```python
 import re
 
@@ -395,6 +408,7 @@ validate_repo_id("../../../etc/passwd")  # ValueError!
 ## Logging Security
 
 ### Never Log Secrets
+
 ```python
 import logging
 
@@ -414,6 +428,7 @@ def log_api_call_unsafe(api_key, endpoint):
 ## Dependencies Security
 
 ### Check for Vulnerabilities
+
 ```bash
 # Install safety
 pip install safety
@@ -432,6 +447,7 @@ pip-audit
 ## Security Checklist
 
 ### Code Review
+
 - [ ] No hardcoded API keys/secrets
 - [ ] All secrets in .env (gitignored)
 - [ ] .env file in .gitignore
@@ -445,6 +461,7 @@ pip-audit
 - [ ] Dependencies scanned for vulnerabilities
 
 ### File Operations
+
 - [ ] Validate file extensions
 - [ ] Check file size limits
 - [ ] Prevent path traversal
@@ -452,6 +469,7 @@ pip-audit
 - [ ] Validate before deserialize
 
 ### API Operations
+
 - [ ] API keys from environment
 - [ ] Keys validated before use
 - [ ] Keys masked in logs
@@ -482,4 +500,4 @@ pip-audit
 7. **Restrict permissions** - Files 0o600, dirs 0o700
 8. **Mask secrets in logs** - Show only first/last few chars
 9. **Scan dependencies** - Use safety/pip-audit
-10. **.gitignore secrets** - .env, *.key, *.pem
+10. **.gitignore secrets** - .env, _.key, _.pem

@@ -1,12 +1,8 @@
 {
   "hooks": {
     "PostToolUse": {
-      "Write": [
-        "python .claude/hooks/auto_format.py"
-      ],
-      "Edit": [
-        "python .claude/hooks/auto_format.py"
-      ]
+      "Write": ["python .claude/hooks/auto_format.py"],
+      "Edit": ["python .claude/hooks/auto_format.py"]
     },
     "PreCommit": {
       "*": [

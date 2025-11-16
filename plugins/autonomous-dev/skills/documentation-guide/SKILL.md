@@ -11,6 +11,7 @@ auto_activate: true
 Documentation standards and automation for [PROJECT_NAME] project.
 
 ## When This Activates
+
 - Code changes requiring doc updates
 - New features added
 - API changes
@@ -54,13 +55,13 @@ CHANGELOG.md                     # Version history
 
 ### When Code Changes → Update Docs
 
-| Change Type | Documentation Updates |
-|-------------|----------------------|
-| New feature | README.md, docs/guides/, CHANGELOG.md, examples/ |
-| API change | docs/api/, CHANGELOG.md |
-| Bug fix | CHANGELOG.md, (optional) docs/guides/troubleshooting.md |
-| Breaking change | CHANGELOG.md, README.md, docs/guides/, migration guide |
-| New dependency | README.md (install), requirements.txt |
+| Change Type     | Documentation Updates                                   |
+| --------------- | ------------------------------------------------------- |
+| New feature     | README.md, docs/guides/, CHANGELOG.md, examples/        |
+| API change      | docs/api/, CHANGELOG.md                                 |
+| Bug fix         | CHANGELOG.md, (optional) docs/guides/troubleshooting.md |
+| Breaking change | CHANGELOG.md, README.md, docs/guides/, migration guide  |
+| New dependency  | README.md (install), requirements.txt                   |
 
 ### CHANGELOG.md (Always Update)
 
@@ -74,29 +75,36 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ## [Unreleased]
 
 ### Added
+
 - New feature X with Y capability
 - CLI flag `--new-option` for Z
 
 ### Changed
+
 - Updated API: `Trainer` now accepts `gradient_checkpointing` param
 - [FRAMEWORK] dependency bumped to 0.20.0
 
 ### Fixed
+
 - Model cache invalidation bug (#42)
 - Memory leak in long training runs
 
 ### Deprecated
+
 - `old_function()` - Use `new_function()` instead
 
 ### Removed
+
 - Legacy training method (use LoRA instead)
 
 ### Security
+
 - Updated dependencies to patch CVE-2024-XXXX
 
 ## [3.0.0] - 2024-01-15
 
 ### Added
+
 - Complete rebranding to [PROJECT_NAME]
 - Multi-architecture support
 
@@ -106,6 +114,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ## Writing Standards
 
 ### Tone & Style
+
 - **Clear and concise**: Short sentences, active voice
 - **User-focused**: Write "you", not "the user"
 - **Practical**: Every concept has a code example
@@ -113,7 +122,8 @@ Versioning: [Semantic Versioning](https://semver.org/)
 - **Linked**: Reference related docs
 
 ### Example Structure
-```markdown
+
+````markdown
 # Feature Name
 
 Brief one-sentence description.
@@ -131,6 +141,7 @@ from [project_name] import Feature
 result = Feature().run()
 print(result)
 ```
+````
 
 ## Prerequisites
 
@@ -157,28 +168,32 @@ result = feature.execute()
 ## Common Patterns
 
 ### Pattern 1: Simple Use Case
+
 ```python
 # Example code
 ```
 
 ### Pattern 2: Advanced Use Case
+
 ```python
 # Example code
 ```
 
 ## Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `param1` | str | "default" | Description |
-| `param2` | int | 100 | Description |
+| Option   | Type | Default   | Description |
+| -------- | ---- | --------- | ----------- |
+| `param1` | str  | "default" | Description |
+| `param2` | int  | 100       | Description |
 
 ## Troubleshooting
 
 ### Issue: Error Message
+
 **Symptoms**: What you see
 **Cause**: Why it happens
 **Solution**:
+
 ```python
 # Fix code
 ```
@@ -187,7 +202,8 @@ result = feature.execute()
 
 - [Related Guide](./related.md)
 - [API Reference](../api/module.md)
-```
+
+````
 
 ## API Documentation Template
 
@@ -206,18 +222,21 @@ Brief class description.
 from [project_name].module import ClassName
 
 instance = ClassName(param="value")
-```
+````
 
 **Parameters:**
+
 - `param1` (str): Description of parameter
 - `param2` (int, optional): Description. Default: 100
 - `param3` (bool, optional): Description. Default: False
 
 **Attributes:**
+
 - `attribute1` (str): Description
 - `attribute2` (int): Description
 
 **Example:**
+
 ```python
 instance = ClassName(param1="test")
 result = instance.method()
@@ -231,17 +250,21 @@ print(result)
 Description of what method does.
 
 **Parameters:**
+
 - `arg1` (type): Description
 - `arg2` (type, optional): Description. Default: value
 
 **Returns:**
+
 - `ReturnType`: Description of return value
 
 **Raises:**
+
 - `ValueError`: When X condition
 - `TypeError`: When Y condition
 
 **Example:**
+
 ```python
 result = instance.method_name("value", arg2=True)
 assert result.success
@@ -252,7 +275,8 @@ assert result.success
 ### `function_name(param1, param2)`
 
 [Same structure as methods]
-```
+
+````
 
 ## Example Code Template
 
@@ -311,7 +335,7 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-```
+````
 
 ## Architecture Decision Records (ADRs)
 
@@ -321,6 +345,7 @@ When making significant architectural decisions, create ADR in `docs/architectur
 # ADR-XXX: Title of Decision
 
 ## Status
+
 **Proposed** | Accepted | Deprecated | Superseded by ADR-YYY
 
 ## Context
@@ -381,6 +406,7 @@ Detailed explanation of the approach:
 ## README.md Updates
 
 ### Features Section
+
 When adding new feature:
 
 ```markdown
@@ -389,13 +415,14 @@ When adding new feature:
 - **Model Discovery**: Browse 2,984+ [FRAMEWORK] models
 - **Data Curator**: Extract from 10 content types
 - **Adaptive Tuner**: 5 training methods (LoRA, DPO, etc)
-- **NEW FEATURE**: Brief description  # ← Add here
+- **NEW FEATURE**: Brief description # ← Add here
 ```
 
 ### Installation Section
+
 When adding dependencies:
 
-```markdown
+````markdown
 ## Installation
 
 ```bash
@@ -404,7 +431,9 @@ pip install [project_name]
 # For new feature (optional)
 pip install [project_name][feature]
 ```
-```
+````
+
+````
 
 ## Link Validation
 
@@ -436,11 +465,12 @@ def find_broken_links(docs_dir: Path) -> list[str]:
                 broken.append(f"{md_file}:{text} → {link}")
 
     return broken
-```
+````
 
 ## Documentation Checklist
 
 Before marking docs complete:
+
 - [ ] CHANGELOG.md updated
 - [ ] README.md updated (if public API change)
 - [ ] API docs updated (if function signatures changed)
@@ -454,6 +484,7 @@ Before marking docs complete:
 ## Auto-Generation Scripts
 
 ### Extract Docstrings → API Docs
+
 ```python
 import ast
 from pathlib import Path
@@ -488,15 +519,15 @@ def extract_api_docs(source_file: Path) -> dict:
 
 ### When to Update Which Docs
 
-| You Changed | Update |
-|-------------|--------|
-| Added function | API docs, CHANGELOG |
-| Fixed bug | CHANGELOG, maybe troubleshooting |
-| New feature | README, guides, examples, API docs, CHANGELOG |
+| You Changed     | Update                                        |
+| --------------- | --------------------------------------------- |
+| Added function  | API docs, CHANGELOG                           |
+| Fixed bug       | CHANGELOG, maybe troubleshooting              |
+| New feature     | README, guides, examples, API docs, CHANGELOG |
 | Breaking change | CHANGELOG, migration guide, all affected docs |
-| Config option | Configuration guide, CHANGELOG |
-| Dependencies | README (install), CHANGELOG |
-| Architecture | ADR, architecture docs |
+| Config option   | Configuration guide, CHANGELOG                |
+| Dependencies    | README (install), CHANGELOG                   |
+| Architecture    | ADR, architecture docs                        |
 
 ## Key Takeaways
 

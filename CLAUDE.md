@@ -229,6 +229,43 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
 - `PROXY_ONLY`: Run proxy server without spawning Claude Code
 - `ANYCLAUDE_MODE`: claude | lmstudio (default: lmstudio)
 
+## Debugging Tool Calling Issues
+
+If a user reports tool calling problems with a local model:
+
+1. **Ask for debug log**: `ANYCLAUDE_DEBUG=2 anyclaude` creates `~/.anyclaude/logs/debug-session-*.log`
+2. **Follow the debugging guide**: `docs/debugging/gpt-oss-20b-tool-calling-issue.md`
+3. **Check the log for**:
+   - SESSION CONFIGURATION (model, backend, URLs)
+   - Tool schemas sent to the model
+   - Model's raw output (look for tool_calls vs other formats)
+   - Stream conversion messages showing what format was detected
+
+**Common issues**:
+- Model outputs custom format instead of OpenAI tool calls (e.g., commentary format)
+- Model not trained on tool calling
+- vllm-mlx chat template not configured for tool calling
+- Schema transformation issues with union types
+
+**Known Model Limitations** (as of v2.1.1):
+
+- **gpt-oss-20b-5bit**: ❌ Poor multi-turn tool calling
+  - First tool call works fine
+  - After receiving tool results, model gets confused
+  - Generates invalid parameters like `{"file?":"?"}`
+  - **Workaround**: Use simpler prompts (1-2 tool calls max) or switch models
+
+- **Qwen3-Coder-30B**: ⚠️ Good for simple tools, struggles with complex schemas
+  - Works well for Read, Write, Bash
+  - Can fail with complex nested JSON
+
+**Recommended Models for Tool Calling**:
+- ✅ Qwen 2.5 72B (via OpenRouter)
+- ✅ GLM-4.6 (via OpenRouter)
+- ✅ Claude 3.5 Sonnet (via `--mode=claude`)
+
+See `docs/debugging/gpt-oss-20b-tool-calling-issue.md` for complete debugging workflow.
+
 ## Implementation Notes
 
 **LMStudio Compatibility:**

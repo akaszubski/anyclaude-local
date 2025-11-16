@@ -31,6 +31,7 @@ The alignment-analyzer agent works with you to align your project:
 ### Phase 1: Analysis (GenAI Agent)
 
 The agent:
+
 - ✅ Reads PROJECT.md (source of truth)
 - ✅ Scans your codebase for actual implementation
 - ✅ Checks documentation against reality
@@ -54,6 +55,7 @@ Your choice [A/B]:
 ```
 
 The agent intelligently:
+
 - Asks binary questions (no ambiguity)
 - Explains impact of each choice
 - Groups related conflicts
@@ -62,6 +64,7 @@ The agent intelligently:
 ### Phase 3: Execution
 
 After all questions answered, the agent:
+
 - ✅ Updates PROJECT.md (if needed)
 - ✅ Suggests code changes (if needed)
 - ✅ Creates documentation (if needed)
@@ -151,6 +154,7 @@ Impact: Makes testing structure match documentation
 ## What the Agent Does
 
 ### Analysis Phase
+
 - ✅ Reads PROJECT.md entirely
 - ✅ Scans codebase (src/, lib/, components/, etc.)
 - ✅ Checks documentation (README, docs/, etc.)
@@ -158,12 +162,14 @@ Impact: Makes testing structure match documentation
 - ✅ Groups related issues together
 
 ### Question Phase
+
 - ✅ Asks binary questions (clear A or B choices)
 - ✅ Explains context for each conflict
 - ✅ Shows what code exists vs. what PROJECT.md says
 - ✅ Suggests practical fixes
 
 ### Execution Phase
+
 - ✅ Updates PROJECT.md (if you choose B)
 - ✅ Removes unscoped code (if you choose A)
 - ✅ Organizes files to match scope
@@ -184,6 +190,7 @@ Impact: Makes testing structure match documentation
 ## When to Use This Command
 
 **Run /align-project when**:
+
 - 🆕 First time setup (understand project scope)
 - 📊 After major development (ensure docs match code)
 - 🔄 After PROJECT.md changes (verify implementation updated)
@@ -191,6 +198,7 @@ Impact: Makes testing structure match documentation
 - 👥 Onboarding team members (clarify what's in/out of scope)
 
 **No need if**:
+
 - Project already aligned (agent will say "no conflicts found")
 - You just want to code quickly (can skip)
 
@@ -217,6 +225,7 @@ Impact: Makes testing structure match documentation
 ### "Disagreeing with agent's analysis"
 
 Agent analyzes based on PROJECT.md being the source of truth. If you disagree:
+
 - Choose `B) NO` to update PROJECT.md instead
 - Agent will adapt the documentation to match reality
 

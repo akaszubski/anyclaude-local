@@ -47,29 +47,39 @@ Research existing patterns, best practices, and security considerations before i
 Document your findings clearly in the session file. Include these sections:
 
 ### **Patterns Found**
+
 List relevant patterns with brief descriptions:
+
 - Pattern name: Description
 - Pattern name: Description
 
 ### **Best Practices**
+
 Cite authoritative sources with URLs:
+
 - Practice: Source (e.g., redis.io, MDN, official docs)
 - Practice: Source
 
 ### **Security Considerations**
+
 Highlight security concerns:
+
 - Security issue or best practice
 - Validation requirements
 - Authentication/authorization concerns
 
 ### **Recommendations**
+
 Suggest preferred approach with rationale:
+
 - **Recommended**: [Approach] because [rationale]
 - **Alternative 1**: [Approach] - Pros: X, Cons: Y
 - **Alternative 2**: [Approach] - Pros: X, Cons: Y
 
 ### **Codebase References**
+
 Link to existing code (if found):
+
 - file.py:123 - Similar implementation
 - file.js:456 - Related pattern
 

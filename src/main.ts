@@ -10,7 +10,7 @@ import {
   type CreateAnthropicProxyOptions,
 } from "./anthropic-proxy";
 import type { AnyclaudeMode } from "./trace-logger";
-import { debug, isDebugEnabled } from "./debug";
+import { debug, isDebugEnabled, logSessionContext } from "./debug";
 import {
   launchBackendServer,
   waitForServerReady,
@@ -378,6 +378,8 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   "vllm-mlx": createOpenAI({
     baseURL: vllmMlxConfig?.baseURL || "http://localhost:8081/v1",
     apiKey: vllmMlxConfig?.apiKey || "vllm-mlx",
+    // @ts-ignore - compatibility is valid but not in TypeScript types
+    compatibility: "legacy", // Required for models like gpt-oss-20b with custom tool calling format
     fetch: (async (url, init) => {
       if (init?.body && typeof init.body === "string") {
         const body = JSON.parse(init.body);
@@ -531,6 +533,14 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
             ? vllmMlxConfig?.model || "current-model"
             : lmstudioConfig?.model || "current-model",
     mode,
+    backendUrl:
+      mode === "lmstudio"
+        ? lmstudioConfig?.baseURL
+        : mode === "vllm-mlx"
+          ? vllmMlxConfig?.baseURL
+          : mode === "openrouter"
+            ? openrouterConfig?.baseURL
+            : undefined,
   });
 
   console.log(`[anyclaude] Backend: ${mode.toUpperCase()}`);
@@ -591,6 +601,37 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   }
   console.log("");
 
+  // Log session context to debug file
+  if (isDebugEnabled()) {
+    logSessionContext({
+      mode,
+      model:
+        mode === "vllm-mlx"
+          ? vllmMlxConfig?.model || "current-model"
+          : mode === "lmstudio"
+            ? lmstudioConfig?.model || "current-model"
+            : mode === "openrouter"
+              ? openrouterConfig?.model || "z-ai/glm-4.6"
+              : "claude-3-5-sonnet-20241022",
+      backendUrl:
+        mode === "lmstudio"
+          ? lmstudioConfig?.baseURL
+          : mode === "vllm-mlx"
+            ? vllmMlxConfig?.baseURL
+            : mode === "openrouter"
+              ? openrouterConfig?.baseURL
+              : undefined,
+      proxyUrl: proxyURL,
+      config: {
+        backend: mode,
+        debugLevel: process.env.ANYCLAUDE_DEBUG,
+        configFile: fs.existsSync(path.join(process.cwd(), ".anyclauderc.json"))
+          ? ".anyclauderc.json"
+          : "none",
+      },
+    });
+  }
+
   if (process.env.PROXY_ONLY === "true") {
     console.log("Proxy only mode - not spawning Claude Code");
   } else {
@@ -604,7 +645,13 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         ...process.env,
         ANTHROPIC_BASE_URL: proxyURL,
       },
-      stdio: "inherit",
+      // Fix for piped stdin (e.g., when using `2>&1 | tee`):
+      // Only inherit stdin if it's a TTY, otherwise ignore it
+      stdio: [
+        process.stdin.isTTY ? "inherit" : "ignore", // stdin
+        "inherit", // stdout
+        "inherit", // stderr
+      ],
     });
 
     proc.on("exit", (code) => {

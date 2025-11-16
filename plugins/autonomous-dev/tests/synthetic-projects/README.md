@@ -20,10 +20,12 @@ These synthetic projects test autonomous-dev v3.0.0 features in isolation. Each 
 **Location**: `test1-simple-api/`
 **Tests**: Enhancement 3 - PROJECT.md Bootstrapping
 **Planted Issues**:
+
 - Missing PROJECT.md
 - Has README, package.json, src/, tests/
 
 **What to Test**:
+
 - `/create-project-md --generate` command
 - `project-bootstrapper` agent codebase analysis
 - Architecture pattern detection (MVC)
@@ -31,6 +33,7 @@ These synthetic projects test autonomous-dev v3.0.0 features in isolation. Each 
 - 300-500 line PROJECT.md generation
 
 **Expected Result**:
+
 - PROJECT.md generated in < 60s
 - 80-90% complete
 - Correct tech stack (Node.js, Express, PostgreSQL)
@@ -43,6 +46,7 @@ These synthetic projects test autonomous-dev v3.0.0 features in isolation. Each 
 **Location**: `test2-translation-service/`
 **Tests**: Enhancement 1 - GenAI-Powered Semantic Validation
 **Planted Issues** (6 total):
+
 1. Issue status "CRITICAL" but code shows SOLVED
 2. Version mismatch (package.json: 1.0.0, CHANGELOG: 2.0.0)
 3. Stale "WIP" marker (>60 days old)
@@ -51,12 +55,14 @@ These synthetic projects test autonomous-dev v3.0.0 features in isolation. Each 
 6. Version lag in docs (v1.2.0 reference)
 
 **What to Test**:
+
 - `semantic-validation` skill
 - `documentation-currency` skill
 - Enhanced `alignment-validator` agent
 - 5-phase validation workflow
 
 **Expected Result**:
+
 - All 6 issues detected
 - Correct severity assigned
 - Evidence with file:line references
@@ -69,17 +75,20 @@ These synthetic projects test autonomous-dev v3.0.0 features in isolation. Each 
 **Location**: `test3-messy-project/`
 **Tests**: Enhancement 2 - File Organization Enforcement
 **Planted Issues** (8 misplaced files):
+
 - 2 shell scripts in root (should be scripts/)
 - 4 .md files in root (should be docs/)
 - 2 source files in root (should be src/)
 
 **What to Test**:
+
 - `file-organization` skill
 - Pre-commit hook validation
 - Auto-fix mode
 - Directory creation
 
 **Expected Result**:
+
 - All 8 files detected as misplaced
 - Correct target locations identified
 - Auto-fix moves all files
@@ -92,17 +101,20 @@ These synthetic projects test autonomous-dev v3.0.0 features in isolation. Each 
 **Location**: `test4-broken-refs/`
 **Tests**: Enhancement 4 - Automatic Cross-Reference Updates
 **Planted Issues** (6 broken references):
+
 - 4 file path references (old paths)
 - 1 broken markdown link
 - 1 invalid file:line reference
 
 **What to Test**:
+
 - `cross-reference-validation` skill
 - `post_file_move.py` hook
 - Auto-fix for file moves
 - Manual fix suggestions
 
 **Expected Result**:
+
 - All 6 broken references detected
 - 4-5 auto-fixable identified
 - References updated correctly
@@ -212,6 +224,7 @@ The `run-all-tests.sh` script runs all 4 test projects and generates a summary r
 ```
 
 **Output**:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Autonomous-Dev v3.0.0 Test Suite
@@ -414,14 +427,14 @@ To add a test project:
 
 ## Test Coverage
 
-| Enhancement | Test Project | Status |
-|-------------|--------------|--------|
-| Enhancement 1: GenAI Validation | Test 2 | ✅ Complete |
-| Enhancement 2: File Organization | Test 3 | ✅ Complete |
-| Enhancement 3: PROJECT.md Bootstrap | Test 1 | ✅ Complete |
-| Enhancement 4: Cross-Reference Updates | Test 4 | ✅ Complete |
-| Enhancement 7: Decision Tree | Manual | ✅ Documentation |
-| Enhancement 8: Template Quality | Test 1 | ✅ Complete |
+| Enhancement                            | Test Project | Status           |
+| -------------------------------------- | ------------ | ---------------- |
+| Enhancement 1: GenAI Validation        | Test 2       | ✅ Complete      |
+| Enhancement 2: File Organization       | Test 3       | ✅ Complete      |
+| Enhancement 3: PROJECT.md Bootstrap    | Test 1       | ✅ Complete      |
+| Enhancement 4: Cross-Reference Updates | Test 4       | ✅ Complete      |
+| Enhancement 7: Decision Tree           | Manual       | ✅ Documentation |
+| Enhancement 8: Template Quality        | Test 1       | ✅ Complete      |
 
 **Coverage**: 6/6 implemented enhancements (100%)
 

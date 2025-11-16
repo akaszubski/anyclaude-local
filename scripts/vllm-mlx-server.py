@@ -77,6 +77,22 @@ logger = logging.getLogger("vllm-mlx")
 # GPU synchronization lock to prevent concurrent GPU operations
 gpu_lock = threading.Lock()
 
+# ============================================================================
+# MLX KV Cache Configuration
+# ============================================================================
+
+# Enable MLX native KV caching for 100x speedup on repeated prefixes
+MLX_KV_CACHE_ENABLED = os.environ.get("MLX_KV_CACHE_ENABLED", "1") == "1"
+MLX_KV_CACHE_DIR = os.environ.get(
+    "MLX_KV_CACHE_DIR",
+    os.path.join(os.path.expanduser("~"), ".anyclaude", "kv-cache")
+)
+MLX_KV_CACHE_MAX_SIZE = int(os.environ.get("MLX_KV_CACHE_MAX_SIZE", "100"))
+
+if MLX_KV_CACHE_ENABLED and not os.path.exists(MLX_KV_CACHE_DIR):
+    os.makedirs(MLX_KV_CACHE_DIR, exist_ok=True)
+    logger.info(f"✓ MLX KV cache enabled: {MLX_KV_CACHE_DIR} (max {MLX_KV_CACHE_MAX_SIZE} files)")
+
 def sync_gpu():
     """Force GPU synchronization to prevent assertion errors"""
     try:
@@ -137,6 +153,7 @@ class PromptCache:
             "total_requests": 0
         }
         self.last_request_was_hit = False  # Track if last request was a cache hit
+        self.tool_call_names = {}  # Maps tool_call_id -> tool_name (for Harmony format)
 
     def get_cache_key(self, messages: list, tools: list = None) -> str:
         """Generate consistent cache key from messages and tools"""
@@ -215,6 +232,202 @@ class PromptCache:
             self.cache_stats["misses"] += 1
 
 
+class MLXKVCacheManager:
+    """Manages MLX native KV cache for prompt prefixes"""
+    def __init__(self, cache_dir: str, max_size: int):
+        self.cache_dir = cache_dir
+        self.max_size = max_size
+        self.access_times = {}  # Maps cache_file -> last_access_timestamp (for LRU)
+        self.stats = {
+            "hits": 0,
+            "misses": 0,
+            "evictions": 0,
+            "prefix_tokens": [],  # Track prefix sizes
+            "suffix_tokens": [],  # Track suffix sizes
+            "cache_creation_times": [],  # Track time to create caches
+            "generation_times_with_cache": [],  # Track generation times with cache
+            "generation_times_without_cache": [],  # Track generation times without cache
+        }
+
+    def _get_cache_path(self, prompt_hash: str) -> str:
+        """Get cache file path for a given prompt hash"""
+        return os.path.join(self.cache_dir, f"{prompt_hash}.safetensors")
+
+    def _hash_prompt(self, prompt: str) -> str:
+        """Generate hash from prompt string"""
+        import hashlib
+        return hashlib.sha256(prompt.encode()).hexdigest()[:16]
+
+    def _count_tokens(self, tokenizer, text: str) -> int:
+        """Count tokens in text using tokenizer"""
+        try:
+            if hasattr(tokenizer, 'encode'):
+                return len(tokenizer.encode(text))
+            else:
+                # Rough estimate: ~4 chars per token
+                return len(text) // 4
+        except Exception as e:
+            logger.debug(f"[MLX KV Cache] Token counting failed: {e}")
+            return len(text) // 4  # Fallback estimate
+
+    def has_cache(self, prefix_prompt: str) -> tuple[bool, str]:
+        """Check if KV cache exists for this prefix
+
+        Returns:
+            (cache_exists, cache_file_path)
+        """
+        if not MLX_KV_CACHE_ENABLED:
+            return (False, None)
+
+        prompt_hash = self._hash_prompt(prefix_prompt)
+        cache_file = self._get_cache_path(prompt_hash)
+        exists = os.path.exists(cache_file)
+
+        if exists:
+            # Update access time for LRU
+            self.access_times[cache_file] = time.time()
+            self.stats["hits"] += 1
+            logger.debug(f"[MLX KV Cache] HIT - {prompt_hash}")
+        else:
+            self.stats["misses"] += 1
+            logger.debug(f"[MLX KV Cache] MISS - {prompt_hash}")
+
+        return (exists, cache_file if not exists else cache_file)
+
+    def create_cache(self, model, tokenizer, prefix_prompt: str):
+        """Create KV cache for prefix prompt
+
+        Returns:
+            (cache_file_path, prompt_cache_object)
+        """
+        if not MLX_KV_CACHE_ENABLED or not mlx_lm:
+            return (None, None)
+
+        prompt_hash = self._hash_prompt(prefix_prompt)
+        cache_file = self._get_cache_path(prompt_hash)
+
+        try:
+            # Count tokens in prefix
+            prefix_tokens = self._count_tokens(tokenizer, prefix_prompt)
+            self.stats["prefix_tokens"].append(prefix_tokens)
+
+            logger.info(f"[MLX KV Cache] Creating cache for prefix ({len(prefix_prompt)} chars, ~{prefix_tokens} tokens)")
+            start_time = time.time()
+
+            # Correct MLX-LM API:
+            # 1. Create empty cache
+            prompt_cache = mlx_lm.make_prompt_cache(model)
+
+            # 2. Populate cache by generating with prefix (we discard the output)
+            mlx_lm.generate(
+                model=model,
+                tokenizer=tokenizer,
+                prompt=prefix_prompt,
+                max_tokens=1,  # Just populate cache, don't generate much
+                verbose=False,
+                prompt_cache=prompt_cache  # Populates the cache
+            )
+
+            # 3. Save cache to disk
+            mlx_lm.save_prompt_cache(cache_file, prompt_cache)
+
+            elapsed = time.time() - start_time
+            self.stats["cache_creation_times"].append(elapsed)
+
+            logger.info(f"[MLX KV Cache] ✓ Cache created in {elapsed:.2f}s: {prompt_hash} (~{prefix_tokens} tokens cached)")
+
+            # Update access time
+            self.access_times[cache_file] = time.time()
+
+            # Evict old caches if needed
+            self._evict_if_needed()
+
+            return (cache_file, prompt_cache)
+        except Exception as e:
+            logger.error(f"[MLX KV Cache] Failed to create cache: {e}")
+            import traceback
+            logger.error(f"[MLX KV Cache] Traceback: {traceback.format_exc()}")
+            return (None, None)
+
+    def _evict_if_needed(self):
+        """Evict oldest cache files if over max size"""
+        cache_files = list(self.access_times.keys())
+
+        if len(cache_files) > self.max_size:
+            # Sort by access time (oldest first)
+            sorted_files = sorted(cache_files, key=lambda f: self.access_times[f])
+
+            # Evict oldest files
+            num_to_evict = len(cache_files) - self.max_size
+            for cache_file in sorted_files[:num_to_evict]:
+                try:
+                    os.remove(cache_file)
+                    del self.access_times[cache_file]
+                    self.stats["evictions"] += 1
+                    logger.debug(f"[MLX KV Cache] Evicted (LRU): {os.path.basename(cache_file)}")
+                except Exception as e:
+                    logger.warning(f"[MLX KV Cache] Failed to evict {cache_file}: {e}")
+
+    def record_generation(self, suffix_tokens: int, generation_time: float, used_cache: bool):
+        """Record generation metrics"""
+        self.stats["suffix_tokens"].append(suffix_tokens)
+        if used_cache:
+            self.stats["generation_times_with_cache"].append(generation_time)
+        else:
+            self.stats["generation_times_without_cache"].append(generation_time)
+
+    def get_stats(self) -> dict:
+        """Get comprehensive cache statistics"""
+        total = self.stats["hits"] + self.stats["misses"]
+        hit_rate = (self.stats["hits"] / total * 100) if total > 0 else 0
+
+        # Calculate averages
+        avg_prefix_tokens = (
+            sum(self.stats["prefix_tokens"]) / len(self.stats["prefix_tokens"])
+            if self.stats["prefix_tokens"] else 0
+        )
+        avg_suffix_tokens = (
+            sum(self.stats["suffix_tokens"]) / len(self.stats["suffix_tokens"])
+            if self.stats["suffix_tokens"] else 0
+        )
+        avg_cache_creation_time = (
+            sum(self.stats["cache_creation_times"]) / len(self.stats["cache_creation_times"])
+            if self.stats["cache_creation_times"] else 0
+        )
+        avg_gen_time_with_cache = (
+            sum(self.stats["generation_times_with_cache"]) / len(self.stats["generation_times_with_cache"])
+            if self.stats["generation_times_with_cache"] else 0
+        )
+        avg_gen_time_without_cache = (
+            sum(self.stats["generation_times_without_cache"]) / len(self.stats["generation_times_without_cache"])
+            if self.stats["generation_times_without_cache"] else 0
+        )
+
+        # Calculate token savings
+        total_prefix_tokens = sum(self.stats["prefix_tokens"])
+        tokens_saved = total_prefix_tokens * self.stats["hits"]  # Prefix tokens not reprocessed on hits
+
+        # Calculate time savings
+        time_saved = 0
+        if avg_gen_time_without_cache > 0 and self.stats["hits"] > 0:
+            time_saved = (avg_gen_time_without_cache - avg_gen_time_with_cache) * self.stats["hits"]
+
+        return {
+            "hits": self.stats["hits"],
+            "misses": self.stats["misses"],
+            "evictions": self.stats["evictions"],
+            "hit_rate": f"{hit_rate:.1f}%",
+            "cache_files": len(self.access_times),
+            "avg_prefix_tokens": int(avg_prefix_tokens),
+            "avg_suffix_tokens": int(avg_suffix_tokens),
+            "total_tokens_saved": tokens_saved,
+            "avg_cache_creation_time": f"{avg_cache_creation_time:.2f}s",
+            "avg_gen_time_with_cache": f"{avg_gen_time_with_cache:.2f}s",
+            "avg_gen_time_without_cache": f"{avg_gen_time_without_cache:.2f}s",
+            "total_time_saved": f"{time_saved:.2f}s",
+        }
+
+
 # ============================================================================
 # vLLM-MLX Server
 # ============================================================================
@@ -230,6 +443,15 @@ class VLLMMLXServer:
         cache_size = int(os.environ.get("VLLM_CACHE_SIZE", "256"))
         self.cache = PromptCache(max_size=cache_size)
         logger.info(f"Prompt cache initialized with size: {cache_size}")
+        # Initialize MLX KV cache manager
+        self.kv_cache_manager = MLXKVCacheManager(
+            cache_dir=MLX_KV_CACHE_DIR,
+            max_size=MLX_KV_CACHE_MAX_SIZE
+        )
+        if MLX_KV_CACHE_ENABLED:
+            logger.info(f"MLX KV cache manager initialized (max {MLX_KV_CACHE_MAX_SIZE} files)")
+        # Track tool call IDs to names for Harmony format tool results
+        self.tool_call_names = {}
         self.app = FastAPI(title="vLLM-MLX Server")
         # Thread pool for blocking MLX inference (1 worker to serialize GPU ops)
         # Using single worker prevents concurrent GPU operations that cause Metal assertion errors
@@ -248,22 +470,158 @@ class VLLMMLXServer:
         sys.exit(0)
 
     def _cleanup(self):
-        """Clean up resources"""
+        """Clean up resources and display stats"""
         try:
             logger.info("Cleaning up...")
+
+            # Display comprehensive cache statistics
+            self._display_cache_stats()
+
             self.executor.shutdown(wait=False)
             if HAS_MLX and not FORCE_CPU:
                 sync_gpu()
         except Exception as e:
             logger.debug(f"Cleanup error: {e}")
 
-    def _generate_safe(self, model, tokenizer, prompt, options, tools=None):
-        """Generate text with GPU synchronization, error recovery, and native tool calling support"""
+    def _display_cache_stats(self):
+        """Display comprehensive cache performance statistics"""
+        if not MLX_KV_CACHE_ENABLED:
+            return
+
+        print("\n" + "=" * 70)
+        print("             MLX KV CACHE PERFORMANCE REPORT")
+        print("=" * 70)
+
+        # Get stats from both caches
+        response_cache_stats = self.cache.get_stats()
+        kv_cache_stats = self.kv_cache_manager.get_stats()
+
+        # Response Cache (in-memory JSON responses)
+        print("\nRESPONSE CACHE (Full JSON Caching)")
+        print("-" * 70)
+        print(f"  Total Requests:       {response_cache_stats['total_requests']}")
+        print(f"  Cache Hits:           {response_cache_stats['hits']} ({response_cache_stats['hit_rate']})")
+        print(f"  Cache Misses:         {response_cache_stats['misses']}")
+        print(f"  Cached Items:         {response_cache_stats['cached_items']}")
+
+        # MLX KV Cache (disk-based KV computations)
+        print("\nMLX KV CACHE (Prefix KV State Caching)")
+        print("-" * 70)
+        print(f"  Total Requests:       {kv_cache_stats['hits'] + kv_cache_stats['misses']}")
+        print(f"  Cache Hits:           {kv_cache_stats['hits']} ({kv_cache_stats['hit_rate']})")
+        print(f"  Cache Misses:         {kv_cache_stats['misses']}")
+        print(f"  Cache Files:          {kv_cache_stats['cache_files']}/{MLX_KV_CACHE_MAX_SIZE}")
+        print(f"  Evictions:            {kv_cache_stats['evictions']}")
+
+        # Token Statistics
+        if kv_cache_stats['avg_prefix_tokens'] > 0:
+            print("\nTOKEN BREAKDOWN")
+            print("-" * 70)
+            print(f"  Avg Prefix Tokens:    {kv_cache_stats['avg_prefix_tokens']:,} (system + tools + history)")
+            print(f"  Avg Suffix Tokens:    {kv_cache_stats['avg_suffix_tokens']:,} (new user message)")
+            print(f"  Tokens Saved:         {kv_cache_stats['total_tokens_saved']:,} (prefix not reprocessed)")
+            if kv_cache_stats['avg_prefix_tokens'] > 0:
+                savings_pct = (kv_cache_stats['total_tokens_saved'] /
+                               (kv_cache_stats['avg_prefix_tokens'] * (kv_cache_stats['hits'] + kv_cache_stats['misses'])) * 100)
+                print(f"  Token Savings:        {savings_pct:.1f}%")
+
+        # Performance Statistics
+        if kv_cache_stats['hits'] > 0:
+            print("\nPERFORMANCE METRICS")
+            print("-" * 70)
+            print(f"  Cache Creation:       {kv_cache_stats['avg_cache_creation_time']}")
+            print(f"  With Cache:           {kv_cache_stats['avg_gen_time_with_cache']} per request")
+            print(f"  Without Cache:        {kv_cache_stats['avg_gen_time_without_cache']} per request")
+            print(f"  Total Time Saved:     {kv_cache_stats['total_time_saved']}")
+
+            # Calculate speedup
+            try:
+                with_time = float(kv_cache_stats['avg_gen_time_with_cache'].replace('s', ''))
+                without_time = float(kv_cache_stats['avg_gen_time_without_cache'].replace('s', ''))
+                if with_time > 0:
+                    speedup = without_time / with_time
+                    print(f"  Speedup:              {speedup:.1f}x faster with cache")
+            except:
+                pass
+
+        print("=" * 70 + "\n")
+
+    def _generate_safe(self, model, tokenizer, prompt, options, tools=None, original_messages=None):
+        """Generate text with GPU synchronization, error recovery, and MLX KV caching support
+
+        Args:
+            model: MLX model
+            tokenizer: MLX tokenizer
+            prompt: Formatted prompt string (used as fallback if KV cache not available)
+            options: Generation options (max_tokens, etc.)
+            tools: Tool definitions for function calling
+            original_messages: Original message list for KV cache prefix extraction
+        """
         # Use lock to serialize GPU operations
         with gpu_lock:
             try:
                 # Pre-sync to clear any pending GPU operations
                 sync_gpu()
+
+                # MLX KV Cache Logic: Split prefix (cacheable) from suffix (new user message)
+                cache_file = None
+                cache_object = None  # Will hold the loaded/created cache
+                actual_prompt = prompt  # Default to full prompt
+
+                if MLX_KV_CACHE_ENABLED and original_messages and len(original_messages) > 1:
+                    # Split: prefix = all except last message, suffix = last message
+                    prefix_messages = original_messages[:-1]
+                    suffix_message = original_messages[-1]
+
+                    # Format prefix using chat template
+                    prefix_prompt = self._format_messages(prefix_messages, tools)
+
+                    # Check if KV cache exists for this prefix
+                    cache_exists, cache_file = self.kv_cache_manager.has_cache(prefix_prompt)
+
+                    if cache_exists:
+                        # Cache hit - load the cached KV state
+                        logger.info(f"[MLX KV Cache] Loading cached prefix ({len(prefix_prompt)} chars)")
+                        try:
+                            cache_object = mlx_lm.load_prompt_cache(cache_file)
+                            logger.debug(f"[MLX KV Cache] ✓ Cache loaded from {os.path.basename(cache_file)}")
+                        except Exception as e:
+                            logger.error(f"[MLX KV Cache] Failed to load cache: {e}")
+                            cache_object = None
+
+                        # Format just the suffix as a standalone user message
+                        suffix_prompt = suffix_message.get('content', '')
+                        if isinstance(suffix_prompt, list):
+                            suffix_prompt = " ".join([
+                                block.get("text", "") if isinstance(block, dict) else str(block)
+                                for block in suffix_prompt
+                            ])
+                        actual_prompt = suffix_prompt
+                        logger.debug(f"[MLX KV Cache] Suffix prompt: {actual_prompt[:200]}...")
+                    else:
+                        # Cache miss - create cache for future use
+                        logger.info(f"[MLX KV Cache] Creating cache for prefix ({len(prefix_prompt)} chars)")
+                        cache_file, prompt_cache = self.kv_cache_manager.create_cache(model, tokenizer, prefix_prompt)
+
+                        if cache_file and prompt_cache:
+                            # Now that cache is created, use it for this generation
+                            suffix_prompt = suffix_message.get('content', '')
+                            if isinstance(suffix_prompt, list):
+                                suffix_prompt = " ".join([
+                                    block.get("text", "") if isinstance(block, dict) else str(block)
+                                    for block in suffix_prompt
+                                ])
+                            actual_prompt = suffix_prompt
+                            logger.debug(f"[MLX KV Cache] Using newly created cache with suffix: {actual_prompt[:200]}...")
+                            # Store the cache object for use below
+                            cache_object = prompt_cache
+                        else:
+                            # Cache creation failed, use full prompt as fallback
+                            logger.warning("[MLX KV Cache] Cache creation failed, using full prompt")
+                            cache_file = None
+                            cache_object = None
+                else:
+                    logger.debug("[MLX KV Cache] Skipped (disabled, single message, or no messages)")
 
                 # Add tool calling support if tools provided
                 if tools:
@@ -271,8 +629,31 @@ class VLLMMLXServer:
                     options['tools'] = tools
                     options['tool_choice'] = 'auto'  # Let model decide when to use tools
 
-                # Generate with timeout to catch hanging operations
-                result = mlx_lm.generate(model, tokenizer, prompt, options)
+                # Track generation timing and tokens
+                gen_start_time = time.time()
+                used_cache = cache_object is not None
+
+                # Count suffix tokens for metrics
+                suffix_tokens = self.kv_cache_manager._count_tokens(tokenizer, actual_prompt)
+
+                # Generate with optional KV cache
+                if used_cache and cache_object:
+                    logger.debug(f"[MLX KV Cache] Generating with cached KV state + ~{suffix_tokens} new tokens")
+                    result = mlx_lm.generate(
+                        model, tokenizer, actual_prompt,
+                        prompt_cache=cache_object,  # Correct parameter name
+                        **options
+                    )
+                else:
+                    # Standard generation without KV cache
+                    result = mlx_lm.generate(model, tokenizer, actual_prompt, options)
+
+                gen_elapsed = time.time() - gen_start_time
+
+                # Record generation metrics
+                if MLX_KV_CACHE_ENABLED and original_messages:
+                    self.kv_cache_manager.record_generation(suffix_tokens, gen_elapsed, used_cache)
+                    logger.info(f"[MLX KV Cache] Generation completed in {gen_elapsed:.2f}s (cache={'HIT' if used_cache else 'MISS'}, suffix_tokens=~{suffix_tokens})")
 
                 # Post-sync to ensure GPU is in clean state
                 sync_gpu()
@@ -287,6 +668,237 @@ class VLLMMLXServer:
                     logger.error("  2. Run with smaller max_tokens")
                     logger.error("  3. Run with MLX_FORCE_CPU=1 for stability")
                 raise
+
+    def _strip_thinking_tokens(self, text: str) -> str:
+        """
+        Strip thinking tokens and tool call markers from model output
+
+        Handles both:
+        - LMStudio format: [TOOL_REQUEST]...[END_TOOL_REQUEST]
+        - gpt-oss format: <|channel|>analysis<|message|>...<|end|>
+
+        Args:
+            text: Raw model output
+
+        Returns:
+            Clean text with thinking tokens and tool markers removed
+        """
+        import re
+
+        # First, remove LMStudio tool call markers (already extracted by parser)
+        text = re.sub(r'\[TOOL_REQUEST\].*?\[END_TOOL_REQUEST\]', '', text, flags=re.DOTALL)
+        text = re.sub(r'\[TOOL_RESULT.*?\[END_TOOL_RESULT\]', '', text, flags=re.DOTALL)
+
+        # Pattern 1: Extract final answer from <|channel|>final<|message|>...
+        final_pattern = r'<\|channel\|>final<\|message\|>(.+?)(?:<\|end\|>|$)'
+        final_match = re.search(final_pattern, text, re.DOTALL)
+        if final_match:
+            clean_text = final_match.group(1).strip()
+            logger.debug(f"[Thinking Tokens] Extracted final answer: {clean_text[:100]}...")
+            return clean_text
+
+        # Pattern 2: Remove all thinking tokens but keep the rest
+        # Remove everything between <|channel|>analysis and <|end|>
+        analysis_pattern = r'<\|channel\|>analysis.*?<\|end\|>'
+        text = re.sub(analysis_pattern, '', text, flags=re.DOTALL)
+
+        # Remove channel markers
+        text = re.sub(r'<\|start\|>assistant', '', text)
+        text = re.sub(r'<\|channel\|>\w+<\|message\|>', '', text)
+        text = re.sub(r'<\|end\|>', '', text)
+        text = re.sub(r'<\|call\|>', '', text)
+
+        return text.strip()
+
+    def _extract_json_from_position(self, text: str, start_pos: int) -> str:
+        """
+        Extract a complete JSON object starting from a position by counting balanced braces
+
+        Args:
+            text: Full text containing JSON
+            start_pos: Position of the opening brace
+
+        Returns:
+            Complete JSON string including nested objects/arrays
+        """
+        if start_pos >= len(text) or text[start_pos] != '{':
+            logger.warning(f"[JSON Extract] Invalid start position: {start_pos} >= {len(text)} or char != '{{' (char: {text[start_pos] if start_pos < len(text) else 'EOF'})")
+            return None
+
+        brace_count = 0
+        in_string = False
+        escape_next = False
+
+        for i in range(start_pos, len(text)):
+            char = text[i]
+
+            if escape_next:
+                escape_next = False
+                continue
+
+            if char == '\\':
+                escape_next = True
+                continue
+
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+
+            if in_string:
+                continue
+
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    extracted = text[start_pos:i+1]
+                    logger.debug(f"[JSON Extract] Successfully extracted {len(extracted)} chars, brace_count reached 0 at position {i}")
+                    return extracted
+
+        logger.warning(f"[JSON Extract] Unbalanced braces - brace_count={brace_count} at end of text")
+        return None  # Unbalanced braces
+
+    def _parse_gpt_oss_tool_calls(self, text: str) -> list:
+        """
+        Parse gpt-oss-20b Harmony format tool calls and convert to OpenAI format
+
+        Harmony format: <|channel|>commentary to=functions.ToolName<|message|>{"arg": "value"}<|call|>
+        Also accepts: <|channel|>commentary to=ToolName code<|message|>{json}
+
+        Args:
+            text: Raw model output with tool calls
+
+        Returns:
+            List of OpenAI-formatted tool calls
+        """
+        import re
+        tool_calls = []
+
+        # Harmony format pattern: Extract tool name and position of JSON start
+        # Pattern matches: <|channel|>commentary to=ToolName ... <|message|>
+        # Then we extract JSON manually using balanced brace counting
+        pattern = r'<\|channel\|>commentary\s+to=(?:functions\.)?(\w+).*?<\|message\|>'
+
+        matches = re.finditer(pattern, text, re.DOTALL)
+        seen_calls = set()  # Deduplicate
+
+        for match in matches:
+            tool_name = match.group(1)
+            json_start_search = match.end()
+
+            # Skip whitespace to find the opening brace
+            while json_start_search < len(text) and text[json_start_search] in ' \t\n\r':
+                json_start_search += 1
+
+            # Extract complete JSON object using balanced brace counting
+            args_json = self._extract_json_from_position(text, json_start_search)
+
+            if not args_json:
+                logger.warning(f"[Harmony Parser] Failed to extract JSON for {tool_name}")
+                continue
+
+            args_json = args_json.strip()
+
+            # Debug: Log the raw JSON we're trying to parse
+            logger.info(f"[Harmony Parser] Extracted JSON for {tool_name}: {args_json}")
+            logger.info(f"[Harmony Parser] JSON length: {len(args_json)}, first 200 chars: {args_json[:200]}")
+
+            # Deduplicate (model sometimes repeats calls)
+            call_key = f"{tool_name}:{args_json}"
+            if call_key in seen_calls:
+                logger.debug(f"[Harmony Parser] Skipping duplicate: {tool_name}")
+                continue
+            seen_calls.add(call_key)
+
+            try:
+                # Parse JSON arguments
+                args = json.loads(args_json)
+
+                # Convert to OpenAI format
+                call_id = f'call_{len(tool_calls)}'
+                tool_call = {
+                    'id': call_id,
+                    'type': 'function',
+                    'function': {
+                        'name': tool_name,
+                        'arguments': json.dumps(args)
+                    }
+                }
+                tool_calls.append(tool_call)
+
+                # Store tool name for this call ID (needed for Harmony format tool results)
+                # Note: This is a method-level variable, will be picked up by caller
+                if not hasattr(self, '_current_tool_call_names'):
+                    self._current_tool_call_names = {}
+                self._current_tool_call_names[call_id] = tool_name
+
+                logger.info(f"[Harmony Parser] ✓ Parsed: {tool_name}({args})")
+            except json.JSONDecodeError as e:
+                logger.warning(f"[Harmony Parser] Failed to parse JSON for {tool_name}: {e}")
+                logger.debug(f"[Harmony Parser] Raw JSON: {args_json}")
+                continue
+
+        return tool_calls if tool_calls else None
+
+    def _parse_lmstudio_tool_calls(self, text: str) -> list:
+        """
+        Parse LMStudio-style tool call format and convert to OpenAI format
+
+        Format: [TOOL_REQUEST]{"name": "Read", "arguments": {"file_path": "..."}}[END_TOOL_REQUEST]
+
+        Args:
+            text: Raw model output with tool calls
+
+        Returns:
+            List of OpenAI-formatted tool calls
+        """
+        import re
+        tool_calls = []
+
+        # Pattern: [TOOL_REQUEST]{json}[END_TOOL_REQUEST]
+        pattern = r'\[TOOL_REQUEST\](.*?)\[END_TOOL_REQUEST\]'
+        matches = re.finditer(pattern, text, re.DOTALL)
+
+        seen_calls = set()  # Deduplicate (model might repeat tool calls)
+
+        for match in matches:
+            tool_request_json = match.group(1).strip()
+
+            # Create unique key for deduplication
+            call_key = tool_request_json
+            if call_key in seen_calls:
+                logger.debug(f"[LMStudio Tool Call] Skipping duplicate")
+                continue
+            seen_calls.add(call_key)
+
+            try:
+                # Parse the tool request JSON
+                tool_request = json.loads(tool_request_json)
+                tool_name = tool_request.get('name')
+                tool_args = tool_request.get('arguments', {})
+
+                if not tool_name:
+                    logger.warning(f"[LMStudio Tool Call] Missing 'name' in tool request")
+                    continue
+
+                # Convert to OpenAI format
+                tool_call = {
+                    'id': f'call_{len(tool_calls)}',
+                    'type': 'function',
+                    'function': {
+                        'name': tool_name,
+                        'arguments': json.dumps(tool_args)
+                    }
+                }
+                tool_calls.append(tool_call)
+                logger.info(f"[LMStudio Tool Call] ✓ Parsed: {tool_name}({tool_args})")
+            except json.JSONDecodeError as e:
+                logger.warning(f"[LMStudio Tool Call] Failed to parse JSON: {e}")
+                logger.debug(f"[LMStudio Tool Call] Raw JSON: {tool_request_json}")
+                continue
+
+        return tool_calls if tool_calls else None
 
     def _extract_tool_calls(self, response):
         """
@@ -307,9 +919,36 @@ class VLLMMLXServer:
                 logger.debug(f"[Tool Calls] Native tool calling returned: {len(tool_calls)} calls")
                 return tool_calls, text
 
-        # String response - no tool calls from native API
+        # String response - check for thinking tokens and tool calls
         text = str(response) if not isinstance(response, str) else response
-        return None, text
+
+        # Try LMStudio format first (preferred)
+        lmstudio_tool_calls = self._parse_lmstudio_tool_calls(text)
+        if lmstudio_tool_calls:
+            logger.info(f"[LMStudio Tool Calls] Found {len(lmstudio_tool_calls)} tool call(s)")
+            clean_text = self._strip_thinking_tokens(text)
+            return lmstudio_tool_calls, ""
+
+        # Fall back to Harmony format (gpt-oss native format)
+        harmony_tool_calls = self._parse_gpt_oss_tool_calls(text)
+        if harmony_tool_calls:
+            logger.info(f"[Harmony Tool Calls] Found {len(harmony_tool_calls)} tool call(s)")
+
+            # Store tool call ID → name mappings for later formatting of tool results
+            if hasattr(self, '_current_tool_call_names'):
+                logger.info(f"[Harmony] Found _current_tool_call_names with {len(self._current_tool_call_names)} mappings: {self._current_tool_call_names}")
+                self.tool_call_names.update(self._current_tool_call_names)
+                logger.info(f"[Harmony] Stored {len(self._current_tool_call_names)} tool call name mappings, total: {len(self.tool_call_names)}")
+                self._current_tool_call_names = {}  # Clear for next use
+            else:
+                logger.warning(f"[Harmony] _current_tool_call_names attribute not found!")
+
+            clean_text = self._strip_thinking_tokens(text)
+            return harmony_tool_calls, ""
+
+        # No tool calls found - return clean text
+        clean_text = self._strip_thinking_tokens(text)
+        return None, clean_text
 
     def _validate_tool_call(self, tool_name, arguments, schema):
         """
@@ -489,14 +1128,63 @@ class VLLMMLXServer:
     def _format_messages(self, messages: list, tools: list = None) -> str:
         """Format messages for MLX model using tokenizer's chat template"""
 
+        # LMStudio-style tool use: inject custom system prompt for models without native support
+        # This overrides the model's native format with a simple, reliable format
+        use_lmstudio_format = tools and len(tools) > 0
+
         # Use tokenizer's apply_chat_template if available (proper Qwen/ChatML formatting)
         if self.tokenizer and hasattr(self.tokenizer, 'apply_chat_template'):
             try:
-                # Sort tools by name for deterministic ordering (cache consistency)
-                sorted_tools = sorted(tools, key=lambda t: t['function']['name']) if tools else None
-
                 # Convert Claude's content block format to simple strings for tokenizer
+                # CRITICAL: Convert tool results to user messages (gpt-oss-20b template doesn't support tool role)
                 normalized_messages = []
+
+                # DISABLE Harmony format - let native chat template handle tools
+                # (Qwen3 uses XML, gpt-oss uses Harmony, etc.)
+                harmony_tools_block = None
+                if False and use_lmstudio_format:
+                    sorted_tools = sorted(tools, key=lambda t: t['function']['name'])
+
+                    # Build TypeScript-like type definitions for tools
+                    tool_type_defs = []
+                    for tool in sorted_tools:
+                        func = tool['function']
+                        name = func['name']
+                        description = func.get('description', '')
+                        params = func.get('parameters', {}).get('properties', {})
+                        required = func.get('parameters', {}).get('required', [])
+
+                        # Build parameter list
+                        param_lines = []
+                        for param_name, param_info in params.items():
+                            param_type = param_info.get('type', 'any')
+                            param_desc = param_info.get('description', '')
+                            optional = '' if param_name in required else '?'
+
+                            # Map JSON Schema types to TypeScript types
+                            type_map = {'string': 'string', 'number': 'number', 'integer': 'number',
+                                       'boolean': 'boolean', 'array': 'any[]', 'object': 'any'}
+                            ts_type = type_map.get(param_type, 'any')
+
+                            comment = f' // {param_desc}' if param_desc else ''
+                            param_lines.append(f'    {param_name}{optional}: {ts_type},{comment}')
+
+                        params_str = '\n'.join(param_lines) if param_lines else '    // no parameters'
+
+                        # Build type definition
+                        tool_def = f"""  // {description}
+  type {name} = (_: {{
+{params_str}
+  }}) => any;"""
+                        tool_type_defs.append(tool_def)
+
+                    # Harmony format: Tools block
+                    harmony_tools_block = f"""# Tools
+## functions
+namespace functions {{
+{chr(10).join(tool_type_defs)}
+}} // namespace functions"""
+
                 for msg in messages:
                     role = msg.get("role", "user")
                     content = msg.get("content", "")
@@ -511,20 +1199,123 @@ class VLLMMLXServer:
                             for block in content
                         ])
 
-                    normalized_messages.append({"role": role, "content": content})
+                    # Convert tool results to user messages (simpler format, no Harmony markers)
+                    if role == "tool":
+                        tool_call_id = msg.get("tool_call_id", "unknown")
+                        # Get tool name from tracked mappings (OpenAI format doesn't include name in tool results)
+                        tool_name = self.tool_call_names.get(tool_call_id, msg.get("name", "unknown"))
+                        logger.info(f"[Tool Result] tool_call_id={tool_call_id}, tool_name={tool_name}")
+                        role = "user"  # Convert to user message
 
-                prompt = self.tokenizer.apply_chat_template(
-                    normalized_messages,
-                    tools=sorted_tools,
-                    tokenize=False,
-                    add_generation_prompt=True
-                )
-                logger.info(f"✓ Chat template applied successfully with {len(sorted_tools) if sorted_tools else 0} tools")
-                return prompt
+                        # Simple format: Just prefix with tool name (no Harmony markers)
+                        # LMStudio likely uses this simpler approach
+                        formatted_content = f"Tool {tool_name} returned:\n{content}"
+                        logger.info(f"[Tool Result] Formatted content: {formatted_content[:200]}...")
+                        content = formatted_content
+
+                    # Prepend Harmony tools block to developer/system message
+                    elif role == "system" and harmony_tools_block:
+                        # Use "developer" role for gpt-oss (Harmony format)
+                        content = f"{harmony_tools_block}\n\n{content}"
+                        harmony_tools_block = None  # Only add once
+
+                    # Preserve tool_calls field if present (needed for manual Harmony formatting)
+                    normalized_msg = {"role": role, "content": content}
+                    if "tool_calls" in msg:
+                        normalized_msg["tool_calls"] = msg["tool_calls"]
+                    normalized_messages.append(normalized_msg)
+
+                # If no system message but we have tool definitions, add them as developer message
+                if harmony_tools_block:
+                    normalized_messages.insert(0, {"role": "system", "content": harmony_tools_block})
+
+                # Log messages being sent to chat template
+                logger.info(f"[Chat Template] Normalized messages ({len(normalized_messages)}):")
+                for i, msg in enumerate(normalized_messages):
+                    content_preview = msg.get('content', '')[:150] if msg.get('content') else ''
+                    logger.info(f"  [{i}] role={msg.get('role')}, content={content_preview}...")
+
+                # DISABLE manual Harmony construction for multi-turn (causes errors)
+                # Let the chat template handle it - works better than custom format
+                if False and use_lmstudio_format and len(normalized_messages) > 2:
+                    logger.info("[Harmony] Bypassing chat template, constructing manual Harmony format")
+                    prompt_parts = []
+
+                    for i, msg in enumerate(normalized_messages):
+                        role = msg.get('role')
+                        content = msg.get('content', '')
+
+                        logger.info(f"[Harmony Build] msg[{i}]: role={role}, has_tool_calls={msg.get('tool_calls') is not None}, content_len={len(content)}")
+
+                        if role == 'system':
+                            # System message with tools
+                            prompt_parts.append(f"<|start|>developer<|message|>{content}<|end|>")
+                        elif role == 'user':
+                            # User messages - just append the content directly (may contain <|return|> markers)
+                            prompt_parts.append(f"<|start|>user<|message|>{content}<|end|>")
+                        elif role == 'assistant':
+                            # Assistant messages with tool_calls
+                            tool_calls = msg.get('tool_calls', [])
+                            if tool_calls:
+                                # Format as Harmony tool call - use the tool call that was made
+                                for tc in tool_calls:
+                                    func_name = tc['function']['name']
+                                    args = tc['function']['arguments']
+                                    # Note: args is already a JSON string
+                                    prompt_parts.append(f"<|start|>assistant<|channel|>commentary to=functions.{func_name}<|message|>{args}<|end|>")
+                            elif content:
+                                # Regular assistant response with content
+                                prompt_parts.append(f"<|start|>assistant<|message|>{content}<|end|>")
+                            # Skip empty assistant messages
+
+                    # Add generation prompt
+                    prompt_parts.append("<|start|>assistant")
+
+                    prompt = '\n'.join(prompt_parts)
+                    logger.info(f"✓ Manual Harmony format with {len(tools) if tools else 0} tools")
+                    logger.info(f"[Harmony Manual] Generated prompt ({len(prompt)} chars): {prompt[:500]}...")
+                    return prompt
+                else:
+                    # Use native chat template with tools (Qwen3 uses XML, others may vary)
+                    # Debug: Log first tool to check format
+                    if tools and len(tools) > 0:
+                        logger.info(f"[Tool Format Debug] First tool: {json.dumps(tools[0], indent=2)[:500]}")
+
+                    # IMPORTANT: Ensure all tools have parameters.properties for Qwen3 template
+                    # Qwen3's chat template expects: tool.parameters.properties|items
+                    normalized_tools = []
+                    for tool in (tools or []):
+                        normalized_tool = tool.copy()
+                        if 'function' in normalized_tool:
+                            func = normalized_tool['function']
+                            # Ensure parameters exists and has properties
+                            if 'parameters' not in func or func['parameters'] is None:
+                                func['parameters'] = {'type': 'object', 'properties': {}}
+                            elif 'properties' not in func['parameters']:
+                                func['parameters']['properties'] = {}
+                            elif not isinstance(func['parameters'].get('properties'), dict):
+                                logger.warning(f"[Tool Fix] Tool {func.get('name')} has non-dict properties, fixing")
+                                func['parameters']['properties'] = {}
+                        normalized_tools.append(normalized_tool)
+
+                    prompt = self.tokenizer.apply_chat_template(
+                        normalized_messages,
+                        tools=normalized_tools if normalized_tools else None,  # Pass normalized tools
+                        tokenize=False,
+                        add_generation_prompt=True
+                    )
+                    logger.info(f"✓ Chat template applied (native format) with {len(tools) if tools else 0} tools")
+                    logger.info(f"[Chat Template] Generated prompt ({len(prompt)} chars): {prompt[:500]}...")
+                    return prompt
             except Exception as e:
                 logger.error(f"❌ Failed to apply chat template with tools: {e}")
                 logger.error(f"This model may not support native tool calling via chat template")
                 logger.warning(f"Falling back to simple format WITHOUT tools")
+                # Debug: Log tool format to help diagnose
+                if tools and len(tools) > 0:
+                    logger.error(f"[Tool Format] Tool structure: {json.dumps(tools[0], indent=2)[:1000]}")
+
+
 
         # Fallback: simple formatting (for models without proper chat template)
         system_prompt = ""
@@ -550,6 +1341,10 @@ class VLLMMLXServer:
                 conversation += f"User: {content}\n\n"
             elif role == "assistant":
                 conversation += f"Assistant: {content}\n\n"
+            elif role == "tool":
+                # Tool result message
+                tool_call_id = msg.get("tool_call_id", "unknown")
+                conversation += f"Tool Result ({tool_call_id}): {content}\n\n"
 
         # Add tool descriptions if provided
         if tools:
@@ -611,7 +1406,8 @@ class VLLMMLXServer:
                         self.tokenizer,
                         prompt,
                         {"max_tokens": max_tokens, "verbose": False},
-                        tools  # Pass tools for native tool calling
+                        tools,  # Pass tools for native tool calling
+                        original_messages  # Pass original messages for KV caching
                     )
 
                     # DON'T stream yet - need to check for tool calls first
@@ -734,7 +1530,8 @@ class VLLMMLXServer:
                         self.tokenizer,
                         prompt,
                         {"max_tokens": max_tokens, "verbose": False},
-                        tools  # Pass tools for native tool calling
+                        tools,  # Pass tools for native tool calling
+                        original_messages  # Pass original messages for KV caching
                     )
 
                     inference_time = time.time() - start_time

@@ -11,6 +11,7 @@ auto_activate: true
 **Layer 4 Defense Against Documentation Drift**
 
 This skill auto-activates to remind you to maintain documentation consistency when working on:
+
 - Documentation updates (README.md, SYNC-STATUS.md, etc.)
 - Adding/removing skills, agents, or commands
 - Committing changes
@@ -19,6 +20,7 @@ This skill auto-activates to remind you to maintain documentation consistency wh
 ## When This Activates
 
 Automatically activates on keywords:
+
 - "readme", "documentation", "docs"
 - "commit", "sync", "update"
 - "skill", "agent", "command"
@@ -95,37 +97,44 @@ ls -1 plugins/autonomous-dev/skills/
 This skill is **Layer 4** of the consistency enforcement strategy:
 
 ### Layer 1: Automated Tests (Enforced)
+
 **Location**: `tests/test_documentation_consistency.py`
 
 **What it does**: Automatically fails CI/CD if documentation is out of sync
 
 **Checks**:
+
 - ✅ README.md skill/agent/command counts match actual
 - ✅ All mentioned skills actually exist
 - ✅ marketplace.json metrics match reality
 - ✅ Cross-document consistency verified
 
 **Run**:
+
 ```bash
 pytest tests/test_documentation_consistency.py -v
 ```
 
 ### Layer 2: Agent Memory (doc-master)
+
 **Location**: `agents/doc-master.md`
 
 **What it does**: doc-master agent has explicit checklist to verify consistency before creating docs.json artifact
 
 **Checks**:
+
 - ✅ 6-point consistency verification checklist
 - ✅ Common drift scenarios documented
 - ✅ Automated test reminder
 
 ### Layer 3: Pre-commit Hook (Optional)
+
 **Location**: `hooks/validate_docs_consistency.py`
 
 **What it does**: Blocks commits if documentation is inconsistent
 
 **Enable**:
+
 ```json
 // .claude/settings.local.json
 {
@@ -140,6 +149,7 @@ pytest tests/test_documentation_consistency.py -v
 **Note**: Can be annoying, so it's optional. Use for critical repositories.
 
 ### Layer 4: This Skill (Auto-Reminder)
+
 **Location**: `skills/consistency-enforcement/SKILL.md`
 
 **What it does**: Auto-activates to remind you about consistency when working on docs
@@ -153,6 +163,7 @@ pytest tests/test_documentation_consistency.py -v
 ### Scenario 1: Adding New Skill
 
 **What happens**:
+
 ```bash
 # You create new skill
 mkdir skills/new-skill-name
@@ -162,6 +173,7 @@ mkdir skills/new-skill-name
 ```
 
 **Correct workflow**:
+
 ```bash
 # 1. Create skill
 mkdir skills/new-skill-name
@@ -186,6 +198,7 @@ pytest tests/test_documentation_consistency.py -v
 ### Scenario 2: Updating README.md
 
 **What happens**:
+
 ```bash
 # You update README.md skill count
 # "9 Skills" → "12 Skills"
@@ -194,6 +207,7 @@ pytest tests/test_documentation_consistency.py -v
 ```
 
 **Correct workflow**:
+
 ```bash
 # 1. Update README.md
 # "9 Skills" → "12 Skills (Comprehensive SDLC Coverage)"
@@ -218,6 +232,7 @@ pytest tests/test_documentation_consistency.py -v
 ### Scenario 3: Removing Skill
 
 **What happens**:
+
 ```bash
 # You remove old skill
 rm -rf skills/deprecated-skill
@@ -226,6 +241,7 @@ rm -rf skills/deprecated-skill
 ```
 
 **Correct workflow**:
+
 ```bash
 # 1. Remove skill
 rm -rf skills/deprecated-skill
@@ -251,6 +267,7 @@ pytest tests/test_documentation_consistency.py -v
 ### Scenario 4: Before Committing
 
 **What happens**:
+
 ```bash
 # You're about to commit documentation changes
 git add README.md docs/SYNC-STATUS.md
@@ -259,6 +276,7 @@ git add README.md docs/SYNC-STATUS.md
 ```
 
 **Correct workflow**:
+
 ```bash
 # 1. Run consistency validation
 python plugins/autonomous-dev/hooks/validate_docs_consistency.py
@@ -296,6 +314,7 @@ git commit -m "docs: update skill count to 12"
 ## Commands for Verification
 
 ### Count Everything
+
 ```bash
 # Count skills
 ls -d plugins/autonomous-dev/skills/*/ | wc -l
@@ -308,6 +327,7 @@ ls plugins/autonomous-dev/commands/*.md | wc -l
 ```
 
 ### Check README.md
+
 ```bash
 # Find skill count mentions
 grep -E "[0-9]+ Skills" plugins/autonomous-dev/README.md
@@ -320,6 +340,7 @@ grep -E "[0-9]+ (Slash )?Commands" plugins/autonomous-dev/README.md
 ```
 
 ### Check Cross-References
+
 ```bash
 # Find all skill count mentions across docs
 grep -r "skills" plugins/autonomous-dev/*.md plugins/autonomous-dev/docs/*.md | grep -E "[0-9]+"
@@ -329,6 +350,7 @@ cat .claude-plugin/marketplace.json | grep -A 5 '"metrics"'
 ```
 
 ### Run Automated Tests
+
 ```bash
 # Run consistency tests
 pytest tests/test_documentation_consistency.py -v
@@ -344,6 +366,7 @@ pytest tests/test_documentation_consistency.py::TestMarketplaceConsistency -v
 ```
 
 ### Validate Before Commit
+
 ```bash
 # Run pre-commit validation script
 python plugins/autonomous-dev/hooks/validate_docs_consistency.py
@@ -388,6 +411,7 @@ This skill works with:
 - **project-management**: PROJECT.md structure and consistency
 
 **Cross-reference pattern**:
+
 - Use `documentation-guide` for HOW to write docs
 - Use `consistency-enforcement` for WHEN to update docs
 - Use `git-workflow` for HOW to commit doc changes
@@ -435,12 +459,14 @@ vim .claude-plugin/marketplace.json
 ### "Pre-commit hook is blocking my commit"
 
 **Option 1**: Fix the inconsistency (recommended)
+
 ```bash
 python plugins/autonomous-dev/hooks/validate_docs_consistency.py
 # Read output, fix issues
 ```
 
 **Option 2**: Skip hook (NOT RECOMMENDED)
+
 ```bash
 git commit --no-verify
 # Only use in emergency!

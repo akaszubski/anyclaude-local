@@ -31,6 +31,7 @@ Analyze a repository's structure, documentation, and code patterns to generate a
 ## Output Format
 
 Generated PROJECT.md includes:
+
 - **GOALS**: What success looks like
 - **SCOPE**: What's in/out of scope
 - **CONSTRAINTS**: Technical, security, and team limits

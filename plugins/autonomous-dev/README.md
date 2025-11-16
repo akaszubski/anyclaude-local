@@ -17,31 +17,38 @@ Works with: Python, JavaScript, TypeScript, React, Node.js, and more!
 ## 🚀 Installation (6 Steps)
 
 **Step 1: Uninstall current version** (if you have it)
+
 ```bash
 /plugin uninstall autonomous-dev
 ```
 
 **Step 2: Exit Claude Code**
+
 - Press **Cmd+Q** (Mac) or **Ctrl+Q** (Windows/Linux)
 
 **Step 3: Reopen Claude Code**
+
 - Launch Claude Code
 
 **Step 4: Add marketplace & install**
+
 ```bash
 /plugin marketplace add akaszubski/autonomous-dev
 /plugin install autonomous-dev
 ```
 
 **Step 5: Exit and restart Claude Code**
+
 - Press **Cmd+Q** or **Ctrl+Q**
 
 **Step 6: Reopen Claude Code**
+
 - Launch Claude Code
 
 ✅ **Done!** All 8 commands ready to use.
 
 ### Verify Installation
+
 ```bash
 /health-check
 ```
@@ -57,6 +64,7 @@ This release completes the hooks infrastructure with proper installation, testin
 ### v3.2.1 Changes (2025-10-27)
 
 **✅ Hooks Installation Complete**:
+
 - **30+ hooks installed** to `.claude/hooks/` for dogfooding
 - **6 core hooks tested** and verified working:
   - ✅ validate_project_alignment.py
@@ -70,18 +78,21 @@ This release completes the hooks infrastructure with proper installation, testin
 - **Distribution-ready** - `plugins/autonomous-dev/hooks/` is clean source, `.claude/hooks/` is gitignored
 
 **How it works**:
+
 1. Source hooks in `plugins/autonomous-dev/hooks/` (for distribution)
 2. User runs `/setup` → setup script copies to their `.claude/hooks/`
 3. Settings configured → hooks run on PreCommit events
 4. You test with dogfooding → `.claude/hooks/` copy verifies user experience
 
 **Why separate locations**:
+
 - ✅ Distribution stays clean (only plugins/ needed)
 - ✅ Dogfooding tests real scenario (.claude/hooks/ like user install)
 - ✅ .gitignore protects dogfooding copy from distribution
 - ✅ Workflow: plugins/ (source) → .claude/ (test) → ~/.claude/ (user)
 
 **Verification Status**:
+
 - ✅ All 30 hooks present in both locations
 - ✅ All imports resolve correctly
 - ✅ GenAI utilities (genai_utils.py, genai_prompts.py) working
@@ -92,6 +103,7 @@ This release completes the hooks infrastructure with proper installation, testin
 ### v3.2.1 Previous Changes (2025-10-26)
 
 **🔍 Simplified `/align-full` Command**:
+
 - **Before**: 5-level hierarchy, cascade analysis, stakeholder categorization
 - **After**: One simple question per conflict
 - **Decision**: `A) PROJECT.md is correct → align code/docs` OR `B) Update PROJECT.md to match reality`
@@ -99,12 +111,14 @@ This release completes the hooks infrastructure with proper installation, testin
 - **Result**: 2-3 minute decisions (vs 5-10 min with hierarchy)
 
 **✅ What Stays the Same**:
+
 - GenAI conflict detection still finds mismatches
 - GitHub issues still auto-created based on your decision
 - `.todos.md` file still synced with issues
 - Fully reversible (change mind, re-run, choose again)
 
 **Why This Is Better**:
+
 - ✅ No categorization overhead ("what level is this?")
 - ✅ Objective framework (PROJECT.md is source of truth)
 - ✅ Works at any scale (5 conflicts or 500)
@@ -160,6 +174,7 @@ This release replaces traditional testing with GenAI-powered validation and adds
   - Documentation accuracy
 
 **Impact**:
+
 - ✅ GenAI validates strategic alignment, not just function behavior
 - ✅ Finds inconsistencies humans miss (docs vs code vs PROJECT.md)
 - ✅ Auto-creates actionable todos with GitHub sync
@@ -204,6 +219,7 @@ This release achieves true "vibe coding with background enforcement" by eliminat
   - Restoration instructions if needed
 
 **Impact**:
+
 - ✅ Cognitive overhead reduced (4 commands vs 11)
 - ✅ Pure vibe coding UX (natural language → professional result)
 - ✅ All quality enforcement automatic (hooks validate at commit)
@@ -266,6 +282,7 @@ This release focuses on **automatic quality gates** and **intelligent project co
   - 100% broken reference detection
 
 **Impact**:
+
 - ✅ Critical decisions get automatic quality gates (catches 80%+ risky proposals)
 - ✅ Project setup optimized for your tech stack (not generic config)
 - ✅ Onboarding: 30-60 min → 2-3 min (95% faster)
@@ -274,6 +291,7 @@ This release focuses on **automatic quality gates** and **intelligent project co
 - ✅ Total time savings: 6-7 hours per medium-sized project
 
 **Previous releases**:
+
 - **v2.5.0**: UX Excellence (tiered installation, error messages 2.0, command cleanup)
 - **v2.1.0**: PROJECT.md-First Architecture with orchestrator agent
 
@@ -302,6 +320,7 @@ Strict Mode turns natural language requests into complete SDLC workflows:
 ```
 
 **Enable Strict Mode**:
+
 ```bash
 # Copy strict mode template
 cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.local.json
@@ -313,12 +332,14 @@ cp plugins/autonomous-dev/templates/PROJECT.md .claude/PROJECT.md
 ```
 
 **What it enforces**:
+
 - ✅ PROJECT.md gatekeeper - Work BLOCKED if not aligned with strategic direction
 - ✅ Auto-orchestration - "implement X" auto-triggers full agent pipeline
 - ✅ File organization - Standard structure enforced (src/, tests/, docs/, scripts/)
 - ✅ Commit validation - All commits checked for alignment + tests + security + docs (BLOCKING)
 
 **Works for**:
+
 - Greenfield projects - Start with best practices from day 1
 - Brownfield projects - Retrofit existing projects (coming soon: `/align-project-retrofit`)
 
@@ -369,12 +390,14 @@ git commit -m "feat: add my-new-skill"
    - Breaking changes (need human explanation)
 
 **Smart mappings:**
+
 - Add skill/agent → **AUTO-FIX** count in README.md + marketplace.json
 - Version bump → **AUTO-FIX** sync version across all files
 - Add command → **MANUAL** (need human-written description)
 - Add hook → **MANUAL** (need human-written docs)
 
 **Works out-of-box:**
+
 ```bash
 # After plugin install, auto-fix is enabled by default!
 /plugin install autonomous-dev
@@ -384,6 +407,7 @@ git commit -m "feat: add my-new-skill"
 ```
 
 **Manual setup (optional):**
+
 ```bash
 # If you want to customize which hooks run:
 cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.local.json
@@ -396,6 +420,7 @@ cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.l
 **Discovery Options**:
 
 1. **Direct Install** (if you're reading this):
+
    ```bash
    /plugin marketplace add akaszubski/autonomous-dev
    /plugin install autonomous-dev
@@ -415,11 +440,11 @@ cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.l
 
 **Choose Your Installation Tier**: [docs/INSTALLATION.md](docs/INSTALLATION.md)
 
-| Tier | Time | What You Get |
-|------|------|--------------|
-| **[Basic](#basic-tier-2-minutes)** | 2 min | Commands only (learning/solo) |
-| **[Standard](#standard-tier-5-minutes)** | 5 min | Commands + auto-hooks (solo with automation) |
-| **[Team](#team-tier-10-minutes)** | 10 min | Full integration (GitHub + PROJECT.md) |
+| Tier                                     | Time   | What You Get                                 |
+| ---------------------------------------- | ------ | -------------------------------------------- |
+| **[Basic](#basic-tier-2-minutes)**       | 2 min  | Commands only (learning/solo)                |
+| **[Standard](#standard-tier-5-minutes)** | 5 min  | Commands + auto-hooks (solo with automation) |
+| **[Team](#team-tier-10-minutes)**        | 10 min | Full integration (GitHub + PROJECT.md)       |
 
 **Not sure?** Start with [Basic](#basic-tier-2-minutes) → upgrade later.
 
@@ -441,12 +466,14 @@ cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.l
 ```
 
 **Done!** All 4 core commands work immediately:
+
 - `/auto-implement` - Autonomous feature development (vibe coding entry point)
 - `/setup` - Configuration wizard (creates PROJECT.md, configures hooks)
 - `/status` - View PROJECT.md goal progress
 - `/uninstall` - Remove plugin
 
 **Recommended first-time flow:**
+
 ```bash
 # 1. Run setup
 /setup
@@ -476,6 +503,7 @@ cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.l
 ```
 
 **What changes**:
+
 - ✅ Code auto-formatted on save
 - ✅ Tests run before commit
 - ✅ Security scan before commit
@@ -500,6 +528,7 @@ cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.l
 ```
 
 **What changes**:
+
 - ✅ PROJECT.md governance (scope enforcement)
 - ✅ GitHub sprint tracking
 - ✅ Automatic issue creation
@@ -513,6 +542,7 @@ cp plugins/autonomous-dev/templates/settings.strict-mode.json .claude/settings.l
 ## Plugin Development Notes
 
 **Developing this plugin?** Remember:
+
 - Edit location: `/path/to/autonomous-dev/plugins/autonomous-dev/`
 - Runtime location: `~/.claude/plugins/autonomous-dev/`
 
@@ -527,6 +557,7 @@ See `docs/TROUBLESHOOTING.md` section 0 for details.
 **⚠️ TWO-LAYER UPDATE PROCESS** - The plugin has two separate parts that update differently:
 
 #### Layer 1: Global Plugin (Automatic)
+
 **What gets updated**: Agents, skills, commands (available globally across all projects)
 
 ```bash
@@ -545,6 +576,7 @@ See `docs/TROUBLESHOOTING.md` section 0 for details.
 ✅ **Done!** Agents, skills, and commands are now updated.
 
 #### Layer 2: Project-Level Hooks (Manual Per Project)
+
 **What gets updated**: Hooks in each project's `.claude/hooks/` directory
 
 **⚠️ CRITICAL**: Plugin reinstall does NOT update hooks in your projects!
@@ -552,6 +584,7 @@ See `docs/TROUBLESHOOTING.md` section 0 for details.
 **For EACH project using hooks**, choose one:
 
 **Option A: Quick Update** (recommended):
+
 ```bash
 # Navigate to your project
 cd ~/my-project
@@ -561,12 +594,14 @@ cd ~/my-project
 ```
 
 **Option B: Manual Update** (advanced):
+
 ```bash
 # Copy updated hooks from plugin to project
 cp -r ~/.claude/plugins/autonomous-dev/hooks/ .claude/hooks/
 ```
 
 **Why this matters**:
+
 - Without updating hooks: Old hook versions run (may have bugs/missing features)
 - With updating hooks: Latest hook versions run (bug fixes + new features)
 
@@ -578,32 +613,32 @@ cp -r ~/.claude/plugins/autonomous-dev/hooks/ .claude/hooks/
 
 **Core Workflow Agents (9)**:
 
-| Agent | Purpose | Model | Size |
-|-------|---------|-------|------|
-| **orchestrator** | Master coordinator - validates PROJECT.md alignment, manages context, auto-invokes advisor | sonnet | 335 lines |
-| **advisor** | Critical thinking/"devils advocate" - analyzes proposals before implementation | sonnet | 600+ lines |
-| **planner** | Architecture & design planning for complex features | opus | 74 lines |
-| **researcher** | Research patterns, best practices, security considerations | sonnet | 66 lines |
-| **test-master** | TDD workflow, comprehensive test coverage | sonnet | 67 lines |
-| **implementer** | Clean code implementation following patterns | sonnet | 61 lines |
-| **reviewer** | Code quality gate before merge | sonnet | 70 lines |
-| **security-auditor** | Security scanning & OWASP compliance | haiku | 68 lines |
-| **doc-master** | Documentation sync & CHANGELOG automation | haiku | 63 lines |
+| Agent                | Purpose                                                                                    | Model  | Size       |
+| -------------------- | ------------------------------------------------------------------------------------------ | ------ | ---------- |
+| **orchestrator**     | Master coordinator - validates PROJECT.md alignment, manages context, auto-invokes advisor | sonnet | 335 lines  |
+| **advisor**          | Critical thinking/"devils advocate" - analyzes proposals before implementation             | sonnet | 600+ lines |
+| **planner**          | Architecture & design planning for complex features                                        | opus   | 74 lines   |
+| **researcher**       | Research patterns, best practices, security considerations                                 | sonnet | 66 lines   |
+| **test-master**      | TDD workflow, comprehensive test coverage                                                  | sonnet | 67 lines   |
+| **implementer**      | Clean code implementation following patterns                                               | sonnet | 61 lines   |
+| **reviewer**         | Code quality gate before merge                                                             | sonnet | 70 lines   |
+| **security-auditor** | Security scanning & OWASP compliance                                                       | haiku  | 68 lines   |
+| **doc-master**       | Documentation sync & CHANGELOG automation                                                  | haiku  | 63 lines   |
 
 **Utility Agents (10)**:
 
-| Agent | Purpose | Model | Size |
-|-------|---------|-------|------|
-| **alignment-validator** | GenAI-powered PROJECT.md alignment validation | sonnet | 88 lines |
-| **project-bootstrapper** | Analyzes codebase and generates optimal configuration | sonnet | 600+ lines |
-| **setup-wizard** | Intelligent setup wizard - analyzes tech stack and guides plugin configuration | sonnet | 600+ lines |
-| **project-status-analyzer** | Real-time project health - goals, metrics, blockers | sonnet | 400+ lines |
-| **sync-validator** | Smart dev sync - detects conflicts, validates compatibility | sonnet | 400+ lines |
-| **commit-message-generator** | Generate conventional commit messages | sonnet | 142 lines |
-| **pr-description-generator** | Generate comprehensive PR descriptions | sonnet | 283 lines |
-| **project-progress-tracker** | Track progress against PROJECT.md goals | sonnet | 266 lines |
-| **advisor** | Critical thinking/"devils advocate" - analyzes proposals | sonnet | 600+ lines |
-| **quality-validator** | GenAI-powered feature validation | sonnet | 400+ lines |
+| Agent                        | Purpose                                                                        | Model  | Size       |
+| ---------------------------- | ------------------------------------------------------------------------------ | ------ | ---------- |
+| **alignment-validator**      | GenAI-powered PROJECT.md alignment validation                                  | sonnet | 88 lines   |
+| **project-bootstrapper**     | Analyzes codebase and generates optimal configuration                          | sonnet | 600+ lines |
+| **setup-wizard**             | Intelligent setup wizard - analyzes tech stack and guides plugin configuration | sonnet | 600+ lines |
+| **project-status-analyzer**  | Real-time project health - goals, metrics, blockers                            | sonnet | 400+ lines |
+| **sync-validator**           | Smart dev sync - detects conflicts, validates compatibility                    | sonnet | 400+ lines |
+| **commit-message-generator** | Generate conventional commit messages                                          | sonnet | 142 lines  |
+| **pr-description-generator** | Generate comprehensive PR descriptions                                         | sonnet | 283 lines  |
+| **project-progress-tracker** | Track progress against PROJECT.md goals                                        | sonnet | 266 lines  |
+| **advisor**                  | Critical thinking/"devils advocate" - analyzes proposals                       | sonnet | 600+ lines |
+| **quality-validator**        | GenAI-powered feature validation                                               | sonnet | 400+ lines |
 
 **Skills**: 19+ active skills including api-design, architecture-patterns, code-review, database-design, testing-guide, security-patterns, git-workflow, python-standards, observability, and more.
 
@@ -613,18 +648,19 @@ cp -r ~/.claude/plugins/autonomous-dev/hooks/ .claude/hooks/
 
 **Philosophy**: "Vibe coding with background enforcement" - Natural language input → Professional engineering output
 
-| Command | Purpose | Agent | When to Use |
-|---------|---------|-------|------------|
-| `/auto-implement` | Autonomous feature development | orchestrator | Every feature - describe what you want |
-| `/align-project` | Find/fix conflicts between goals and code | alignment-analyzer | After major changes, before releases |
-| `/status` | Track strategic progress, get recommendations | project-progress-tracker | Check goal progress, decide next priorities |
-| `/setup` | Interactive setup wizard | project-bootstrapper | Once per project during installation |
-| `/health-check` | Validate plugin component integrity | (Python validation) | After installation, when debugging issues |
-| `/align-claude` | Check/fix documentation drift | (Validation + script) | Automated via hook, manual check optional |
-| `/test` | Run all automated tests | (Pytest wrapper) | Validate quality before commit |
-| `/uninstall` | Remove or disable plugin | (Interactive menu) | When cleaning up |
+| Command           | Purpose                                       | Agent                    | When to Use                                 |
+| ----------------- | --------------------------------------------- | ------------------------ | ------------------------------------------- |
+| `/auto-implement` | Autonomous feature development                | orchestrator             | Every feature - describe what you want      |
+| `/align-project`  | Find/fix conflicts between goals and code     | alignment-analyzer       | After major changes, before releases        |
+| `/status`         | Track strategic progress, get recommendations | project-progress-tracker | Check goal progress, decide next priorities |
+| `/setup`          | Interactive setup wizard                      | project-bootstrapper     | Once per project during installation        |
+| `/health-check`   | Validate plugin component integrity           | (Python validation)      | After installation, when debugging issues   |
+| `/align-claude`   | Check/fix documentation drift                 | (Validation + script)    | Automated via hook, manual check optional   |
+| `/test`           | Run all automated tests                       | (Pytest wrapper)         | Validate quality before commit              |
+| `/uninstall`      | Remove or disable plugin                      | (Interactive menu)       | When cleaning up                            |
 
 **Workflow**:
+
 ```bash
 # 1. Setup (once)
 /setup
@@ -647,6 +683,7 @@ cp -r ~/.claude/plugins/autonomous-dev/hooks/ .claude/hooks/
 ```
 
 **Key Changes**:
+
 - ✅ **All commands are GenAI-native**: Every command uses intelligent agents
 - ✅ **Commands are cooperative**: `/status` → `/auto-implement` → `/align-project` → `/test`
 - ✅ **Removed `/sync-dev`**: Dev-only utility with limited value
@@ -661,6 +698,7 @@ See [commands/archived/ARCHIVE.md](commands/archived/ARCHIVE.md) for migration g
 The following commands have been **moved to `commands/archived/`** to align with the "vibe coding with background enforcement" philosophy:
 
 **v3.1.0 Archived** (Philosophy alignment):
+
 - `/test` → `hooks/auto_test.py` runs tests automatically at commit
 - `/align-project` → `hooks/validate_project_alignment.py` validates alignment at commit
 - `/advise` → orchestrator agent validates PROJECT.md alignment automatically
@@ -670,6 +708,7 @@ The following commands have been **moved to `commands/archived/`** to align with
 - `/health-check` → Developer tool moved to `scripts/health_check.py`
 
 **v2.5.0 Archived** (Granular workflow commands):
+
 - **Testing Commands**: `/test-unit`, `/test-integration`, `/test-uat`, `/test-uat-genai`, `/test-architecture`, `/test-complete`
 - **Commit Commands**: `/commit`, `/commit-check`, `/commit-push`, `/commit-release`
 - **Quality Commands**: `/format`, `/security-scan`, `/full-check`
@@ -687,42 +726,43 @@ The following commands have been **moved to `commands/archived/`** to align with
 
 **Core Hooks (6 GenAI-Enhanced)**:
 
-| Hook | Purpose | GenAI Model | Status |
-|------|---------|-------------|--------|
-| **validate_project_alignment.py** | Enforce PROJECT.md alignment | - | ✅ Tested |
-| **security_scan.py** | Scan for secrets + GenAI context analysis | Haiku | ✅ Tested |
-| **auto_generate_tests.py** | Auto-generate test scaffolding (TDD) | Sonnet | ✅ Tested |
-| **auto_update_docs.py** | Keep API docs in sync | Sonnet | ✅ Tested |
-| **validate_docs_consistency.py** | Validate doc accuracy with GenAI | Sonnet | ✅ Tested |
-| **auto_fix_docs.py** | Auto-fix documentation issues | Haiku | ✅ Tested |
+| Hook                              | Purpose                                   | GenAI Model | Status    |
+| --------------------------------- | ----------------------------------------- | ----------- | --------- |
+| **validate_project_alignment.py** | Enforce PROJECT.md alignment              | -           | ✅ Tested |
+| **security_scan.py**              | Scan for secrets + GenAI context analysis | Haiku       | ✅ Tested |
+| **auto_generate_tests.py**        | Auto-generate test scaffolding (TDD)      | Sonnet      | ✅ Tested |
+| **auto_update_docs.py**           | Keep API docs in sync                     | Sonnet      | ✅ Tested |
+| **validate_docs_consistency.py**  | Validate doc accuracy with GenAI          | Sonnet      | ✅ Tested |
+| **auto_fix_docs.py**              | Auto-fix documentation issues             | Haiku       | ✅ Tested |
 
 **Extended Hooks (22 Additional)**:
 
-| Hook | Purpose |
-|------|---------|
-| **auto_format.py** | Format with black + isort (Python) |
-| **auto_test.py** | Run related tests |
-| **auto_tdd_enforcer.py** | Enforce TDD (test before code) |
-| **auto_add_to_regression.py** | Add to regression suite |
-| **auto_enforce_coverage.py** | Ensure 80%+ test coverage |
-| **auto_sync_dev.py** | Sync dev environment |
-| **auto_track_issues.py** | Auto-create GitHub issues |
-| **detect_doc_changes.py** | Detect documentation changes |
-| **detect_feature_request.py** | Detect feature requests |
-| **enforce_bloat_prevention.py** | Prevent code bloat |
-| **enforce_command_limit.py** | Enforce command count limits |
-| **enforce_file_organization.py** | Enforce standard structure |
-| **enforce_orchestrator.py** | Verify orchestrator ran |
-| **enforce_tdd.py** | Enforce TDD workflow |
-| **post_file_move.py** | Update refs after file moves |
-| **validate_claude_alignment.py** | Validate CLAUDE.md alignment |
-| **validate_documentation_alignment.py** | Validate documentation alignment |
-| **validate_readme_accuracy.py** | Validate README accuracy |
-| **validate_readme_with_genai.py** | GenAI-powered README validation |
-| **validate_session_quality.py** | Validate session quality |
-| + 2 utility files | genai_utils.py, genai_prompts.py |
+| Hook                                    | Purpose                            |
+| --------------------------------------- | ---------------------------------- |
+| **auto_format.py**                      | Format with black + isort (Python) |
+| **auto_test.py**                        | Run related tests                  |
+| **auto_tdd_enforcer.py**                | Enforce TDD (test before code)     |
+| **auto_add_to_regression.py**           | Add to regression suite            |
+| **auto_enforce_coverage.py**            | Ensure 80%+ test coverage          |
+| **auto_sync_dev.py**                    | Sync dev environment               |
+| **auto_track_issues.py**                | Auto-create GitHub issues          |
+| **detect_doc_changes.py**               | Detect documentation changes       |
+| **detect_feature_request.py**           | Detect feature requests            |
+| **enforce_bloat_prevention.py**         | Prevent code bloat                 |
+| **enforce_command_limit.py**            | Enforce command count limits       |
+| **enforce_file_organization.py**        | Enforce standard structure         |
+| **enforce_orchestrator.py**             | Verify orchestrator ran            |
+| **enforce_tdd.py**                      | Enforce TDD workflow               |
+| **post_file_move.py**                   | Update refs after file moves       |
+| **validate_claude_alignment.py**        | Validate CLAUDE.md alignment       |
+| **validate_documentation_alignment.py** | Validate documentation alignment   |
+| **validate_readme_accuracy.py**         | Validate README accuracy           |
+| **validate_readme_with_genai.py**       | GenAI-powered README validation    |
+| **validate_session_quality.py**         | Validate session quality           |
+| + 2 utility files                       | genai_utils.py, genai_prompts.py   |
 
 **Installation**:
+
 - Hooks stored in `plugins/autonomous-dev/hooks/` (distribution source)
 - Copied to `.claude/hooks/` on setup for dogfooding (tests like user install)
 - Setup script copies to user's `.claude/hooks/` during `/setup`
@@ -735,6 +775,7 @@ The following commands have been **moved to `commands/archived/`** to align with
 ### Three-Layer Testing Framework
 
 **Layer 1: Code Coverage** (pytest) - Optional
+
 - Fast automated tests (< 1s)
 - Traditional unit/integration/UAT tests
 - 80%+ coverage target
@@ -742,17 +783,20 @@ The following commands have been **moved to `commands/archived/`** to align with
 - **Run**: `/test` or `pytest tests/`
 
 **Layer 2: Quality Coverage** (GenAI) ⭐ **Primary**
+
 - UX quality validation (8/10 target)
 - Architectural intent verification
 - Goal alignment checking
 
 **Layer 3: System Performance** (Meta-analysis) ⭐ **NEW**
+
 - Agent effectiveness tracking
 - Model optimization (Opus/Sonnet/Haiku)
 - Cost efficiency analysis
 - ROI measurement
 
 **Commands**:
+
 ```bash
 # Primary (GenAI) - No dependencies required
 /test-uat-genai                # Layer 2: UX quality validation (2-5min)
@@ -785,17 +829,20 @@ gh issue list --label automated
 ```
 
 **Three automatic triggers**:
+
 1. **On Push** (recommended) - Before git push
 2. **Background** - After each Claude prompt (silent)
 3. **After Commit** - Per-commit tracking
 
 **What gets tracked**:
+
 - Test failures (Layer 1) → Bug issues
 - UX problems (Layer 2) → Enhancement issues
 - Architectural drift (Layer 2) → Architecture issues
 - Optimization opportunities (Layer 3) → Optimization issues
 
 **Configuration**:
+
 ```bash
 # .env
 GITHUB_AUTO_TRACK_ISSUES=true
@@ -810,11 +857,13 @@ GITHUB_TRACK_THRESHOLD=medium
 ### PROJECT.md-First Architecture
 
 **Strategic alignment before coding**:
+
 - All work validates against PROJECT.md (goals, scope, constraints)
 - Orchestrator blocks misaligned features
 - No scope creep, no architectural drift
 
 **Commands**:
+
 - `/auto-implement` - 8-agent pipeline with PROJECT.md validation
 - `/align-project` - Safely align existing projects
 
@@ -845,6 +894,7 @@ your-project/
 ```
 
 **Key directories:**
+
 - `docs/` - All project documentation (not plugin docs)
 - `src/` - All source code (language-specific structure)
 - `tests/` - All tests (organized by type: unit/integration/uat)
@@ -852,9 +902,11 @@ your-project/
 - `PROJECT.md` - **Source of truth** (agents read before every feature)
 
 **Auto-created:**
+
 - `docs/sessions/` - Agent activity logs (for debugging)
 
 **Commands that use this structure:**
+
 - `/align-project` - Validates and fixes structure
 - `/sync-docs-organize` - Organizes .md files into docs/
 - `/auto-implement` - Creates files following this structure
@@ -866,6 +918,7 @@ your-project/
 ### Continuous Improvement
 
 **Autonomous system optimizes itself**:
+
 - Tests itself (3 layers)
 - Tracks its own issues (automatic)
 - Measures its own performance (ROI, cost, speed)
@@ -923,6 +976,7 @@ Bring existing projects into alignment with `/align-project`:
 ```
 
 **7 Advanced Features**:
+
 1. Smart Diff View - unified view with risk scoring
 2. Dry Run with Stash - test changes before applying
 3. Pattern Learning - learns from your decisions
@@ -944,10 +998,12 @@ The orchestrator manages the entire pipeline automatically - you just describe w
 ### Hooks (Two Modes)
 
 **Slash Commands Mode** (default):
+
 - Run manually when needed: `/format`, `/test`, `/security-scan`
 - Full control, great for learning
 
 **Automatic Hooks Mode** (optional):
+
 - Save file → auto_format.py runs
 - Commit → auto_test.py + security_scan.py run
 - Zero manual intervention
@@ -971,6 +1027,7 @@ Run the interactive setup wizard:
 ```
 
 This will:
+
 1. Copy hooks and templates to your project
 2. Configure your workflow (slash commands or automatic hooks)
 3. Set up PROJECT.md from template
@@ -1018,12 +1075,14 @@ GITHUB_TRACK_THRESHOLD=medium       # Filter by priority
 ```
 
 **Automatic Issue Tracking** ⭐ **NEW**:
+
 - Automatically creates GitHub Issues from testing results
 - Runs before git push (or in background)
 - Tracks bugs, UX issues, and optimizations
 - Zero manual effort
 
 **See**:
+
 - [AUTO-ISSUE-TRACKING.md](docs/AUTO-ISSUE-TRACKING.md) - Automatic tracking guide
 - [GITHUB-ISSUES-INTEGRATION.md](docs/GITHUB-ISSUES-INTEGRATION.md) - Complete integration guide
 - [GITHUB_AUTH_SETUP.md](docs/GITHUB_AUTH_SETUP.md) - GitHub authentication setup
@@ -1060,6 +1119,7 @@ If you chose "Automatic Hooks" mode, edit `.claude/settings.local.json`:
 ## Why Use This?
 
 **Before autonomous-dev:**
+
 - ❌ Scope creep (features don't align with goals)
 - ❌ Manual code formatting
 - ❌ Forget to write tests
@@ -1069,6 +1129,7 @@ If you chose "Automatic Hooks" mode, edit `.claude/settings.local.json`:
 - ❌ Context budget explodes after 3-4 features
 
 **After autonomous-dev:**
+
 - ✅ **PROJECT.md alignment** - no scope creep
 - ✅ **Orchestrated workflow** - 8-agent coordination
 - ✅ **Model-optimized** - 40% cost reduction (opus/sonnet/haiku)
@@ -1094,6 +1155,7 @@ MIT License
 **v3.2.1** (2025-10-27)
 
 **Major Updates in v3.2.1**:
+
 - ✅ Hooks installation complete (30+ hooks to `.claude/hooks/`)
 - ✅ 6 core hooks tested and verified working
 - ✅ Path resolution fixed for dogfooding scenarios
@@ -1101,6 +1163,7 @@ MIT License
 - 🚀 Distribution-ready with proper source/test separation
 
 **Previous Major Updates**:
+
 - ⭐ PROJECT.md-first architecture (alignment validation on every feature)
 - 🤖 orchestrator agent (master coordinator with PRIMARY MISSION)
 - 🎯 Alignment simplicity (all conflicts reduce to one question)

@@ -3,6 +3,7 @@
 ## Test Proposal
 
 **User Request**: "Let's add 15 new commands for fine-grained control:
+
 - /format-python
 - /format-javascript
 - /test-unit-only
@@ -21,7 +22,7 @@
 
 ## Expected Advisor Analysis
 
-```markdown
+````markdown
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CRITICAL ANALYSIS: Add 15 Granular Commands
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -31,9 +32,11 @@ CRITICAL ANALYSIS: Add 15 Granular Commands
 📊 Alignment Score: 1/10
 
 ✅ Serves Goals:
+
 - (none - actively conflicts)
 
 ⚠️ Conflicts with:
+
 - Goal: "Command minimalism - 8 commands total" (PROJECT.md:18)
 - Goal: "Team, not toolkit" (PROJECT.md:14)
 - Success Metric: "-80% complexity" (PROJECT.md:34)
@@ -52,11 +55,13 @@ CRITICAL ANALYSIS: Add 15 Granular Commands
 ## Pros & Cons
 
 ### Pros ✅
+
 1. Fine-grained control for power users
 2. Explicit about what each command does
 3. Users can pick exactly what they need
 
 ### Cons ⚠️
+
 1. **Directly violates "command minimalism" goal**
 2. Returns to "toolkit" model (not "team" model)
 3. User must orchestrate workflow manually
@@ -67,6 +72,7 @@ CRITICAL ANALYSIS: Add 15 Granular Commands
 ## Trade-Off Analysis
 
 **If we proceed:**
+
 - ✅ Gain: Fine-grained control
 - ❌ Lose: Simplicity (8 → 23 commands)
 - ❌ Lose: Autonomous team model
@@ -74,6 +80,7 @@ CRITICAL ANALYSIS: Add 15 Granular Commands
 - ⏱️ Maintenance: 23 commands to maintain
 
 **If we don't:**
+
 - ✅ Keep: Simplicity (8 commands)
 - ✅ Keep: Autonomous team model
 - ❌ Miss: Fine-grained control
@@ -82,6 +89,7 @@ CRITICAL ANALYSIS: Add 15 Granular Commands
 ## Alternative Approaches
 
 ### Option A: Flags on Existing Commands (RECOMMENDED)
+
 **Implementation**: Add optional flags to `/auto-implement` and `/test`
 
 ```bash
@@ -89,17 +97,20 @@ CRITICAL ANALYSIS: Add 15 Granular Commands
 /test --unit-only             # For targeted testing
 /auto-implement --format-only # For pre-commit formatting
 ```
+````
 
 **Cost**: 2 days, 200 LOC
 **Pros**:
+
 - Preserves 8-command limit
 - Maintains autonomous model
 - Provides granular control when needed
-**Cons**:
+  **Cons**:
 - Flags are "escape hatches" (should be rare)
-**Best for**: Power users who need occasional fine control
+  **Best for**: Power users who need occasional fine control
 
 ### Option B: Configuration Profiles
+
 **Implementation**: `.claude/profiles/` with presets
 
 ```bash
@@ -107,21 +118,23 @@ CRITICAL ANALYSIS: Add 15 Granular Commands
 auto_implement:
   skip_tests: true
   skip_security: false
-  
+
 # Usage
 /auto-implement --profile=fast "quick feature"
 ```
 
 **Cost**: 1 week, 500 LOC
 **Pros**:
+
 - Reusable configurations
 - No command explosion
 - Team model preserved
-**Cons**:
+  **Cons**:
 - Need to learn profile system
-**Best for**: Teams with consistent workflows
+  **Best for**: Teams with consistent workflows
 
 ### Option C: Interactive Mode
+
 **Implementation**: Single command asks clarifying questions
 
 ```bash
@@ -133,16 +146,18 @@ auto_implement:
 
 **Cost**: 3 days, 300 LOC
 **Pros**:
+
 - No command memorization
 - Contextual choices
 - Stays autonomous
-**Cons**:
+  **Cons**:
 - Extra prompts (slower)
-**Best for**: Occasional fine control
+  **Best for**: Occasional fine control
 
 ## Risk Assessment
 
 ### Technical Risks 🔧
+
 1. **Maintenance Burden**
    - Impact: HIGH (23 commands × documentation × testing)
    - Likelihood: VERY HIGH
@@ -154,6 +169,7 @@ auto_implement:
    - Mitigation: Decision tree docs (but defeats simplicity)
 
 ### Project Risks 📋
+
 1. **Architectural Regression**
    - Impact: VERY HIGH (reverses v2.4.0/v2.5.0 work)
    - Likelihood: VERY HIGH
@@ -177,30 +193,33 @@ auto_implement:
 ❌ **REJECT**
 
 **Rationale**:
-This proposal fundamentally conflicts with autonomous-dev's core 
-philosophy of "team, not toolkit" and "command minimalism". 
+This proposal fundamentally conflicts with autonomous-dev's core
+philosophy of "team, not toolkit" and "command minimalism".
 
-You spent v2.4.0 and v2.5.0 moving from 40 → 8 commands specifically 
-to avoid this exact problem. Adding 15 commands would undo that work 
+You spent v2.4.0 and v2.5.0 moving from 40 → 8 commands specifically
+to avoid this exact problem. Adding 15 commands would undo that work
 and violate stated project goals.
 
-The request for "fine-grained control" is valid, but should be 
-solved via Option A (flags) or Option B (profiles), not command 
+The request for "fine-grained control" is valid, but should be
+solved via Option A (flags) or Option B (profiles), not command
 explosion.
 
 **If user still wants this:**
+
 1. Update PROJECT.md to remove "command minimalism" goal
 2. Change philosophy from "team" to "toolkit"
 3. Accept return to 40-command model
 4. Justify why v2.4.0/v2.5.0 work should be undone
 
 **Better path forward:**
+
 1. Implement Option A (flags on existing commands)
 2. Keep 8-command limit
 3. Provide escape hatches for power users
 4. Maintain autonomous team model
 
 **Next Steps:**
+
 - [ ] Review PROJECT.md goals (are they still valid?)
 - [ ] If goals are valid, reject this proposal
 - [ ] Implement Option A (flags) for rare fine control
@@ -209,6 +228,7 @@ explosion.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Analysis completed in 3 minutes
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ```
 
 ## Test Validation
@@ -249,3 +269,4 @@ After getting REJECT recommendation, user might say:
    - Data-driven decision-making
 
 This addresses user needs WITHOUT violating project principles."
+```

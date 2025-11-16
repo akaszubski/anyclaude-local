@@ -22,6 +22,7 @@ auto_activate: true
 
 ```markdown
 ❓ **Research Question Template**:
+
 - What: {What are we trying to build?}
 - Why: {Why do we need it?}
 - Scope: {What's in scope? What's out of scope?}
@@ -29,11 +30,12 @@ auto_activate: true
 ```
 
 **Example**:
+
 ```markdown
 What: Webhook handling system for receiving external events
 Why: Need to integrate with 3rd-party services that push updates
 Scope: IN - signature verification, retry logic, async processing
-       OUT - webhook delivery (we're receiving, not sending)
+OUT - webhook delivery (we're receiving, not sending)
 Success: Secure, reliable, handles 1000+ webhooks/min
 ```
 
@@ -53,14 +55,15 @@ Success: Secure, reliable, handles 1000+ webhooks/min
 
 **Common Search Patterns**:
 
-| Goal | Grep Pattern | Glob Pattern |
-|------|--------------|--------------|
-| Find authentication | `"auth"`, `"login"`, `"token"` | `**/*auth*.py` |
-| Find caching | `"cache"`, `"memoize"`, `"@lru_cache"` | `**/*cache*.py` |
-| Find webhooks | `"webhook"`, `"callback"`, `"event"` | `**/*webhook*.py`, `**/*event*.py` |
-| Find error handling | `"try:", "except", "raise"` | `**/*error*.py`, `**/*exception*.py` |
+| Goal                | Grep Pattern                           | Glob Pattern                         |
+| ------------------- | -------------------------------------- | ------------------------------------ |
+| Find authentication | `"auth"`, `"login"`, `"token"`         | `**/*auth*.py`                       |
+| Find caching        | `"cache"`, `"memoize"`, `"@lru_cache"` | `**/*cache*.py`                      |
+| Find webhooks       | `"webhook"`, `"callback"`, `"event"`   | `**/*webhook*.py`, `**/*event*.py`   |
+| Find error handling | `"try:", "except", "raise"`            | `**/*error*.py`, `**/*exception*.py` |
 
 **Decision Tree**:
+
 ```
 Found existing pattern?
 ├─ YES → Reuse/extend existing pattern
@@ -79,6 +82,7 @@ Found existing pattern?
 #### Query Pattern Templates
 
 **For Best Practices**:
+
 ```
 "{topic} best practices {current_year}"
 "{topic} design patterns {current_year}"
@@ -87,6 +91,7 @@ Found existing pattern?
 ```
 
 **For Implementation Guidance**:
+
 ```
 "{topic} {language} implementation"
 "{topic} code examples GitHub"
@@ -95,6 +100,7 @@ Found existing pattern?
 ```
 
 **For Security-Sensitive Topics**:
+
 ```
 "{topic} security best practices"
 "{topic} OWASP guidelines"
@@ -103,6 +109,7 @@ Found existing pattern?
 ```
 
 **For Performance-Critical Topics**:
+
 ```
 "{topic} performance optimization"
 "{topic} scalability patterns"
@@ -111,6 +118,7 @@ Found existing pattern?
 ```
 
 **For Architecture Decisions**:
+
 ```
 "{topic} architecture patterns"
 "{topic} system design"
@@ -125,6 +133,7 @@ Found existing pattern?
 - **Maximum**: 7 queries (diminishing returns after this)
 
 **Example Research Plan**:
+
 ```markdown
 Topic: "distributed caching for ML models"
 
@@ -141,30 +150,31 @@ Query 5: "Redis vs Memcached performance comparison"
 
 #### Source Hierarchy (Highest to Lowest)
 
-| Rank | Source Type | Trust Level | Example |
-|------|-------------|-------------|---------|
-| 1 | Official documentation | ⭐⭐⭐⭐⭐ | Python.org, FastAPI docs, [FRAMEWORK] docs |
-| 2 | Official repositories | ⭐⭐⭐⭐⭐ | GitHub: pytorch/pytorch, ml-explore/[framework] |
-| 3 | Well-known tech blogs | ⭐⭐⭐⭐ | Martin Fowler, Real Python, Uber Engineering |
-| 4 | GitHub examples | ⭐⭐⭐⭐ | Popular repos with stars, active maintenance |
-| 5 | Technical whitepapers | ⭐⭐⭐⭐ | Google, Meta, academic papers |
-| 6 | Stack Overflow | ⭐⭐⭐ | Accepted answers, high votes |
-| 7 | Blog posts | ⭐⭐⭐ | Individual developers (verify credibility) |
-| 8 | Forum discussions | ⭐⭐ | Reddit, HN (good for trends, not authority) |
-| 9 | Unverified tutorials | ⭐ | Medium posts, personal blogs (verify carefully) |
+| Rank | Source Type            | Trust Level | Example                                         |
+| ---- | ---------------------- | ----------- | ----------------------------------------------- |
+| 1    | Official documentation | ⭐⭐⭐⭐⭐  | Python.org, FastAPI docs, [FRAMEWORK] docs      |
+| 2    | Official repositories  | ⭐⭐⭐⭐⭐  | GitHub: pytorch/pytorch, ml-explore/[framework] |
+| 3    | Well-known tech blogs  | ⭐⭐⭐⭐    | Martin Fowler, Real Python, Uber Engineering    |
+| 4    | GitHub examples        | ⭐⭐⭐⭐    | Popular repos with stars, active maintenance    |
+| 5    | Technical whitepapers  | ⭐⭐⭐⭐    | Google, Meta, academic papers                   |
+| 6    | Stack Overflow         | ⭐⭐⭐      | Accepted answers, high votes                    |
+| 7    | Blog posts             | ⭐⭐⭐      | Individual developers (verify credibility)      |
+| 8    | Forum discussions      | ⭐⭐        | Reddit, HN (good for trends, not authority)     |
+| 9    | Unverified tutorials   | ⭐          | Medium posts, personal blogs (verify carefully) |
 
 #### Recency Scoring
 
-| Year | Score | When to Use |
-|------|-------|-------------|
-| 2025 | ⭐⭐⭐⭐⭐ | Cutting edge, latest practices |
-| 2024 | ⭐⭐⭐⭐⭐ | Recent, highly relevant |
-| 2023 | ⭐⭐⭐⭐ | Still current for most topics |
-| 2022 | ⭐⭐⭐ | Acceptable for stable topics |
-| 2021 | ⭐⭐ | Use only if nothing recent available |
-| ≤2020 | ⭐ | Avoid unless foundational concepts |
+| Year  | Score      | When to Use                          |
+| ----- | ---------- | ------------------------------------ |
+| 2025  | ⭐⭐⭐⭐⭐ | Cutting edge, latest practices       |
+| 2024  | ⭐⭐⭐⭐⭐ | Recent, highly relevant              |
+| 2023  | ⭐⭐⭐⭐   | Still current for most topics        |
+| 2022  | ⭐⭐⭐     | Acceptable for stable topics         |
+| 2021  | ⭐⭐       | Use only if nothing recent available |
+| ≤2020 | ⭐         | Avoid unless foundational concepts   |
 
 **Exceptions** (where older sources are acceptable):
+
 - Fundamental algorithms (sorting, graphs, etc.)
 - Established design patterns (Gang of Four patterns)
 - Mathematical foundations
@@ -173,6 +183,7 @@ Query 5: "Redis vs Memcached performance comparison"
 #### Content Quality Scoring
 
 **Award points for**:
+
 - ✅ Multiple code examples (+2)
 - ✅ Pros and cons comparison (+2)
 - ✅ Performance benchmarks (+1)
@@ -182,6 +193,7 @@ Query 5: "Redis vs Memcached performance comparison"
 - ✅ Production experience shared (+1)
 
 **Deduct points for**:
+
 - ❌ Theory only, no code (-2)
 - ❌ Incomplete examples (-1)
 - ❌ No error handling shown (-1)
@@ -189,6 +201,7 @@ Query 5: "Redis vs Memcached performance comparison"
 - ❌ Obvious mistakes in code (-2)
 
 **Overall Quality Formula**:
+
 ```
 Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 0.15) + (Confirmation × 0.1)
 ```
@@ -200,31 +213,37 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 #### Required Sections in Findings
 
 **1. Executive Summary** (2-3 sentences)
+
 - What's the recommended approach?
 - Why is it best for our use case?
 - What's the expected effort?
 
 **2. Pattern Analysis**
+
 - **Recommended Approach**: Detailed description + code example
 - **Alternatives Considered**: At least 2 alternatives with pros/cons
 - **Tradeoffs**: Comparison table
 
 **3. Implementation Guide**
+
 - **Step-by-Step**: Numbered steps with code examples
 - **Integration Points**: Where in our codebase this fits
 - **Dependencies**: Libraries, tools, infrastructure needed
 
 **4. Pitfalls to Avoid**
+
 - **Common Mistakes**: What developers often get wrong
 - **Edge Cases**: Scenarios that need special handling
 - **Security Considerations**: Vulnerabilities to prevent
 - **Performance Issues**: Bottlenecks to avoid
 
 **5. Source Evaluation**
+
 - Table of all sources with quality ratings
 - Notes on why each source was useful/not useful
 
 **6. Next Steps**
+
 - Recommended actions
 - Files to create/modify
 - Tests to write
@@ -238,18 +257,21 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 #### 1. Authentication/Authorization
 
 **Research Focus**:
+
 - OAuth 2.0 vs JWT vs API keys
 - Session management
 - Token refresh strategies
 - RBAC vs ABAC
 
 **Key Questions**:
+
 - How are credentials stored securely?
 - How is token expiration handled?
 - What's the logout flow?
 - How to handle concurrent sessions?
 
 **Security Musts**:
+
 - Password hashing (bcrypt, argon2)
 - HTTPS only
 - CSRF protection
@@ -258,18 +280,21 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 #### 2. Caching
 
 **Research Focus**:
+
 - Cache invalidation strategies
 - Cache eviction policies (LRU, LFU, TTL)
 - Distributed vs local caching
 - Cache coherence
 
 **Key Questions**:
+
 - What's the cache hit ratio target?
 - How to handle cache misses?
 - When to invalidate?
 - How to prevent cache stampede?
 
 **Common Patterns**:
+
 - Write-through cache
 - Write-behind cache
 - Cache-aside
@@ -278,18 +303,21 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 #### 3. Webhooks/Event Processing
 
 **Research Focus**:
+
 - Signature verification
 - Retry logic and exponential backoff
 - Idempotency
 - Async vs sync processing
 
 **Key Questions**:
+
 - How to verify webhook authenticity?
 - What happens if processing fails?
 - How to prevent duplicate processing?
 - How to handle order of events?
 
 **Security Musts**:
+
 - HMAC signature verification
 - IP whitelisting (if applicable)
 - Request validation
@@ -298,18 +326,21 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 #### 4. API Design
 
 **Research Focus**:
+
 - REST vs GraphQL vs gRPC
 - Versioning strategies
 - Error response formats
 - Pagination approaches
 
 **Key Questions**:
+
 - How to handle breaking changes?
 - What's the rate limiting strategy?
 - How to document the API?
 - How to test the API?
 
 **Best Practices**:
+
 - Semantic versioning
 - OpenAPI/Swagger docs
 - Consistent error formats
@@ -318,18 +349,21 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 #### 5. Data Processing Pipelines
 
 **Research Focus**:
+
 - ETL vs ELT
 - Batch vs stream processing
 - Error handling and retries
 - Monitoring and alerting
 
 **Key Questions**:
+
 - How to handle partial failures?
 - How to ensure data quality?
 - How to scale processing?
 - How to monitor pipeline health?
 
 **Common Tools**:
+
 - Apache Airflow (batch)
 - Apache Kafka (streaming)
 - dbt (data transformation)
@@ -338,18 +372,21 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 #### 6. Testing Strategies
 
 **Research Focus**:
+
 - Unit vs integration vs E2E tests
 - Test data management
 - Mocking strategies
 - Coverage targets
 
 **Key Questions**:
+
 - What's the right test pyramid?
 - How to test external dependencies?
 - How to test async code?
 - How to ensure tests are fast?
 
 **Best Practices**:
+
 - Arrange-Act-Assert pattern
 - Given-When-Then (BDD)
 - Test isolation
@@ -363,7 +400,7 @@ Quality = (Authority × 0.3) + (Recency × 0.25) + (Content × 0.2) + (Depth × 
 
 Use when comparing multiple approaches (e.g., "Redis vs Memcached"):
 
-```markdown
+````markdown
 # Comparison: {Option A} vs {Option B} vs {Option C}
 
 ## Quick Recommendation
@@ -374,28 +411,32 @@ Use when comparing multiple approaches (e.g., "Redis vs Memcached"):
 
 ## Detailed Comparison
 
-| Criterion | Option A | Option B | Option C |
-|-----------|----------|----------|----------|
+| Criterion       | Option A         | Option B         | Option C         |
+| --------------- | ---------------- | ---------------- | ---------------- |
 | **Performance** | {rating + notes} | {rating + notes} | {rating + notes} |
-| **Complexity** | {rating + notes} | {rating + notes} | {rating + notes} |
+| **Complexity**  | {rating + notes} | {rating + notes} | {rating + notes} |
 | **Scalability** | {rating + notes} | {rating + notes} | {rating + notes} |
 | **Maintenance** | {rating + notes} | {rating + notes} | {rating + notes} |
-| **Community** | {rating + notes} | {rating + notes} | {rating + notes} |
-| **Cost** | {rating + notes} | {rating + notes} | {rating + notes} |
+| **Community**   | {rating + notes} | {rating + notes} | {rating + notes} |
+| **Cost**        | {rating + notes} | {rating + notes} | {rating + notes} |
 
 ## Code Examples
 
 ### Option A
+
 ```python
 # Example implementation
 ```
+````
 
 ### Option B
+
 ```python
 # Example implementation
 ```
 
 ### Option C
+
 ```python
 # Example implementation
 ```
@@ -405,13 +446,14 @@ Use when comparing multiple approaches (e.g., "Redis vs Memcached"):
 **For our use case** (insert our specific requirements):
 
 | Requirement | Option A | Option B | Option C |
-|-------------|----------|----------|----------|
-| Req 1 | ✅ | ❌ | ✅ |
-| Req 2 | ✅ | ✅ | ❌ |
-| Req 3 | ❌ | ✅ | ✅ |
+| ----------- | -------- | -------- | -------- |
+| Req 1       | ✅       | ❌       | ✅       |
+| Req 2       | ✅       | ✅       | ❌       |
+| Req 3       | ❌       | ✅       | ✅       |
 
 **Winner**: {Option} because {reasoning}
-```
+
+````
 
 ### Template 2: Implementation Pattern
 
@@ -428,10 +470,12 @@ Use when researching how to implement a feature (e.g., "webhook handling"):
 
 ## Architecture Diagram
 
-```
+````
+
 [Simple ASCII diagram or description]
 Component A → Component B → Component C
-```
+
+````
 
 ## Step-by-Step Implementation
 
@@ -442,9 +486,10 @@ Component A → Component B → Component C
 
 ```python
 # Code for step 1
-```
+````
 
 **Testing**:
+
 ```python
 # Test for step 1
 ```
@@ -459,6 +504,7 @@ Component A → Component B → Component C
 ```
 
 **Testing**:
+
 ```python
 # Test for step 2
 ```
@@ -476,12 +522,14 @@ Component A → Component B → Component C
 ## Configuration
 
 **Environment variables**:
+
 ```bash
 FEATURE_API_KEY=xxx
 FEATURE_TIMEOUT=30
 ```
 
 **Config file** (`config.yaml`):
+
 ```yaml
 feature:
   enabled: true
@@ -506,28 +554,34 @@ feature:
 ## Monitoring
 
 **Metrics to track**:
+
 - {Metric 1}: {Description + target value}
 - {Metric 2}: {Description + target value}
 - {Metric 3}: {Description + target value}
 
 **Alerts to set up**:
+
 - {Alert 1}: {Trigger condition}
 - {Alert 2}: {Trigger condition}
 
 ## Testing Strategy
 
 **Unit tests**:
+
 - Test {functionality A}
 - Test {functionality B}
 
 **Integration tests**:
+
 - Test {workflow A}
 - Test {workflow B}
 
 **Security tests**:
+
 - Test {attack vector A}
 - Test {attack vector B}
-```
+
+````
 
 ### Template 3: Security Analysis
 
@@ -590,9 +644,10 @@ Use when researching security-sensitive features:
 **✅ Secure**:
 ```python
 # Example of secure implementation
-```
+````
 
 **❌ Insecure**:
+
 ```python
 # Example of what NOT to do
 ```
@@ -600,6 +655,7 @@ Use when researching security-sensitive features:
 ## Compliance Requirements
 
 **Applicable standards**:
+
 - GDPR: {Relevant requirements}
 - OWASP: {Relevant guidelines}
 - SOC 2: {Relevant controls}
@@ -607,9 +663,11 @@ Use when researching security-sensitive features:
 ## Penetration Testing Plan
 
 **Tests to run**:
+
 1. {Test name}: {What to test}
 2. {Test name}: {What to test}
 3. {Test name}: {What to test}
+
 ```
 
 ---
@@ -707,6 +765,7 @@ Use when researching security-sensitive features:
 ### How Research Fits Into Workflow
 
 ```
+
 User request: "Design a webhook system"
 ↓
 auto_research_trigger.py detects design question
@@ -716,22 +775,24 @@ researcher subagent auto-invokes
 research-patterns skill provides methodology (THIS SKILL)
 ↓
 researcher performs:
-  1. Codebase search
-  2. WebSearch (5 queries)
-  3. WebFetch (5+ sources)
-  4. Analysis & distillation
-  5. Save findings to docs/research/
-  6. Stage changes
-↓
-researcher reports: "Research complete, see docs/research/20251018_webhook_system/findings.md"
-↓
-planner subagent uses findings to create implementation plan
-↓
-tester subagent writes tests based on findings
-↓
-implementer subagent implements following findings
-↓
-Feature complete, aligned with best practices ✅
+
+1. Codebase search
+2. WebSearch (5 queries)
+3. WebFetch (5+ sources)
+4. Analysis & distillation
+5. Save findings to docs/research/
+6. Stage changes
+   ↓
+   researcher reports: "Research complete, see docs/research/20251018_webhook_system/findings.md"
+   ↓
+   planner subagent uses findings to create implementation plan
+   ↓
+   tester subagent writes tests based on findings
+   ↓
+   implementer subagent implements following findings
+   ↓
+   Feature complete, aligned with best practices ✅
+
 ```
 
 ### Research Feeds Other Subagents
@@ -847,3 +908,4 @@ Feature complete, aligned with best practices ✅
 ---
 
 **This skill enables confident, informed implementation by ensuring we learn from the industry before we build.**
+```

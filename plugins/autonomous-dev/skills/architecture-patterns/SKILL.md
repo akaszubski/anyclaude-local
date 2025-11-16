@@ -30,12 +30,14 @@ An ADR documents an architectural decision - the context, the decision made, and
 ### When to Write an ADR
 
 Write an ADR for decisions that:
+
 - Are hard to reverse
 - Impact multiple teams
 - Involve significant tradeoffs
 - Set precedents for future work
 
 **Examples**:
+
 - ✅ "We chose PostgreSQL over MongoDB"
 - ✅ "We split the monolith into microservices"
 - ✅ "We adopted event-driven architecture"
@@ -56,6 +58,7 @@ Write an ADR for decisions that:
 What is the issue we're trying to solve? What are the constraints?
 
 Example:
+
 > Our monolithic application has grown to 200K lines of code.
 > Deploy times are 45+ minutes, and teams are blocked on each other.
 > We need to improve deployment speed and team autonomy.
@@ -65,6 +68,7 @@ Example:
 What did we decide to do?
 
 Example:
+
 > We will split the monolith into domain-driven microservices,
 > starting with the user service and order service.
 
@@ -73,30 +77,36 @@ Example:
 What other options did we evaluate?
 
 ### Option 1: Keep the monolith
+
 **Pros**: No migration cost, simpler deployment
 **Cons**: Deploy times won't improve, team blocking continues
 
 ### Option 2: Modular monolith
+
 **Pros**: Better than status quo, no network calls
 **Cons**: Still single deployment unit, doesn't solve deploy time
 
 ### Option 3: Microservices (chosen)
+
 **Pros**: Independent deploys, team autonomy, scalability
 **Cons**: Complexity, network calls, distributed system challenges
 
 ## Consequences
 
 ### Positive
+
 - Deploy times drop from 45min to 5min per service
 - Teams can deploy independently
 - Services can scale independently
 
 ### Negative
+
 - Need service mesh (added complexity)
 - Distributed tracing required
 - Data consistency challenges
 
 ### Neutral
+
 - Migration will take 6 months
 - Need to train team on distributed systems
 
@@ -133,6 +143,7 @@ What other options did we evaluate?
 ### 1. Layered (N-Tier) Architecture
 
 **Structure**:
+
 ```
 ┌─────────────────────────┐
 │   Presentation Layer    │  (UI, Controllers)
@@ -148,11 +159,13 @@ What other options did we evaluate?
 **When to use**: Traditional web applications, CRUD-heavy systems
 
 **Pros**:
+
 - Simple to understand and implement
 - Clear separation of concerns
 - Easy to test each layer independently
 
 **Cons**:
+
 - Can become monolithic
 - Changes ripple through layers
 - Performance overhead from layer boundaries
@@ -164,6 +177,7 @@ What other options did we evaluate?
 ### 2. Microservices Architecture
 
 **Structure**:
+
 ```
 ┌────────────┐  ┌────────────┐  ┌────────────┐
 │   User     │  │   Order    │  │  Payment   │
@@ -180,12 +194,14 @@ What other options did we evaluate?
 **When to use**: Large teams, independent deployment needs, high scalability requirements
 
 **Pros**:
+
 - Independent deployment and scaling
 - Team autonomy
 - Technology diversity possible
 - Fault isolation
 
 **Cons**:
+
 - Distributed system complexity
 - Network latency
 - Data consistency challenges
@@ -198,6 +214,7 @@ What other options did we evaluate?
 ### 3. Event-Driven Architecture
 
 **Structure**:
+
 ```
 ┌────────────┐                   ┌────────────┐
 │  Service A │───► Event Bus ───►│  Service B │
@@ -212,12 +229,14 @@ What other options did we evaluate?
 **When to use**: Real-time systems, async workflows, event sourcing
 
 **Pros**:
+
 - Loose coupling between services
 - Highly scalable
 - Natural fit for real-time/streaming
 - Easy to add new consumers
 
 **Cons**:
+
 - Debugging is harder (distributed traces)
 - Event ordering challenges
 - At-least-once/exactly-once semantics complexity
@@ -229,6 +248,7 @@ What other options did we evaluate?
 ### 4. Hexagonal Architecture (Ports & Adapters)
 
 **Structure**:
+
 ```
          ┌──────────────────────┐
          │   Domain Logic       │
@@ -247,11 +267,13 @@ What other options did we evaluate?
 **When to use**: Domain-driven design, testability is critical
 
 **Pros**:
+
 - Business logic isolated from infrastructure
 - Easy to test (mock adapters)
 - Easy to swap implementations (e.g., swap database)
 
 **Cons**:
+
 - More initial setup
 - Can be over-engineering for simple CRUD
 
@@ -262,6 +284,7 @@ What other options did we evaluate?
 ### 5. Serverless Architecture
 
 **Structure**:
+
 ```
 API Gateway → Lambda → DynamoDB
             → Lambda → S3
@@ -271,12 +294,14 @@ API Gateway → Lambda → DynamoDB
 **When to use**: Variable/unpredictable load, event-driven tasks
 
 **Pros**:
+
 - No server management
 - Pay-per-use pricing
 - Auto-scaling
 - Fast to deploy
 
 **Cons**:
+
 - Cold start latency
 - Vendor lock-in
 - Debugging is harder
@@ -730,22 +755,24 @@ class User:
 
 ### Performance vs. Simplicity
 
-| Approach | Performance | Simplicity | When to Use |
-|----------|-------------|------------|-------------|
-| In-memory cache | ⭐⭐⭐ | ⭐⭐ | Hot data, read-heavy |
-| Database query | ⭐ | ⭐⭐⭐ | Simple CRUD, occasional access |
-| Redis cache | ⭐⭐ | ⭐ | Distributed caching needed |
+| Approach        | Performance | Simplicity | When to Use                    |
+| --------------- | ----------- | ---------- | ------------------------------ |
+| In-memory cache | ⭐⭐⭐      | ⭐⭐       | Hot data, read-heavy           |
+| Database query  | ⭐          | ⭐⭐⭐     | Simple CRUD, occasional access |
+| Redis cache     | ⭐⭐        | ⭐         | Distributed caching needed     |
 
 ---
 
 ### Consistency vs. Availability (CAP Theorem)
 
 **Rule**: In a distributed system, you can have at most 2 of 3:
+
 - **C**onsistency: All nodes see same data
 - **A**vailability: Every request gets a response
 - **P**artition tolerance: System works despite network splits
 
 **Choices**:
+
 - **CP**: Consistency + Partition Tolerance (e.g., MongoDB, HBase)
 - **AP**: Availability + Partition Tolerance (e.g., Cassandra, DynamoDB)
 - **CA**: Not possible in distributed systems (network partitions happen!)
@@ -794,12 +821,14 @@ class InventoryService:
 ## Additional Resources
 
 **Books**:
+
 - "Design Patterns" by Gang of Four
 - "Clean Architecture" by Robert Martin
 - "Software Architecture: The Hard Parts" by Neal Ford
 - "Building Microservices" by Sam Newman
 
 **Websites**:
+
 - [Martin Fowler's Architecture Patterns](https://martinfowler.com/architecture/)
 - [Microsoft Azure Architecture Center](https://docs.microsoft.com/en-us/azure/architecture/)
 - [AWS Architecture Center](https://aws.amazon.com/architecture/)

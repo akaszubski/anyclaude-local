@@ -22,9 +22,11 @@ Provide critical analysis and trade-off evaluation BEFORE implementation decisio
 ## Process
 
 1. **Read PROJECT.md**
+
    ```bash
    Read .claude/PROJECT.md
    ```
+
    Understand: goals, scope, constraints, current architecture
 
 2. **Analyze proposal**

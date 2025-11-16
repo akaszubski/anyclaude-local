@@ -19,8 +19,10 @@ auto_invoke: false
 **Pattern**: References to files in documentation
 
 **Example**:
+
 ```markdown
 # docs/guide.md:45
+
 See the implementation in ./scripts/debug/test.sh
 ```
 
@@ -31,8 +33,10 @@ See the implementation in ./scripts/debug/test.sh
 **Pattern**: Markdown links to other docs
 
 **Example**:
+
 ```markdown
 # README.md:67
+
 For details, see [Architecture](docs/ARCHITECTURE.md)
 ```
 
@@ -43,12 +47,15 @@ For details, see [Architecture](docs/ARCHITECTURE.md)
 **Pattern**: References to specific code lines
 
 **Example**:
+
 ```markdown
 # docs/guide.md:89
+
 Implementation: src/convert.ts:450
 ```
 
 **Validation**:
+
 - Does `src/convert.ts` exist?
 - Does it have at least 450 lines?
 
@@ -57,10 +64,12 @@ Implementation: src/convert.ts:450
 **Pattern**: Code blocks with language tags
 
 **Example**:
+
 ````markdown
 # docs/api.md:120
+
 ```typescript
-import { Server } from './server';
+import { Server } from "./server";
 ```
 ````
 
@@ -71,8 +80,10 @@ import { Server } from './server';
 **Pattern**: GitHub issue/PR mentions
 
 **Example**:
+
 ```markdown
 # CHANGELOG.md:45
+
 Fixed in #123
 ```
 
@@ -98,6 +109,7 @@ grep -rn '\./[a-zA-Z0-9_/-]*\.\(sh\|ts\|js\|py\|md\)' *.md docs/
 ```
 
 **Create reference map**:
+
 ```json
 {
   "docs/guide.md:45": {
@@ -119,6 +131,7 @@ grep -rn '\[.*\](.*\)' *.md docs/ | grep -v 'http'
 ```
 
 **Parse format**:
+
 ```json
 {
   "README.md:67": {
@@ -142,6 +155,7 @@ grep -rn '[a-zA-Z0-9_/-]*\.\(ts\|js\|py\|sh\):[0-9]\+' *.md docs/
 ```
 
 **Parse format**:
+
 ```json
 {
   "docs/guide.md:89": {
@@ -155,15 +169,16 @@ grep -rn '[a-zA-Z0-9_/-]*\.\(ts\|js\|py\|sh\):[0-9]\+' *.md docs/
 
 #### Step 1.4: Find Code Imports
 
-```bash
+````bash
 # Extract code blocks
 awk '/```typescript/,/```/ {print}' docs/**/*.md
 
 # Look for import statements
 grep -A 5 "^import"
-```
+````
 
 **Parse imports**:
+
 ```json
 {
   "docs/api.md:120": {
@@ -197,6 +212,7 @@ fi
 ```
 
 **Output for broken reference**:
+
 ```
 ❌ BROKEN FILE PATH: docs/guide.md:45
    Referenced: ./scripts/debug/test.sh
@@ -223,7 +239,8 @@ git log --all --follow --name-status -- "*$(basename $REFERENCE)"
 ```
 
 **If move detected**:
-```
+
+````
 ⚠️ FILE MOVED: docs/guide.md:45
    Old path: ./debug-local.sh
    New path: ./scripts/debug/debug-local.sh
@@ -234,8 +251,9 @@ git log --all --follow --name-status -- "*$(basename $REFERENCE)"
    Suggested fix:
    ```markdown
    See: ./scripts/debug/debug-local.sh
-   ```
-```
+````
+
+````
 
 ---
 
@@ -254,7 +272,7 @@ if [ -f "$FULL_PATH" ]; then
 else
   echo "❌ Broken link: $FULL_PATH"
 fi
-```
+````
 
 #### Step 3.2: Find Renamed Files
 
@@ -271,6 +289,7 @@ find docs/ -name "*ARCHITECTURE*" -o -name "*architecture*"
 ```
 
 **Output**:
+
 ```
 ❌ BROKEN LINK: README.md:67
    Links to: docs/ARCHITECTURE.md
@@ -316,6 +335,7 @@ fi
 ```
 
 **Output for invalid line**:
+
 ```
 ❌ INVALID LINE REFERENCE: docs/guide.md:89
    References: src/convert.ts:450
@@ -351,6 +371,7 @@ echo "Documentation context: {context from docs}"
 ```
 
 **Example**:
+
 ```
 ✅ VALID REFERENCE: docs/guide.md:89
    References: src/convert.ts:450
@@ -370,7 +391,7 @@ echo "Documentation context: {context from docs}"
 
 #### Step 5.1: Extract Imports from Code Blocks
 
-```bash
+````bash
 # Find TypeScript code blocks
 awk '/```typescript/,/```/ {print}' docs/api.md > /tmp/code_block.ts
 
@@ -378,7 +399,7 @@ awk '/```typescript/,/```/ {print}' docs/api.md > /tmp/code_block.ts
 grep "^import" /tmp/code_block.ts
 
 # Example: import { Server } from './server';
-```
+````
 
 #### Step 5.2: Verify Exports Exist
 
@@ -397,7 +418,8 @@ done
 ```
 
 **Output for broken import**:
-```
+
+````
 ⚠️ CODE EXAMPLE MAY BE OUTDATED: docs/api.md:120
    Import: { Server } from './server'
    Problem: No 'Server' export found in ./server.ts
@@ -409,7 +431,8 @@ done
    Possible fix:
    ```typescript
    import { APIServer } from './server';
-   ```
+````
+
 ```
 
 ---
@@ -419,78 +442,83 @@ done
 #### Output Format
 
 ```
+
 🔗 Cross-Reference Validation Report
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SUMMARY
-  Total references: 47
-  ✅ Valid: 42 (89%)
-  ⚠️ Warnings: 3 (6%)
-  ❌ Broken: 2 (4%)
+Total references: 47
+✅ Valid: 42 (89%)
+⚠️ Warnings: 3 (6%)
+❌ Broken: 2 (4%)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 BROKEN REFERENCES (CRITICAL)
 
 ❌ BROKEN FILE PATH: docs/DEBUG-GUIDE.md:39
-   Referenced: ./debug-local.sh
-   Status: File not found
-   Last seen: 3 days ago (moved to scripts/debug/)
+Referenced: ./debug-local.sh
+Status: File not found
+Last seen: 3 days ago (moved to scripts/debug/)
 
-   Auto-fix available: YES
+Auto-fix available: YES
 
-   Fix:
-   - Current: ./debug-local.sh
-   - Update to: ./scripts/debug/debug-local.sh
+Fix:
 
-   Git detected move in commit abc123
+- Current: ./debug-local.sh
+- Update to: ./scripts/debug/debug-local.sh
+
+Git detected move in commit abc123
 
 ❌ BROKEN LINK: README.md:35
-   Links to: docs/ARCHITECTURE.md
-   Status: File not found
+Links to: docs/ARCHITECTURE.md
+Status: File not found
 
-   Possible matches:
-   - docs/architecture/system-design.md (closest match)
-   - docs/SYSTEM-ARCH.md
+Possible matches:
 
-   Fix:
-   [Architecture](docs/architecture/system-design.md)
+- docs/architecture/system-design.md (closest match)
+- docs/SYSTEM-ARCH.md
+
+Fix:
+[Architecture](docs/architecture/system-design.md)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 WARNINGS (REVIEW RECOMMENDED)
 
 ⚠️ INVALID LINE REFERENCE: docs/guide.md:89
-   References: src/convert.ts:450
-   Problem: File only has 412 lines
+References: src/convert.ts:450
+Problem: File only has 412 lines
 
-   Possible causes:
-   - Code was refactored
-   - Lines were removed
-   - Reference needs update
+Possible causes:
 
-   Suggested fix:
-   Reference file without line number, or find new location
+- Code was refactored
+- Lines were removed
+- Reference needs update
+
+Suggested fix:
+Reference file without line number, or find new location
 
 ⚠️ CODE EXAMPLE OUTDATED: docs/api.md:120
-   Import: { Server } from './server'
-   Problem: No 'Server' export found
+Import: { Server } from './server'
+Problem: No 'Server' export found
 
-   Actual exports:
-   - APIServer (renamed?)
-   - createServer
+Actual exports:
 
-   Suggested update:
-   import { APIServer } from './server';
+- APIServer (renamed?)
+- createServer
+
+Suggested update:
+import { APIServer } from './server';
 
 ⚠️ RELATIVE PATH UNCLEAR: docs/troubleshooting.md:56
-   Referenced: ../config.json
-   Context: "Edit ../config.json to configure"
-   Problem: Relative paths confusing from docs/
+Referenced: ../config.json
+Context: "Edit ../config.json to configure"
+Problem: Relative paths confusing from docs/
 
-   Suggested fix:
-   Use absolute path: ./config.json
+Suggested fix:
+Use absolute path: ./config.json
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -506,54 +534,55 @@ VALID REFERENCES (Sample)
 AUTO-FIX SUMMARY
 
 ✅ Can auto-fix (2 references):
-  1. docs/DEBUG-GUIDE.md:39 (file move detected)
-  2. docs/DEBUG-LMSTUDIO.md:96 (same file move)
 
-  Run: /align-project → Option 2 (Fix interactively)
-  → Phase 2 will apply these fixes
+1. docs/DEBUG-GUIDE.md:39 (file move detected)
+2. docs/DEBUG-LMSTUDIO.md:96 (same file move)
+
+Run: /align-project → Option 2 (Fix interactively)
+→ Phase 2 will apply these fixes
 
 ⚠️ Needs manual review (3 references):
-  1. Invalid line reference (code refactored)
-  2. Code example import (export renamed)
-  3. Relative path clarity (user preference)
+
+1. Invalid line reference (code refactored)
+2. Code example import (export renamed)
+3. Relative path clarity (user preference)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 DETAILED BREAKDOWN
 
 File Path References: 18 total
-  ✅ Valid: 16
-  ❌ Broken: 2
+✅ Valid: 16
+❌ Broken: 2
 
 Markdown Links: 15 total
-  ✅ Valid: 14
-  ❌ Broken: 1
+✅ Valid: 14
+❌ Broken: 1
 
 File:Line References: 8 total
-  ✅ Valid: 7
-  ⚠️ Invalid line: 1
+✅ Valid: 7
+⚠️ Invalid line: 1
 
 Code Examples: 6 total
-  ✅ Valid: 5
-  ⚠️ Outdated: 1
+✅ Valid: 5
+⚠️ Outdated: 1
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 RECOMMENDED ACTIONS
 
 Immediate (Fix Today):
+
 1. Update 2 file paths after move to scripts/debug/
 2. Fix broken link to architecture docs
 
-Review (This Week):
-3. Update invalid line reference in guide.md
-4. Verify code example imports in api.md
+Review (This Week): 3. Update invalid line reference in guide.md 4. Verify code example imports in api.md
 
-Optional (Next Sprint):
-5. Consider using absolute paths instead of relative
+Optional (Next Sprint): 5. Consider using absolute paths instead of relative
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+
+````
 
 ---
 
@@ -569,9 +598,10 @@ git log --follow --name-status -- "debug-local.sh"
 
 # Auto-update all references
 find . -name "*.md" -exec sed -i 's|./debug-local.sh|./scripts/debug/debug-local.sh|g' {} \;
-```
+````
 
 **Broken links with obvious match**:
+
 ```bash
 # Find closest match using fuzzy search
 BROKEN="docs/ARCHITECTURE.md"
@@ -622,6 +652,7 @@ fi
 ## Success Criteria
 
 After validation:
+
 - ✅ All file path references checked for existence
 - ✅ All markdown links verified or flagged
 - ✅ File:line references validated against actual line count
@@ -637,6 +668,7 @@ After validation:
 
 ```markdown
 # docs/guide.md:45
+
 For comparison, see: https://github.com/other-project/file.ts:123
 ```
 
@@ -647,7 +679,8 @@ For comparison, see: https://github.com/other-project/file.ts:123
 
 ```markdown
 # docs/build.md:67
-All test files in tests/**/*.test.ts
+
+All test files in tests/\*_/_.test.ts
 ```
 
 **Detection**: Glob pattern, not specific file
@@ -666,6 +699,7 @@ fi
 
 ```markdown
 # docs/guide.md:89
+
 See comment at src/convert.ts:450
 ```
 
@@ -684,6 +718,7 @@ See comment at src/convert.ts:450
 For large projects (100+ documentation files):
 
 **Batch file existence checks**:
+
 ```bash
 # Instead of checking each file individually
 # Create temp file with all references
@@ -693,6 +728,7 @@ done > broken_refs.txt
 ```
 
 **Cache git history**:
+
 ```bash
 # Get all file moves once
 git log --follow --name-status --diff-filter=R > /tmp/git_moves.txt
@@ -701,6 +737,7 @@ git log --follow --name-status --diff-filter=R > /tmp/git_moves.txt
 ```
 
 **Parallel validation**:
+
 ```bash
 # Split references into chunks
 # Validate each chunk in parallel using & backgrounding

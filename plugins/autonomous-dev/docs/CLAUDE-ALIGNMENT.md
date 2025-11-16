@@ -17,12 +17,15 @@
 **Why**: PROJECT.md changes more frequently (goals/scope updates). CLAUDE.md documents implementation details that should stay current.
 
 **Example Drift**:
+
 ```markdown
 # CLAUDE.md
+
 **Last Updated**: 2025-10-19
 
 # PROJECT.md
-**Last Updated**: 2025-10-27  ← Newer!
+
+**Last Updated**: 2025-10-27 ← Newer!
 
 Issue: CLAUDE.md is 8 days out of date
 Fix: Update CLAUDE.md date to 2025-10-27
@@ -35,16 +38,20 @@ Fix: Update CLAUDE.md date to 2025-10-27
 **Why**: When agents are added/removed, CLAUDE.md must stay accurate
 
 **Current Reality**:
+
 - 10 core workflow agents (orchestrator, researcher, planner, test-master, implementer, reviewer, security-auditor, doc-master, advisor, quality-validator)
 - 6 utility agents (alignment-validator, commit-message-generator, pr-description-generator, project-progress-tracker, alignment-analyzer, project-bootstrapper)
 - **Total: 16 agents**
 
 **Example Drift**:
+
 ```markdown
 # CLAUDE.md (Wrong)
+
 ### Agents (7 specialists)
 
 # Reality
+
 16 agents in plugins/autonomous-dev/agents/
 
 Issue: CLAUDE.md says 7, but 16 exist
@@ -58,6 +65,7 @@ Fix: Update heading to "### Agents (16 specialists)"
 **Why**: If you tell someone "use /auto-implement", that command must exist
 
 **Current Reality** (8 commands):
+
 - `/auto-implement` - Full feature development
 - `/align-project` - Validate PROJECT.md alignment
 - `/setup` - Interactive setup wizard
@@ -68,11 +76,14 @@ Fix: Update heading to "### Agents (16 specialists)"
 - `/uninstall` - Remove plugin
 
 **Example Drift**:
+
 ```markdown
 # CLAUDE.md
+
 "Use /format for code formatting"
 
 # Reality
+
 /format doesn't exist (archived in v3.1.0)
 
 Issue: Documenting archived command as active
@@ -88,16 +99,22 @@ Fix: Update CLAUDE.md to remove /format, add /auto-implement
 **Current Status**: Skills removed, guidance consolidated into agent prompts
 
 **Example Drift**:
+
 ```markdown
 # CLAUDE.md (Wrong)
+
 ### Skills (6 core competencies)
+
 Located: `plugins/autonomous-dev/skills/`
+
 - python-standards
 - testing-guide
 - ...
 
 # Correct
+
 ### Skills (0 - Removed)
+
 Per Anthropic anti-pattern guidance (v2.5+), skills were removed.
 Guidance now lives directly in agent prompts.
 ```
@@ -189,11 +206,13 @@ New `/align-claude` command provides interactive guidance:
 **Problem**: CLAUDE.md has old `Last Updated` date
 
 **Detection**:
+
 ```
 ⚠️  Project CLAUDE.md is outdated (older than PROJECT.md).
 ```
 
 **Fix**:
+
 ```bash
 # CLAUDE.md line 3:
 - **Last Updated**: 2025-10-19
@@ -205,11 +224,13 @@ New `/align-claude` command provides interactive guidance:
 **Problem**: New agents added, CLAUDE.md not updated
 
 **Detection**:
+
 ```
 ⚠️  Agent count drift: CLAUDE.md says 7, but 16 exist.
 ```
 
 **Fix**:
+
 ```bash
 # CLAUDE.md section:
 - ### Agents (7 specialists)
@@ -227,6 +248,7 @@ New `/align-claude` command provides interactive guidance:
 **Problem**: Documenting archived command as if it still works
 
 **Detection**:
+
 ```
 ❌ ERRORS (1):
   Missing documented commands: format.
@@ -234,6 +256,7 @@ New `/align-claude` command provides interactive guidance:
 ```
 
 **Fix**:
+
 ```bash
 # CLAUDE.md:
 - Remove references to /format
@@ -246,11 +269,13 @@ New `/align-claude` command provides interactive guidance:
 **Problem**: CLAUDE.md still describes skills as available
 
 **Detection**:
+
 ```
 ⚠️  CLAUDE.md still documents skills (should say '0 - Removed' per v2.5+ guidance)
 ```
 
 **Fix**:
+
 ```bash
 # CLAUDE.md:
 - ### Skills (6 core competencies)
@@ -272,6 +297,7 @@ pytest plugins/autonomous-dev/tests/test_claude_alignment.py -v
 ```
 
 **Test Coverage**:
+
 - ✅ Date extraction from markdown
 - ✅ Count parsing (agents, commands, hooks)
 - ✅ Missing command detection
@@ -305,36 +331,44 @@ git commit -m "test: simulate drift"
 ### Files
 
 **Validation script**:
+
 ```
 .claude/hooks/validate_claude_alignment.py
 ```
+
 - Main validation logic
 - Detects all drift types
 - Generates detailed reports
 - Exit codes: 0 (aligned), 1 (warnings), 2 (critical)
 
 **Pre-commit hook**:
+
 ```
 plugins/autonomous-dev/hooks/validate_claude_alignment.py
 ```
+
 - Runs automatically on every commit
 - Lightweight version (checks key things only)
 - Session-based warning deduplication (no spam)
 - Calls validation script under the hood
 
 **Command**:
+
 ```
 plugins/autonomous-dev/commands/align-claude.md
 ```
+
 - Interactive interface for users
 - Calls validation script
 - Suggests fixes
 - Can auto-fix simple issues
 
 **Tests**:
+
 ```
 plugins/autonomous-dev/tests/test_claude_alignment.py
 ```
+
 - Unit tests for extraction functions
 - Integration tests for validator
 - Real-world scenario testing
@@ -430,6 +464,7 @@ python .claude/hooks/validate_claude_alignment.py
 The validator errs on the side of caution. If you believe an issue is incorrect:
 
 1. Check the actual state:
+
 ```bash
 # Count agents
 ls plugins/autonomous-dev/agents/ | wc -l
@@ -446,6 +481,7 @@ ls plugins/autonomous-dev/commands/ | wc -l
 **That's intentional!** It ensures CLAUDE.md stays in sync.
 
 To temporarily skip (NOT recommended):
+
 ```bash
 git commit --no-verify
 # But then manually run validation:
@@ -457,6 +493,7 @@ python .claude/hooks/validate_claude_alignment.py
 Warnings are deduplicated per session. Different warnings will show once each.
 
 Clear warnings:
+
 ```bash
 rm ~/.claude/_validation_state_*.json
 ```
@@ -494,6 +531,7 @@ This fails the CI build if critical drift is detected.
 ### With /align-project
 
 The `/align-project` command (PROJECT.md alignment) is separate but complementary:
+
 - **PROJECT.md alignment**: Goals, scope, constraints are accurate
 - **CLAUDE.md alignment**: Development practices are documented accurately
 
@@ -514,6 +552,7 @@ A: No. Validation is fast (<100ms) and only runs on commit. No manual overhead f
 
 **Q: Can I disable it?**
 A: Yes, but not recommended. To skip:
+
 ```bash
 git commit --no-verify
 ```

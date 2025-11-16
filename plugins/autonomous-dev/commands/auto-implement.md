@@ -66,18 +66,22 @@ You need a `.claude/PROJECT.md` file with:
 # Project Context
 
 ## GOALS
+
 - Your primary objectives
 - Success metrics
 
 ## SCOPE
 
 ### In Scope
+
 - Features you're building
 
 ### Out of Scope
+
 - Features to avoid
 
 ## CONSTRAINTS
+
 - Technical constraints
 - Business constraints
 ```
@@ -117,6 +121,7 @@ vim .claude/PROJECT.md
 ```
 
 **What orchestrator does**:
+
 - Plans: Simple endpoint, no dependencies
 - Tests: Basic GET request test
 - Implements: 30 lines of code
@@ -129,6 +134,7 @@ vim .claude/PROJECT.md
 ```
 
 **What orchestrator does**:
+
 - Research: JWT best practices, refresh token patterns
 - Plan: Token generation, rotation strategy, storage
 - Test: Token generation, validation, rotation, expiry
@@ -150,6 +156,7 @@ vim .claude/PROJECT.md
 ```
 
 **What orchestrator does**:
+
 - Research: REST conventions, search patterns, pagination best practices
 - Plan: Database schema, API design, filter logic
 - Test: 50+ tests covering all operations and edge cases
@@ -210,15 +217,15 @@ This resets your context budget for the next feature. **This is mandatory** for 
 
 ## Why This Is Better Than Python Orchestration
 
-| Aspect | Python-Based | GenAI-Based (This) |
-|--------|------------|-----------------|
-| Flexibility | Fixed sequence | Adapts to discoveries |
-| Error handling | Predefined cases | Intelligent reasoning |
-| Edge cases | Coded manually | Claude handles naturally |
-| Performance | Overhead (artifacts, JSON) | Lean & direct |
-| Extensibility | Requires Python changes | Claude adapts automatically |
-| Debugging | Check JSON files | See Claude's reasoning |
-| Maintenance | Python complexity | Simple markdown agents |
+| Aspect         | Python-Based               | GenAI-Based (This)          |
+| -------------- | -------------------------- | --------------------------- |
+| Flexibility    | Fixed sequence             | Adapts to discoveries       |
+| Error handling | Predefined cases           | Intelligent reasoning       |
+| Edge cases     | Coded manually             | Claude handles naturally    |
+| Performance    | Overhead (artifacts, JSON) | Lean & direct               |
+| Extensibility  | Requires Python changes    | Claude adapts automatically |
+| Debugging      | Check JSON files           | See Claude's reasoning      |
+| Maintenance    | Python complexity          | Simple markdown agents      |
 
 ## How It Actually Works (Behind The Scenes)
 
@@ -243,6 +250,7 @@ No Python scripts. No JSON artifacts. No checkpointing. Just Claude thinking thr
 ### "PROJECT.md not found"
 
 Create it:
+
 ```bash
 mkdir -p .claude
 # Copy template from prerequisites section above
@@ -252,6 +260,7 @@ vim .claude/PROJECT.md
 ### "Feature doesn't align"
 
 The orchestrator will tell you why and what to do. Either:
+
 1. Modify your feature request to fit scope
 2. Update PROJECT.md if strategy changed
 3. Don't implement
@@ -259,6 +268,7 @@ The orchestrator will tell you why and what to do. Either:
 ### "Feature was partially done"
 
 If interrupted, just run the command again. The orchestrator will:
+
 - Start fresh with your request
 - Use the existing partially-done code as context
 - Continue where it left off (intelligently, not just resuming)
@@ -266,6 +276,7 @@ If interrupted, just run the command again. The orchestrator will:
 ### "I want to change how it works"
 
 You can:
+
 1. Modify `.claude/PROJECT.md` (change scope/constraints)
 2. Modify `plugins/autonomous-dev/agents/orchestrator.md` (change coordination logic)
 3. Run again - Claude will use new instructions
@@ -289,6 +300,7 @@ vim plugins/autonomous-dev/agents/orchestrator-custom.md
 ```
 
 Your custom agent can:
+
 - Skip steps (no security scan needed?)
 - Reorder steps (docs first?)
 - Add custom agents (database-migration agent?)
@@ -303,6 +315,7 @@ This command embodies Claude Code's core principle:
 > "Not a toolkit. A team."
 
 The orchestrator is a team leader that:
+
 - Thinks about the problem (not rigid sequences)
 - Coordinates specialists (researcher, implementer, etc.)
 - Adapts based on what it finds
@@ -314,4 +327,3 @@ The orchestrator is a team leader that:
 **That's it.** Just describe your feature and let Claude handle it.
 
 The orchestrator will coordinate everything and show you progress along the way.
-

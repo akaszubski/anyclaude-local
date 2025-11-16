@@ -10,6 +10,7 @@ version: 1.0.0
 **Complete guide to GitHub integration for autonomous development**
 
 Use this skill when:
+
 - Setting up GitHub workflow for the first time
 - Creating issues from test failures or GenAI findings
 - Creating pull requests automatically
@@ -21,15 +22,18 @@ Use this skill when:
 ## Quick Reference
 
 ### Commands Available
+
 ```bash
 /issue           # Create GitHub issues (test failures, GenAI, manual)
 /pr-create       # Create pull request with auto-filled content
 ```
 
 ### Hooks Available
+
 - `auto_track_issues.py` - Auto-create issues on push/commit (configurable)
 
 ### Configuration
+
 ```bash
 # .env file
 GITHUB_AUTO_TRACK_ISSUES=true      # Enable auto-tracking
@@ -103,6 +107,7 @@ Choice [1-5]: 1
 ```
 
 **When to use**:
+
 - CI/CD pipeline failures
 - Local test failures
 - Want automatic bug tracking
@@ -127,6 +132,7 @@ Choice [1-5]: 2
 ```
 
 **When to use**:
+
 - After GenAI validation
 - UX improvements needed
 - Architecture cleanup
@@ -154,6 +160,7 @@ Assign to: akaszubski
 ```
 
 **When to use**:
+
 - Manual bug reports
 - Feature requests
 - Documentation tasks
@@ -166,6 +173,7 @@ Assign to: akaszubski
 ### Enable Auto-Tracking
 
 **Setup** (one-time):
+
 ```bash
 # Add to .env
 cat >> .env << 'EOF'
@@ -183,6 +191,7 @@ gh auth login
 ```
 
 **How it works**:
+
 ```bash
 # You work normally
 /test                  # Tests fail
@@ -200,17 +209,18 @@ git push               # Push to GitHub
 
 **Configuration Options**:
 
-| Variable | Values | Default | Description |
-|----------|--------|---------|-------------|
-| `GITHUB_AUTO_TRACK_ISSUES` | true/false | false | Enable auto-tracking |
-| `GITHUB_TRACK_ON_PUSH` | true/false | true | Track before push |
-| `GITHUB_TRACK_ON_COMMIT` | true/false | false | Track after commit |
-| `GITHUB_TRACK_THRESHOLD` | low/medium/high | medium | Minimum priority to track |
-| `GITHUB_DRY_RUN` | true/false | false | Preview only (no creation) |
+| Variable                   | Values          | Default | Description                |
+| -------------------------- | --------------- | ------- | -------------------------- |
+| `GITHUB_AUTO_TRACK_ISSUES` | true/false      | false   | Enable auto-tracking       |
+| `GITHUB_TRACK_ON_PUSH`     | true/false      | true    | Track before push          |
+| `GITHUB_TRACK_ON_COMMIT`   | true/false      | false   | Track after commit         |
+| `GITHUB_TRACK_THRESHOLD`   | low/medium/high | medium  | Minimum priority to track  |
+| `GITHUB_DRY_RUN`           | true/false      | false   | Preview only (no creation) |
 
 **Example workflows**:
 
 **Conservative** (manual review):
+
 ```bash
 GITHUB_AUTO_TRACK_ISSUES=true
 GITHUB_TRACK_ON_PUSH=false
@@ -221,6 +231,7 @@ GITHUB_DRY_RUN=true
 ```
 
 **Aggressive** (full automation):
+
 ```bash
 GITHUB_AUTO_TRACK_ISSUES=true
 GITHUB_TRACK_ON_PUSH=true
@@ -231,6 +242,7 @@ GITHUB_DRY_RUN=false
 ```
 
 **Balanced** (recommended):
+
 ```bash
 GITHUB_AUTO_TRACK_ISSUES=true
 GITHUB_TRACK_ON_PUSH=true
@@ -263,6 +275,7 @@ GITHUB_DRY_RUN=false
 ```
 
 **When to use**:
+
 - Default workflow (safe)
 - Want manual review before marking ready
 - Still working on PR
@@ -282,6 +295,7 @@ GITHUB_DRY_RUN=false
 ```
 
 **When to use**:
+
 - Know who should review
 - Team workflow (solo developer: skip this)
 - Want immediate review request
@@ -300,6 +314,7 @@ GITHUB_DRY_RUN=false
 ```
 
 **When to use**:
+
 - Confident PR is ready
 - Fast-track workflow
 - Small changes
@@ -312,6 +327,7 @@ GITHUB_DRY_RUN=false
 ### Link Work to Milestones
 
 **In PROJECT.md**:
+
 ```markdown
 ## CURRENT SPRINT
 
@@ -321,6 +337,7 @@ GITHUB_DRY_RUN=false
 ```
 
 **orchestrator reads this**:
+
 ```bash
 # When you run autonomous pipeline
 "Implement feature X"
@@ -333,6 +350,7 @@ GITHUB_DRY_RUN=false
 ```
 
 **Manual sprint queries**:
+
 ```bash
 # List milestones
 gh api repos/user/repo/milestones
@@ -351,6 +369,7 @@ gh issue list --milestone "Sprint 6"
 ### Close Issues Automatically
 
 **Via commit message**:
+
 ```bash
 git commit -m "feat: add user auth
 
@@ -366,6 +385,7 @@ git push
 ```
 
 **Keywords that work**:
+
 - `Closes #123`
 - `Fixes #123`
 - `Resolves #123`
@@ -433,6 +453,7 @@ gh auth status
 ### "Permission denied creating issue"
 
 **Check**:
+
 ```bash
 # Verify repo access
 gh repo view
@@ -442,6 +463,7 @@ gh auth status
 ```
 
 **Fix**:
+
 ```bash
 # Re-authenticate with full scopes
 gh auth login --scopes repo,write:discussion,workflow
@@ -450,6 +472,7 @@ gh auth login --scopes repo,write:discussion,workflow
 ### "Issue creation failed"
 
 **Check**:
+
 ```bash
 # Test manually
 gh issue create --title "Test" --body "Test issue"
@@ -459,6 +482,7 @@ gh issue create --title "Test" --body "Test issue"
 ```
 
 **Common causes**:
+
 - Rate limiting (wait 60 seconds)
 - Network issues (check connection)
 - Repository archived (can't create issues)
@@ -468,6 +492,7 @@ gh issue create --title "Test" --body "Test issue"
 **Cause**: `/issue` option 1 requires test failures
 
 **Fix**:
+
 ```bash
 # Run tests first
 /test
@@ -577,6 +602,7 @@ gh issue create --title "Test" --body "Test issue"
 ## Advanced: Custom Issue Templates
 
 **Create** `.github/ISSUE_TEMPLATE/bug_report.md`:
+
 ```markdown
 ---
 name: Bug Report
@@ -585,28 +611,35 @@ labels: bug
 ---
 
 ## Description
+
 Clear description of the bug
 
 ## Steps to Reproduce
+
 1. Step 1
 2. Step 2
 3. See error
 
 ## Expected Behavior
+
 What should happen
 
 ## Actual Behavior
+
 What actually happens
 
 ## Environment
+
 - OS:
 - Version:
 
 ## Additional Context
+
 Any other context
 ```
 
 **Use**:
+
 ```bash
 gh issue create --template bug_report.md
 ```

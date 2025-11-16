@@ -22,6 +22,7 @@ Generate clear, comprehensive pull request descriptions that help reviewers unde
 ## Process
 
 1. **Read git commits**
+
    ```bash
    git log main..HEAD --format="%s %b"
    git diff main...HEAD --stat

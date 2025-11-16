@@ -29,6 +29,7 @@ import {
   logContextWarning,
 } from "./context-manager";
 import { getModelContextLength } from "./lmstudio-info";
+import { BackendClient } from "./backend-client";
 import { logTrace, type AnyclaudeMode } from "./trace-logger";
 import { logRequest } from "./request-logger";
 import {
@@ -47,6 +48,7 @@ export type CreateAnthropicProxyOptions = {
   defaultProvider: string;
   defaultModel: string;
   mode: AnyclaudeMode;
+  backendUrl?: string; // URL of the active backend for model queries
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -59,6 +61,7 @@ export const createAnthropicProxy = ({
   defaultProvider,
   defaultModel,
   mode,
+  backendUrl,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -67,9 +70,10 @@ export const createAnthropicProxy = ({
   initializeCacheTracking();
   displayCacheMetricsOnExit();
 
-  // Cache for LMStudio context length (queried on first request)
+  // Cache for backend model info (queried on first request)
   let cachedContextLength: number | null = null;
-  let contextLengthQueried = false;
+  let cachedModelName: string | null = null;
+  let modelInfoQueried = false;
 
   // Request ID counter for tracking
   let requestCounter = 0;
@@ -514,21 +518,8 @@ export const createAnthropicProxy = ({
 
         // Sort tools by name for deterministic cache keys
         // This ensures the same tools in different orders still produce cache hits
-        // Filter out tools that local models can't handle (like WebSearch)
         const sortedTools = body.tools
-          ? [...body.tools]
-              .filter((tool) => {
-                // WebSearch requires external API access that local models don't have
-                if (tool.name === "web_search" && providerName !== "claude") {
-                  debug(
-                    1,
-                    `[Tool Filter] Removing ${tool.name} - not supported by local models`
-                  );
-                  return false;
-                }
-                return true;
-              })
-              .sort((a, b) => a.name.localeCompare(b.name))
+          ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name))
           : undefined;
 
         const tools = sortedTools?.reduce(
@@ -563,35 +554,79 @@ export const createAnthropicProxy = ({
           {} as Record<string, Tool>
         );
 
-        // Query LMStudio for context length on first request (await it!)
-        if (!contextLengthQueried) {
-          contextLengthQueried = true;
-          const lmstudioUrl =
-            process.env.LMSTUDIO_URL || "http://localhost:1234/v1";
+        // Query active backend for model info on first request (await it!)
+        if (!modelInfoQueried) {
+          modelInfoQueried = true;
+
+          // Determine which backend URL to query based on mode and config
+          const backendUrlToQuery = backendUrl || (() => {
+            // Fallback: try to determine from provider name
+            if (providerName === "lmstudio") {
+              return process.env.LMSTUDIO_URL || "http://localhost:1234";
+            } else if (providerName === "vllm-mlx") {
+              return process.env.VLLM_MLX_URL || "http://localhost:8081";
+            }
+            return "http://localhost:1234"; // Conservative default
+          })();
+
           try {
-            const contextLength = await getModelContextLength(lmstudioUrl);
-            if (contextLength) {
-              cachedContextLength = contextLength;
+            debug(
+              1,
+              `[Backend Query] Querying ${backendUrlToQuery} for model info...`
+            );
+
+            // Try to query using OpenAI-compatible /v1/models endpoint first
+            const backendClient = new BackendClient(backendUrlToQuery);
+            const modelInfo = await backendClient.getModelInfo();
+
+            if (modelInfo) {
+              cachedModelName = modelInfo.name;
               debug(
                 1,
-                `[Context] Cached LMStudio context length: ${contextLength} tokens`
+                `[Backend Query] Detected model: ${modelInfo.name}`
               );
+
+              // vLLM-MLX and most OpenAI-compatible servers don't return context in /v1/models
+              // Try LMStudio-specific API if available (has context length)
+              if (providerName === "lmstudio") {
+                try {
+                  const contextLength = await getModelContextLength(backendUrlToQuery);
+                  if (contextLength) {
+                    cachedContextLength = contextLength;
+                    debug(
+                      1,
+                      `[Backend Query] LMStudio context length: ${contextLength} tokens`
+                    );
+                  }
+                } catch (lmstudioError) {
+                  debug(
+                    1,
+                    `[Backend Query] LMStudio API not available, will use model table lookup`
+                  );
+                }
+              }
             }
           } catch (error) {
             debug(
               1,
-              `[Context] Failed to query LMStudio context length:`,
-              error
+              `[Backend Query] Failed to query backend:`,
+              error instanceof Error ? error.message : String(error)
+            );
+            debug(
+              1,
+              `[Backend Query] Will use configured model name and context table lookup`
             );
           }
         }
 
         // Check context window and truncate if needed
+        // Use detected model name if available, otherwise fall back to configured model
+        const modelNameForContext = cachedModelName || model;
         const contextStats = calculateContextStats(
           body.messages,
           body.system,
           body.tools,
-          model,
+          modelNameForContext,
           cachedContextLength ?? undefined
         );
 
@@ -605,7 +640,7 @@ export const createAnthropicProxy = ({
             body.messages,
             body.system,
             body.tools,
-            model,
+            modelNameForContext,
             cachedContextLength ?? undefined
           );
           messagesToSend = result.messages;
@@ -620,7 +655,7 @@ export const createAnthropicProxy = ({
                 `\n` +
                 `  Before: ${body.messages.length} messages (${contextStats.totalTokens} tokens)\n` +
                 `  After:  ${messagesToSend.length} messages\n` +
-                `  Limit:  ${contextStats.contextLimit} tokens (80% of ${model})\n` +
+                `  Limit:  ${contextStats.contextLimit} tokens (80% of ${modelNameForContext})\n` +
                 `\n` +
                 `⚠️  IMPORTANT - LOCAL MODEL LIMITATION:\n` +
                 `  Claude Sonnet 4.5 auto-compresses context while preserving\n` +
@@ -645,6 +680,28 @@ export const createAnthropicProxy = ({
           1,
           `[Request Start] ${providerName}/${model} at ${new Date(requestStartTime).toISOString()}`
         );
+
+        // Calculate and log prompt overhead (system + tools vs user message)
+        const systemSize = system ? system.length : 0;
+        const toolsSize = tools ? JSON.stringify(tools).length : 0;
+        const userMsgSize = coreMessages
+          .filter((m: any) => m.role === "user")
+          .map((m: any) =>
+            typeof m.content === "string"
+              ? m.content.length
+              : JSON.stringify(m.content).length
+          )
+          .reduce((a: number, b: number) => a + b, 0);
+        const totalSize = systemSize + toolsSize + userMsgSize;
+        const overheadSize = systemSize + toolsSize;
+        const overheadPercent =
+          totalSize > 0 ? Math.round((overheadSize / totalSize) * 100) : 0;
+
+        // Estimate tokens (rough: 1 token ≈ 4 chars)
+        const systemTokens = Math.ceil(systemSize / 4);
+        const toolsTokens = Math.ceil(toolsSize / 4);
+        const overheadTokens = systemTokens + toolsTokens;
+
         if (isDebugEnabled()) {
           debug(1, `[Request Details] ${providerName}/${model}`, {
             system: system ? `${system.substring(0, 100)}...` : "none",
@@ -653,6 +710,27 @@ export const createAnthropicProxy = ({
             maxTokens: body.max_tokens,
             temperature: body.temperature,
           });
+
+          // Log overhead analysis
+          debug(1, `[Prompt Overhead] ${providerName}/${model}`, {
+            systemPrompt: `${(systemSize / 1024).toFixed(1)}KB (~${systemTokens.toLocaleString()} tokens)`,
+            tools: `${(toolsSize / 1024).toFixed(1)}KB (~${toolsTokens.toLocaleString()} tokens, ${Object.keys(tools || {}).length} tools)`,
+            userMessage: `${(userMsgSize / 1024).toFixed(1)}KB`,
+            totalOverhead: `${(overheadSize / 1024).toFixed(1)}KB (~${overheadTokens.toLocaleString()} tokens)`,
+            overheadPercent: `${overheadPercent}%`,
+            estimatedProcessingTime:
+              overheadTokens > 1000
+                ? `~${(overheadTokens / 60).toFixed(1)}s @ 60 tok/s`
+                : "<1s",
+          });
+
+          // Warn if overhead is very high
+          if (overheadPercent > 90 && overheadTokens > 5000) {
+            debug(
+              1,
+              `[Prompt Overhead] ⚠️  WARNING: ${overheadPercent}% overhead (${overheadTokens.toLocaleString()} tokens) may cause slow first response`
+            );
+          }
         }
         if (isVerboseDebugEnabled()) {
           debug(2, `[Full Request Body to Provider]`, {
@@ -958,6 +1036,8 @@ export const createAnthropicProxy = ({
           let totalChunksWritten = 0;
           let totalBytesWritten = 0;
           let finalUsageData: any = null;
+          let firstTokenTime: number | null = null;
+          let lastTokenTime: number | null = null;
 
           // Convert Web Streams to Node.js streams for proper backpressure handling
           // Readable.fromWeb() converts the readable side
@@ -994,6 +1074,27 @@ export const createAnthropicProxy = ({
                 2,
                 `[NodeWritable] Chunk #${totalChunksWritten} of type: ${chunk.type} (${data.length} bytes, total: ${totalBytesWritten} bytes)`
               );
+
+              // Track first token time (when we get first content)
+              if (
+                !firstTokenTime &&
+                (chunk.type === "content_block_delta" ||
+                  chunk.type === "content_block_start")
+              ) {
+                firstTokenTime = Date.now();
+                debug(
+                  2,
+                  `[Timing] First token received at ${Date.now() - requestStartTime}ms`
+                );
+              }
+
+              // Track last token time
+              if (
+                chunk.type === "content_block_delta" ||
+                chunk.type === "content_block_stop"
+              ) {
+                lastTokenTime = Date.now();
+              }
 
               // Clear keepalive on first chunk (stream has started)
               if (keepaliveInterval) {
@@ -1149,9 +1250,27 @@ export const createAnthropicProxy = ({
               clearInterval(keepaliveInterval);
             }
             const totalDuration = Date.now() - requestStartTime;
+
+            // Calculate tok/s if we have timing data
+            let tokensPerSecond: number | null = null;
+            if (
+              firstTokenTime &&
+              lastTokenTime &&
+              finalUsageData?.output_tokens
+            ) {
+              const generationDuration = (lastTokenTime - firstTokenTime) / 1000; // Convert to seconds
+              if (generationDuration > 0) {
+                tokensPerSecond =
+                  finalUsageData.output_tokens / generationDuration;
+              }
+            }
+
             debug(
               1,
-              `[Request Complete] ${providerName}/${model}: ${totalDuration}ms (${totalChunksWritten} chunks, ${totalBytesWritten} bytes)`
+              `[Request Complete] ${providerName}/${model}: ${totalDuration}ms (${totalChunksWritten} chunks, ${totalBytesWritten} bytes)` +
+                (tokensPerSecond
+                  ? ` | ⚡ ${tokensPerSecond.toFixed(1)} tok/s`
+                  : "")
             );
 
             // Record cache metrics for streaming responses

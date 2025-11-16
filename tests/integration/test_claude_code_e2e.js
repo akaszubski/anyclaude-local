@@ -113,7 +113,9 @@ async function testBasicConnectivity() {
 
   if (!proxyEnv) {
     log.test("Proxy responds to requests");
-    log.info("Proxy not running (expected in CI - run: PROXY_ONLY=true bun run src/main.ts)");
+    log.info(
+      "Proxy not running (expected in CI - run: PROXY_ONLY=true bun run src/main.ts)"
+    );
     return;
   }
 

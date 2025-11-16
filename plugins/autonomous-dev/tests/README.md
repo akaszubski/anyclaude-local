@@ -11,11 +11,13 @@ This document explains the testing strategy for ensuring architectural integrity
 ### Why Two Layers?
 
 **Static tests (pytest)** can only check:
+
 - Files exist
 - Text contains keywords
 - Structure is correct
 
 **GenAI validation** (/validate-architecture) can check:
+
 - Does implementation match **INTENT**?
 - Are agents **behaving** as designed?
 - Does **meaning** match **purpose**?
@@ -23,11 +25,13 @@ This document explains the testing strategy for ensuring architectural integrity
 ### Example of the Difference
 
 **Static test**:
+
 ```python
 assert "PROJECT.md" in orchestrator_content  # Just checks word exists
 ```
 
 **GenAI validation**:
+
 ```
 Read orchestrator.md. Does it actually validate PROJECT.md
 before starting work? Look for Task tool calls, alignment
@@ -37,6 +41,7 @@ logic, blocking on out-of-scope requests. Validate BEHAVIOR.
 ### Recommended Workflow
 
 1. **During Development** → Static tests (fast)
+
    ```bash
    pytest tests/test_architectural_intent.py -v
    ```
@@ -53,15 +58,18 @@ See ARCHITECTURE.md § Testing This Document for full details.
 ## Test Categories
 
 ### 1. Architectural Intent Tests (`test_architectural_intent.py`) ⭐ NEW
+
 **Purpose**: Validate design intent and detect architectural drift
 
 **What This Tests**:
+
 - WHY the architecture is designed this way
 - Architectural invariants (things that MUST remain true)
 - Design decisions and their rationale
 - Breaking changes (alerts when architecture fundamentally changes)
 
 **Coverage**:
+
 - PROJECT.md-first architecture (prevent scope creep)
 - 8-agent pipeline (specialization and order)
 - Model optimization (opus/sonnet/haiku)
@@ -74,17 +82,20 @@ See ARCHITECTURE.md § Testing This Document for full details.
 - Documentation sync (never stale)
 
 **Run**:
+
 ```bash
 pytest tests/test_architectural_intent.py -v
 ```
 
 **What This Catches**:
+
 - Architectural drift (unintentional changes)
 - Breaking changes (agent removal, pipeline reordering)
 - Design principle violations (PROJECT.md becomes optional)
 - Invariant violations (wrong number of agents, missing skills)
 
 **Example**:
+
 ```python
 def test_exactly_eight_agents_exist():
     """Test 8-agent pipeline remains intact."""
@@ -97,6 +108,7 @@ def test_exactly_eight_agents_exist():
 ```
 
 **If This Fails**:
+
 1. Architecture has changed → Update ARCHITECTURE.md
 2. Regression occurred → Fix the code
 3. Test is too strict → Update the test
@@ -104,20 +116,24 @@ def test_exactly_eight_agents_exist():
 ---
 
 ### 2. Unit Tests (`test_setup.py`)
+
 **Purpose**: Test individual functions in isolation
 
 **Coverage**:
+
 - `setup.py` script methods
 - Preset loading
 - File copying logic
 - Configuration creation
 
 **Run**:
+
 ```bash
 pytest tests/unit/scripts/test_setup.py -v
 ```
 
 **Example**:
+
 ```python
 def test_copies_hooks_directory(self, tmp_path):
     """Test hooks are copied from plugin to project."""
@@ -127,9 +143,11 @@ def test_copies_hooks_directory(self, tmp_path):
 ---
 
 ### 2. Architecture Tests (`test_architecture.py`)
+
 **Purpose**: Validate structural integrity (static analysis)
 
 **Coverage**:
+
 - All agents exist and have correct frontmatter
 - Skills have proper structure
 - Hooks reference existing files
@@ -138,11 +156,13 @@ def test_copies_hooks_directory(self, tmp_path):
 - No hardcoded secrets
 
 **Run**:
+
 ```bash
 pytest tests/test_architecture.py -v -m architecture
 ```
 
 **What This Catches**:
+
 - Missing agent files
 - Incorrect tool assignments
 - Broken file references
@@ -150,6 +170,7 @@ pytest tests/test_architecture.py -v -m architecture
 - File organization problems
 
 **Example**:
+
 ```python
 def test_all_agents_exist(self):
     """Test all 8 agents are present."""
@@ -161,9 +182,11 @@ def test_all_agents_exist(self):
 ---
 
 ### 3. Integration Tests (`test_integration.py`)
+
 **Purpose**: Test components working together
 
 **Coverage**:
+
 - Agent coordination (can orchestrator invoke others?)
 - Skill activation (do skills exist for contexts?)
 - Hook execution (do hooks reference real files?)
@@ -173,11 +196,13 @@ def test_all_agents_exist(self):
 - Error handling
 
 **Run**:
+
 ```bash
 pytest tests/test_integration.py -v -m integration
 ```
 
 **What This Catches**:
+
 - Broken agent pipelines
 - Missing skill dependencies
 - Hook configuration errors
@@ -185,6 +210,7 @@ pytest tests/test_integration.py -v -m integration
 - Model assignment issues
 
 **Example**:
+
 ```python
 def test_orchestrator_can_invoke_agents(self):
     """Test orchestrator has Task tool."""
@@ -194,9 +220,11 @@ def test_orchestrator_can_invoke_agents(self):
 ---
 
 ### 4. User Acceptance Tests (`test_uat.py`)
+
 **Purpose**: Validate end-to-end user workflows
 
 **Coverage**:
+
 - Plugin installation → setup → usage
 - /auto-implement workflow
 - /setup workflow
@@ -207,11 +235,13 @@ def test_orchestrator_can_invoke_agents(self):
 - Documentation quality
 
 **Run**:
+
 ```bash
 pytest tests/test_uat.py -v -m uat
 ```
 
 **What This Catches**:
+
 - Broken user workflows
 - Missing documentation
 - Poor error messages
@@ -219,6 +249,7 @@ pytest tests/test_uat.py -v -m uat
 - Documentation gaps
 
 **Example**:
+
 ```python
 def test_user_journey_happy_path(self, tmp_path):
     """Test complete user journey from install to feature."""
@@ -230,11 +261,13 @@ def test_user_journey_happy_path(self, tmp_path):
 ## Running Tests
 
 ### All Tests
+
 ```bash
 pytest -v
 ```
 
 ### By Category
+
 ```bash
 # Architectural intent (design rationale & drift detection)
 pytest -v -m intent
@@ -257,6 +290,7 @@ pytest tests/unit/ -v
 ```
 
 ### Specific Test File
+
 ```bash
 pytest tests/test_architecture.py -v
 pytest tests/test_integration.py -v
@@ -265,11 +299,13 @@ pytest tests/unit/scripts/test_setup.py -v
 ```
 
 ### Specific Test
+
 ```bash
 pytest tests/test_architecture.py::TestAgentStructure::test_all_agents_exist -v
 ```
 
 ### With Coverage
+
 ```bash
 pytest --cov=scripts --cov=hooks --cov-report=html
 ```
@@ -279,6 +315,7 @@ pytest --cov=scripts --cov=hooks --cov-report=html
 ## What Each Test Type Validates
 
 ### Architectural Intent Tests ✓ NEW
+
 - [x] PROJECT.md-first architecture enforced
 - [x] Exactly 8 agents in pipeline
 - [x] Model optimization strategy (opus/sonnet/haiku)
@@ -294,6 +331,7 @@ pytest --cov=scripts --cov=hooks --cov-report=html
 - [x] Breaking changes clearly defined
 
 ### Architecture Tests ✓
+
 - [x] All 8 agents exist
 - [x] Agents have correct frontmatter
 - [x] Models assigned correctly (opus/sonnet/haiku)
@@ -308,6 +346,7 @@ pytest --cov=scripts --cov=hooks --cov-report=html
 - [x] Consistent line endings
 
 ### Integration Tests ✓
+
 - [x] Orchestrator can invoke agents
 - [x] Agent pipeline complete
 - [x] Read-only agents can't write
@@ -321,6 +360,7 @@ pytest --cov=scripts --cov=hooks --cov-report=html
 - [x] Model selection appropriate
 
 ### UAT Tests ✓
+
 - [x] Plugin structure correct after install
 - [x] /setup creates all required files
 - [x] /auto-implement workflow documented
@@ -333,6 +373,7 @@ pytest --cov=scripts --cov=hooks --cov-report=html
 - [x] Documentation complete
 
 ### Unit Tests ✓
+
 - [x] SetupWizard initialization
 - [x] Plugin verification
 - [x] File copying
@@ -348,12 +389,14 @@ pytest --cov=scripts --cov=hooks --cov-report=html
 ## Testing Strategy
 
 ### 1. Development Testing (While Coding)
+
 ```bash
 # Test what you're working on
 pytest tests/unit/scripts/test_setup.py::TestCopyPluginFiles -v
 ```
 
 ### 2. Pre-Commit Testing (Before Committing)
+
 ```bash
 # Run all tests
 pytest -v
@@ -363,12 +406,14 @@ pytest tests/test_architecture.py tests/test_integration.py -v
 ```
 
 ### 3. CI/CD Testing (Automated)
+
 ```bash
 # Full test suite with coverage
 pytest --cov=scripts --cov=hooks --cov-report=xml
 ```
 
 ### 4. Release Testing (Before Release)
+
 ```bash
 # All tests + manual UAT
 pytest -v
@@ -382,31 +427,37 @@ pytest -v
 **These CANNOT be automated** and must be tested manually:
 
 ### 1. Plugin Installation
+
 ```bash
 /plugin marketplace add akaszubski/autonomous-dev
 /plugin install autonomous-dev
 ```
 
 **Verify**:
+
 - Plugin appears in `.claude/plugins/autonomous-dev/`
 - Commands available when typing `/`
 
 ### 2. Setup Workflow
+
 ```bash
 /setup
 ```
 
 **Verify**:
+
 - Interactive prompts work
 - Files created in correct locations
 - PROJECT.md is usable
 
 ### 3. Auto-Implement Workflow
+
 ```bash
 /auto-implement simple hello world function with tests
 ```
 
 **Verify**:
+
 - Orchestrator validates against PROJECT.md
 - Agents execute in order
 - Code is generated
@@ -414,6 +465,7 @@ pytest -v
 - Context budget managed
 
 ### 4. Hook Execution
+
 ```bash
 # If automatic hooks enabled
 echo "code" > test.py
@@ -424,6 +476,7 @@ git commit
 ```
 
 ### 5. Context Management
+
 ```bash
 /auto-implement feature 1
 /clear
@@ -432,6 +485,7 @@ git commit
 ```
 
 **Verify**:
+
 - Context stays small
 - Session logs created
 - Can run 10+ features without degradation
@@ -443,37 +497,41 @@ git commit
 ### Adding New Tests
 
 **For new features**:
+
 1. Add unit tests for logic
 2. Add integration test for component interaction
 3. Add UAT test for user workflow
 4. Update architecture tests if structure changes
 
 **For bug fixes**:
+
 1. Add regression test that fails with bug
 2. Fix the bug
 3. Verify test passes
 
 ### Test Coverage Goals
 
-| Category | Target | Current |
-|----------|--------|---------|
-| setup.py | 80%+ | TBD |
-| hooks/*.py | 60%+ | TBD (hard to test) |
-| Architecture | 100% | 100% |
-| Integration | 90%+ | 95% |
-| UAT Workflows | 100% | 100% |
+| Category      | Target | Current            |
+| ------------- | ------ | ------------------ |
+| setup.py      | 80%+   | TBD                |
+| hooks/\*.py   | 60%+   | TBD (hard to test) |
+| Architecture  | 100%   | 100%               |
+| Integration   | 90%+   | 95%                |
+| UAT Workflows | 100%   | 100%               |
 
 ---
 
 ## Continuous Improvement
 
 ### Metrics to Track
+
 - Test execution time
 - Coverage percentage
 - False positive rate
 - Manual test burden
 
 ### Regular Reviews
+
 - **Weekly**: Review test failures
 - **Monthly**: Review test coverage
 - **Per Release**: Full manual UAT
@@ -483,11 +541,13 @@ git commit
 ## Troubleshooting
 
 ### "pytest not found"
+
 ```bash
 pip install pytest
 ```
 
 ### "Import errors in tests"
+
 ```bash
 # Tests add parent to sys.path
 # Ensure you're running from plugin root
@@ -496,12 +556,14 @@ pytest -v
 ```
 
 ### "Tests fail due to missing files"
+
 ```bash
 # Ensure plugin structure is complete
 ls agents/ skills/ hooks/ commands/ templates/
 ```
 
 ### "Slow test execution"
+
 ```bash
 # Run only fast tests
 pytest -v -m "not slow"
@@ -523,6 +585,7 @@ pytest -v -m "not slow"
 **Total Coverage**: Intent + Structure + Integration + Workflows = Comprehensive validation
 
 **Key Innovation**: Test the WHY, not just the WHAT
+
 - Architectural intent tests document design rationale
 - Alert when architecture fundamentally changes
 - Prevent unintentional architectural drift

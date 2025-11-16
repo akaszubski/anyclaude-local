@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 Refactored
 
 #### GenAI Hook Utilities Extraction (Internal Improvement)
+
 - **New**: `hooks/genai_prompts.py` - Centralized prompt management for all GenAI-enhanced hooks
 - **New**: `hooks/genai_utils.py` - Shared GenAIAnalyzer class with graceful degradation
 - **Refactored**: All 5 GenAI-enhanced hooks now use shared utilities
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Key Insight**: All conflicts reduce to one question: **Is PROJECT.md correct?**
 
 **Changes**:
+
 - Simplified `/align-full` by eliminating complexity
 - Removed: 5-level hierarchy, cascade analysis, stakeholder categorization
 - Removed: 90% of complexity logic (574 fewer lines of code)
@@ -43,16 +45,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactored
 
 #### Simplified `alignment-analyzer` Agent
+
 - **Before**: Detect conflicts, categorize into 5 levels, analyze cascades, present 3-5 options
 - **After**: Detect conflicts, ask one question per conflict (A/B choice)
 - **Impact**: Faster, simpler, no false precision
 
 #### Simplified `/align-full` Command
+
 - **Before**: Present levels, cascade impacts, stakeholder routing
 - **After**: Show PROJECT.md claim vs reality, ask "Is PROJECT.md correct?"
 - **Decision Framework**:
   - A) YES → Align code/docs to PROJECT.md
-  - B) NO  → Update PROJECT.md to match reality
+  - B) NO → Update PROJECT.md to match reality
 
 ### Why This Works
 
@@ -95,6 +99,7 @@ B) NO  → Update PROJECT.md to match reality
 #### 🧪 GenAI Quality Validation System
 
 **Created `agents/quality-validator.md`** - GenAI-powered quality validation agent:
+
 - **Replaces traditional testing** (pytest, jest) with strategic validation
 - **4-dimension validation**:
   1. Intent Alignment (40% weight) - Does it serve PROJECT.md goals?
@@ -106,6 +111,7 @@ B) NO  → Update PROJECT.md to match reality
 - **Philosophy shift**: Quality = alignment with vision, not just "works"
 
 **Use cases**:
+
 - After `/auto-implement` completion
 - Before feature commits
 - Strategic validation vs tactical testing
@@ -113,6 +119,7 @@ B) NO  → Update PROJECT.md to match reality
 #### 🔍 Full Alignment Analysis System
 
 **Created `commands/align-full.md`** - Deep GenAI alignment analysis command:
+
 - **Comprehensive scan**: PROJECT.md (truth) vs code (reality) vs docs (claims)
 - **7-phase workflow**:
   1. Read PROJECT.md (source of truth)
@@ -124,6 +131,7 @@ B) NO  → Update PROJECT.md to match reality
   7. Build synced todos (`.todos.md` file)
 
 **6 inconsistency types detected**:
+
 1. **Docs vs Code**: Docs claim X, code does Y
 2. **Scope Drift**: Code exists but not in PROJECT.md goals
 3. **Missing References**: Code doesn't link to PROJECT.md
@@ -132,6 +140,7 @@ B) NO  → Update PROJECT.md to match reality
 6. **Outdated Claims**: Version mismatches, stale info
 
 **Interactive workflow**:
+
 ```
 Inconsistency #3: Missing PROJECT.md references
 Options:
@@ -145,6 +154,7 @@ What should we do? [A/B]: A
 ```
 
 **Created `agents/alignment-analyzer.md`** - GenAI alignment analysis agent:
+
 - Deep comparison across all project artifacts
 - Detects inconsistencies humans miss
 - Presents multiple resolution options
@@ -153,12 +163,14 @@ What should we do? [A/B]: A
 #### 📊 GitHub Issue Integration
 
 **Automatic issue creation**:
+
 - Every inconsistency → GitHub issue
 - Labels: `alignment`, `inconsistency`, severity
 - Detailed description with file references
 - Linked to `.todos.md` for tracking
 
 **Commands**:
+
 ```bash
 # View all alignment issues
 gh issue list --label alignment
@@ -170,12 +182,14 @@ gh issue list --label alignment,critical
 #### ✅ Synced Todo System
 
 **`.todos.md` file** - Version-controlled todo list:
+
 - Synced with GitHub issues
 - Prioritized by severity (CRITICAL → LOW)
 - File references and specific actions
 - Track completion with [x] checkboxes
 
 **Workflow**:
+
 1. `/align-full` creates `.todos.md`
 2. Pick highest priority todo
 3. Fix issue
@@ -188,6 +202,7 @@ gh issue list --label alignment,critical
 #### Updated Core Commands Count
 
 **Now 5 core commands** (was 4):
+
 1. `/auto-implement` - Vibe coding entry point
 2. `/setup` - Installation wizard
 3. `/status` - Strategic visibility
@@ -197,22 +212,26 @@ gh issue list --label alignment,critical
 ### Impact
 
 **GenAI Validation**:
+
 - ✅ Strategic alignment validated, not just "tests pass"
 - ✅ 4-dimension quality assessment (intent, UX, architecture, docs)
 - ✅ Actionable recommendations, not binary pass/fail
 
 **Alignment Analysis**:
+
 - ✅ Finds inconsistencies humans miss (GenAI deep comparison)
 - ✅ 6 inconsistency types detected automatically
 - ✅ Interactive resolution (user decides what to do)
 - ✅ Auto-creates GitHub issues + synced todos
 
 **Workflow**:
+
 - ✅ Weekly `/align-full` runs prevent drift
 - ✅ 78% → 95% alignment after fix workflow
 - ✅ PROJECT.md remains source of truth
 
 **Metrics**:
+
 - Overall alignment percentage
 - Traceability score (code → goals)
 - Constraint compliance (LOC, dependencies)
@@ -221,6 +240,7 @@ gh issue list --label alignment,critical
 ### Use Cases
 
 **GenAI quality validation** (after features):
+
 ```bash
 /auto-implement "add feature"
 # quality-validator runs automatically
@@ -229,6 +249,7 @@ gh issue list --label alignment,critical
 ```
 
 **Weekly alignment check**:
+
 ```bash
 /align-full
 # Scans everything
@@ -239,6 +260,7 @@ gh issue list --label alignment,critical
 ```
 
 **Fix workflow**:
+
 ```bash
 # Review todos
 cat .todos.md
@@ -284,21 +306,25 @@ None - this is purely additive functionality.
 #### 🗂️ Command Simplification (64% Reduction)
 
 **Archived manual quality commands** - hooks enforce automatically:
+
 - `/test` → `hooks/auto_test.py` runs tests at commit
 - `/align-project` → `hooks/validate_project_alignment.py` validates alignment at commit
 - `/advise` → orchestrator agent validates PROJECT.md alignment automatically
 
 **Merged duplicate commands** - reduced installation complexity:
+
 - `/bootstrap` → Merged into `/setup` (tech stack auto-detection included)
 - `/create-project-md` → Merged into `/setup` (PROJECT.md creation included)
 
 **Moved developer tools** - not user-facing commands:
+
 - `/sync-dev` → `scripts/sync_to_installed.py` (direct invocation)
 - `/health-check` → `scripts/health_check.py` (direct invocation)
 
 **Result**: 11 commands → 4 core commands
 
 **Core commands** (aligned with philosophy):
+
 1. `/auto-implement` - Vibe coding entry point (natural language → professional result)
 2. `/setup` - Installation wizard (once per project)
 3. `/status` - Strategic visibility (PROJECT.md progress)
@@ -309,6 +335,7 @@ None - this is purely additive functionality.
 #### 📋 Professional Methodology Documentation
 
 **`docs/METHODOLOGY.md`** - Complete guide to using Claude Code professionally:
+
 - Partnership model (you decide WHAT, Claude handles HOW)
 - /clear discipline (context management after every feature)
 - Trust + verify (validate outputs, not process)
@@ -321,6 +348,7 @@ None - this is purely additive functionality.
 #### 🔄 Migration Support
 
 **`commands/archived/ARCHIVE.md`** - Detailed migration guide:
+
 - Explanation for each archived command
 - Hook replacement for each manual command
 - Before/after workflow examples
@@ -329,18 +357,21 @@ None - this is purely additive functionality.
 ### Impact
 
 **Philosophy Alignment:**
+
 - ✅ Pure vibe coding UX (natural language input)
 - ✅ Background enforcement (hooks validate automatically)
 - ✅ Minimal intervention (4 commands vs 11)
 - ✅ Strategic simplicity (clear purpose for each command)
 
 **User Experience:**
+
 - ✅ Cognitive overhead reduced (64% fewer commands to learn)
 - ✅ No manual quality steps (hooks handle automatically)
 - ✅ Professional practices documented (methodology guide)
 - ✅ Clear migration path (archived commands preserved)
 
 **Technical:**
+
 - ✅ Philosophy-driven architecture (aligned with stated goals)
 - ✅ Hook-based validation (automatic, not manual)
 - ✅ Preserved functionality (hooks replace commands)
@@ -358,6 +389,7 @@ None - this is purely additive functionality.
 #### 🎯 Advisor Preview Mode (Automatic)
 
 **Enhanced orchestrator agent** with intelligent advisor integration:
+
 - **Preview Mode**: Quick 15-second assessment shown automatically for significant decisions
 - **User Choice**: `Y` (full analysis) / `N` (skip) / `always` (strict) / `never` (fast)
 - **Preserves "1 command" workflow** - User stays in control
@@ -365,6 +397,7 @@ None - this is purely additive functionality.
 - **Skip for**: Bug fixes, trivial changes, documentation updates
 
 **Workflow:**
+
 ```
 User: "Add Redis caching"
   ↓
@@ -383,6 +416,7 @@ Proceeds based on choice
 ```
 
 **Benefits:**
+
 - ✅ No manual `/advise` to remember
 - ✅ Preserves fast iteration (can skip)
 - ✅ Quality gate when needed
@@ -411,6 +445,7 @@ Proceeds based on choice
   - Presets (fast/balanced/strict)
 
 **Example Output:**
+
 ```
 /bootstrap
 
@@ -429,13 +464,14 @@ Apply? [Y/n/customize]
 ```
 
 **Creates `.claude/config.yml`**:
+
 ```yaml
 project:
   tech_stack: [nodejs, typescript]
   size: medium
 
 advisor:
-  mode: preview  # Quick assessment, optional full analysis
+  mode: preview # Quick assessment, optional full analysis
   sensitivity: medium
 
 skills:
@@ -448,12 +484,14 @@ hooks:
 ```
 
 **Why This Matters:**
+
 - ✅ Works immediately after install (no manual config)
 - ✅ Project-specific optimization
 - ✅ Fewer "why isn't X working?" questions
 - ✅ Better onboarding experience
 
 **Recommended First-Time Flow:**
+
 ```bash
 /plugin install autonomous-dev
 /bootstrap  # ← Detects and configures
@@ -464,13 +502,14 @@ hooks:
 
 **Problem Solved**: (1) Users still had to type `/auto-implement` manually, (2) Agents sometimes skip workflow steps, (3) No enforcement of TDD workflow.
 
-**User Intent**: *"i speak requirements and claude code delivers a first grade software engineering outcome in minutes by following all the necessary steps that would need to be taken in top level software engineering but so much quicker with the use of AI and validation"*
+**User Intent**: _"i speak requirements and claude code delivers a first grade software engineering outcome in minutes by following all the necessary steps that would need to be taken in top level software engineering but so much quicker with the use of AI and validation"_
 
 **Core Philosophy**: Professional quality = ALL SDLC steps + AI acceleration + Hook validation (NOT skipping steps to go faster)
 
 Implemented **dual-layer architecture** that combines natural language interaction (vibe coding) with automatic workflow validation (background enforcement):
 
 **Layer 1: Vibe Coding** (User Experience):
+
 - **customInstructions Field**: Added to `templates/settings.strict-mode.json`
   - Claude automatically invokes `/auto-implement` when user describes features in natural language
   - Example: User says "add Redis caching" → Claude automatically runs `/auto-implement "add Redis caching"`
@@ -482,6 +521,7 @@ Implemented **dual-layer architecture** that combines natural language interacti
   - Shows "DO NOT respond conversationally - run the command"
 
 **Layer 2: Background Enforcement** (Quality Assurance):
+
 - **enforce_orchestrator.py Hook** (Phase 1 - NEW):
   - Validates orchestrator ran and checked PROJECT.md alignment
   - Blocks commits without evidence in strict mode
@@ -506,6 +546,7 @@ Implemented **dual-layer architecture** that combines natural language interacti
   - Prevents documentation drift automatically
 
 **Time Savings (All Steps Still Required)**:
+
 - Research: 2 hours → 5 minutes (AI web search + codebase patterns)
 - Planning: 1 hour → 5 minutes (AI architecture analysis)
 - TDD: 30 minutes → 5 minutes (AI test generation)
@@ -516,6 +557,7 @@ Implemented **dual-layer architecture** that combines natural language interacti
 - **Total: 7+ hours → 30 minutes** (14x faster, all 7 steps completed)
 
 **Why This Matters**:
+
 - ✅ **Vibe coding works**: Just describe features, /auto-implement runs automatically
 - ✅ **All steps enforced**: Hooks block commits if research/TDD/review/security/docs skipped
 - ✅ **Speed via AI, not shortcuts**: Each professional step still required, just AI-accelerated
@@ -526,6 +568,7 @@ Implemented **dual-layer architecture** that combines natural language interacti
 - ✅ **Documentation stays fresh**: Version/count mismatches auto-fixed
 
 **Workflow Example**:
+
 ```
 User: "implement user authentication"
   ↓
@@ -549,6 +592,7 @@ Result: Professional-quality commit OR helpful error with guidance
 ```
 
 **PreCommit Hook Chain** (6 hooks, 100% compliance):
+
 1. `validate_project_alignment.py` - PROJECT.md GATEKEEPER
 2. `enforce_orchestrator.py` - Orchestrator validation (v3.0 NEW)
 3. `enforce_tdd.py` - TDD workflow enforcement (v3.0 NEW)
@@ -557,15 +601,18 @@ Result: Professional-quality commit OR helpful error with guidance
 6. `security_scan.py` - Security validation
 
 **Updated Components**:
+
 - `templates/settings.strict-mode.json`: Added customInstructions field
 - `hooks/detect_feature_request.py`: Enhanced message guidance
 - PROJECT.md: Updated to reflect dual-layer architecture
 
 **Files Added**:
+
 - `hooks/enforce_orchestrator.py` (180 lines)
 - `hooks/enforce_tdd.py` (320 lines)
 
 **Success Metrics**:
+
 - Vibe coding: 100% of features triggered by natural language ✅
 - Background enforcement: 100% of commits validated by 6 hooks ✅
 - User effort: 0 commands per feature (just describe, it works) ✅
@@ -578,14 +625,17 @@ Result: Professional-quality commit OR helpful error with guidance
 ### Impact
 
 **Onboarding Time**:
+
 - Before: 30-60 min (read docs, configure manually)
 - After: 2-3 min (/bootstrap → /setup → done)
 
 **User Friction**:
+
 - Before: "I don't know which agents/skills to enable"
 - After: "Bootstrap detected my project and configured everything"
 
 **Advisor Adoption**:
+
 - Before: Manual `/advise` → Users forget
 - After: Preview mode → Automatic suggestions
 
@@ -624,6 +674,7 @@ Result: Professional-quality commit OR helpful error with guidance
   - Helps prevent regrettable decisions before implementation starts
 
 **Use Cases**:
+
 - Architecture decisions ("Should we use microservices?")
 - Technology choices ("Switch from REST to GraphQL?")
 - New feature proposals ("Add real-time collaboration?")
@@ -632,6 +683,7 @@ Result: Professional-quality commit OR helpful error with guidance
 
 **Why This Matters**:
 GenAI excels at critical thinking, not just code generation. This agent helps developers:
+
 - ✅ Catch scope creep before implementation
 - ✅ Avoid overengineering (detects simple problem + complex solution)
 - ✅ Stay aligned with PROJECT.md goals
@@ -639,6 +691,7 @@ GenAI excels at critical thinking, not just code generation. This agent helps de
 - ✅ Identify risks early
 
 **Example Output**:
+
 ```
 User: /advise "Add real-time collaboration"
 
@@ -654,6 +707,7 @@ benefit with 5% of cost.
 ```
 
 **Integration with Workflow**:
+
 ```
 User: "Add feature X"
   ↓
@@ -665,6 +719,7 @@ User: Reviews and decides
 ```
 
 **Success Metrics**:
+
 - ✅ Prevents scope creep (catches misalignment early)
 - ✅ Reduces overengineering (suggests simpler alternatives)
 - ✅ Keeps projects aligned with stated goals
@@ -764,7 +819,7 @@ This **major release** transforms autonomous-dev from structural validation to *
   - Shell scripts → `scripts/debug/` or `scripts/test/`
   - Documentation → `docs/guides/`, `docs/debugging/`, `docs/architecture/`, etc.
   - Source code → `src/`, tests → `tests/`
-  - Infers category from filename (test-*.sh → scripts/test/)
+  - Infers category from filename (test-\*.sh → scripts/test/)
   - Creates target directory if missing
   - Logs all auto-corrections to `.claude/file-org-log.json`
 
@@ -812,12 +867,14 @@ This **major release** transforms autonomous-dev from structural validation to *
 #### `/align-project` Command - Complete Overhaul
 
 **Before** (v2.x):
+
 - Structural validation only (files exist, directories correct)
 - No semantic understanding
 - Couldn't detect outdated documentation
 - Single mode, no user choice
 
 **After** (v3.0.0):
+
 - **5-phase comprehensive validation**:
   1. Structural (files & directories)
   2. Semantic (docs match implementation) - GenAI
@@ -835,11 +892,13 @@ This **major release** transforms autonomous-dev from structural validation to *
 #### `/setup` Command - PROJECT.md Integration
 
 **Before** (v2.x):
+
 - Optional PROJECT.md template copy
 - Could complete without PROJECT.md
 - Many features didn't work without PROJECT.md
 
 **After** (v3.0.0):
+
 - **Mandatory PROJECT.md creation**:
   - Detects missing PROJECT.md
   - Offers 4 creation options (generate/template/interactive/skip)
@@ -930,12 +989,13 @@ If you want old behavior (no auto-fix):
 ```yaml
 # .claude/config.yml
 file_organization:
-  enforcement: "warn"  # or "block"
+  enforcement: "warn" # or "block"
 ```
 
 #### Step 5: Update Workflows
 
 If you have scripts calling `/align-project`:
+
 - Update to handle new interactive menu
 - Or use `/align-project` → Option 1 (view only) for automated checks
 
@@ -948,6 +1008,7 @@ If you have scripts calling `/align-project`:
 ### What's Next (v3.1.0 Roadmap)
 
 Planned for next release:
+
 - **Enhancement 5**: .gitignore comprehensiveness validation
 - **Enhancement 6**: Commit message guidance in pre-commit hook
 - **GitHub Issue Integration**: Auto-create issues from test failures
@@ -1070,15 +1131,15 @@ This release focuses on **user experience**, **clarity**, and **error recovery**
 
 ### Metrics
 
-| Metric | Before (v2.4.0) | After (v2.5.0) | Improvement |
-|--------|-----------------|----------------|-------------|
-| **UX Score** | 6.5/10 | 8.5/10 | +2.0 (31%) |
-| **Command Clarity** | Silent failures | All validated | 100% |
-| **Error Resolution Time** | 30-120 min | 2-5 min | 95% faster |
-| **Onboarding Time (Basic)** | 10 min | 2 min | 80% faster |
-| **Documentation Accuracy** | 95% | 95% | Maintained |
-| **Critical Issues** | 0/5 | 0/5 | Maintained |
-| **High-Priority Issues** | 4/4 open | 4/4 closed | 100% |
+| Metric                      | Before (v2.4.0) | After (v2.5.0) | Improvement |
+| --------------------------- | --------------- | -------------- | ----------- |
+| **UX Score**                | 6.5/10          | 8.5/10         | +2.0 (31%)  |
+| **Command Clarity**         | Silent failures | All validated  | 100%        |
+| **Error Resolution Time**   | 30-120 min      | 2-5 min        | 95% faster  |
+| **Onboarding Time (Basic)** | 10 min          | 2 min          | 80% faster  |
+| **Documentation Accuracy**  | 95%             | 95%            | Maintained  |
+| **Critical Issues**         | 0/5             | 0/5            | Maintained  |
+| **High-Priority Issues**    | 4/4 open        | 4/4 closed     | 100%        |
 
 ### Commits
 
@@ -1110,6 +1171,7 @@ None. This is a UX and documentation release with no breaking changes to functio
 - Week 3-4: Final validation + v1.0 release
 
 **Remaining Medium Priority Issues**:
+
 - #17: Duplicate agents (architectural decision pending)
 
 ---
@@ -1204,15 +1266,15 @@ This release focuses on **documentation accuracy**, **architectural transparency
 
 ### Metrics
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **UX Score** | 6.5/10 | 8.0/10† | +1.5 |
-| **Architecture Alignment** | 62% | 90% | +28% |
-| **Documentation Accuracy** | 20% | 95% | +75% |
-| **Python Infrastructure Docs** | 0% | 100% | +100% |
-| **Critical Issues Resolved** | 0/5 | 5/5 | 100% |
-| **Auto-Sync** | Manual | Automatic | ✅ |
-| **Onboarding Time** | Hours | 10 min | 90% faster |
+| Metric                         | Before | After     | Improvement |
+| ------------------------------ | ------ | --------- | ----------- |
+| **UX Score**                   | 6.5/10 | 8.0/10†   | +1.5        |
+| **Architecture Alignment**     | 62%    | 90%       | +28%        |
+| **Documentation Accuracy**     | 20%    | 95%       | +75%        |
+| **Python Infrastructure Docs** | 0%     | 100%      | +100%       |
+| **Critical Issues Resolved**   | 0/5    | 5/5       | 100%        |
+| **Auto-Sync**                  | Manual | Automatic | ✅          |
+| **Onboarding Time**            | Hours  | 10 min    | 90% faster  |
 
 † Estimated based on fixes
 
@@ -1230,6 +1292,7 @@ None. This is a documentation and tooling release with no breaking changes to fu
 ### Known Issues
 
 Still open (not blockers for Beta):
+
 - #13: Command implementation missing pattern causes silent failures (HIGH)
 - #14: Overwhelming command count (40 total, only 8 active) (HIGH)
 - #15: Installation complexity vs simplicity promise (HIGH)
@@ -1259,12 +1322,14 @@ Still open (not blockers for Beta):
 ## [2.3.1] - 2025-10-25
 
 ### Added
+
 - Initial plugin structure with 12 agents, 15 hooks, 8 commands
 - Python-based orchestrator (lib/workflow_coordinator.py)
 - PROJECT.md-first architecture
 - Auto-orchestration capabilities
 
 ### Notes
+
 - Version number inconsistencies (2.1.0 vs 2.3.1 in different files)
 - Documentation accuracy issues discovered
 - Foundation for v2.4.0-beta improvements
@@ -1280,6 +1345,7 @@ Still open (not blockers for Beta):
 ---
 
 **Legend:**
+
 - Added: New features
 - Changed: Changes to existing features
 - Deprecated: Features marked for removal

@@ -11,6 +11,7 @@ auto_activate: true
 Git best practices and workflow standards for team collaboration.
 
 ## When This Activates
+
 - Git operations (commit, branch, merge)
 - Pull request creation/review
 - Release management
@@ -26,6 +27,7 @@ Git best practices and workflow standards for team collaboration.
 **Pattern**: `<type>: <description>`
 
 **Types**:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only
@@ -64,6 +66,7 @@ Closes #15"
 ```
 
 **Template**:
+
 ```
 <type>: <short summary>
 
@@ -135,6 +138,7 @@ git push -u origin feat/new-feature
 ### Protected Main Branch
 
 **Rules**:
+
 - No direct commits to `main`
 - All changes via pull requests
 - Require review before merge
@@ -159,19 +163,23 @@ docs: update installation instructions
 
 ```markdown
 ## Summary
+
 Brief description of changes (1-3 sentences)
 
 ## Changes
+
 - Add PDF extraction using PyPDF2
 - Update DataCurator class with extract_from_pdf method
 - Add tests for PDF extraction
 
 ## Testing
+
 - [x] Unit tests added/updated
 - [x] Integration tests pass
 - [x] Manual testing completed
 
 ## Checklist
+
 - [x] Code follows style guide
 - [x] Documentation updated
 - [x] Tests pass locally
@@ -183,11 +191,13 @@ Closes #42
 ### PR Size Guidelines
 
 **Keep PRs Small**:
+
 - ✅ **Small**: < 300 lines changed (ideal)
 - ⚠️ **Medium**: 300-500 lines (acceptable)
 - ❌ **Large**: > 500 lines (split if possible)
 
 **Why**: Smaller PRs are:
+
 - Easier to review
 - Faster to merge
 - Less likely to have conflicts
@@ -197,14 +207,17 @@ Closes #42
 
 ```markdown
 # ❌ BAD: One massive PR
+
 feat: complete rewrite of training system
+
 - Refactor trainer (500 lines)
 - Add new methods (300 lines)
 - Update docs (100 lines)
 - Add tests (200 lines)
-Total: 1100 lines!
+  Total: 1100 lines!
 
 # ✅ GOOD: Multiple focused PRs
+
 PR #1: refactor: extract strategy pattern for training methods (200 lines)
 PR #2: feat: add DPO training strategy (150 lines)
 PR #3: feat: add full fine-tuning strategy (150 lines)
@@ -219,6 +232,7 @@ PR #5: test: add integration tests for training strategies (200 lines)
 ### Creating a PR
 
 1. **Ensure tests pass locally**:
+
 ```bash
 pytest tests/
 black . && isort .
@@ -234,6 +248,7 @@ mypy src/
 ### Responding to Review Feedback
 
 **Process**:
+
 1. Read all comments before responding
 2. Ask clarifying questions if needed
 3. Make requested changes
@@ -244,21 +259,26 @@ mypy src/
 
 ```markdown
 # ✅ Agree and implemented
+
 Done! Changed to use a set for O(1) lookup.
 
 # ❓ Clarifying question
+
 Good point - should this handle empty lists as well, or can we assume non-empty?
 
 # 💭 Alternative approach
+
 I see your concern. What if we use a generator instead? That avoids loading everything into memory.
 
 # ✅ Agree but out of scope
+
 You're right, but I'd prefer to address that in a separate PR since it's unrelated. Created #54 to track it.
 ```
 
 ### Merging
 
 **Options**:
+
 - **Squash and merge**: Combines all commits into one (recommended for feature branches)
 - **Rebase and merge**: Replays commits on top of main (for clean history)
 - **Merge commit**: Preserves all commits (for long-running branches)
@@ -266,6 +286,7 @@ You're right, but I'd prefer to address that in a separate PR since it's unrelat
 **Recommended**: Squash and merge for most PRs
 
 **After Merge**:
+
 ```bash
 # Delete remote branch
 git push origin --delete feat/my-feature
@@ -312,6 +333,7 @@ git commit -m "refactor: extract validation tests to separate file"
 ### Use `.gitignore` Properly
 
 **Common patterns**:
+
 ```gitignore
 # Python
 __pycache__/
@@ -354,6 +376,7 @@ load_dotenv()
 ```
 
 **If you accidentally commit secrets**:
+
 1. Rotate the secret immediately
 2. Use `git filter-branch` or BFG Repo-Cleaner to remove from history
 3. Force push (WARNING: Only on personal branches!)
@@ -380,7 +403,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -445,6 +468,7 @@ repos:
 - **PATCH**: Bug fixes (backwards compatible)
 
 **Examples**:
+
 - `1.0.0` → `1.0.1`: Bug fix
 - `1.0.1` → `1.1.0`: New feature added
 - `1.1.0` → `2.0.0`: Breaking change

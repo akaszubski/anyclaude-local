@@ -1,9 +1,7 @@
 {
   "description": "Autonomous Development - Default Settings (Out-of-Box Experience)",
   "permissions": {
-    "allow": [
-      "*"
-    ],
+    "allow": ["*"],
     "deny": [
       "Read(~/.ssh/*)",
       "Read(~/.aws/*)",

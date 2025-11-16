@@ -22,9 +22,11 @@ Validate user feature requests against PROJECT.md to determine if they align wit
 ## Process
 
 1. **Read PROJECT.md**
+
    ```bash
    Read .claude/PROJECT.md
    ```
+
    Extract: GOALS, SCOPE (included/excluded), CONSTRAINTS, SUCCESS CRITERIA
 
 2. **Analyze request**

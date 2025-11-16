@@ -5,6 +5,10 @@ import * as os from "os";
 // Store error messages to display later
 let pendingErrorMessages: string[] = [];
 
+// File stream for debug logging
+let debugLogStream: fs.WriteStream | null = null;
+let debugLogPath: string | null = null;
+
 export interface DebugInfo {
   statusCode: number;
   request: {
@@ -122,21 +126,118 @@ export function logDebugError(
 }
 
 /**
+ * Initialize debug log file if debug mode is enabled
+ */
+function initializeDebugLog(): void {
+  if (debugLogStream) return; // Already initialized
+
+  const level = getDebugLevel();
+  if (level === 0) return; // Debug not enabled
+
+  try {
+    // Create ~/.anyclaude/logs directory if it doesn't exist
+    const homeDir = os.homedir();
+    const logsDir = path.join(homeDir, ".anyclaude", "logs");
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+
+    // Create log file with timestamp
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/:/g, "-")
+      .replace(/\..+/, "");
+    const filename = `debug-session-${timestamp}.log`;
+    debugLogPath = path.join(logsDir, filename);
+
+    // Open write stream
+    debugLogStream = fs.createWriteStream(debugLogPath, { flags: "a" });
+
+    // Write header
+    debugLogStream.write("═".repeat(60) + "\n");
+    debugLogStream.write(`ANYCLAUDE DEBUG SESSION - Level ${level}\n`);
+    debugLogStream.write(`Started: ${new Date().toISOString()}\n`);
+    debugLogStream.write("═".repeat(60) + "\n\n");
+
+    // Ensure log is flushed on exit
+    process.on("exit", closeDebugLog);
+    process.on("SIGINT", () => {
+      closeDebugLog();
+      process.exit(0);
+    });
+    process.on("SIGTERM", () => {
+      closeDebugLog();
+      process.exit(0);
+    });
+  } catch (error) {
+    console.error("[ANYCLAUDE] Failed to initialize debug log:", error);
+  }
+}
+
+/**
+ * Close debug log file and write footer
+ */
+function closeDebugLog(): void {
+  if (debugLogStream) {
+    debugLogStream.write("\n" + "═".repeat(60) + "\n");
+    debugLogStream.write(`Session ended: ${new Date().toISOString()}\n`);
+    debugLogStream.write("═".repeat(60) + "\n");
+    debugLogStream.end();
+    debugLogStream = null;
+  }
+}
+
+/**
+ * Get the current debug log file path
+ */
+export function getDebugLogPath(): string | null {
+  return debugLogPath;
+}
+
+/**
+ * Log session context (backend, model, config) to debug file
+ */
+export function logSessionContext(context: {
+  mode: string;
+  model: string;
+  backendUrl?: string;
+  proxyUrl: string;
+  config?: Record<string, any>;
+}): void {
+  if (!debugLogStream) {
+    initializeDebugLog();
+  }
+
+  if (debugLogStream) {
+    debugLogStream.write("\n" + "─".repeat(60) + "\n");
+    debugLogStream.write("SESSION CONFIGURATION\n");
+    debugLogStream.write("─".repeat(60) + "\n");
+    debugLogStream.write(`Backend Mode: ${context.mode}\n`);
+    debugLogStream.write(`Model: ${context.model}\n`);
+    if (context.backendUrl) {
+      debugLogStream.write(`Backend URL: ${context.backendUrl}\n`);
+    }
+    debugLogStream.write(`Proxy URL: ${context.proxyUrl}\n`);
+    if (context.config) {
+      debugLogStream.write(`\nConfiguration:\n`);
+      debugLogStream.write(JSON.stringify(context.config, null, 2) + "\n");
+    }
+    debugLogStream.write("─".repeat(60) + "\n\n");
+  }
+}
+
+/**
  * Display debug mode startup message
  */
 export function displayDebugStartup(): void {
   const level = getDebugLevel();
   if (level > 0) {
-    const tmpDir = os.tmpdir();
-    const errorLogPath = path.join(tmpDir, "anyclaude-errors.log");
-    process.stderr.write("\n═══════════════════════════════════════\n");
-    process.stderr.write(`ANYCLAUDE DEBUG MODE ENABLED (Level ${level})\n`);
-    process.stderr.write(`Error log: ${errorLogPath}\n`);
-    process.stderr.write(`Debug files: ${tmpDir}/anyclaude-debug-*.json\n`);
-    if (level >= 2) {
-      process.stderr.write("Verbose: Duplicate filtering details enabled\n");
+    initializeDebugLog(); // Initialize log file
+
+    // Only show log file path, keep screen clean
+    if (debugLogPath) {
+      process.stderr.write(`[anyclaude] Debug mode (level ${level}): ${debugLogPath}\n`);
     }
-    process.stderr.write("═══════════════════════════════════════\n\n");
   }
 }
 
@@ -185,7 +286,15 @@ export function isTraceDebugEnabled(): boolean {
  */
 export function debug(level: 1 | 2 | 3, message: string, data?: any): void {
   if (getDebugLevel() >= level) {
-    const prefix = "[ANYCLAUDE DEBUG]";
+    // Initialize log file if not already done
+    if (!debugLogStream) {
+      initializeDebugLog();
+    }
+
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [ANYCLAUDE DEBUG]`;
+
+    let logMessage: string;
     if (data !== undefined) {
       // For level 3 (trace), show full objects without truncation
       // For levels 1-2, limit output length
@@ -193,12 +302,18 @@ export function debug(level: 1 | 2 | 3, message: string, data?: any): void {
         typeof data === "object"
           ? JSON.stringify(data, null, level >= 3 ? 2 : 0).substring(
               0,
-              level >= 3 ? Infinity : 200
+              level >= 3 ? Infinity : 500
             )
           : String(data);
-      console.error(`${prefix} ${message}`, dataStr);
+      logMessage = `${prefix} ${message} ${dataStr}\n`;
     } else {
-      console.error(`${prefix} ${message}`);
+      logMessage = `${prefix} ${message}\n`;
     }
+
+    // Write to file only, never to screen
+    if (debugLogStream) {
+      debugLogStream.write(logMessage);
+    }
+    // Don't fallback to stderr - debug output stays in log file only
   }
 }

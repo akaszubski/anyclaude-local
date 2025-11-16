@@ -43,7 +43,7 @@ if [ -d "$VENV_PATH" ]; then
         source "$VENV_PATH/bin/activate"
         echo "Updating dependencies..."
         pip install --upgrade pip setuptools wheel
-        pip install --upgrade mlx mlx-lm certifi huggingface-hub vllm-mlx
+        pip install --upgrade mlx mlx-lm certifi huggingface-hub fastapi uvicorn
         echo -e "${GREEN}✓${NC} Dependencies updated successfully"
         exit 0
     fi
@@ -76,10 +76,10 @@ echo ""
 pip install \
     mlx \
     mlx-lm \
-    mlx-metal \
     certifi \
     huggingface-hub \
-    vllm-mlx
+    fastapi \
+    uvicorn
 
 echo ""
 echo -e "${GREEN}✓${NC} All dependencies installed successfully"

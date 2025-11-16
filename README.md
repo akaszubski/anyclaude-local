@@ -1480,6 +1480,7 @@ This project is an **enhanced fork** of [anyclaude](https://github.com/coder/any
 ### Original Project
 
 **anyclaude** - created by Coder Technologies Inc.
+
 - Repository: https://github.com/coder/anyclaude
 - License: MIT License
 - Copyright (c) 2024 Coder Technologies Inc.

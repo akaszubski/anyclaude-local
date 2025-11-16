@@ -11,6 +11,7 @@ Strict Mode enforces software engineering best practices automatically through "
 **The Vision**: Describe features in natural language → System automatically follows all SDLC best practices → Professional, consistent output without manual steps.
 
 **How it works**:
+
 1. You say: "implement user authentication"
 2. System detects feature request (auto-orchestration)
 3. Orchestrator checks PROJECT.md alignment
@@ -54,18 +55,21 @@ vim PROJECT.md
 ### 1. PROJECT.md Alignment (Gatekeeper)
 
 **BEFORE any feature work**:
+
 - ✅ PROJECT.md must exist
 - ✅ Must have GOALS, SCOPE, CONSTRAINTS sections
 - ✅ Feature request must align with SCOPE
 - ❌ Work BLOCKED if not aligned
 
 **Two options when misaligned**:
+
 1. Update PROJECT.md to include new scope
 2. Don't implement the feature (out of scope)
 
 ### 2. Auto-Orchestration
 
 **Feature request keywords trigger agents**:
+
 - "implement X"
 - "add X"
 - "create X"
@@ -74,14 +78,16 @@ vim PROJECT.md
 - "write X"
 
 **Agent pipeline** (automatic):
+
 ```
-researcher → planner → test-master → implementer → 
+researcher → planner → test-master → implementer →
 reviewer → security-auditor → doc-master
 ```
 
 ### 3. SDLC Steps (Cannot Skip)
 
 **Each step required**:
+
 1. ✅ Research - Find existing patterns
 2. ✅ Plan - Create implementation plan
 3. ✅ Tests FIRST - Write failing tests (TDD)
@@ -92,6 +98,7 @@ reviewer → security-auditor → doc-master
 8. ✅ Validate - Run all checks
 
 **If you try to skip**:
+
 - Implement without tests → BLOCKED
 - Commit without docs → BLOCKED
 - Push without security scan → BLOCKED
@@ -99,6 +106,7 @@ reviewer → security-auditor → doc-master
 ### 4. File Organization
 
 **Standard structure enforced**:
+
 ```
 project/
 ├── src/              # ALL source code
@@ -113,12 +121,14 @@ project/
 ```
 
 **Root directory kept clean**:
+
 - ❌ No loose .py files
 - ❌ No temp files
 - ❌ No test files
 - ✅ Only README.md, LICENSE, .gitignore, config files
 
 **Auto-fix available**:
+
 ```bash
 python hooks/enforce_file_organization.py --fix
 ```
@@ -126,6 +136,7 @@ python hooks/enforce_file_organization.py --fix
 ### 5. Pre-Commit Validation (Blocking)
 
 **Before EVERY commit, these run**:
+
 1. PROJECT.md alignment check
 2. All tests must pass
 3. Security scan must pass
@@ -222,12 +233,14 @@ Approve? [Yes/No]
 ## 🛠️ Commands
 
 ### Setup
+
 ```bash
 /setup --strict-mode              # Enable strict mode
 /setup --create-project-md        # Create PROJECT.md only
 ```
 
 ### Validation
+
 ```bash
 /align-project                    # Check PROJECT.md alignment
 python hooks/validate_project_alignment.py   # Manual validation
@@ -236,6 +249,7 @@ python hooks/enforce_file_organization.py --fix  # Auto-fix structure
 ```
 
 ### Brownfield
+
 ```bash
 /align-project-retrofit           # Retrofit existing project (COMING SOON)
 ```
@@ -245,6 +259,7 @@ python hooks/enforce_file_organization.py --fix  # Auto-fix structure
 ## 📊 Validation Hooks
 
 ### UserPromptSubmit Hook
+
 ```python
 # Runs BEFORE processing your message
 → Detects feature requests
@@ -254,6 +269,7 @@ python hooks/enforce_file_organization.py --fix  # Auto-fix structure
 ```
 
 ### PreCommit Hook (Blocking)
+
 ```python
 # Runs BEFORE every commit
 → PROJECT.md alignment validation
@@ -264,6 +280,7 @@ python hooks/enforce_file_organization.py --fix  # Auto-fix structure
 ```
 
 ### PostToolUse Hook
+
 ```python
 # Runs AFTER file edits
 → Auto-format code (black, prettier)
@@ -322,6 +339,7 @@ Location: `.claude/settings.local.json`
 ## 🚨 Troubleshooting
 
 ### "PROJECT.md not found"
+
 ```bash
 # Create from template
 cp .claude/templates/PROJECT.md PROJECT.md
@@ -331,6 +349,7 @@ cp .claude/templates/PROJECT.md PROJECT.md
 ```
 
 ### "Feature not in SCOPE"
+
 ```bash
 # Option 1: Update PROJECT.md to include it
 vim PROJECT.md  # Add to SCOPE section
@@ -339,6 +358,7 @@ vim PROJECT.md  # Add to SCOPE section
 ```
 
 ### "Commit blocked by validation"
+
 ```bash
 # Check what failed
 git commit
@@ -353,6 +373,7 @@ git commit
 ```
 
 ### "Auto-orchestration not triggering"
+
 ```bash
 # Check hook is installed
 cat .claude/settings.local.json | grep detect_feature_request
@@ -372,6 +393,7 @@ ls .claude/hooks/detect_feature_request.py
 **Automation > Reminders > Hope**
 
 Strict mode makes quality automatic, not optional:
+
 - ✅ PROJECT.md alignment enforced (not hoped for)
 - ✅ Tests required (not reminded to write)
 - ✅ Docs synced automatically (not manual)
@@ -384,6 +406,7 @@ Strict mode makes quality automatic, not optional:
 ## 🎯 Future Enhancements
 
 Planned features:
+
 - [ ] `/align-project-retrofit` - Brownfield alignment command
 - [ ] AI-powered SCOPE validation - Semantic alignment checking
 - [ ] Cross-project templates - Reuse patterns across projects

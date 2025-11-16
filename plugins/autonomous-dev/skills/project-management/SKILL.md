@@ -43,6 +43,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 3. **[Tertiary Goal]** - [Description]
 
 **Success Metrics**:
+
 - **[Metric 1]**: [Target value] (how we measure goal 1)
 - **[Metric 2]**: [Target value] (how we measure goal 2)
 - **[Metric 3]**: [Target value] (how we measure goal 3)
@@ -54,10 +55,12 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 **What's IN Scope** ✅ (Features we build):
 
 **[Category 1]**:
+
 - ✅ **[Feature 1]** - [Description]
 - ✅ **[Feature 2]** - [Description]
 
 **[Category 2]**:
+
 - ✅ **[Feature 3]** - [Description]
 - ✅ **[Feature 4]** - [Description]
 
@@ -71,15 +74,18 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ## CONSTRAINTS
 
 **Technical Constraints**:
+
 - **[Constraint 1]**: [Description and rationale]
 - **[Constraint 2]**: [Description and rationale]
 
 **Resource Constraints**:
+
 - **Budget**: [Amount/limit]
 - **Timeline**: [Deadline or duration]
 - **Team size**: [Number of developers]
 
 **External Dependencies**:
+
 - **[Dependency 1]**: [Impact on project]
 - **[Dependency 2]**: [Impact on project]
 
@@ -91,12 +97,14 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 [Brief description of system architecture]
 
 **Key Technologies**:
+
 - **Language**: [Python, JavaScript, etc.]
 - **Framework**: [Django, React, etc.]
 - **Database**: [PostgreSQL, MongoDB, etc.]
 - **Infrastructure**: [AWS, Docker, Kubernetes, etc.]
 
 **Design Principles**:
+
 1. **[Principle 1]** - [Why this matters]
 2. **[Principle 2]** - [Why this matters]
 
@@ -109,10 +117,12 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 **Goal**: [What we're achieving this sprint]
 
 **In Progress**:
+
 - [ ] [Task 1] (assigned to [name])
 - [ ] [Task 2] (assigned to [name])
 
 **Planned**:
+
 - [ ] [Task 3]
 - [ ] [Task 4]
 
@@ -121,14 +131,17 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ## ROADMAP
 
 ### Phase 1: [Name] (Months 1-2)
+
 - [ ] [Milestone 1]
 - [ ] [Milestone 2]
 
 ### Phase 2: [Name] (Months 3-4)
+
 - [ ] [Milestone 3]
 - [ ] [Milestone 4]
 
 ### Phase 3: [Name] (Months 5-6)
+
 - [ ] [Milestone 5]
 - [ ] [Milestone 6]
 
@@ -137,10 +150,12 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ## DECISIONS
 
 **Key Architectural Decisions**:
+
 1. **[Decision 1]** - [Rationale] (see ADR-001)
 2. **[Decision 2]** - [Rationale] (see ADR-002)
 
 **Deferred Decisions**:
+
 - **[Decision]** - [Why we're waiting and what we need to know]
 
 ---
@@ -148,9 +163,11 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ## RISKS
 
 **High Priority**:
+
 - **[Risk 1]**: [Impact] - [Mitigation strategy]
 
 **Medium Priority**:
+
 - **[Risk 2]**: [Impact] - [Mitigation strategy]
 
 ---
@@ -158,12 +175,14 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ## TEAM
 
 **Roles**:
+
 - **Tech Lead**: [Name]
 - **Product Owner**: [Name]
 - **Developers**: [Names]
 - **Reviewers**: [Names]
 
 **Communication**:
+
 - **Daily standup**: [Time and location]
 - **Sprint planning**: [Frequency]
 - **Retro**: [Frequency]
@@ -183,14 +202,17 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 **S**pecific - **M**easurable - **A**chievable - **R**elevant - **T**ime-bound
 
 #### Bad Goal (Vague)
+
 ```markdown
 ## GOALS
+
 1. Make the app better
 2. Improve performance
 3. Add features
 ```
 
 #### Good Goal (SMART)
+
 ```markdown
 ## GOALS
 
@@ -232,11 +254,13 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 **Objective**: Become the fastest AI training platform
 
 **Key Results**:
+
 - KR1: Training time for LoRA < 10 minutes (currently 45 min)
 - KR2: 95% of users rate training speed as "fast" or "very fast"
 - KR3: Support 10K concurrent training jobs (currently 1K)
 
 **Success Metrics**:
+
 - Training time: < 10 min ✅
 - User satisfaction: 95% positive ✅
 - Concurrent jobs: 10K ✅
@@ -256,6 +280,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 **What's IN Scope** ✅:
 
 **MVP Features** (v1.0 launch):
+
 - ✅ **User authentication** (email/password, OAuth)
 - ✅ **Basic CRUD operations** (create, read, update, delete)
 - ✅ **Search functionality** (full-text search)
@@ -275,21 +300,25 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ## SCOPE (MoSCoW)
 
 **Must Have** (Non-negotiable for launch):
+
 - User login
 - Data persistence
 - Error handling
 
 **Should Have** (Important but not critical):
+
 - Email notifications
 - Export to CSV
 - Dark mode
 
 **Could Have** (Nice to have if time permits):
+
 - Keyboard shortcuts
 - Bulk operations
 - Advanced filters
 
 **Won't Have** (Explicitly not in this release):
+
 - Mobile app
 - Offline mode
 - Multi-language support
@@ -307,6 +336,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ## CONSTRAINTS
 
 **Technical Constraints**:
+
 - **Python 3.11+**: Required for new type hints and performance improvements
 - **PostgreSQL only**: No NoSQL - need ACID transactions for financial data
 - **< 500MB Docker image**: Deploy to edge locations with limited bandwidth
@@ -317,6 +347,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 
 ```markdown
 **Resource Constraints**:
+
 - **Budget**: $50K total (includes infrastructure, tools, contractors)
 - **Timeline**: 3-month deadline (hard constraint - board presentation)
 - **Team**: 2 full-time devs (cannot hire more until Q3)
@@ -327,6 +358,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 
 ```markdown
 **Compliance Constraints**:
+
 - **GDPR**: Must support data export and deletion (EU users)
 - **HIPAA**: Healthcare data requires encryption at rest and in transit
 - **SOC 2**: Annual audit required - need logging and access controls
@@ -337,6 +369,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 
 ```markdown
 **External Dependencies**:
+
 - **OpenAI API**: Training features depend on GPT-4 availability
 - **Stripe**: Payment processing (single point of failure)
 - **AWS S3**: File storage (if S3 goes down, uploads fail)
@@ -359,6 +392,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 **Capacity**: 80 story points (2 devs × 2 weeks × 20 pts/week)
 
 **In Progress** (40 pts):
+
 - [ ] Implement full-text search (13 pts) - @alice - 50% done
 - [ ] Add filter UI component (8 pts) - @bob - 25% done
 - [ ] Optimize query performance (13 pts) - @alice - blocked (waiting on DB migration)
@@ -366,24 +400,29 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 - [ ] Write integration tests (3 pts) - unassigned
 
 **Planned Next** (20 pts):
+
 - [ ] Add autocomplete to search (8 pts)
 - [ ] Implement saved searches (5 pts)
 - [ ] Add pagination (5 pts)
 - [ ] Fix search bug #127 (2 pts)
 
 **Done This Sprint** (18 pts):
+
 - [x] Design search UX mockups (5 pts)
 - [x] Set up Elasticsearch (8 pts)
 - [x] Spike: Evaluate search libraries (5 pts)
 
 **Blocked**:
+
 - Query optimization blocked on DB migration (see issue #145)
 
 **Risks**:
+
 - Elasticsearch setup more complex than expected (3 days vs 1 day estimate)
 - Bob out sick 2 days - may not finish filter UI
 
 **Sprint Retrospective Topics**:
+
 - Estimation accuracy (search tasks underestimated)
 - Dependency management (DB migration caused blocker)
 ```
@@ -393,12 +432,14 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ### Sprint Planning Checklist
 
 **Before Sprint Planning**:
+
 - [ ] **Backlog groomed** - Stories estimated and prioritized
 - [ ] **Dependencies identified** - External blockers noted
 - [ ] **Team capacity known** - Account for holidays, PTO
 - [ ] **Previous sprint reviewed** - Retro insights captured
 
 **During Sprint Planning**:
+
 - [ ] **Sprint goal defined** - One sentence, clear outcome
 - [ ] **Stories committed** - Team agrees on workload
 - [ ] **Tasks broken down** - Stories decomposed into tasks
@@ -406,12 +447,14 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 - [ ] **Definition of done agreed** - What "done" means
 
 **During Sprint**:
+
 - [ ] **Daily standup** - 15 min sync (blockers, progress)
 - [ ] **Update sprint board** - Move tasks, update progress
 - [ ] **Flag blockers early** - Don't wait until sprint end
 - [ ] **Adjust scope if needed** - Remove low-priority items
 
 **End of Sprint**:
+
 - [ ] **Demo/Review** - Show completed work to stakeholders
 - [ ] **Retrospective** - What went well, what to improve
 - [ ] **Update metrics** - Velocity, burndown, etc.
@@ -431,6 +474,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 **Goal**: Production-ready app with core features
 
 **Features**:
+
 - [x] User authentication
 - [x] CRUD operations
 - [ ] Search functionality (Sprint 5)
@@ -438,17 +482,20 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 - [ ] Error handling
 
 **Success Criteria**:
+
 - ✅ 50 beta users signed up
 - ✅ < 5 critical bugs
 - ✅ 80%+ test coverage
 - ⏳ Sub-2s page load time
 
 **Dependencies**:
+
 - AWS account approved (done)
 - Design mockups complete (done)
 - Database schema finalized (in progress)
 
 **Risks**:
+
 - Third-party API integration delayed (mitigation: build fallback)
 ```
 
@@ -457,33 +504,41 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 ### Roadmap Granularity
 
 **Month 1-3** (Detailed):
+
 ```markdown
 ### Phase 1: Foundation (Months 1-3)
 
 **Month 1**:
+
 - Week 1-2: User auth + database setup
 - Week 3-4: CRUD operations + basic UI
 
 **Month 2**:
+
 - Week 1-2: Search + filters
 - Week 3-4: Mobile responsive + testing
 
 **Month 3**:
+
 - Week 1-2: Performance optimization
 - Week 3-4: Beta launch + bug fixes
 ```
 
 **Month 4-6** (Less Detailed):
+
 ```markdown
 ### Phase 2: Growth (Months 4-6)
+
 - Analytics dashboard
 - Advanced features (saved searches, exports)
 - Scaling infrastructure
 ```
 
 **Month 7-12** (High-Level):
+
 ```markdown
 ### Phase 3: Scale (Months 7-12)
+
 - Enterprise features
 - API for third-party integrations
 - International expansion
@@ -498,6 +553,7 @@ PROJECT.md-first project management, goal setting, scope definition, and sprint 
 When evaluating a feature request, ask:
 
 **1. Does it serve a GOAL?**
+
 ```markdown
 Feature: Add social media sharing
 Goal alignment: ✅ YES - Goal 2 is "Increase user growth"
@@ -505,6 +561,7 @@ Rationale: Sharing drives viral growth
 ```
 
 **2. Is it IN SCOPE?**
+
 ```markdown
 Feature: Add video calling
 Scope check: ❌ NO - Out of scope (requires real-time infrastructure)
@@ -512,6 +569,7 @@ Recommendation: Defer to Phase 3 or reject
 ```
 
 **3. Does it violate CONSTRAINTS?**
+
 ```markdown
 Feature: Use MongoDB instead of PostgreSQL
 Constraint check: ❌ YES - Violates "PostgreSQL only" constraint
@@ -519,6 +577,7 @@ Rationale: Team lacks NoSQL expertise, ACID transactions required
 ```
 
 **4. Does it contribute to current SPRINT goal?**
+
 ```markdown
 Feature: Add dark mode
 Sprint goal: "Search & Filter" ❌ NO
@@ -556,14 +615,16 @@ Is feature request aligned?
 ### Keep It Living
 
 **❌ BAD: Outdated PROJECT.md**
+
 ```markdown
-**Last Updated**: 2023-01-15  # 2 years ago!
-**Current Sprint**: Sprint 3  # Actually on Sprint 15
+**Last Updated**: 2023-01-15 # 2 years ago!
+**Current Sprint**: Sprint 3 # Actually on Sprint 15
 ```
 
 **✅ GOOD: Living document**
+
 ```markdown
-**Last Updated**: 2025-10-25  # Updated this week
+**Last Updated**: 2025-10-25 # Updated this week
 **Current Sprint**: Sprint 15 - "Performance Optimization"
 ```
 
@@ -574,16 +635,20 @@ Is feature request aligned?
 ### Be Specific, Not Generic
 
 **❌ BAD: Vague goals**
+
 ```markdown
 ## GOALS
+
 1. Make users happy
 2. Build good software
 3. Ship features
 ```
 
 **✅ GOOD: Specific goals**
+
 ```markdown
 ## GOALS
+
 1. **Achieve NPS score of 50+** (currently 32)
 2. **Reduce P0 bugs to < 5 per month** (currently 15)
 3. **Ship search feature by Nov 15** (hard deadline for demo)
@@ -594,14 +659,18 @@ Is feature request aligned?
 ### Include "Why"
 
 **❌ BAD: No rationale**
+
 ```markdown
 ## CONSTRAINTS
+
 - Python 3.11+ required
 ```
 
 **✅ GOOD: Explains why**
+
 ```markdown
 ## CONSTRAINTS
+
 - **Python 3.11+**: Required for new type hints (improves IDE support) and
   10-25% performance improvements in CPython 3.11
 ```
@@ -611,12 +680,15 @@ Is feature request aligned?
 ### Link to Details
 
 **❌ BAD: Everything in PROJECT.md**
+
 ```markdown
 ## ARCHITECTURE
+
 [20 pages of architecture documentation inline]
 ```
 
 **✅ GOOD: Link to detailed docs**
+
 ```markdown
 ## ARCHITECTURE
 
@@ -650,17 +722,21 @@ for system diagrams
 **Last Updated**: YYYY-MM-DD
 
 ## GOAL
+
 [One sentence: What does success look like?]
 
 ## SCOPE
+
 **Building**: [List 3-5 must-have features]
 **Not building**: [List 2-3 anti-features]
 
 ## CONSTRAINTS
+
 - **Timeline**: [Deadline]
 - **Tech stack**: [Key technologies]
 
 ## CURRENT FOCUS
+
 [What we're working on this week/sprint]
 ```
 
@@ -675,17 +751,20 @@ Use the full template at the top of this skill (includes goals, scope, constrain
 ## Additional Resources
 
 **Books**:
+
 - "The Lean Startup" by Eric Ries
 - "Inspired" by Marty Cagan
 - "Measure What Matters" (OKRs) by John Doerr
 
 **Frameworks**:
+
 - SMART goals
 - OKRs (Objectives & Key Results)
 - MoSCoW prioritization
 - SAFe (Scaled Agile Framework)
 
 **Tools**:
+
 - GitHub Issues + Milestones
 - Linear, Jira, Asana (project tracking)
 - Miro, FigJam (roadmap visualization)

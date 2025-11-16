@@ -45,13 +45,13 @@ POST   /deleteUser
 
 ### HTTP Methods (Verbs)
 
-| Method | Purpose | Idempotent? | Safe? |
-|--------|---------|-------------|-------|
-| **GET** | Read resource | ✅ Yes | ✅ Yes |
-| **POST** | Create resource | ❌ No | ❌ No |
-| **PUT** | Replace resource | ✅ Yes | ❌ No |
-| **PATCH** | Update partial resource | ❌ No | ❌ No |
-| **DELETE** | Delete resource | ✅ Yes | ❌ No |
+| Method     | Purpose                 | Idempotent? | Safe?  |
+| ---------- | ----------------------- | ----------- | ------ |
+| **GET**    | Read resource           | ✅ Yes      | ✅ Yes |
+| **POST**   | Create resource         | ❌ No       | ❌ No  |
+| **PUT**    | Replace resource        | ✅ Yes      | ❌ No  |
+| **PATCH**  | Update partial resource | ❌ No       | ❌ No  |
+| **DELETE** | Delete resource         | ✅ Yes      | ❌ No  |
 
 **Idempotent**: Same request → same result (can retry safely)
 **Safe**: No side effects (doesn't modify data)
@@ -63,6 +63,7 @@ POST   /deleteUser
 ### Resource Naming
 
 **Use plural nouns**:
+
 ```bash
 # ✅ GOOD: Plural
 /users
@@ -76,6 +77,7 @@ POST   /deleteUser
 ```
 
 **Use hierarchical structure for relationships**:
+
 ```bash
 # ✅ GOOD: Nested resources
 GET /users/123/posts              # Posts by user 123
@@ -87,6 +89,7 @@ GET /posts?user_id=123            # Less clear
 ```
 
 **Keep URLs shallow (max 3 levels)**:
+
 ```bash
 # ✅ GOOD: 2-3 levels
 /users/123/posts
@@ -132,6 +135,7 @@ GET /posts?search=python
 ```
 
 **Examples**:
+
 ```python
 # 200 OK - Return resource
 @app.get("/users/{user_id}")
@@ -232,6 +236,7 @@ def create_user(user: User):
 ### Consistent Error Structure
 
 **Minimal error (for simple cases)**:
+
 ```json
 {
   "error": "Invalid email address",
@@ -240,6 +245,7 @@ def create_user(user: User):
 ```
 
 **Detailed error (for complex cases)**:
+
 ```json
 {
   "error": "Validation failed",
@@ -261,6 +267,7 @@ def create_user(user: User):
 ### Request Body (POST/PUT/PATCH)
 
 **JSON format**:
+
 ```json
 POST /users
 Content-Type: application/json
@@ -273,6 +280,7 @@ Content-Type: application/json
 ```
 
 **Python (FastAPI)**:
+
 ```python
 from pydantic import BaseModel, EmailStr
 
@@ -290,6 +298,7 @@ def create_user(user: UserCreate):
 ### Response Body
 
 **Single resource**:
+
 ```json
 GET /users/123
 
@@ -302,6 +311,7 @@ GET /users/123
 ```
 
 **Collection**:
+
 ```json
 GET /users
 
@@ -326,12 +336,14 @@ GET /users
 ### Offset-Based Pagination
 
 **Query parameters**:
+
 ```bash
 GET /users?page=2&limit=20
 GET /users?offset=40&limit=20
 ```
 
 **Response**:
+
 ```json
 {
   "data": [...],
@@ -346,6 +358,7 @@ GET /users?offset=40&limit=20
 ```
 
 **Implementation**:
+
 ```python
 @app.get("/users")
 def list_users(page: int = 1, limit: int = 20):
@@ -378,6 +391,7 @@ GET /users?cursor=abc123&limit=20
 ```
 
 **Response**:
+
 ```json
 {
   "data": [...],
@@ -390,6 +404,7 @@ GET /users?cursor=abc123&limit=20
 ```
 
 **Implementation**:
+
 ```python
 @app.get("/users")
 def list_users(cursor: str = None, limit: int = 20):
@@ -421,14 +436,17 @@ GET /v2/users
 ```
 
 **Pros**:
+
 - Simple, clear
 - Easy to route
 - Cached separately
 
 **Cons**:
+
 - URL changes
 
 **Implementation**:
+
 ```python
 # FastAPI
 app = FastAPI()
@@ -458,10 +476,12 @@ Accept: application/vnd.myapi.v1+json
 ```
 
 **Pros**:
+
 - Same URL
 - Semantic
 
 **Cons**:
+
 - Harder to test (need headers)
 - Not cached separately
 
@@ -470,6 +490,7 @@ Accept: application/vnd.myapi.v1+json
 ### Breaking Changes
 
 **What requires a new version**:
+
 - ❌ Remove field
 - ❌ Rename field
 - ❌ Change field type
@@ -477,6 +498,7 @@ Accept: application/vnd.myapi.v1+json
 - ✅ Add optional field (backward compatible)
 
 **Example**:
+
 ```json
 // v1
 {"id": 1, "name": "John"}
@@ -500,6 +522,7 @@ Authorization: Bearer sk-abc123...
 ```
 
 **Implementation**:
+
 ```python
 from fastapi import Security, HTTPException
 from fastapi.security import HTTPBearer
@@ -524,6 +547,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Implementation**:
+
 ```python
 import jwt
 from datetime import datetime, timedelta
@@ -565,6 +589,7 @@ X-RateLimit-Reset: 1698768000 # Unix timestamp when limit resets
 ```
 
 **Implementation**:
+
 ```python
 from fastapi import Request, HTTPException
 from datetime import datetime, timedelta
@@ -651,6 +676,7 @@ GET /users?q=john
 ```
 
 **Implementation**:
+
 ```python
 @app.get("/users")
 def list_users(
@@ -684,6 +710,7 @@ GET /posts?sort=-created_at,title
 ```
 
 **Implementation**:
+
 ```python
 @app.get("/posts")
 def list_posts(sort: str = None):
@@ -745,6 +772,7 @@ def get_user(user_id: int):
 ```
 
 **Auto-generated docs at**:
+
 - `/docs` - Swagger UI (interactive)
 - `/redoc` - ReDoc (pretty)
 - `/openapi.json` - OpenAPI spec
@@ -770,6 +798,7 @@ Idempotency-Key: abc123...
 ```
 
 **Implementation**:
+
 ```python
 import redis
 
@@ -813,6 +842,7 @@ Accept: application/xml   # XML response
 ```
 
 **Implementation**:
+
 ```python
 from fastapi import Request
 
@@ -875,6 +905,7 @@ GET /users/123
 ### Bulk Operations
 
 **Batch create**:
+
 ```bash
 POST /users/batch
 
@@ -887,6 +918,7 @@ POST /users/batch
 ```
 
 **Batch update**:
+
 ```bash
 PATCH /users/batch
 
@@ -914,6 +946,7 @@ POST /webhooks
 ```
 
 **Send events**:
+
 ```python
 import requests
 

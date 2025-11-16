@@ -10,11 +10,11 @@
 
 Pick the installation tier that matches your workflow:
 
-| Tier | Who It's For | Time | What You Get |
-|------|-------------|------|--------------|
-| **[Basic](#basic-tier)** | Solo developer, learning | 2 min | Slash commands only |
-| **[Standard](#standard-tier)** | Solo with automation | 5 min | Commands + auto-format/test hooks |
-| **[Team](#team-tier)** | Team collaboration | 10 min | Full integration + GitHub + PROJECT.md |
+| Tier                           | Who It's For             | Time   | What You Get                           |
+| ------------------------------ | ------------------------ | ------ | -------------------------------------- |
+| **[Basic](#basic-tier)**       | Solo developer, learning | 2 min  | Slash commands only                    |
+| **[Standard](#standard-tier)** | Solo with automation     | 5 min  | Commands + auto-format/test hooks      |
+| **[Team](#team-tier)**         | Team collaboration       | 10 min | Full integration + GitHub + PROJECT.md |
 
 **Not sure?** Start with **Basic** → upgrade to Standard/Team later as needed.
 
@@ -44,6 +44,7 @@ Pick the installation tier that matches your workflow:
 ### What You Get
 
 **8 Slash Commands**:
+
 - `/test` - Run all tests
 - `/align-project` - Check PROJECT.md alignment
 - `/auto-implement` - Autonomous feature implementation
@@ -54,6 +55,7 @@ Pick the installation tier that matches your workflow:
 - `/uninstall` - Remove plugin
 
 **Usage Example**:
+
 ```bash
 # Write some code
 # ...
@@ -101,12 +103,14 @@ Want GitHub integration? → [Team Tier](#team-tier)
 ### What You Get (Basic +)
 
 **Automatic Hooks**:
+
 - **Auto-format**: Code formatted on every save
 - **Auto-test**: Tests run before every commit
 - **Security scan**: Secrets detection before commit
 - **Coverage enforcement**: 80% minimum (configurable)
 
 **Usage Example**:
+
 ```bash
 # Write code
 # → Auto-formatted on save automatically
@@ -121,17 +125,20 @@ git commit -m "Add feature"
 ### Configuration
 
 **Enable hooks** (if you skipped /setup):
+
 ```bash
 /setup
 # Choose: "Automatic Hooks"
 ```
 
 **Disable hooks temporarily**:
+
 ```bash
 git commit --no-verify  # Skip hooks for this commit
 ```
 
 **Disable hooks permanently**:
+
 ```bash
 rm .claude/settings.local.json
 # Restart Claude Code
@@ -179,18 +186,21 @@ Want GitHub integration? → [Team Tier](#team-tier)
 ### What You Get (Standard +)
 
 **PROJECT.md Governance**:
+
 - All features validated against strategic goals
 - `/auto-implement` checks alignment before starting
 - `/status` tracks progress toward PROJECT.md goals
 - **Zero scope creep** - Claude won't implement out-of-scope features
 
 **GitHub Integration**:
+
 - Sprint tracking via Milestones
 - Automatic issue creation from test failures
 - PR description generation
 - Commit message generation following conventional commits
 
 **Usage Example**:
+
 ```bash
 # Define what you're building
 vim PROJECT.md
@@ -216,10 +226,12 @@ vim PROJECT.md
 ### PROJECT.md Template
 
 Minimal example:
+
 ```markdown
 # Project Context
 
 ## GOALS
+
 1. Build a REST API for blog posts
 2. 80%+ test coverage
 3. < 100ms response time
@@ -227,16 +239,19 @@ Minimal example:
 ## SCOPE
 
 ### In Scope
+
 - CRUD operations
 - Pagination
 - Search
 
 ### Out of Scope
+
 - Admin UI
 - Real-time features
 - GraphQL
 
 ## CONSTRAINTS
+
 - Use Python 3.11+
 - PostgreSQL only
 - No external API dependencies
@@ -245,17 +260,20 @@ Minimal example:
 ### GitHub Setup
 
 **Create Personal Access Token**:
+
 1. Go to: https://github.com/settings/tokens
 2. Click: "Generate new token (classic)"
 3. Select scopes: `repo`, `workflow`
 4. Copy token
 
 **Add to .env**:
+
 ```bash
 echo "GITHUB_TOKEN=ghp_your_token_here" > .env
 ```
 
 **Create Milestone**:
+
 1. Go to: https://github.com/YOUR_USER/YOUR_REPO/milestones
 2. Click: "New milestone"
 3. Title: "Sprint 1" (or current sprint name)
@@ -266,18 +284,18 @@ echo "GITHUB_TOKEN=ghp_your_token_here" > .env
 
 ## Tier Comparison Matrix
 
-| Feature | Basic | Standard | Team |
-|---------|-------|----------|------|
-| **Slash Commands** | ✅ 8 commands | ✅ 8 commands | ✅ 8 commands |
-| **Installation Time** | 2 min | 5 min | 10 min |
-| **Auto-format on save** | ❌ Manual | ✅ Automatic | ✅ Automatic |
-| **Auto-test before commit** | ❌ Manual | ✅ Automatic | ✅ Automatic |
-| **Security scan** | ❌ Manual | ✅ Automatic | ✅ Automatic |
-| **PROJECT.md governance** | ❌ Optional | ❌ Optional | ✅ Required |
-| **GitHub integration** | ❌ No | ❌ No | ✅ Yes |
-| **Sprint tracking** | ❌ No | ❌ No | ✅ Milestones |
-| **Scope enforcement** | ❌ No | ❌ No | ✅ Yes |
-| **Best for** | Learning | Solo dev | Teams |
+| Feature                     | Basic         | Standard      | Team          |
+| --------------------------- | ------------- | ------------- | ------------- |
+| **Slash Commands**          | ✅ 8 commands | ✅ 8 commands | ✅ 8 commands |
+| **Installation Time**       | 2 min         | 5 min         | 10 min        |
+| **Auto-format on save**     | ❌ Manual     | ✅ Automatic  | ✅ Automatic  |
+| **Auto-test before commit** | ❌ Manual     | ✅ Automatic  | ✅ Automatic  |
+| **Security scan**           | ❌ Manual     | ✅ Automatic  | ✅ Automatic  |
+| **PROJECT.md governance**   | ❌ Optional   | ❌ Optional   | ✅ Required   |
+| **GitHub integration**      | ❌ No         | ❌ No         | ✅ Yes        |
+| **Sprint tracking**         | ❌ No         | ❌ No         | ✅ Milestones |
+| **Scope enforcement**       | ❌ No         | ❌ No         | ✅ Yes        |
+| **Best for**                | Learning      | Solo dev      | Teams         |
 
 ---
 
@@ -286,26 +304,31 @@ echo "GITHUB_TOKEN=ghp_your_token_here" > .env
 ### Basic Tier Issues
 
 **"Commands don't work after install"**:
+
 - Did you restart Claude Code? (Required!)
 - Press Cmd+Q (Mac) or Ctrl+Q (Windows/Linux)
 - Verify: `/plugin list` shows autonomous-dev
 
 **"Want automation but don't know where to start"**:
+
 - Upgrade to [Standard Tier](#standard-tier)
 
 ### Standard Tier Issues
 
 **"Hooks not running"**:
+
 - Check: `.claude/settings.local.json` exists
 - Check: Formatter installed (black/prettier/gofmt)
 - See: [ERR-101] docs/ERROR_MESSAGES.md
 
 **"Tests fail on commit"**:
+
 - This is working as intended!
 - Fix tests: `pytest -v`
 - OR skip once: `git commit --no-verify`
 
 **"Too much automation, want control back"**:
+
 - Downgrade to [Basic Tier](#basic-tier)
 - Remove: `.claude/settings.local.json`
 - Restart Claude Code
@@ -313,22 +336,26 @@ echo "GITHUB_TOKEN=ghp_your_token_here" > .env
 ### Team Tier Issues
 
 **"PROJECT.md validation failing"**:
+
 - Check: PROJECT.md has GOALS, SCOPE, CONSTRAINTS sections
 - Validate: `/align-project`
 - Template: `.claude/templates/PROJECT.md`
 
 **"GitHub authentication failing"**:
+
 - Check: `.env` file exists with GITHUB_TOKEN
 - Check: Token has `repo` scope
 - Test: `gh auth status`
 - See: [ERR-103] docs/ERROR_MESSAGES.md
 
 **"Claude won't implement my feature"**:
+
 - Is it in PROJECT.md SCOPE?
 - If yes: Update request to align with goals
 - If no: Update PROJECT.md to include it
 
 **"Too much governance, want freedom"**:
+
 - Downgrade to [Standard Tier](#standard-tier)
 - Use `/auto-implement` without PROJECT.md validation
 - GitHub integration remains optional
@@ -387,16 +414,19 @@ rm .claude/settings.local.json
 ### Which tier should I choose?
 
 **Start Basic** if:
+
 - You're new to the plugin
 - You want to learn one command at a time
 - You prefer explicit control
 
 **Upgrade to Standard** if:
+
 - You're comfortable with commands
 - You want to focus on coding, not manual checks
 - You trust automatic formatting/testing
 
 **Upgrade to Team** if:
+
 - You're working with a team
 - You have clear project goals
 - You want scope enforcement
@@ -405,6 +435,7 @@ rm .claude/settings.local.json
 ### Can I mix tiers?
 
 Yes! You can:
+
 - Use Basic commands with Standard hooks
 - Use Standard automation without Team governance
 - Enable/disable features individually
@@ -423,17 +454,18 @@ No! Basic tier has all 8 commands. You're only missing **automation** and **gove
 
 ## Summary
 
-| Tier | Commands | Hooks | PROJECT.md | GitHub | Time |
-|------|----------|-------|------------|--------|------|
-| **Basic** | ✅ | ❌ | ❌ | ❌ | 2 min |
-| **Standard** | ✅ | ✅ | ❌ | ❌ | 5 min |
-| **Team** | ✅ | ✅ | ✅ | ✅ | 10 min |
+| Tier         | Commands | Hooks | PROJECT.md | GitHub | Time   |
+| ------------ | -------- | ----- | ---------- | ------ | ------ |
+| **Basic**    | ✅       | ❌    | ❌         | ❌     | 2 min  |
+| **Standard** | ✅       | ✅    | ❌         | ❌     | 5 min  |
+| **Team**     | ✅       | ✅    | ✅         | ✅     | 10 min |
 
 **Start with Basic → Upgrade as needed**
 
 ---
 
 **Related**:
+
 - Issue #15: Installation Complexity vs Simplicity Promise
 - docs/TROUBLESHOOTING.md: Detailed troubleshooting by tier
 - docs/ERROR_MESSAGES.md: Error code reference

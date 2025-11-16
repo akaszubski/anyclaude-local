@@ -16,14 +16,16 @@ Detect patterns in user requests that indicate a need for critical thinking anal
 ### Pattern 1: New Dependencies
 
 **Triggers:**
+
 - "add [package/library/service]"
 - "use [technology]"
 - "integrate [external service]"
 - "switch to [different tool]"
 
 **Examples:**
+
 - "Let's add Redis for caching"
-- "Use TensorFlow for ML"  
+- "Use TensorFlow for ML"
 - "Integrate Stripe for payments"
 - "Switch to PostgreSQL"
 
@@ -32,12 +34,14 @@ Detect patterns in user requests that indicate a need for critical thinking anal
 ### Pattern 2: Architecture Changes
 
 **Triggers:**
+
 - "refactor to [pattern]"
 - "restructure as [architecture]"
 - "migrate to [architecture]"
 - "convert to [pattern]"
 
 **Examples:**
+
 - "Refactor to microservices"
 - "Restructure as event-driven"
 - "Migrate to serverless"
@@ -48,12 +52,14 @@ Detect patterns in user requests that indicate a need for critical thinking anal
 ### Pattern 3: Scope Expansions
 
 **Triggers:**
+
 - "also add [feature]"
 - "extend to [capability]"
 - "support [new use case]"
 - "make it [do more]"
 
 **Examples:**
+
 - "Also add real-time collaboration"
 - "Extend to mobile platforms"
 - "Support multi-tenancy"
@@ -64,11 +70,13 @@ Detect patterns in user requests that indicate a need for critical thinking anal
 ### Pattern 4: Technology Replacements
 
 **Triggers:**
+
 - "[X] instead of [Y]"
 - "replace [X] with [Y]"
 - "swap [X] for [Y]"
 
 **Examples:**
+
 - "GraphQL instead of REST"
 - "Replace Express with Fastify"
 - "Swap MySQL for MongoDB"
@@ -78,11 +86,13 @@ Detect patterns in user requests that indicate a need for critical thinking anal
 ### Pattern 5: Scale Changes
 
 **Triggers:**
+
 - "handle [large number]"
 - "scale to [big metric]"
 - "support [many users]"
 
 **Examples:**
+
 - "Handle 1M requests/day"
 - "Scale to 100K users"
 - "Support 10K concurrent"
@@ -99,30 +109,30 @@ function shouldInvokeAdvisor(userRequest: string): boolean {
     /use (tensorflow|pytorch|react|vue|angular)/i,
     /integrate (stripe|auth0|sendgrid|aws)/i,
     /switch to (typescript|rust|go|kubernetes)/i,
-    
+
     // Architecture
     /refactor to (microservices|serverless|event-driven)/i,
     /restructure as/i,
     /migrate to/i,
     /convert to/i,
-    
+
     // Scope
     /also add/i,
     /extend to/i,
     /support (mobile|multi-tenant|real-time|offline)/i,
-    
+
     // Technology replacement
     /instead of/i,
     /replace \w+ with/i,
     /swap \w+ for/i,
-    
+
     // Scale
     /scale to/i,
     /handle \d+[kmb]/i, // 1k, 1m, 1b
-    /support \d+k/i
+    /support \d+k/i,
   ];
-  
-  return triggers.some(pattern => pattern.test(userRequest));
+
+  return triggers.some((pattern) => pattern.test(userRequest));
 }
 ```
 
@@ -140,6 +150,7 @@ Consider running critical analysis first:
 /advise "{user's proposal}"
 
 This will provide:
+
 - Alignment check with PROJECT.md
 - Complexity assessment
 - Trade-off analysis
@@ -157,10 +168,10 @@ Proceed with analysis? [Y/n]
 # .claude/config.yml
 advisor_triggers:
   enabled: true
-  
+
   # Sensitivity
-  sensitivity: medium  # low | medium | high
-  
+  sensitivity: medium # low | medium | high
+
   # Specific triggers
   triggers:
     new_dependencies: true
@@ -168,9 +179,9 @@ advisor_triggers:
     scope_expansions: true
     technology_swaps: true
     scale_changes: true
-  
+
   # Auto-invoke (don't ask, just run)
-  auto_invoke: false  # If true, runs /advise automatically
+  auto_invoke: false # If true, runs /advise automatically
 ```
 
 ## Integration Points
@@ -179,17 +190,17 @@ advisor_triggers:
 
 ```markdown
 User: "Let's add Redis caching"
-  ↓
+↓
 advisor-triggers: Detected new dependency
-  ↓
+↓
 [Suggest /advise]
-  ↓
+↓
 User: Accepts suggestion
-  ↓
+↓
 /advise "Add Redis caching"
-  ↓
+↓
 User: Reviews analysis, decides
-  ↓
+↓
 /plan [chosen approach]
 ```
 
@@ -197,11 +208,11 @@ User: Reviews analysis, decides
 
 ```markdown
 User: "/auto-implement add WebSocket support"
-  ↓
+↓
 advisor-triggers: Detected architecture change
-  ↓
+↓
 [Suggest /advise first]
-  ↓
+↓
 User: Either runs /advise or proceeds anyway
 ```
 
@@ -209,15 +220,15 @@ User: Either runs /advise or proceeds anyway
 
 ```markdown
 orchestrator receives feature request
-  ↓
+↓
 Check advisor-triggers
-  ↓
+↓
 IF significant decision detected
-  ↓
+↓
 Invoke advisor agent first
-  ↓
+↓
 Present analysis to user
-  ↓
+↓
 THEN proceed with planning
 ```
 
@@ -226,10 +237,12 @@ THEN proceed with planning
 Some requests trigger falsely:
 
 **False Positive:**
+
 - "Fix bug in Redis connection" ← mentions Redis but not adding it
 - "Document the microservices" ← mentions architecture but not changing it
 
 **Solution:** Context-aware detection:
+
 ```typescript
 // Only trigger if action verb present
 if (containsActionVerb(request) && containsTriggerKeyword(request)) {
@@ -252,6 +265,7 @@ Users can bypass:
 ## Success Metrics
 
 **This skill is successful if:**
+
 - ✅ Catches 80%+ of significant decisions
 - ✅ False positive rate < 20%
 - ✅ Users find suggestions helpful (not annoying)

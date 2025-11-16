@@ -14,16 +14,19 @@
 This project intentionally has these misplaced files:
 
 ### 1. Shell Scripts in Root (Should be in scripts/)
+
 - `test-auth.sh` → Should be `scripts/test/test-auth.sh`
 - `debug-local.sh` → Should be `scripts/debug/debug-local.sh`
 
 ### 2. Documentation in Root (Should be in docs/)
+
 - `USER-GUIDE.md` → Should be `docs/guides/user-guide.md`
 - `ARCHITECTURE.md` → Should be `docs/architecture/ARCHITECTURE.md`
 - `DEBUG-GUIDE.md` → Should be `docs/debugging/debug-guide.md`
 - `API-REFERENCE.md` → Should be `docs/reference/api-reference.md`
 
 ### 3. Source Code in Root (Should be in src/)
+
 - `helper.ts` → Should be `src/helper.ts`
 - `utils.ts` → Should be `src/utils.ts`
 
@@ -189,22 +192,26 @@ Moving files...
 ## Validation Checklist
 
 **Detection:**
+
 - [ ] All 8 misplaced files detected
 - [ ] Correct target locations suggested
-- [ ] Categories inferred correctly (test-*.sh → scripts/test/)
+- [ ] Categories inferred correctly (test-\*.sh → scripts/test/)
 
 **Auto-Fix:**
+
 - [ ] Directories created if missing
 - [ ] Files moved to correct locations
 - [ ] Original files removed
 - [ ] No broken references (or cross-ref validation catches them)
 
 **Pre-Commit:**
+
 - [ ] Blocks commits with misplaced files
 - [ ] Provides clear error messages
 - [ ] Suggests correct locations
 
 **File Organization Skill:**
+
 - [ ] Intercepts file creation in wrong location
 - [ ] Auto-corrects to right location
 - [ ] Logs correction to audit trail

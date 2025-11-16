@@ -11,6 +11,7 @@ Common issues and solutions for the autonomous-dev plugin.
 ### 0. "I'm editing plugin files but changes don't appear when testing" (MOST COMMON!)
 
 **Symptoms**:
+
 - Edit agent/command/skill files
 - Test with `/health-check` or commands
 - See NO CHANGES (old behavior persists)
@@ -24,6 +25,7 @@ Common issues and solutions for the autonomous-dev plugin.
 When developing this plugin, there are TWO separate locations:
 
 1. **Development location** (where you edit):
+
    ```
    /path/to/autonomous-dev/plugins/autonomous-dev/
    ```
@@ -38,6 +40,7 @@ When developing this plugin, there are TWO separate locations:
 **Solutions**:
 
 **Option 1: Use `/sync-dev` command (EASIEST)**
+
 ```bash
 # 1. Make changes to plugin files
 vim plugins/autonomous-dev/agents/implementer.md
@@ -53,6 +56,7 @@ vim plugins/autonomous-dev/agents/implementer.md
 ```
 
 **Option 2: Use sync script directly**
+
 ```bash
 # 1. Make changes
 vim plugins/autonomous-dev/agents/implementer.md
@@ -68,6 +72,7 @@ python .claude/hooks/sync_to_installed.py
 ```
 
 **Option 3: Manual sync (NOT RECOMMENDED)**
+
 ```bash
 # Find runtime location first
 find ~/.claude/plugins/marketplaces -name "autonomous-dev" -type d
@@ -79,6 +84,7 @@ cp -r plugins/autonomous-dev/* ~/.claude/plugins/marketplaces/.../autonomous-dev
 ```
 
 **Prevention**:
+
 ```bash
 # ALWAYS follow this workflow:
 # Edit → Sync → Restart → Test → Repeat
@@ -88,6 +94,7 @@ cp -r plugins/autonomous-dev/* ~/.claude/plugins/marketplaces/.../autonomous-dev
 ```
 
 **How to verify you're synced**:
+
 ```bash
 # Check file timestamps match
 ls -lt plugins/autonomous-dev/agents/implementer.md
@@ -97,12 +104,14 @@ ls -lt ~/.claude/plugins/marketplaces/.../autonomous-dev/agents/implementer.md
 ```
 
 **When restart IS required**:
+
 - Installing/uninstalling plugins ← YES
 - Changing plugin.json manifest ← YES
 - Adding/removing agents/skills/commands ← YES
 - Editing existing agent/skill/command content ← YES (after sync)
 
 **When restart NOT required**:
+
 - Editing test files (tests/) ← NO
 - Editing dev docs (docs/dev/) ← NO
 - Editing project README.md ← NO (unless testing user view)
@@ -120,25 +129,31 @@ ls -lt ~/.claude/plugins/marketplaces/.../autonomous-dev/agents/implementer.md
 **Fix**: Commands must have one of these patterns:
 
 **Bash script:**
-```markdown
+
+````markdown
 ## Implementation
 
 ```bash
 pytest tests/ -v
 ```
+````
+
 \```
-```
+
+````
 
 **Agent invocation:**
 ```markdown
 ## Implementation
 
 Invoke the test-master agent with prompt:
-```
+````
+
 Run comprehensive tests...
-```
+
+````
 \```
-```
+````
 
 **To create new command**: Copy an existing working command and modify it.
 
@@ -151,17 +166,20 @@ Run comprehensive tests...
 ### 1. "Plugin not found" after installation
 
 **Symptoms**:
+
 ```
 /plugin install autonomous-dev
 Error: Plugin 'autonomous-dev' not found
 ```
 
 **Causes**:
+
 - Plugin not in marketplace
 - Incorrect plugin name
 - Repository not accessible
 
 **Solutions**:
+
 ```bash
 # Option 1: Install from local path
 cd /path/to/autonomous-dev
@@ -180,16 +198,19 @@ ln -s /path/to/autonomous-dev/plugins/autonomous-dev \
 ### 2. "Commands not found" after installation
 
 **Symptoms**:
+
 ```
 /test
 Error: Command not found
 ```
 
 **Causes**:
+
 - Plugin installed but not activated in project
 - Commands not copied to `.claude/commands/`
 
 **Solutions**:
+
 ```bash
 # Reinstall plugin
 /plugin uninstall autonomous-dev
@@ -204,14 +225,17 @@ ls -la .claude/commands/
 ### 3. "Agents not available"
 
 **Symptoms**:
+
 - Agents not showing up in Claude Code
 - Task tool fails with "agent not found"
 
 **Causes**:
+
 - Agents not in `.claude/agents/`
 - Symlink broken
 
 **Solutions**:
+
 ```bash
 # Reinstall plugin
 /plugin uninstall autonomous-dev
@@ -228,16 +252,19 @@ ls -la .claude/agents/
 ### 4. "Hooks not running automatically"
 
 **Symptoms**:
+
 - Write files but no auto-format
 - Edit files but no validation
 - Hooks configured but silent
 
 **Causes**:
+
 - Hooks not in `.claude/hooks/`
 - Hooks not executable
 - Settings not configured
 
 **Solutions**:
+
 ```bash
 # 1. Verify hooks exist
 ls -la .claude/hooks/
@@ -270,16 +297,19 @@ cat .claude/settings.local.json
 ### 5. "Hook fails with Python error"
 
 **Symptoms**:
+
 ```
 Error: ModuleNotFoundError: No module named 'black'
 ```
 
 **Causes**:
+
 - Missing Python dependencies
 - Wrong Python version
 - Virtual environment not activated
 
 **Solutions**:
+
 ```bash
 # Check Python version (need 3.11+)
 python3 --version
@@ -302,17 +332,20 @@ python3 -m pip install black isort ruff
 ### 6. "Context budget exceeded"
 
 **Symptoms**:
+
 ```
 Error: Token limit exceeded
 Response truncated
 ```
 
 **Causes**:
+
 - Too many features in one session
 - Large file reads
 - Not clearing context
 
 **Solutions**:
+
 ```bash
 # CRITICAL: Clear context after each feature
 /clear
@@ -330,16 +363,19 @@ Response truncated
 ### 7. "Commands run slowly"
 
 **Symptoms**:
+
 - /test takes minutes
 - /format hangs
 - Hooks timeout
 
 **Causes**:
+
 - Large codebase
 - Too many files
 - Infinite loops in hooks
 
 **Solutions**:
+
 ```bash
 # 1. Check what's being processed
 /test unit  # Instead of /test all
@@ -362,15 +398,18 @@ python3 .claude/hooks/auto_format.py --verbose
 ### 8. "Settings conflict with existing project"
 
 **Symptoms**:
+
 - Pre-existing hooks overwritten
 - Custom settings lost
 - Conflicts with team setup
 
 **Causes**:
+
 - Plugin overwrites existing config
 - No merge strategy
 
 **Solutions**:
+
 ```bash
 # 1. Backup existing settings FIRST
 cp .claude/settings.local.json .claude/settings.local.json.backup
@@ -393,16 +432,19 @@ cp plugins/autonomous-dev/agents/* .claude/agents/
 ### 9. "PROJECT.md alignment warnings"
 
 **Symptoms**:
+
 ```
 ⚠️  Feature doesn't align with PROJECT.md goals
 ```
 
 **Causes**:
+
 - Feature request doesn't match PROJECT.md
 - PROJECT.md outdated
 - Legitimate new direction
 
 **Solutions**:
+
 ```bash
 # Option 1: Modify feature to align
 # Adjust your request to match PROJECT.md goals
@@ -421,17 +463,20 @@ vim PROJECT.md
 ### 10. "Git hooks conflict"
 
 **Symptoms**:
+
 ```
 .git/hooks/pre-commit already exists
 Error: Hook installation failed
 ```
 
 **Causes**:
+
 - Existing git hooks
 - Team uses different hook manager
 - Husky/lefthook already installed
 
 **Solutions**:
+
 ```bash
 # Option 1: Merge hooks manually
 cat .git/hooks/pre-commit  # Check existing
@@ -551,6 +596,7 @@ rm ~/.claude/plugins/autonomous-dev
      - Relevant config files
 
 4. **Enable verbose logging**:
+
    ```bash
    # Add to hook files for debugging
    VERBOSE = True

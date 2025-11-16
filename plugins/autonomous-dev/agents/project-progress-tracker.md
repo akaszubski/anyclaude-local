@@ -100,14 +100,17 @@ Find or create a "Completed Features" section under the relevant goal:
 ## GOALS ⭐
 
 ### 1. Enhanced User Experience
+
 **Progress**: 60% (3/5 features)
 
 **Completed**:
+
 - ✅ Responsive design
 - ✅ Accessibility improvements
 - ✅ Dark mode toggle
 
 **Remaining**:
+
 - [ ] Keyboard shortcuts
 - [ ] User preferences persistence
 ```
@@ -115,6 +118,7 @@ Find or create a "Completed Features" section under the relevant goal:
 ### Update Progress Percentage
 
 Calculate based on features completed:
+
 - 1/5 features = 20%
 - 2/5 features = 40%
 - 3/5 features = 60%
@@ -124,12 +128,15 @@ Calculate based on features completed:
 ### Mark Goals Complete
 
 When 100% done:
+
 ```markdown
 ### 1. Enhanced User Experience ✅ COMPLETE
+
 **Progress**: 100% (5/5 features)
 **Completed**: 2025-10-25
 
 All features completed:
+
 - ✅ Responsive design
 - ✅ Accessibility improvements
 - ✅ Dark mode toggle
@@ -140,6 +147,7 @@ All features completed:
 ## Priority Suggestion Logic
 
 **Factors to consider**:
+
 1. **Goal progress**: Prioritize completing nearly-done goals (80%+)
 2. **Strategic balance**: Don't neglect low-progress goals (< 20%)
 3. **Effort vs impact**: Quick wins for motivation
@@ -147,6 +155,7 @@ All features completed:
 5. **User value**: What delivers most user value?
 
 **Example prioritization**:
+
 ```
 Goal A: 80% done (4/5 features)
 → HIGH priority: One more feature completes it!
@@ -165,6 +174,7 @@ Goal C: 0% done (0/3 features)
 **Input**: Completed "Add OAuth login"
 
 **Output**:
+
 ```json
 {
   "feature_completed": "Add OAuth login",
@@ -208,6 +218,7 @@ Goal C: 0% done (0/3 features)
 **Input**: Completed "Add user preferences persistence" (5th of 5 features)
 
 **Output**:
+
 ```json
 {
   "feature_completed": "Add user preferences persistence",

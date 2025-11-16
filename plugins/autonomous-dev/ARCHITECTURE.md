@@ -86,6 +86,7 @@ plugins/autonomous-dev/
 #### Core Orchestration
 
 **lib/workflow_coordinator.py** (34KB, 958 lines)
+
 - **Purpose**: Python-based workflow orchestration (experimental)
 - **Responsibilities**:
   - Validate PROJECT.md alignment (via alignment-validator agent)
@@ -98,10 +99,12 @@ plugins/autonomous-dev/
 - **Dependencies**: agent_invoker, project_md_parser, artifacts, logging_utils
 
 **lib/orchestrator.py** (920 bytes)
+
 - **Purpose**: Backward compatibility re-exports
 - **Note**: Refactored into smaller modules, kept for legacy imports
 
 **lib/agent_invoker.py** (8.5KB, 230 lines)
+
 - **Purpose**: Agent invocation factory
 - **Responsibilities**:
   - Invoke agents via Task tool (Claude Code native)
@@ -114,6 +117,7 @@ plugins/autonomous-dev/
 #### Validation & Quality
 
 **lib/genai_validate.py** (33KB, 1,060 lines)
+
 - **Purpose**: GenAI-powered validation framework
 - **Responsibilities**:
   - UX quality validation (goal alignment, friction points, error handling)
@@ -127,6 +131,7 @@ plugins/autonomous-dev/
   - `generate_validation_report()` - Comprehensive findings
 
 **lib/health_check.py** (8.7KB, 271 lines)
+
 - **Purpose**: Plugin component validation
 - **Responsibilities**:
   - Validate agents exist and are loadable
@@ -139,6 +144,7 @@ plugins/autonomous-dev/
 #### Artifact & State Management
 
 **lib/artifacts.py** (11KB, 359 lines)
+
 - **Purpose**: Workflow artifact management
 - **Responsibilities**:
   - Create workflow directories (`.claude/artifacts/{workflow_id}/`)
@@ -149,6 +155,7 @@ plugins/autonomous-dev/
 - **Storage**: `.claude/artifacts/` (gitignored)
 
 **lib/checkpoint.py** (11KB, 352 lines)
+
 - **Purpose**: Workflow checkpoint management
 - **Responsibilities**:
   - Save workflow state at key points
@@ -159,6 +166,7 @@ plugins/autonomous-dev/
 - **Storage**: `.claude/checkpoints/` (gitignored)
 
 **lib/session_tracker.py** (2.1KB)
+
 - **Purpose**: Session logging for context management
 - **Responsibilities**:
   - Log agent actions to `docs/sessions/`
@@ -170,6 +178,7 @@ plugins/autonomous-dev/
 #### Automation & Integration
 
 **lib/pr_automation.py** (11KB, 365 lines)
+
 - **Purpose**: GitHub PR automation
 - **Responsibilities**:
   - Generate PR descriptions (via pr-description-generator agent)
@@ -180,6 +189,7 @@ plugins/autonomous-dev/
 - **Dependencies**: pr-description-generator agent, gh CLI
 
 **lib/search_utils.py** (16KB, 562 lines)
+
 - **Purpose**: Codebase search utilities
 - **Responsibilities**:
   - Search for patterns (Grep wrapper)
@@ -190,6 +200,7 @@ plugins/autonomous-dev/
 - **Note**: Simplifies agent tool usage
 
 **lib/logging_utils.py** (12KB, 382 lines)
+
 - **Purpose**: Structured logging for workflows
 - **Components**:
   - `WorkflowLogger`: Structured workflow logs
@@ -199,6 +210,7 @@ plugins/autonomous-dev/
 - **Output**: `.claude/logs/` (gitignored)
 
 **lib/project_md_parser.py** (5.0KB, 137 lines)
+
 - **Purpose**: PROJECT.md parsing
 - **Responsibilities**:
   - Extract GOALS, SCOPE, CONSTRAINTS sections
@@ -210,6 +222,7 @@ plugins/autonomous-dev/
 #### User Scripts
 
 **scripts/setup.py** (16KB, 485 lines)
+
 - **Purpose**: Interactive setup wizard
 - **Responsibilities**:
   - Configure hooks (ask which to enable)
@@ -220,6 +233,7 @@ plugins/autonomous-dev/
 - **Interactive**: Asks user questions, shows progress
 
 **scripts/health_check.py** (8.8KB, 265 lines)
+
 - **Purpose**: User-facing health check
 - **Responsibilities**:
   - Call lib/health_check.py
@@ -228,6 +242,7 @@ plugins/autonomous-dev/
 - **Entry Point**: `/health-check` command
 
 **scripts/sync_to_installed.py** (4.6KB, 160 lines)
+
 - **Purpose**: Development sync utility
 - **Responsibilities**:
   - Sync `plugins/autonomous-dev/` → `~/.claude/plugins/.../`
@@ -237,6 +252,7 @@ plugins/autonomous-dev/
 - **Audience**: Plugin developers only
 
 **scripts/validate_commands.py** (3.7KB, 124 lines)
+
 - **Purpose**: Command validation
 - **Responsibilities**:
   - Check all commands have `## Implementation` section
@@ -267,6 +283,7 @@ researcher → planner → test-master → implementer → reviewer → security
 ```
 
 **Characteristics**:
+
 - Pure agent-based (no Python infrastructure)
 - Native Claude Code integration
 - Simple and clean
@@ -288,6 +305,7 @@ lib/workflow_coordinator.py
 ```
 
 **Characteristics**:
+
 - Python infrastructure with agent invocation
 - More features (artifacts, checkpoints, logging)
 - More complex
@@ -354,6 +372,7 @@ Commands use the Bash tool to call Python scripts:
 ## Implementation
 
 Run health check:
+
 - Use: Bash
 - Command: `python scripts/health_check.py`
 - Output: Component status report
@@ -415,12 +434,14 @@ Output: `docs/sessions/20251026-143022-session.md`
 ### Testing Changes
 
 **Plugin Authors** (developing the plugin itself):
+
 1. Edit: `plugins/autonomous-dev/`
 2. Sync: `/sync-dev` (faster) OR reinstall plugin (complete)
 3. Test: Use commands as users would
 4. Commit: Standard git workflow
 
 **Plugin Users** (using the plugin):
+
 1. Install: `/plugin install autonomous-dev`
 2. Use: Commands just work
 3. Update: Uninstall → restart → reinstall → restart
@@ -434,6 +455,7 @@ Output: `docs/sessions/20251026-143022-session.md`
 **Status**: Open
 **Problem**: Two parallel orchestration systems
 **Options**:
+
 - A) Complete Python orchestrator → production-ready
 - B) Deprecate Python orchestrator → pure agent-based
 - C) Integrate Python as implementation detail
@@ -462,12 +484,14 @@ Output: `docs/sessions/20251026-143022-session.md`
 **Target**: <8K tokens per feature
 
 **Strategy**:
+
 - Keep agents short (50-100 lines)
 - Log to session files (not context)
 - Use `/clear` after each feature
 - Avoid loading large files into context
 
 **Measured**:
+
 - Agent prompts: 500-1,000 tokens (per agent)
 - Codebase exploration: 2,000-3,000 tokens
 - Working memory: 2,000-3,000 tokens
@@ -476,12 +500,14 @@ Output: `docs/sessions/20251026-143022-session.md`
 ### Execution Speed
 
 **Targets**:
+
 - `/health-check`: <5 seconds
 - `/test`: <60 seconds
 - `/auto-implement`: 20-30 minutes
 - Pre-commit hooks: <10 seconds
 
 **Bottlenecks**:
+
 - GenAI validation (2-5 minutes per validation)
 - Agent invocation overhead (Task tool)
 - Network latency (Claude API calls)

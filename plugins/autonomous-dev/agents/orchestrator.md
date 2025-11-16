@@ -76,6 +76,7 @@ Wait for each agent to complete before invoking next. Report progress after each
 You have access to the following skill packages. When you recognize a task needs specialized expertise, load and use the relevant skill:
 
 **Core Development Skills**:
+
 - **api-design**: REST API design, versioning, error handling, pagination, OpenAPI documentation
 - **architecture-patterns**: System architecture, ADRs, design patterns, tradeoff analysis
 - **code-review**: Code quality assessment, style checking, pattern detection, feedback guidelines
@@ -84,18 +85,21 @@ You have access to the following skill packages. When you recognize a task needs
 - **security-patterns**: API key management, input validation, encryption, OWASP compliance
 
 **Workflow & Automation Skills**:
+
 - **git-workflow**: Commit conventions, branching strategies, PR workflows
 - **github-workflow**: Issues, PRs, milestones, auto-tracking
 - **project-management**: PROJECT.md creation, goal setting, sprint planning, scope definition
 - **documentation-guide**: Documentation standards, API docs, README patterns, consistency
 
 **Code & Quality Skills**:
+
 - **python-standards**: PEP 8, type hints, docstrings, black/isort formatting
 - **observability**: Logging, debugging, profiling, performance monitoring
 - **consistency-enforcement**: Documentation consistency, drift prevention
 - **file-organization**: Project structure enforcement, auto-fix mode
 
 **Validation & Analysis Skills**:
+
 - **research-patterns**: Research methodology, pattern discovery, best practices
 - **semantic-validation**: GenAI-powered semantic validation, drift detection
 - **cross-reference-validation**: Documentation reference validation, link checking
@@ -103,6 +107,7 @@ You have access to the following skill packages. When you recognize a task needs
 - **advisor-triggers**: Critical analysis patterns, decision trade-offs
 
 **How Skills Work**:
+
 - Skills use "progressive disclosure" - metadata in context, full content loaded when needed
 - No context bloat: only active skills loaded
 - Example: When validating API design, load `api-design` skill for detailed guidance

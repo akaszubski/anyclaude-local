@@ -15,11 +15,13 @@ auto_invoke: false
 ## When to Use This Skill
 
 **Auto-invoke triggers** (when implemented):
+
 - `/align-project` command (Phase 2: Semantic Validation)
 - After major code changes (10+ files modified)
 - Before releases
 
 **Manual invoke**:
+
 - Investigating documentation accuracy
 - After refactoring
 - When documentation feels stale
@@ -33,9 +35,12 @@ auto_invoke: false
 **Problem**: Documentation claims X, code implements Y
 
 **Example**:
+
 ```markdown
 # PROJECT.md:181
+
 ### Tool Calling (CRITICAL ISSUE)
+
 Status: Still investigating duplicate tool calls
 ```
 
@@ -54,6 +59,7 @@ case "tool-input-delta": {
 **Problem**: Different versions across files
 
 **Example**:
+
 - `CHANGELOG.md:8` says `v2.0.0`
 - `package.json:3` says `v1.0.0`
 - `README.md:5` says `latest stable: 1.5.0`
@@ -65,8 +71,10 @@ case "tool-input-delta": {
 **Problem**: Documented architecture doesn't match current structure
 
 **Example**:
+
 ```markdown
 # PROJECT.md:95
+
 Architecture: Simple proxy server
 ```
 
@@ -86,8 +94,10 @@ src/
 **Problem**: Documentation makes claims no longer true
 
 **Example**:
+
 ```markdown
 # README.md:8
+
 "A simplified fork of anyclaude"
 ```
 
@@ -105,9 +115,12 @@ src/
 **Problem**: Documentation promises features not implemented
 
 **Example**:
+
 ```markdown
 # README.md:45
+
 ## Features
+
 - ✅ Streaming support
 - ✅ Tool calling
 - ✅ Image attachments (coming soon)
@@ -129,18 +142,22 @@ grep -r "image" src/  # No results
 #### Step 1.1: Read PROJECT.md Sections
 
 Extract these sections:
+
 - **Architecture Overview** (lines 50-150)
 - **Known Issues** (lines 180-250)
 - **Feature List** (if present)
 - **Status Claims** (SOLVED, IN PROGRESS, etc.)
 
 **Parse format**:
+
 ```markdown
 ### Section Title (Status)
+
 Status: CRITICAL ISSUE | HIGH | SOLVED
 ```
 
 Create map:
+
 ```json
 {
   "tool-calling": {
@@ -154,12 +171,14 @@ Create map:
 #### Step 1.2: Extract Versions
 
 Search all documentation for version patterns:
+
 - `v1.2.3`
 - `version 1.2.3`
 - `@latest`
 - `stable: X.X.X`
 
 Sources:
+
 - `package.json` → `version` field
 - `CHANGELOG.md` → `## [X.X.X]` headers
 - `README.md` → version badges, mentions
@@ -167,6 +186,7 @@ Sources:
 - `Cargo.toml` → `version` field
 
 Create version map:
+
 ```json
 {
   "package.json": "1.0.0",
@@ -178,6 +198,7 @@ Create version map:
 #### Step 1.3: Extract Architecture Claims
 
 Parse PROJECT.md "Architecture Overview":
+
 - Pattern type (Translation Layer, MVC, Microservices, etc.)
 - Component descriptions
 - Complexity claims ("simple", "straightforward", "complex")
@@ -202,6 +223,7 @@ git log --oneline --since="1 week ago" | grep -i "{issue_keyword}"
 ```
 
 **Signs of resolution**:
+
 - Code comments with "SOLVED", "FIXED"
 - Git commits with fix message
 - Implementation of previously-missing feature
@@ -210,6 +232,7 @@ git log --oneline --since="1 week ago" | grep -i "{issue_keyword}"
 #### Step 2.2: Validate Architecture Claims
 
 **If docs claim "simple" or "straightforward"**:
+
 ```bash
 # Count files
 FILE_COUNT=$(find src/ -type f | wc -l)
@@ -224,12 +247,14 @@ CONVERTERS=$(grep -r "convert" src/ | wc -l)
 ```
 
 **Complexity indicators**:
+
 - Files > 50 → Not simple
 - LOC > 1000 → Not simple
 - Directories with "layer", "adapter", "converter" → Translation pattern, not simple
 - Multiple service directories → Microservices, not monolithic
 
 **If docs claim specific pattern**:
+
 - **Translation Layer**: Look for convert/transform/adapter files
 - **MVC**: Look for models/, views/, controllers/ directories
 - **Microservices**: Look for services/, Docker files
@@ -238,6 +263,7 @@ CONVERTERS=$(grep -r "convert" src/ | wc -l)
 #### Step 2.3: Verify Feature Claims
 
 For each claimed feature:
+
 ```bash
 # Example: "Image attachments supported"
 grep -r "image" src/
@@ -248,6 +274,7 @@ grep -r "file.*upload" src/
 ```
 
 **Verification levels**:
+
 - ✅ Implemented: Code found
 - ⚠️ Partial: Some code, not complete
 - ❌ Missing: No code found
@@ -262,15 +289,18 @@ grep -r "file.*upload" src/
 For each documented issue:
 
 **ALIGNED** if:
+
 - Status = "SOLVED" AND code has implementation
 - Status = "CRITICAL" AND code has no fix
 
 **DIVERGENT** if:
+
 - Status = "CRITICAL" BUT code has fix (outdated doc)
 - Status = "SOLVED" BUT no implementation found (inaccurate claim)
 
 **Output format**:
-```
+
+````
 ⚠️ DIVERGENT: Section "Tool Calling" (PROJECT.md:181-210)
    Severity: HIGH
 
@@ -290,7 +320,8 @@ For each documented issue:
    Problem: Duplicate tool calls in streaming mode
    Solution: Stream tool parameters via input_json_delta
    Implementation: src/convert.ts:45-89
-   ```
+````
+
 ```
 
 #### Step 3.2: Compare Architecture Claims
@@ -307,24 +338,27 @@ For each documented issue:
 
 **Output format**:
 ```
+
 ⚠️ DIVERGENT: Architecture Description (PROJECT.md:95-120)
-   Severity: MEDIUM
+Severity: MEDIUM
 
-   Documented: "Simple proxy server"
-   Actual: Complex 5-layer translation architecture
+Documented: "Simple proxy server"
+Actual: Complex 5-layer translation architecture
 
-   Evidence:
-   - 2187 lines of code in src/
-   - 5 directories: translation-layers/, format-converters/, stream-handlers/, protocol-adapters/, validators/
-   - 12 adapter files
-   - Complex data flow with 5 transformation steps
+Evidence:
 
-   Suggested Fix:
-   Update PROJECT.md architecture section to:
-   "Multi-Layer Translation Architecture - This project implements
-   a sophisticated 5-layer architecture for translating between
-   incompatible API formats while preserving streaming, tool calling,
-   and error handling semantics."
+- 2187 lines of code in src/
+- 5 directories: translation-layers/, format-converters/, stream-handlers/, protocol-adapters/, validators/
+- 12 adapter files
+- Complex data flow with 5 transformation steps
+
+Suggested Fix:
+Update PROJECT.md architecture section to:
+"Multi-Layer Translation Architecture - This project implements
+a sophisticated 5-layer architecture for translating between
+incompatible API formats while preserving streaming, tool calling,
+and error handling semantics."
+
 ```
 
 #### Step 3.3: Validate Version Consistency
@@ -337,25 +371,30 @@ For each documented issue:
 
 **Output format**:
 ```
+
 ❌ VERSION MISMATCH (HIGH)
 
-   Found inconsistent versions:
-   - package.json:3 → "1.0.0"
-   - CHANGELOG.md:8 → "2.0.0"
-   - README.md:5 → "latest stable: 1.5.0"
+Found inconsistent versions:
 
-   Most recent:
-   - CHANGELOG.md last updated: 2 hours ago
-   - package.json last updated: 3 days ago
+- package.json:3 → "1.0.0"
+- CHANGELOG.md:8 → "2.0.0"
+- README.md:5 → "latest stable: 1.5.0"
 
-   Likely correct: 2.0.0 (CHANGELOG is most recent)
+Most recent:
 
-   Fixes needed:
-   1. Update package.json:3
-      "version": "2.0.0"
+- CHANGELOG.md last updated: 2 hours ago
+- package.json last updated: 3 days ago
 
-   2. Update README.md:5
-      Latest stable: v2.0.0
+Likely correct: 2.0.0 (CHANGELOG is most recent)
+
+Fixes needed:
+
+1.  Update package.json:3
+    "version": "2.0.0"
+
+2.  Update README.md:5
+    Latest stable: v2.0.0
+
 ```
 
 ---
@@ -365,64 +404,67 @@ For each documented issue:
 #### Output Format
 
 ```
+
 🧠 Semantic Validation Report
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SUMMARY
-  ✅ Aligned: 3/5 major sections
-  ⚠️ Divergent: 2/5 sections outdated
-  Overall: 60% accuracy → NEEDS ATTENTION
+✅ Aligned: 3/5 major sections
+⚠️ Divergent: 2/5 sections outdated
+Overall: 60% accuracy → NEEDS ATTENTION
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ALIGNED SECTIONS
 
 ✅ Authentication Flow (PROJECT.md:50-89)
-   Documented: OAuth2 with JWT tokens
-   Implemented: src/auth.ts:45-67
-   Evidence: Code matches description
+Documented: OAuth2 with JWT tokens
+Implemented: src/auth.ts:45-67
+Evidence: Code matches description
 
 ✅ Database Schema (PROJECT.md:150-180)
-   Documented: PostgreSQL with Prisma ORM
-   Implemented: Correctly described
+Documented: PostgreSQL with Prisma ORM
+Implemented: Correctly described
 
 ✅ Testing Strategy (PROJECT.md:310-340)
-   Documented: Unit + Integration tests
-   Implemented: tests/unit/ and tests/integration/ present
+Documented: Unit + Integration tests
+Implemented: tests/unit/ and tests/integration/ present
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 DIVERGENT SECTIONS
 
 ⚠️ CRITICAL: Known Issues Section (PROJECT.md:181-210)
-   Severity: HIGH
-   Age: 3 hours since resolution
+Severity: HIGH
+Age: 3 hours since resolution
 
-   Issue: Tool Calling marked as "CRITICAL ISSUE"
-   Reality: SOLVED in commit 2e8237c
+Issue: Tool Calling marked as "CRITICAL ISSUE"
+Reality: SOLVED in commit 2e8237c
 
-   Evidence:
-   - src/convert.ts:45-89 has solution
-   - Commit message: "fix: resolve tool duplication"
-   - No outstanding TODO comments
+Evidence:
 
-   Recommended Fix:
-   Update status to SOLVED, document solution
+- src/convert.ts:45-89 has solution
+- Commit message: "fix: resolve tool duplication"
+- No outstanding TODO comments
+
+Recommended Fix:
+Update status to SOLVED, document solution
 
 ⚠️ Architecture Description (PROJECT.md:95-120)
-   Severity: MEDIUM
+Severity: MEDIUM
 
-   Documented: "Simple proxy server"
-   Reality: Complex 5-layer translation
+Documented: "Simple proxy server"
+Reality: Complex 5-layer translation
 
-   Evidence:
-   - 2187 LOC in src/
-   - 5 transformation layers
-   - 12 adapter files
+Evidence:
 
-   Recommended Fix:
-   Rewrite architecture section to reflect complexity
+- 2187 LOC in src/
+- 5 transformation layers
+- 12 adapter files
+
+Recommended Fix:
+Rewrite architecture section to reflect complexity
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -430,22 +472,22 @@ VERSION MISMATCHES
 
 ❌ Inconsistent Versions Found
 
-   package.json: 1.0.0
-   CHANGELOG.md: 2.0.0 (most recent)
-   README.md: 1.5.0
+package.json: 1.0.0
+CHANGELOG.md: 2.0.0 (most recent)
+README.md: 1.5.0
 
-   Recommended: Update all to 2.0.0
+Recommended: Update all to 2.0.0
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 RECOMMENDED ACTIONS
 
 Priority 1 (Critical - Fix Today):
+
 1. Update PROJECT.md:181-210 (Tool Calling section)
 2. Fix version mismatches (package.json, README)
 
-Priority 2 (High - Fix This Week):
-3. Rewrite PROJECT.md:95-120 (Architecture section)
+Priority 2 (High - Fix This Week): 3. Rewrite PROJECT.md:95-120 (Architecture section)
 
 Priority 3 (Medium - Next Sprint):
 (None)
@@ -455,22 +497,23 @@ Priority 3 (Medium - Next Sprint):
 NEXT STEPS
 
 Option 1: Auto-fix version mismatches
-  /align-project
-  → Choose option 2 (Fix interactively)
-  → Approve version sync
+/align-project
+→ Choose option 2 (Fix interactively)
+→ Approve version sync
 
 Option 2: Manual updates
-  vim PROJECT.md
-  vim package.json
-  vim README.md
-  git add .
-  git commit -m "docs: sync versions and update solved issues"
+vim PROJECT.md
+vim package.json
+vim README.md
+git add .
+git commit -m "docs: sync versions and update solved issues"
 
 Option 3: Review only (no changes)
-  This report saved to: docs/alignment-report-{date}.md
+This report saved to: docs/alignment-report-{date}.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+
+````
 
 ---
 
@@ -481,7 +524,7 @@ Option 3: Review only (no changes)
 ```markdown
 # PROJECT.md
 Status: SOLVED - Fixed in v1.5
-```
+````
 
 ```bash
 # Search for implementation
@@ -492,6 +535,7 @@ git log --all --grep="{feature}"  # Feature was removed in v2.0
 ```
 
 **Output**:
+
 ```
 ⚠️ REGRESSION: Feature claimed as SOLVED but no longer in codebase
 
@@ -508,16 +552,20 @@ git log --all --grep="{feature}"  # Feature was removed in v2.0
 
 ```markdown
 # README.md:8
+
 Simple proxy server
 
 # ARCHITECTURE.md:15
+
 Complex multi-layer translation system
 
 # PROJECT.md:95
+
 Hybrid approach: proxy with translation capabilities
 ```
 
 **Output**:
+
 ```
 ⚠️ CONFLICTING DOCUMENTATION
 
@@ -541,6 +589,7 @@ git log --since="1 day ago" --oneline
 ```
 
 **Output**:
+
 ```
 ⚠️ DOCUMENTATION LAG
 
@@ -562,6 +611,7 @@ git log --since="1 day ago" --oneline
 ## Success Criteria
 
 After running semantic validation:
+
 - ✅ All "CRITICAL ISSUE" statuses verified against code
 - ✅ Version numbers consistent across all files
 - ✅ Architecture claims match codebase reality
@@ -574,12 +624,14 @@ After running semantic validation:
 ## Limitations
 
 **What this skill CAN'T detect**:
+
 - Subtly incorrect explanations (if code exists)
 - Performance claims (needs profiling)
 - Scalability assertions (needs load testing)
 - Security vulnerabilities (use security-auditor skill)
 
 **Workarounds**:
+
 - Performance: Use observability skill
 - Security: Use security-patterns skill
 - Scalability: Manual review + load testing
@@ -596,6 +648,7 @@ This skill is Phase 2 of `/align-project`:
 **Phase 4**: Cross-reference validation (separate skill)
 
 **Invocation**:
+
 ```bash
 /align-project
 # After Phase 1 completes, Phase 2 runs automatically
@@ -607,6 +660,7 @@ This skill is Phase 2 of `/align-project`:
 ## Output to User
 
 Always provide:
+
 1. **Severity levels** (CRITICAL, HIGH, MEDIUM, LOW)
 2. **Evidence** (file:line references, commit SHAs)
 3. **Suggested fixes** (exact text to replace)
@@ -614,6 +668,7 @@ Always provide:
 5. **Auto-fix availability** (YES/NO for each issue)
 
 Never:
+
 - Claim something is wrong without evidence
 - Provide vague suggestions ("update docs")
 - Skip severity assessment

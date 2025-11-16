@@ -49,6 +49,7 @@ Get up and running in 3 minutes!
 ```
 
 This wizard helps you:
+
 1. Enable automatic formatting when you save files
 2. Enable automatic testing when you commit
 3. Create PROJECT.md from template
@@ -58,6 +59,7 @@ This wizard helps you:
 ### Option 2: Automated Setup
 
 **For solo developers** (slash commands only - no setup needed!):
+
 ```bash
 # Just use the commands - no setup required
 /format
@@ -66,12 +68,14 @@ This wizard helps you:
 ```
 
 **For teams** (automatic hooks + GitHub):
+
 ```bash
 /setup
 # Then select: Automatic hooks, PROJECT.md, GitHub integration
 ```
 
 **Power users** (everything enabled):
+
 ```bash
 /setup
 # Then select: All options
@@ -113,6 +117,7 @@ git commit -m "feat: add hello world function"
 ## Available Commands (33 Total)
 
 ### Quick Reference
+
 **Testing**: `/test`, `/test-unit`, `/test-integration`, `/test-uat`, `/test-uat-genai`, `/test-architecture`, `/test-complete`
 
 **Commit**: `/commit`, `/commit-check`, `/commit-push`, `/commit-release`
@@ -130,16 +135,19 @@ git commit -m "feat: add hello world function"
 ### Most Used Commands
 
 **Daily development**:
+
 - `/test-unit` - Fast unit tests (< 1s)
 - `/commit` - Quick commit (< 5s)
 - `/format` - Format code
 
 **Feature completion**:
+
 - `/test` - All automated tests
 - `/commit-check` - Full validation
 - `/commit-push` - Push to GitHub
 
 **Pre-release**:
+
 - `/test-complete` - Complete validation
 - `/commit-release` - Production release
 
@@ -148,6 +156,7 @@ See [docs/COMMANDS.md](../../docs/COMMANDS.md) for complete reference.
 ## Workflows
 
 ### Slash Commands Workflow
+
 ```
 ┌─────────────────────────────────────────┐
 │ 1. Describe feature                     │
@@ -159,6 +168,7 @@ See [docs/COMMANDS.md](../../docs/COMMANDS.md) for complete reference.
 ```
 
 ### Automatic Hooks Workflow
+
 ```
 ┌─────────────────────────────────────────┐
 │ 1. Describe feature                     │
@@ -171,7 +181,9 @@ See [docs/COMMANDS.md](../../docs/COMMANDS.md) for complete reference.
 ## Configuration Files
 
 ### `PROJECT.md`
+
 Strategic direction for your project:
+
 - **GOALS**: What success looks like
 - **SCOPE**: What's in/out of scope
 - **CONSTRAINTS**: Technical limits
@@ -180,6 +192,7 @@ Strategic direction for your project:
 All agents validate against this before working!
 
 ### `.claude/settings.local.json` (If using automatic hooks)
+
 ```json
 {
   "hooks": {
@@ -198,6 +211,7 @@ All agents validate against this before working!
 ```
 
 ### `.env` (If using GitHub integration)
+
 ```bash
 # GitHub Personal Access Token
 GITHUB_TOKEN=ghp_your_token_here
@@ -234,6 +248,7 @@ rm .claude/settings.local.json
 **Solution:** Exit and restart Claude Code (Cmd+Q or Ctrl+Q)
 
 After restarting, test by typing:
+
 ```bash
 /test
 /format
@@ -262,16 +277,19 @@ ls ~/.claude/plugins/autonomous-dev
 3. Try: Re-run `/setup`
 
 ### "Tests failing"
+
 1. Check: Test framework installed (pytest/jest)
 2. Run: `/test` to see details
 3. Fix failing tests before committing
 
 ### "Context too large"
+
 1. Run: `/clear` after each feature
 2. This resets context budget
 3. Session logs saved to `docs/sessions/`
 
 ### "GitHub auth failed"
+
 1. Check: `.env` file has valid token
 2. Check: Token has `repo` scope
 3. See: `.claude/docs/GITHUB_AUTH_SETUP.md`

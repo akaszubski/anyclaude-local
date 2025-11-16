@@ -22,9 +22,27 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 
 **Test Results**:
 
-- Qwen3-Coder-30B: ⚠️ Partial support
-- GPT-OSS-20B: ⚠️ Partial support
+- Qwen3-Coder-30B: ⚠️ Partial support (good for simple tools)
+- GPT-OSS-20B: ❌ **Poor multi-turn support** (see below)
 - DeepSeek/Mistral: ❌ Poor support
+
+**GPT-OSS-20B Specific Issue** (v2.1.1):
+
+✅ **Single-turn tool calling works**:
+- First tool call: `Read(README.md)` - SUCCESS
+- JSON extracted correctly: `{"file_path":"/path/to/README.md"}`
+- Harmony format parsing: ✅ WORKING
+
+❌ **Multi-turn tool calling fails**:
+- After successful first call, model receives tool results
+- Model gets confused by error messages
+- Starts generating invalid parameters: `{"file?":"?"}`, `{"path?":"?"}`
+- Cannot recover from errors
+- Degenerates into nonsense tool calls
+
+**Root Cause**: Model not trained well enough on multi-turn Harmony format conversations with tool results
+
+**Workaround**: Use simpler prompts that only require 1-2 tool calls, or switch to a better model
 
 **Recommendations**:
 

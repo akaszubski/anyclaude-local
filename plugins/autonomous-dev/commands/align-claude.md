@@ -18,6 +18,7 @@ Check and fix drift between documented standards (CLAUDE.md) and actual implemen
 CLAUDE.md defines development standards. If it drifts from reality (outdated version numbers, wrong agent counts, missing commands), new developers follow incorrect practices.
 
 This command:
+
 1. **Detects drift** - Compares CLAUDE.md against actual PROJECT.md, agents, commands, hooks
 2. **Shows issues** - Version mismatches, count errors, missing features
 3. **Guides fixes** - Tells you exactly what to update
@@ -36,31 +37,37 @@ python .claude/hooks/validate_claude_alignment.py
 ## What Gets Checked
 
 ### 1. Version Consistency
+
 - Project CLAUDE.md should match or be newer than PROJECT.md
 - Global CLAUDE.md in `~/.claude/` should be reasonable
 - All files should have recent "Last Updated" dates
 
 ### 2. Agent Counts
+
 - CLAUDE.md says how many agents exist
 - Checks against actual agents in `plugins/autonomous-dev/agents/`
 - Currently: 16 agents (10 core + 6 utility)
 
 ### 3. Command Counts
+
 - CLAUDE.md lists all available commands
 - Checks against actual commands in `plugins/autonomous-dev/commands/`
 - Currently: 8 commands (auto-implement, align-project, setup, test, status, health-check, sync-dev, uninstall)
 
 ### 4. Documented Features Exist
+
 - All commands mentioned in CLAUDE.md must have corresponding files
 - All agents mentioned must exist
 - All hooks mentioned must have implementations
 
 ### 5. Skills Documentation
+
 - Skills were removed in v2.5.0 (Anthropic anti-pattern)
 - CLAUDE.md should say "Skills (0 - Removed)"
 - Any documentation of actual skills is outdated
 
 ### 6. Hook Documentation
+
 - CLAUDE.md describes available hooks
 - Validates hook count is reasonable
 - Warns if major hooks are missing
@@ -87,6 +94,7 @@ python .claude/hooks/validate_claude_alignment.py
 ## Common Fixes
 
 ### Update Version Date
+
 ```bash
 # In CLAUDE.md, change:
 # **Last Updated**: 2025-10-19
@@ -95,18 +103,21 @@ python .claude/hooks/validate_claude_alignment.py
 ```
 
 ### Fix Agent Count
+
 ```bash
 # Change: ### Agents (7 specialists)
 # To:     ### Agents (16 specialists)
 ```
 
 ### Fix Command Count
+
 ```bash
 # Change: Done! All commands work: /test, /format, /commit, etc.
 # To:     Done! All commands work: /auto-implement, /align-project, /setup, /test, /status, /health-check, /sync-dev, /uninstall
 ```
 
 ### Update Skills Section
+
 ```bash
 # Old (outdated):
 # ### Skills (6 core competencies)
@@ -158,6 +169,7 @@ git commit -m "docs: update CLAUDE.md alignment"
 ## Why This Matters
 
 **Scenario: New Developer**
+
 ```
 New dev: "What commands are available?"
 Reads CLAUDE.md: "/test, /format, /commit work great"
@@ -172,11 +184,13 @@ With alignment checking:
 ## Test Coverage
 
 Validation is tested in:
+
 ```
 plugins/autonomous-dev/tests/test_claude_alignment.py
 ```
 
 Tests cover:
+
 - ✅ Date extraction and comparison
 - ✅ Count detection (agents, commands, hooks)
 - ✅ Missing feature detection
@@ -199,6 +213,7 @@ ls .claude/hooks/
 ### "Shows warnings but I think they're wrong"
 
 Check what changed recently:
+
 ```bash
 # See git diff
 git diff plugins/autonomous-dev/agents/
@@ -212,10 +227,12 @@ Maybe the codebase changed but CLAUDE.md wasn't updated.
 ### "Hook runs before every commit"
 
 That's intentional! It ensures CLAUDE.md stays in sync. If you see a warning:
+
 1. Fix CLAUDE.md
 2. Re-commit (or just add CLAUDE.md to next commit)
 
 To temporarily skip (NOT recommended):
+
 ```bash
 git commit --no-verify
 # But then manually run validation later

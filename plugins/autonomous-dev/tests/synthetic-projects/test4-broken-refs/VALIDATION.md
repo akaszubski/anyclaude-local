@@ -14,6 +14,7 @@
 ## Simulated Scenario
 
 This project simulates the situation where:
+
 1. Script files were moved from root to `scripts/debug/`
 2. Documentation still references old paths
 3. Cross-reference validation detects broken references
@@ -225,23 +226,27 @@ Summary:
 ## Validation Checklist
 
 **Detection:**
+
 - [ ] All 6 broken references detected
 - [ ] File moves detected via existing files
 - [ ] Markdown links validated
 - [ ] File:line references checked
 
 **Classification:**
+
 - [ ] Auto-fixable vs manual fix correctly identified
 - [ ] Moved files (auto-fix) vs deleted files (manual)
 - [ ] Invalid line numbers detected
 
 **Auto-Fix:**
+
 - [ ] File path references updated
 - [ ] Markdown links updated
 - [ ] Multiple occurrences in same file handled
 - [ ] Changes preview shown before applying
 
 **Hook Integration:**
+
 - [ ] post_file_move.py detects references
 - [ ] Offers interactive update
 - [ ] Shows preview of changes

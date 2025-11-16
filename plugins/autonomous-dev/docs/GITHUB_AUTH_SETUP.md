@@ -5,6 +5,7 @@ This guide shows how to set up GitHub authentication for the orchestrator agent.
 ## Why GitHub Authentication?
 
 The orchestrator agent can optionally integrate with GitHub to:
+
 - Track sprint progress via Milestones
 - Link work to specific Issues
 - Auto-update issue status as work progresses
@@ -58,6 +59,7 @@ gh auth status
 ## Security Best Practices
 
 ### ✅ DO:
+
 - ✅ Add `.env` to `.gitignore` (always!)
 - ✅ Use tokens with minimal required scopes
 - ✅ Rotate tokens periodically (every 90 days)
@@ -65,6 +67,7 @@ gh auth status
 - ✅ Use different tokens for different projects
 
 ### ❌ DON'T:
+
 - ❌ Commit `.env` to git (check .gitignore!)
 - ❌ Share your token with others
 - ❌ Use tokens with more permissions than needed
@@ -86,6 +89,7 @@ Rotate your token every 90 days:
 **Problem**: `.env` file missing or not in project root
 
 **Solution**:
+
 ```bash
 # Check if .env exists
 ls -la .env
@@ -100,6 +104,7 @@ cp plugins/autonomous-dev/.env.example .env
 **Problem**: GitHub CLI not installed
 
 **Solution**:
+
 ```bash
 # macOS
 brew install gh
@@ -116,6 +121,7 @@ choco install gh
 **Problem**: Token invalid or expired
 
 **Solution**:
+
 1. Generate new token at https://github.com/settings/tokens
 2. Update `.env` with new token
 3. Restart your terminal
@@ -125,6 +131,7 @@ choco install gh
 **Problem**: Token missing required scopes
 
 **Solution**:
+
 1. Go to https://github.com/settings/tokens
 2. Edit your token
 3. Ensure `repo` and `read:org` are checked
@@ -156,12 +163,14 @@ Once configured:
    - Issue #51: "Optimize memory allocation"
 
 3. **Reference sprint in PROJECT.md**
+
    ```markdown
    Current Sprint: Sprint 4: Memory Optimization
    GitHub Milestone: Sprint 4: Memory Optimization
    ```
 
 4. **Work happens automatically**
+
    ```bash
    You: "implement gradient checkpointing"
 

@@ -19,6 +19,7 @@ auto_invoke: false
 **Problem**: Status claims that are no longer true
 
 **Patterns**:
+
 - "CRITICAL ISSUE" markers for solved problems
 - "WIP" (Work In Progress) for completed work
 - "TODO" for already-implemented features
@@ -26,6 +27,7 @@ auto_invoke: false
 - "UNSTABLE" for stable APIs
 
 **Detection**:
+
 ```bash
 # Find status markers
 grep -r "CRITICAL ISSUE\|WIP\|TODO\|EXPERIMENTAL\|UNSTABLE" *.md
@@ -39,8 +41,10 @@ grep -r "CRITICAL ISSUE\|WIP\|TODO\|EXPERIMENTAL\|UNSTABLE" *.md
 **Problem**: Documentation references old versions
 
 **Example**:
+
 ```markdown
 # docs/guide.md:15
+
 Compatible with v1.2.0 and above
 ```
 
@@ -54,16 +58,19 @@ Compatible with v1.2.0 and above
 ### 3. Stale "Coming Soon" Claims
 
 **Problem**: Features marked "coming soon" that either:
+
 - Are already implemented
 - Were cancelled
 - Have been "coming soon" for > 6 months
 
 **Example**:
+
 ```markdown
 # README.md:67
+
 - ✅ Streaming support
 - ✅ Tool calling
-- 🔄 Image attachments (coming soon)  ← Added 8 months ago
+- 🔄 Image attachments (coming soon) ← Added 8 months ago
 ```
 
 ```bash
@@ -82,12 +89,15 @@ grep -r "image.*attachment" src/  # Found code
 **Problem**: Documentation links to old URLs or deprecated resources
 
 **Example**:
+
 ```markdown
 # docs/api.md:45
-See: https://api.example.com/v1/docs  ← v1 API deprecated
+
+See: https://api.example.com/v1/docs ← v1 API deprecated
 ```
 
 **Detection**:
+
 - API version in URLs doesn't match current version
 - Links to deprecated GitHub repos
 - References to merged/closed issues
@@ -97,8 +107,10 @@ See: https://api.example.com/v1/docs  ← v1 API deprecated
 **Problem**: "Last Updated" dates that don't match git history
 
 **Example**:
+
 ```markdown
 # PROJECT.md:3
+
 Last Updated: 2024-10-01
 ```
 
@@ -126,6 +138,7 @@ done
 ```
 
 **Create marker map**:
+
 ```json
 {
   "PROJECT.md:181": {
@@ -152,6 +165,7 @@ git blame -L 181,181 PROJECT.md
 ```
 
 **Age thresholds**:
+
 - **CRITICAL ISSUE**: Should resolve within 30 days
 - **WIP**: Should complete within 60 days
 - **TODO**: Should address within 90 days
@@ -162,6 +176,7 @@ git blame -L 181,181 PROJECT.md
 For each marker:
 
 **For "CRITICAL ISSUE"**:
+
 ```bash
 # Search for fix in code
 grep -r "{issue_keyword}" src/
@@ -173,6 +188,7 @@ git log --oneline --since="90 days ago" | grep -i "{issue_keyword}"
 ```
 
 **For "TODO"**:
+
 ```bash
 # Search for implementation
 grep -r "{feature_keyword}" src/
@@ -181,6 +197,7 @@ grep -r "{feature_keyword}" src/
 ```
 
 **For "WIP"**:
+
 ```bash
 # Check if file still being modified
 git log --oneline --since="30 days ago" -- {file}
@@ -220,6 +237,7 @@ grep -r "v[0-9]\+\.[0-9]\+\.[0-9]\+" docs/ *.md
 ```
 
 **For each reference**:
+
 ```json
 {
   "docs/guide.md:15": {
@@ -263,6 +281,7 @@ grep -rn "coming soon\|planned\|roadmap\|future\|🔄" *.md docs/
 ```
 
 **For each claim**:
+
 ```json
 {
   "README.md:67": {
@@ -290,6 +309,7 @@ AGE_DAYS=240
 #### Step 3.3: Check Implementation Status
 
 **Option 1: Feature was implemented**
+
 ```bash
 # Search codebase for feature
 grep -r "image.*attachment" src/
@@ -298,6 +318,7 @@ grep -r "image.*attachment" src/
 ```
 
 **Option 2: Feature was cancelled**
+
 ```bash
 # Check for removal commits
 git log --all --grep="remove.*image" --grep="cancel.*attachment"
@@ -306,6 +327,7 @@ git log --all --grep="remove.*image" --grep="cancel.*attachment"
 ```
 
 **Option 3: Still in progress (not stale)**
+
 ```bash
 # Check recent activity
 git log --since="3 months ago" --grep="image\|attachment"
@@ -358,6 +380,7 @@ grep -rn '\./.*\.sh\|\./src/.*\.ts' *.md docs/
 ```
 
 **Example references**:
+
 ```markdown
 [Architecture](docs/ARCHITECTURE.md)
 See: ./scripts/debug/test.sh
@@ -391,7 +414,7 @@ fi
 
 #### Output Format
 
-```
+````
 📅 Documentation Currency Report
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -407,107 +430,114 @@ STALE STATUS MARKERS
    ```markdown
    ### Tool Calling (SOLVED)
    Status: SOLVED (2024-10-26)
-   ```
+````
 
 ⚠️ STALE: "TODO" in README.md:45 (180 days old)
-   Context: Add authentication docs
-   Age: 180 days (threshold: 90 days)
-   Status: Auth docs exist in docs/guides/auth.md
+Context: Add authentication docs
+Age: 180 days (threshold: 90 days)
+Status: Auth docs exist in docs/guides/auth.md
 
-   Fix: Remove TODO or update to:
-   ```markdown
-   See: [Authentication Guide](docs/guides/auth.md)
-   ```
+Fix: Remove TODO or update to:
+
+```markdown
+See: [Authentication Guide](docs/guides/auth.md)
+```
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 VERSION LAG
 
 ⚠️ OUTDATED VERSION REFERENCE
-   docs/guide.md:15
-   Referenced: v1.2.0
-   Current: v2.5.0
-   Age: 1 major version behind
+docs/guide.md:15
+Referenced: v1.2.0
+Current: v2.5.0
+Age: 1 major version behind
 
-   Context: "Compatible with v1.2.0 and above"
+Context: "Compatible with v1.2.0 and above"
 
-   Fix: Update to current version
-   ```markdown
-   Compatible with v2.0.0 and above
-   ```
+Fix: Update to current version
+
+```markdown
+Compatible with v2.0.0 and above
+```
 
 ❌ CHANGELOG LAG
-   CHANGELOG.md: v2.4.0
-   package.json: v2.5.0
-   Difference: 1 minor version
+CHANGELOG.md: v2.4.0
+package.json: v2.5.0
+Difference: 1 minor version
 
-   Fix: Add v2.5.0 entry to CHANGELOG.md
+Fix: Add v2.5.0 entry to CHANGELOG.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 STALE "COMING SOON" CLAIMS
 
 ⚠️ IMPLEMENTED: "Image attachments (coming soon)"
-   Location: README.md:67
-   Age: 240 days (8 months)
-   Status: Implementation found in src/attachments.ts
+Location: README.md:67
+Age: 240 days (8 months)
+Status: Implementation found in src/attachments.ts
 
-   Fix: Mark as complete
-   ```markdown
-   - ✅ Image attachments
-   ```
+Fix: Mark as complete
+
+```markdown
+- ✅ Image attachments
+```
 
 ⚠️ ABANDONED: "WebSocket support (roadmap)"
-   Location: docs/roadmap.md:15
-   Age: 365 days (1 year)
-   Status: No commits or code found
+Location: docs/roadmap.md:15
+Age: 365 days (1 year)
+Status: No commits or code found
 
-   Fix: Either:
-   1. Remove from roadmap (if cancelled)
-   2. Update status if still planned
+Fix: Either:
+
+1.  Remove from roadmap (if cancelled)
+2.  Update status if still planned
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 OUTDATED "LAST UPDATED" DATES
 
 ⚠️ INCORRECT DATE: PROJECT.md:3
-   Claimed: 2024-10-01
-   Actual: 2024-10-26 (25 days difference)
-   Last commit: "docs: major architecture update"
+Claimed: 2024-10-01
+Actual: 2024-10-26 (25 days difference)
+Last commit: "docs: major architecture update"
 
-   Fix: Update date
-   ```markdown
-   Last Updated: 2024-10-26
-   ```
+Fix: Update date
+
+```markdown
+Last Updated: 2024-10-26
+```
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 BROKEN REFERENCES
 
 ❌ BROKEN LINK: README.md:35
-   Links to: docs/ARCHITECTURE.md
-   Status: File not found
+Links to: docs/ARCHITECTURE.md
+Status: File not found
 
-   Possible fixes:
-   - File was renamed to docs/architecture/system-design.md
-   - Update link to correct path
+Possible fixes:
+
+- File was renamed to docs/architecture/system-design.md
+- Update link to correct path
 
 ❌ INVALID LINE REFERENCE: docs/guide.md:89
-   References: src/convert.ts:450
-   Status: src/convert.ts only has 412 lines
+References: src/convert.ts:450
+Status: src/convert.ts only has 412 lines
 
-   Fix: Update line number or remove reference
+Fix: Update line number or remove reference
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SUMMARY
 
 Total issues: 9
-  - Stale markers: 2
-  - Version lag: 2
-  - Stale claims: 2
-  - Outdated dates: 1
-  - Broken references: 2
+
+- Stale markers: 2
+- Version lag: 2
+- Stale claims: 2
+- Outdated dates: 1
+- Broken references: 2
 
 Currency Score: 65% (needs improvement)
 
@@ -516,38 +546,39 @@ Currency Score: 65% (needs improvement)
 RECOMMENDED ACTIONS
 
 Priority 1 (Fix Today):
+
 1. Update stale "CRITICAL ISSUE" markers
 2. Fix broken references
 3. Update "Last Updated" dates
 
-Priority 2 (Fix This Week):
-4. Mark implemented "coming soon" features as complete
-5. Update CHANGELOG to match package.json version
+Priority 2 (Fix This Week): 4. Mark implemented "coming soon" features as complete 5. Update CHANGELOG to match package.json version
 
-Priority 3 (Next Sprint):
-6. Review version references in guides
-7. Clean up old TODOs
+Priority 3 (Next Sprint): 6. Review version references in guides 7. Clean up old TODOs
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 AUTO-FIX AVAILABILITY
 
 ✅ Can auto-fix:
-  - "Last Updated" dates (update to git log date)
-  - CHANGELOG version sync
-  - Broken reference paths (if file move detected)
+
+- "Last Updated" dates (update to git log date)
+- CHANGELOG version sync
+- Broken reference paths (if file move detected)
 
 ⚠️ Needs review:
-  - Stale status markers (requires verification)
-  - "Coming soon" → "Complete" (needs testing)
-  - Version references (may be intentionally old)
+
+- Stale status markers (requires verification)
+- "Coming soon" → "Complete" (needs testing)
+- Version references (may be intentionally old)
 
 ❌ Manual fix required:
-  - Abandoned features (decision needed)
-  - Ambiguous broken links (multiple candidates)
+
+- Abandoned features (decision needed)
+- Ambiguous broken links (multiple candidates)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+
+````
 
 ---
 
@@ -558,11 +589,12 @@ AUTO-FIX AVAILABILITY
 ```markdown
 # docs/migration-guide.md:15
 Migrating from v1.x to v2.x
-```
+````
 
 **Detection**: Context suggests intentional reference (migration guide, changelog)
 
 **Output**:
+
 ```
 ℹ️ INTENTIONAL: Old version reference detected
    Location: docs/migration-guide.md:15
@@ -587,6 +619,7 @@ function processData() { ... }
 
 ```markdown
 # roadmap.md:25
+
 🔄 Full IDE integration (coming soon)
 ```
 
@@ -597,6 +630,7 @@ git log --since="1 month ago" --grep="IDE"
 ```
 
 **Output**:
+
 ```
 ✅ ACTIVE: "IDE integration" still in progress
    Age: 8 months
@@ -611,6 +645,7 @@ git log --since="1 month ago" --grep="IDE"
 ## Success Criteria
 
 After running documentation currency check:
+
 - ✅ All status markers validated against age thresholds
 - ✅ Version references checked for currency
 - ✅ "Coming soon" claims verified (implemented, cancelled, or active)
@@ -634,11 +669,13 @@ This is **Phase 3** of `/align-project`:
 ## Automation Triggers
 
 **Auto-run when**:
+
 - `/align-project` command
 - Before major releases
 - Monthly scheduled check (if configured)
 
 **Alert thresholds**:
+
 - CRITICAL markers > 30 days old
 - TODOs > 90 days old
 - "Coming soon" > 180 days old

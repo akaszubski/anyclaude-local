@@ -31,6 +31,7 @@ All three layers are needed for complete autonomous system coverage.
 ### Layer 1: When to Use Traditional Tests (pytest)
 
 ✅ **BEST FOR**:
+
 - **Fast, deterministic checks** (CI/CD, pre-commit)
 - **Binary outcomes** (file exists? count correct? function returns X?)
 - **Regression prevention** (catches obvious breaks)
@@ -40,6 +41,7 @@ All three layers are needed for complete autonomous system coverage.
 - **Coverage tracking** (80%+ line coverage)
 
 ❌ **NOT GOOD FOR**:
+
 - Semantic understanding (does code match intent?)
 - Quality assessment (is this "good" code?)
 - Architectural alignment (does implementation serve goals?)
@@ -71,6 +73,7 @@ def test_api_response_time():
 ### Layer 2: When to Use GenAI Validation (Claude)
 
 ✅ **BEST FOR**:
+
 - **Semantic understanding** (does implementation match documented intent?)
 - **Behavioral validation** (does agent DO what description says?)
 - **Architectural drift detection** (subtle changes in meaning)
@@ -80,6 +83,7 @@ def test_api_response_time():
 - **Complex reasoning** (trade-offs, design decisions)
 
 ❌ **NOT GOOD FOR**:
+
 - Fast CI/CD checks (too slow, requires API calls)
 - Deterministic outcomes (slightly different answers each run)
 - Simple binary checks (overkill for "does file exist")
@@ -94,6 +98,7 @@ def test_api_response_time():
 
 Read orchestrator.md. Does it actually validate PROJECT.md before
 starting work? Look for:
+
 - File existence checks (bash if statements)
 - Reading GOALS/SCOPE/CONSTRAINTS
 - Blocking behavior if misaligned
@@ -105,6 +110,7 @@ matches the documented INTENT.
 ## Assess Code Quality
 
 Review the authentication implementation. Evaluate:
+
 - Is error handling comprehensive?
 - Are security best practices followed?
 - Is the code maintainable for future developers?
@@ -118,6 +124,7 @@ Provide contextual assessment with trade-offs.
 ### Layer 3: When to Use System Performance Testing (Meta-analysis) ⭐ NEW
 
 ✅ **BEST FOR**:
+
 - **Agent effectiveness tracking** (which agents succeed? which fail?)
 - **Model optimization** (is Opus needed or can we use Haiku?)
 - **Cost efficiency analysis** (are we spending too much per feature?)
@@ -126,30 +133,36 @@ Provide contextual assessment with trade-offs.
 - **Resource allocation** (where should we invest more/less?)
 
 ❌ **NOT GOOD FOR**:
+
 - Individual feature validation (use Layer 1 or 2)
 - Fast feedback loops (takes time to collect data)
 - Binary pass/fail checks (provides metrics, not yes/no)
 
 **What it measures**:
+
 ```markdown
 ## Agent Performance
-| Agent | Invocations | Success Rate | Avg Time | Cost |
-|-------|-------------|--------------|----------|------|
-| researcher | 1.8/feature | 100% | 42s | $0.09 |
-| planner | 1.0/feature | 100% | 28s | $0.07 |
-| implementer | 1.2/feature | 95% | 180s | $0.45 |
+
+| Agent       | Invocations | Success Rate | Avg Time | Cost  |
+| ----------- | ----------- | ------------ | -------- | ----- |
+| researcher  | 1.8/feature | 100%         | 42s      | $0.09 |
+| planner     | 1.0/feature | 100%         | 28s      | $0.07 |
+| implementer | 1.2/feature | 95%          | 180s     | $0.45 |
 
 ## Model Optimization Opportunities
+
 - reviewer: Sonnet → Haiku (save 92%)
 - security-auditor: Already Haiku ✅
 - doc-master: Already Haiku ✅
 
 ## ROI Tracking
+
 - Total cost: $18.70 (22 features)
 - Value delivered: $8,800 (88hr × $100/hr)
 - ROI: 470× return on investment
 
 ## System Performance
+
 - Average cost per feature: $0.85
 - Average time per feature: 18 minutes
 - Success rate: 95%
@@ -157,12 +170,14 @@ Provide contextual assessment with trade-offs.
 ```
 
 **Commands**:
+
 ```bash
 /test system-performance              # Run system performance analysis
 /test system-performance --track-issues  # Auto-create optimization issues
 ```
 
 **When to run**:
+
 - Weekly or monthly (not per-feature)
 - After major changes to agent pipeline
 - When reviewing system costs
@@ -182,6 +197,7 @@ Provide contextual assessment with trade-offs.
 **CI/CD**: YES, run on every commit
 
 **Example**:
+
 ```python
 # tests/unit/test_auth.py
 def test_hash_password():
@@ -192,6 +208,7 @@ def test_hash_password():
 ```
 
 **Validation Type**: STRUCTURE
+
 - ✅ Fast
 - ✅ Deterministic
 - ✅ Automated
@@ -207,6 +224,7 @@ def test_hash_password():
 **CI/CD**: YES, run before merge
 
 **Example**:
+
 ```python
 # tests/integration/test_user_workflow.py
 def test_user_registration_workflow(db):
@@ -223,6 +241,7 @@ def test_user_registration_workflow(db):
 ```
 
 **Validation Type**: BEHAVIOR
+
 - ✅ Tests real workflows
 - ✅ Catches integration issues
 - ✅ Automated
@@ -238,6 +257,7 @@ def test_user_registration_workflow(db):
 **CI/CD**: Optional, can run nightly
 
 **Example**:
+
 ```python
 # tests/uat/test_user_journey.py
 def test_complete_user_journey(tmp_path):
@@ -263,6 +283,7 @@ def test_complete_user_journey(tmp_path):
 ```
 
 **Validation Type**: WORKS
+
 - ✅ Tests complete user experience
 - ✅ Catches workflow breaks
 - ✅ Can be automated (but slow)
@@ -278,6 +299,7 @@ def test_complete_user_journey(tmp_path):
 **CI/CD**: NO, requires human review
 
 **Example**:
+
 ```markdown
 # /validate-architecture
 
@@ -311,6 +333,7 @@ GenAI validates the BEHAVIOR matches the INTENT.
 ```
 
 **Validation Type**: INTENT
+
 - ✅ Validates semantic meaning
 - ✅ Detects architectural drift
 - ✅ Assesses quality and design
@@ -324,11 +347,13 @@ GenAI validates the BEHAVIOR matches the INTENT.
 ### Development Phase
 
 1. **Write unit tests** (pytest, fast feedback)
+
    ```bash
    pytest tests/unit/test_feature.py -v
    ```
 
 2. **Write integration tests** (pytest, workflow validation)
+
    ```bash
    pytest tests/integration/test_feature.py -v
    ```
@@ -354,11 +379,13 @@ pytest tests/unit/ tests/integration/ -v --tb=short
 ### Pre-Release (Manual)
 
 1. **Run UAT tests** (complete workflows)
+
    ```bash
    pytest tests/uat/ -v
    ```
 
 2. **GenAI architectural validation** (intent alignment)
+
    ```bash
    /validate-architecture
    ```
@@ -411,21 +438,23 @@ not just descriptions.
 
 ## Complete Testing Strategy
 
-| Test Type | Speed | Automated | Validates | When to Use |
-|-----------|-------|-----------|-----------|-------------|
-| **Unit** | < 1s | ✅ Yes | Structure, logic | Every function |
-| **Integration** | < 10s | ✅ Yes | Workflows, APIs | Component interaction |
-| **UAT** | < 60s | ⚠️ Optional | User journeys | End-to-end flows |
-| **GenAI** | 2-5min | ❌ No | Intent, quality | Before release, major changes |
+| Test Type       | Speed  | Automated   | Validates        | When to Use                   |
+| --------------- | ------ | ----------- | ---------------- | ----------------------------- |
+| **Unit**        | < 1s   | ✅ Yes      | Structure, logic | Every function                |
+| **Integration** | < 10s  | ✅ Yes      | Workflows, APIs  | Component interaction         |
+| **UAT**         | < 60s  | ⚠️ Optional | User journeys    | End-to-end flows              |
+| **GenAI**       | 2-5min | ❌ No       | Intent, quality  | Before release, major changes |
 
 ### Cost-Benefit Analysis
 
 **Traditional Tests (pytest)**:
+
 - Cost: Developer time to write tests
 - Benefit: Fast feedback, regression prevention
 - ROI: High (run thousands of times)
 
 **GenAI Validation**:
+
 - Cost: API calls, human review time
 - Benefit: Architectural integrity, drift detection
 - ROI: High (catches subtle issues static tests miss)
@@ -435,16 +464,19 @@ not just descriptions.
 ## Three Testing Approaches (Traditional)
 
 ### 1. TDD (Test-Driven Development)
+
 **Purpose**: Write tests BEFORE implementation
 **When**: New features, refactoring, coverage gaps
 **Location**: `tests/unit/` and `tests/integration/`
 
 ### 2. Progression Testing
+
 **Purpose**: Track metrics over time, prevent regressions
 **When**: Optimizing performance, training models
 **Location**: `tests/progression/`
 
 ### 3. Regression Testing
+
 **Purpose**: Ensure fixed bugs never return
 **When**: After bug fixes
 **Location**: `tests/regression/`
@@ -454,6 +486,7 @@ not just descriptions.
 ## TDD Methodology
 
 ### Core Principle
+
 **Red → Green → Refactor**
 
 1. **Red**: Write failing test (feature doesn't exist yet)
@@ -463,6 +496,7 @@ not just descriptions.
 ### TDD Workflow
 
 **Step 1: Write Test First**
+
 ```python
 # tests/unit/test_trainer.py
 
@@ -479,12 +513,14 @@ def test_train_lora_with_valid_params():
 ```
 
 **Step 2: Run Test (Should FAIL)**
+
 ```bash
 pytest tests/unit/test_trainer.py::test_train_lora_with_valid_params -v
 # FAILED - NameError: 'train_lora' not defined ✅ Expected!
 ```
 
 **Step 3: Implement Code**
+
 ```python
 # src/[project_name]/methods/lora.py
 
@@ -496,6 +532,7 @@ def train_lora(model: str, data: str, rank: int = 8):
 ```
 
 **Step 4: Run Test (Should PASS)**
+
 ```bash
 pytest tests/unit/test_trainer.py::test_train_lora_with_valid_params -v
 # PASSED ✅
@@ -507,6 +544,7 @@ pytest tests/unit/test_trainer.py::test_train_lora_with_valid_params -v
 **Target**: 90%+ coverage
 
 **Check coverage**:
+
 ```bash
 pytest --cov=src/[project_name] --cov-report=term-missing tests/
 ```
@@ -514,6 +552,7 @@ pytest --cov=src/[project_name] --cov-report=term-missing tests/
 ### Test Patterns
 
 **Arrange-Act-Assert (AAA)**:
+
 ```python
 def test_example():
     # Arrange: Set up test data
@@ -528,6 +567,7 @@ def test_example():
 ```
 
 **Parametrize for multiple cases**:
+
 ```python
 @pytest.mark.parametrize("rank,expected_params", [
     (8, 8 * 4096 * 2),
@@ -544,6 +584,7 @@ def test_lora_parameter_count(rank, expected_params):
 ## Progression Testing
 
 ### Purpose
+
 Track metrics over time, automatically detect regressions.
 
 ### How It Works
@@ -562,8 +603,8 @@ Track metrics over time, automatically detect regressions.
   "tolerance": 0.05,
   "established_at": "2025-10-18T10:30:00",
   "history": [
-    {"date": "2025-10-18", "value": 0.856, "change": "baseline established"},
-    {"date": "2025-10-20", "value": 0.872, "change": "+1.9% improvement"}
+    { "date": "2025-10-18", "value": 0.856, "change": "baseline established" },
+    { "date": "2025-10-20", "value": 0.872, "change": "+1.9% improvement" }
   ]
 }
 ```
@@ -626,19 +667,20 @@ class TestProgressionLoRAAccuracy:
 
 ### Metrics to Track
 
-| Metric | Higher Better? | Typical Tolerance |
-|--------|----------------|-------------------|
-| Accuracy | ✅ Yes | ±5% |
-| Loss | ❌ No (lower better) | ±5% |
-| Training Speed | ✅ Yes | ±10% |
-| Memory Usage | ❌ No (lower better) | ±5% |
-| Inference Latency | ❌ No (lower better) | ±10% |
+| Metric            | Higher Better?       | Typical Tolerance |
+| ----------------- | -------------------- | ----------------- |
+| Accuracy          | ✅ Yes               | ±5%               |
+| Loss              | ❌ No (lower better) | ±5%               |
+| Training Speed    | ✅ Yes               | ±10%              |
+| Memory Usage      | ❌ No (lower better) | ±5%               |
+| Inference Latency | ❌ No (lower better) | ±10%              |
 
 ---
 
 ## Regression Testing
 
 ### Purpose
+
 Ensure fixed bugs never return.
 
 ### When to Create
@@ -732,6 +774,7 @@ tests/
 **Test Classes**: `Test{Feature}`
 
 **Examples**:
+
 - `test_trainer.py` - Tests for trainer module
 - `test_train_lora_with_valid_params()` - Specific test
 - `TestProgressionLoRAAccuracy` - Progression test class
@@ -805,12 +848,12 @@ def mock_model():
 
 ### By Test Type
 
-| Test Type | Target Coverage |
-|-----------|-----------------|
-| Unit | 90%+ |
-| Integration | 70%+ |
+| Test Type   | Target Coverage       |
+| ----------- | --------------------- |
+| Unit        | 90%+                  |
+| Integration | 70%+                  |
 | Progression | N/A (metric tracking) |
-| Regression | N/A (bug prevention) |
+| Regression  | N/A (bug prevention)  |
 
 ### Overall Project
 
@@ -864,12 +907,12 @@ pytest --cov=src/[project_name] --cov-report=term --cov-fail-under=80 tests/
 
 ### Test Types Decision Matrix
 
-| Scenario | Test Type | Location |
-|----------|-----------|----------|
-| New feature | **TDD** | tests/unit/ |
+| Scenario             | Test Type       | Location           |
+| -------------------- | --------------- | ------------------ |
+| New feature          | **TDD**         | tests/unit/        |
 | Optimize performance | **Progression** | tests/progression/ |
-| Fixed bug | **Regression** | tests/regression/ |
-| Multiple components | **Integration** | tests/integration/ |
+| Fixed bug            | **Regression**  | tests/regression/  |
+| Multiple components  | **Integration** | tests/integration/ |
 
 ### Running Tests
 

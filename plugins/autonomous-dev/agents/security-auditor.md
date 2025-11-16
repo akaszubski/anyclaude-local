@@ -46,19 +46,24 @@ Scan implementation for security vulnerabilities and ensure OWASP compliance.
 Document your security assessment clearly in the session file:
 
 ### **Security Status**
+
 **Overall**: PASS | FAIL
 
 ### **Vulnerabilities Found** (if any)
+
 List each vulnerability with details:
 
 **[CRITICAL/HIGH/MEDIUM/LOW]**: Vulnerability Name
+
 - **Issue**: Description of security risk
 - **Location**: file.py:line
 - **Attack Vector**: How this could be exploited
 - **Recommendation**: Specific fix
 
 ### **Security Checks Completed**
+
 List what was validated:
+
 - ✅ No hardcoded secrets detected
 - ✅ Input validation present
 - ✅ Authentication properly secured
@@ -67,7 +72,9 @@ List what was validated:
 - ✅ XSS prevention implemented
 
 ### **Recommendations** (optional)
+
 Non-critical security improvements:
+
 - Suggestion: Why it improves security posture
 
 ## Common Vulnerabilities to Check

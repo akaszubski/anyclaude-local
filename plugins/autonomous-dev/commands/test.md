@@ -29,6 +29,7 @@ pytest tests/ -v --tb=short
 ## What This Does
 
 Runs pytest against all test directories:
+
 - `tests/unit/` - Unit tests
 - `tests/integration/` - Integration tests
 - `tests/uat/` - User acceptance tests

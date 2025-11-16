@@ -313,7 +313,9 @@ export function shouldFailStartup(mode: string): boolean {
     return true;
   }
 
-  if (mode !== "claude" && !result.pythonVenvExists) {
+  // Only vllm-mlx mode requires Python (for auto-launch)
+  // lmstudio and openrouter modes connect to existing servers
+  if (mode === "vllm-mlx" && !result.pythonVenvExists) {
     console.error("\n❌ ERROR: Python environment required for mode: " + mode);
     console.error("\nSet up Python environment:");
     console.error("  scripts/setup-vllm-mlx-venv.sh");

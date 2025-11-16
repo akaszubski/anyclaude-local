@@ -42,6 +42,7 @@ Intelligently synchronize development environment with upstream changes while de
 ### Phase 2: Fetch & Analyze Changes
 
 1. **Git fetch latest**:
+
    ```bash
    git fetch origin main
    ```
@@ -171,6 +172,7 @@ Return structured sync report:
 ## Conflict Detection Strategy
 
 ### Category 1: Auto-Merge Safe
+
 ```
 Changes to:
 - docs/
@@ -183,6 +185,7 @@ Changes to:
 ```
 
 ### Category 2: Requires User Confirmation
+
 ```
 Changes to:
 - .claude/hooks/
@@ -195,6 +198,7 @@ Changes to:
 ```
 
 ### Category 3: Potential Breaking
+
 ```
 Changes to:
 - API signatures
@@ -302,6 +306,7 @@ Final Validation:
 ## Error Recovery Strategies
 
 ### If Merge Fails
+
 ```
 Detected: Merge conflict in .claude/hooks/auto_format.py
 
@@ -317,6 +322,7 @@ Options:
 ```
 
 ### If Plugin Build Fails
+
 ```
 Detected: Plugin build failed (agent import error)
 
@@ -335,6 +341,7 @@ Options:
 ```
 
 ### If Dependencies Fail
+
 ```
 Detected: Missing Python dependency (requests==2.31)
 

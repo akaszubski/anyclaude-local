@@ -216,18 +216,21 @@ Example:
 ## Code Quality Metrics
 
 ### Test Coverage
+
 - Run: `pytest --cov=src --cov-report=term-missing`
 - Extract coverage percentage
 - Compare to target (80% typical)
 - Flag files < 70% coverage
 
 ### Technical Debt Estimation
+
 - Count TODO/FIXME comments
 - Estimate 2-4 hours per item
-- Total debt = item_count * avg_hours
+- Total debt = item_count \* avg_hours
 - Flag if > 20% of sprint capacity
 
 ### Documentation Currency
+
 - Compare README vs PROJECT.md modification dates
 - Check CHANGELOG updated in last 2 weeks
 - Verify API docs match code
@@ -266,11 +269,13 @@ Trend:
 ## Recommendation Engine
 
 **Priority Matrix**:
+
 - **HIGH**: Blocks current sprint OR critical for goals
 - **MEDIUM**: Improves quality OR advances strategy
 - **LOW**: Nice-to-have OR future work
 
 **Categories**:
+
 - **Sprint**: Current sprint blockers
 - **Quality**: Test coverage, documentation, refactoring
 - **Strategic**: Advancing project goals
@@ -279,6 +284,7 @@ Trend:
 ## Output Examples
 
 ### Good Health
+
 ```
 📊 Project Status: HEALTHY ✅
 
@@ -292,6 +298,7 @@ Next Steps: Continue current sprint momentum
 ```
 
 ### Needs Attention
+
 ```
 📊 Project Status: NEEDS ATTENTION ⚠️
 

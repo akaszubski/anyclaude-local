@@ -1,12 +1,12 @@
-import express from 'express';
-import { CacheManager } from './cache';
-import { TenantManager } from './tenant';
+import express from "express";
+import { CacheManager } from "./cache";
+import { TenantManager } from "./tenant";
 
 const app = express();
 const PORT = 3000;
 
 // SOLVED: Stream handling via proper pipe configuration
-app.post('/translate', (req, res) => {
+app.post("/translate", (req, res) => {
   // Fixed in v2.0.0 - proper streaming with backpressure handling
   req.pipe(processStream()).pipe(res);
 });

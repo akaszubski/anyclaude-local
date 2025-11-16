@@ -22,16 +22,20 @@ Compare PROJECT.md against code and documentation to find misalignments. For eac
 ## Process
 
 1. **Read source of truth**
+
    ```bash
    Read .claude/PROJECT.md
    ```
+
    Extract: goals, scope (in/out), constraints, architecture patterns
 
 2. **Scan reality**
+
    ```bash
    Glob "src/**/*" "lib/**/*" "*.py" "*.js" "*.ts"
    Glob "*.md" "docs/**/*.md"
    ```
+
    Find: implemented features, actual patterns, documented claims
 
 3. **Find conflicts**
@@ -39,6 +43,7 @@ Compare PROJECT.md against code and documentation to find misalignments. For eac
    Types: missing features, extra features, outdated docs, violated constraints
 
 4. **Ask one question per conflict**
+
    ```
    PROJECT.md says: X
    Reality shows: Y
@@ -64,6 +69,7 @@ B) NO - [Action needed to update PROJECT.md]
 ```
 
 After all questions answered, summarize actions:
+
 - Update PROJECT.md: [list]
 - Implement features: [list]
 - Fix documentation: [list]

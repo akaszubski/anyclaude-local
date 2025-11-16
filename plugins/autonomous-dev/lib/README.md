@@ -9,15 +9,18 @@ This directory contains the complete infrastructure for autonomous-dev v2.0's or
 ## Modules
 
 ### `artifacts.py`
+
 **Purpose**: Artifact management and validation
 
 **Features**:
+
 - Create/read/write workflow artifacts (manifest, research, architecture, etc.)
 - Validate artifacts against schemas
 - Track workflow progress
 - Manage artifact directories
 
 **Usage**:
+
 ```python
 from lib.artifacts import ArtifactManager, generate_workflow_id
 
@@ -37,9 +40,11 @@ manifest = manager.read_artifact(workflow_id, 'manifest')
 ```
 
 ### `logging_utils.py`
+
 **Purpose**: Structured logging and observability
 
 **Features**:
+
 - Per-agent workflow logging
 - Structured event logging (JSON)
 - Decision logging with rationale
@@ -48,6 +53,7 @@ manifest = manager.read_artifact(workflow_id, 'manifest')
 - Progress tracking across agents
 
 **Usage**:
+
 ```python
 from lib.logging_utils import WorkflowLogger, WorkflowProgressTracker
 
@@ -70,15 +76,18 @@ tracker.update_progress('researcher', 'in_progress', 25)
 ```
 
 ### `test_framework.py`
+
 **Purpose**: Testing utilities for agent behavior validation
 
 **Features**:
+
 - Mock artifacts for testing
 - Mock PROJECT.md for alignment tests
 - Artifact validation utilities
 - Pytest fixtures for common scenarios
 
 **Usage**:
+
 ```python
 from lib.test_framework import MockArtifact, MockProjectMd, ArtifactValidator
 
@@ -103,9 +112,11 @@ project_md = MockProjectMd(
 ```
 
 ### `orchestrator.py` (Week 2)
+
 **Purpose**: Master coordinator for autonomous workflows
 
 **Features**:
+
 - PROJECT.md parsing (GOALS, SCOPE, CONSTRAINTS)
 - Semantic alignment validation
 - Workflow initialization
@@ -113,6 +124,7 @@ project_md = MockProjectMd(
 - Progress tracking
 
 **Usage**:
+
 ```python
 from lib.orchestrator import Orchestrator
 
@@ -129,9 +141,11 @@ if success:
 ```
 
 ### `checkpoint.py` (Week 2)
+
 **Purpose**: Checkpoint/resume system for workflow resilience
 
 **Features**:
+
 - Create checkpoints after each agent
 - Load and validate checkpoints
 - Resume interrupted workflows
@@ -139,6 +153,7 @@ if success:
 - Generate resume plans
 
 **Usage**:
+
 ```python
 from lib.checkpoint import CheckpointManager
 
@@ -158,15 +173,18 @@ resume_plan = manager.get_resume_plan(workflow_id)
 ```
 
 ### `test_workflow_v2.py` (Week 3)
+
 **Purpose**: Complete workflow test suite
 
 **Features**:
+
 - Test 1: Workflow initialization
 - Test 2: Checkpoint creation
 - Test 3: Artifact handoff
 - Test 4: Logging & observability
 
 **Usage**:
+
 ```bash
 python plugins/autonomous-dev/lib/test_workflow_v2.py
 
@@ -229,6 +247,7 @@ python plugins/autonomous-dev/lib/test_framework.py
 ## Implementation Status (Weeks 1-3)
 
 ### Week 1: Foundation ✅ COMPLETE
+
 - [x] Directory structure (`.claude/artifacts`, `.claude/logs`)
 - [x] Hooks (UserPromptSubmit, PreToolUseWrite)
 - [x] Test framework skeleton
@@ -238,6 +257,7 @@ python plugins/autonomous-dev/lib/test_framework.py
 **Deliverables**: 1,222 lines of code, 7 files
 
 ### Week 2: Orchestrator Core ✅ COMPLETE
+
 - [x] Orchestrator implementation
 - [x] PROJECT.md parser
 - [x] Semantic alignment validator
@@ -248,6 +268,7 @@ python plugins/autonomous-dev/lib/test_framework.py
 **Deliverables**: 759 lines of code, 2 files
 
 ### Week 3: Pipeline Foundation ✅ COMPLETE
+
 - [x] Command interface (`/auto-implement-v2`)
 - [x] Enhanced PROJECT.md parser
 - [x] Workflow test suite (4 tests)
@@ -266,17 +287,20 @@ python plugins/autonomous-dev/lib/test_framework.py
 ## Next Steps (Week 4+)
 
 **Priority 1: Agent Invocation** (Week 4-5)
+
 - [ ] Integrate Task tool API
 - [ ] Update researcher.md for v2.0
 - [ ] Test orchestrator → researcher pipeline
 - [ ] Validate artifact handoff with real agents
 
 **Priority 2: Sequential Pipeline** (Week 6-7)
+
 - [ ] Update planner, test-master, implementer for v2.0
 - [ ] Test full sequential pipeline
 - [ ] Validate TDD workflow (tests before code)
 
 **Priority 3: Parallel Validators** (Week 8-10)
+
 - [ ] Implement parallel execution
 - [ ] Update reviewer, security, docs for v2.0
 - [ ] Measure speedup (target: 20-30%)

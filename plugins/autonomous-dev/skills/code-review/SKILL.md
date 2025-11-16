@@ -45,6 +45,7 @@ def divide(a, b):
 **Are there edge cases not handled?**
 
 Common edge cases to check:
+
 - Empty collections (lists, dicts, sets)
 - Null/None values
 - Boundary values (0, MAX_INT, empty string)
@@ -129,6 +130,7 @@ class UserRepository:
 **Pattern usage correct?**
 
 Check if patterns are:
+
 - Used appropriately (not over-engineering)
 - Implemented correctly
 - Solving the right problem
@@ -140,6 +142,7 @@ Check if patterns are:
 **Sufficient test coverage?**
 
 Minimum requirements:
+
 - ✅ **Unit tests**: Test individual functions/methods
 - ✅ **Integration tests**: Test component interactions
 - ✅ **Edge cases**: Test boundaries and error conditions
@@ -276,12 +279,12 @@ def process_items(items):
 
 **Appropriate data structures?**
 
-| Use Case | Wrong | Right |
-|----------|-------|-------|
-| Frequent membership checks | List (O(n)) | Set (O(1)) |
-| Ordered key-value pairs | Dict (unordered) | OrderedDict or dict (Python 3.7+) |
-| FIFO queue | List (O(n) pop) | deque (O(1) pop) |
-| Fixed-size numeric array | List | numpy.array |
+| Use Case                   | Wrong            | Right                             |
+| -------------------------- | ---------------- | --------------------------------- |
+| Frequent membership checks | List (O(n))      | Set (O(1))                        |
+| Ordered key-value pairs    | Dict (unordered) | OrderedDict or dict (Python 3.7+) |
+| FIFO queue                 | List (O(n) pop)  | deque (O(1) pop)                  |
+| Fixed-size numeric array   | List             | numpy.array                       |
 
 ---
 
@@ -293,19 +296,23 @@ def process_items(items):
 
 ```markdown
 # ❌ BAD: Attacks the person
+
 You don't know how to write good code.
 
 # ✅ GOOD: Focuses on the code
+
 This approach doesn't handle edge cases. Consider adding validation.
 ```
 
 **Provide specific suggestions**:
 
-```markdown
+````markdown
 # ❌ BAD: Vague critique
+
 This is wrong.
 
 # ✅ GOOD: Specific suggestion with example
+
 Consider using a set here instead of a list for O(1) lookups.
 Currently this is O(n) on each iteration:
 
@@ -313,14 +320,17 @@ Currently this is O(n) on each iteration:
 if item in items:  # O(n) with list
     ...
 ```
+````
 
 Suggested change:
+
 ```python
 items_set = set(items)  # O(n) once
 if item in items_set:    # O(1) each time
     ...
 ```
-```
+
+````
 
 ### Provide Context
 
@@ -336,10 +346,11 @@ This will fail if the file doesn't exist. Consider adding:
 ```python
 if not path.exists():
     raise FileNotFoundError(f"Training data not found: {path}")
-```
+````
 
 This prevents cryptic errors later in the pipeline.
-```
+
+````
 
 ### Distinguish Severity
 
@@ -353,9 +364,10 @@ Use labels to indicate importance:
 **issue**: This will cause a memory leak - the cache is never cleared
 
 **blocker**: This breaks backwards compatibility - needs migration path
-```
+````
 
 **Severity levels**:
+
 - **nit**: Minor style/readability improvement (non-blocking)
 - **suggestion**: Better approach exists (non-blocking)
 - **issue**: Bug or problem that should be fixed (blocking)
@@ -367,9 +379,11 @@ When unsure, ask instead of asserting:
 
 ```markdown
 # ❌ BAD: Assertive without understanding
+
 This is inefficient and needs to be rewritten.
 
 # ✅ GOOD: Asks first
+
 Is there a reason we're loading the entire file into memory?
 For large files, could we process it in chunks instead?
 ```
@@ -390,17 +404,20 @@ For large files, could we process it in chunks instead?
 
 ### Suggesting Improvements
 
-```markdown
+````markdown
 **suggestion**: Consider extracting this logic to a separate function for reusability.
 
 Current:
+
 ```python
 # Repeated logic in multiple places
 if user.is_active and user.email_verified and not user.is_banned:
     ...
 ```
+````
 
 Suggested:
+
 ```python
 def can_user_access_feature(user):
     return user.is_active and user.email_verified and not user.is_banned
@@ -408,7 +425,8 @@ def can_user_access_feature(user):
 if can_user_access_feature(user):
     ...
 ```
-```
+
+````
 
 ### Identifying Bugs
 
@@ -424,8 +442,9 @@ value = config['api_key']
 value = config.get('api_key')
 if value is None:
     raise ValueError("Missing required config: api_key")
-```
-```
+````
+
+````
 
 ### Performance Concerns
 
@@ -436,15 +455,17 @@ Current approach makes `len(users)` database queries:
 ```python
 for user in users:
     orders = db.query("SELECT * FROM orders WHERE user_id = ?", user.id)
-```
+````
 
 Suggested batch query:
+
 ```python
 user_ids = [u.id for u in users]
 all_orders = db.query("SELECT * FROM orders WHERE user_id IN (?)", user_ids)
 orders_by_user = group_by(all_orders, 'user_id')
 ```
-```
+
+````
 
 ### Test Coverage
 
@@ -456,8 +477,9 @@ Suggested test:
 def test_process_data_raises_error_on_empty_input():
     with pytest.raises(ValueError, match="Input cannot be empty"):
         process_data([])
-```
-```
+````
+
+````
 
 ---
 
@@ -478,12 +500,13 @@ def test_process_data_raises_error_on_empty_input():
 
 Thanks for catching this! Should it return an empty result or raise an error?
 I'm leaning toward raising an error since empty input is likely a bug.
-```
+````
 
 **3. Acknowledge and implement**
 
 ```markdown
 # ✅ Agree and done
+
 > "Use a set for O(1) lookup"
 
 Done! Changed to use a set. Performance improved 10x in my local tests.
@@ -493,9 +516,11 @@ Done! Changed to use a set. Performance improved 10x in my local tests.
 
 ```markdown
 # 💭 Alternative proposal
+
 > "This could use a dictionary"
 
 I considered that, but went with a dataclass instead because:
+
 - Provides type hints
 - Better IDE support
 - Validates types at runtime
@@ -507,9 +532,11 @@ Thoughts?
 
 ```markdown
 # ✅ Agree but separate PR
+
 > "We should also add retry logic"
 
 Great idea! I'd prefer to address that in a separate PR since:
+
 - This PR is already large
 - Retry logic needs its own tests
 - Unrelated to the current bug fix
@@ -520,6 +547,7 @@ Created #127 to track it.
 ### As the Reviewer (Getting Responses)
 
 **1. Be patient and collaborative**
+
 - Remember: You're on the same team
 - Goal is better code, not winning arguments
 - Be willing to learn from the author
@@ -528,6 +556,7 @@ Created #127 to track it.
 
 ```markdown
 # ✅ Approval comment
+
 Thanks for addressing the feedback! The refactoring looks much cleaner.
 Approving.
 ```
@@ -536,9 +565,11 @@ Approving.
 
 ```markdown
 # ⛔ Clear blocker
+
 I can't approve this yet due to the backwards compatibility break.
 
 We need to either:
+
 1. Add a migration path for existing users
 2. Defer this change to v2.0.0
 
@@ -596,16 +627,19 @@ Happy to discuss the best approach.
 ## Additional Resources
 
 **Tools**:
+
 - GitHub PR reviews
 - GitLab merge requests
 - Code review automation (e.g., Reviewable, Danger)
 
 **Books**:
+
 - "Code Complete" by Steve McConnell
 - "The Art of Readable Code" by Boswell & Foucher
 - "Clean Code" by Robert Martin
 
 **Articles**:
+
 - [Google's Code Review Guidelines](https://google.github.io/eng-practices/review/)
 - [Microsoft's Code Review Best Practices](https://docs.microsoft.com/en-us/azure/devops/repos/git/review-code)
 

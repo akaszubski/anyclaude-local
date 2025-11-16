@@ -11,6 +11,7 @@ auto_activate: true
 Python code quality standards for [PROJECT_NAME] project.
 
 ## When This Activates
+
 - Writing Python code
 - Code formatting
 - Type hints
@@ -20,12 +21,14 @@ Python code quality standards for [PROJECT_NAME] project.
 ## Code Style (PEP 8 + Black)
 
 ### Formatting
+
 - **Line length**: 100 characters (black --line-length=100)
 - **Indentation**: 4 spaces (no tabs)
 - **Quotes**: Double quotes preferred
 - **Imports**: Sorted with isort
 
 ### Running Formatters
+
 ```bash
 # Black
 black --line-length=100 src/ tests/
@@ -40,6 +43,7 @@ black src/ && isort src/
 ## Type Hints (Required)
 
 ### Function Signatures
+
 ```python
 from pathlib import Path
 from typing import Optional, List, Dict, Union, Tuple
@@ -57,6 +61,7 @@ def process_file(
 ```
 
 ### Generic Types
+
 ```python
 from typing import List, Dict, Set, Tuple, Optional, Union
 
@@ -74,6 +79,7 @@ flexible: Union[str, int] = "text"
 ```
 
 ### Class Type Hints
+
 ```python
 from dataclasses import dataclass
 from typing import ClassVar
@@ -96,6 +102,7 @@ class APIConfig:
 ## Docstrings (Google Style)
 
 ### Function Docstrings
+
 ```python
 def process_data(
     data: List[Dict],
@@ -130,6 +137,7 @@ def process_data(
 ```
 
 ### Class Docstrings
+
 ```python
 class DataProcessor:
     """Data processing orchestrator for batch operations.
@@ -166,6 +174,7 @@ class DataProcessor:
 ## Error Handling
 
 ### Helpful Error Messages
+
 ```python
 # ✅ GOOD: Context + Expected + Docs
 def load_config(path: Path) -> Dict:
@@ -196,6 +205,7 @@ def load_config(path):
 ```
 
 ### Custom Exceptions
+
 ```python
 class AppError(Exception):
     """Base exception for application."""
@@ -229,6 +239,7 @@ def validate_config(config: Dict) -> None:
 ## Code Organization
 
 ### Imports Order (isort)
+
 ```python
 # 1. Standard library
 import os
@@ -246,6 +257,7 @@ from [project_name].utils.config import load_config
 ```
 
 ### Function/Class Organization
+
 ```python
 class Model:
     """Model class."""
@@ -299,6 +311,7 @@ _internal_cache = {}
 ## Best Practices
 
 ### Use Keyword-Only Arguments
+
 ```python
 # ✅ GOOD: Clear, prevents positional errors
 def train(
@@ -318,6 +331,7 @@ def train(data, learning_rate=1e-4, batch_size=32):
 ```
 
 ### Use Pathlib
+
 ```python
 from pathlib import Path
 
@@ -334,6 +348,7 @@ if os.path.exists("config.yaml"):
 ```
 
 ### Use Context Managers
+
 ```python
 # ✅ GOOD: Automatic cleanup
 with open(path) as f:
@@ -353,6 +368,7 @@ def training_context():
 ```
 
 ### Use Dataclasses
+
 ```python
 from dataclasses import dataclass, field
 from typing import List
@@ -380,16 +396,19 @@ config = Config(model_name="model", tags=["test"])
 ## Code Quality Checks
 
 ### Flake8 (Linting)
+
 ```bash
 flake8 src/ --max-line-length=100
 ```
 
 ### MyPy (Type Checking)
+
 ```bash
 mypy src/[project_name]/
 ```
 
 ### Coverage
+
 ```bash
 pytest --cov=src/[project_name] --cov-fail-under=80
 ```
@@ -452,5 +471,5 @@ except:
 4. **isort imports** - Sorted and organized
 5. **Helpful errors** - Context + expected + docs link
 6. **Pathlib** - Use Path not string paths
-7. **Keyword args** - Use * for clarity
+7. **Keyword args** - Use \* for clarity
 8. **Dataclasses** - For configuration objects

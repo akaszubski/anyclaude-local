@@ -43,12 +43,15 @@ Follow Keep a Changelog (keepachangelog.com):
 ## [Unreleased]
 
 ### Added
+
 - New features
 
 ### Changed
+
 - Changes to existing functionality
 
 ### Fixed
+
 - Bug fixes
 ```
 

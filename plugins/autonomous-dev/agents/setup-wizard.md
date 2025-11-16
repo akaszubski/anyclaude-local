@@ -66,6 +66,7 @@ Run comprehensive analysis:
 ```
 
 **Detection Commands**:
+
 ```bash
 # Languages
 ls -R | grep -E '\.(py|js|ts|go|rs|java)$' | wc -l
@@ -85,6 +86,7 @@ cat README.md | grep -E "^#|goals?|features?|architecture" -i
 ```
 
 **Output**:
+
 ```json
 {
   "tech_stack": {
@@ -179,21 +181,25 @@ cat requirements.txt pyproject.toml package.json 2>/dev/null
 **Step 2: Extract Information**
 
 From README.md:
+
 - Project title and description
 - Goals (look for sections: Goals, Features, Roadmap)
 - Architecture overview (diagrams, descriptions)
 
 From codebase structure:
+
 - File organization pattern
 - Module boundaries
 - Testing organization
 
 From git history:
+
 - Development workflow (feature branches, TDD patterns)
 - Team size (unique contributors)
 - Release cadence
 
 From dependencies:
+
 - Tech stack details
 - External integrations
 
@@ -229,11 +235,13 @@ Use this template structure and FILL IN with detected information:
 [Extract from README.md sections: Goals, Features, Roadmap, Objectives]
 
 **Primary Goals**:
+
 1. [Goal 1 - from README or infer from codebase]
 2. [Goal 2]
 3. [Goal 3]
 
 **Success Metrics**:
+
 - [Metric 1 - e.g., "80%+ test coverage" if high test count detected]
 - [Metric 2 - e.g., "< 100ms API response" if API detected]
 - [Metric 3 - e.g., "Zero high-severity vulnerabilities"]
@@ -245,6 +253,7 @@ Use this template structure and FILL IN with detected information:
 ### In Scope
 
 [Analyze codebase to determine what's implemented]:
+
 - [Feature 1 - detected from src/ structure]
 - [Feature 2 - detected from API routes or components]
 - [Feature 3]
@@ -255,6 +264,7 @@ Use this template structure and FILL IN with detected information:
 **TODO**: Define what's explicitly out of scope for this project.
 
 Example:
+
 - Admin UI (API-only project)
 - Real-time features (batch processing focus)
 - Mobile apps (web-only)
@@ -266,29 +276,31 @@ Example:
 ### System Design
 
 [Detect architecture pattern from structure]:
+
 - **Pattern**: [Detected: Layered/Microservices/Monolith/Library/CLI]
 - **Components**: [List main directories/modules]
-
 ```
+
 [Generate ASCII diagram based on detected structure]
 
 Example for API project:
 ┌─────────────┐
-│   Client    │
+│ Client │
 └──────┬──────┘
-       │
+│
 ┌──────▼──────┐
-│  API Layer  │  (FastAPI routes)
+│ API Layer │ (FastAPI routes)
 └──────┬──────┘
-       │
+│
 ┌──────▼──────┐
-│  Business   │  (Service layer)
-│   Logic     │
+│ Business │ (Service layer)
+│ Logic │
 └──────┬──────┘
-       │
+│
 ┌──────▼──────┐
-│  Database   │  (PostgreSQL)
+│ Database │ (PostgreSQL)
 └─────────────┘
+
 ```
 
 ### Tech Stack
@@ -318,18 +330,20 @@ Example for API project:
 [CRITICAL: Analyze actual directory structure and document it]
 
 ```
+
 [Project root - from tree command]
-├── src/                  [Main source code]
-│   ├── [module1]/        [Detected modules]
-│   ├── [module2]/
-│   └── ...
-├── tests/                [Test files]
-│   ├── unit/             [If detected]
-│   ├── integration/      [If detected]
-│   └── ...
-├── docs/                 [Documentation]
-├── [build dir]/          [If detected: dist/, build/]
-└── [config files]        [pyproject.toml, package.json, etc.]
+├── src/ [Main source code]
+│ ├── [module1]/ [Detected modules]
+│ ├── [module2]/
+│ └── ...
+├── tests/ [Test files]
+│ ├── unit/ [If detected]
+│ ├── integration/ [If detected]
+│ └── ...
+├── docs/ [Documentation]
+├── [build dir]/ [If detected: dist/, build/]
+└── [config files] [pyproject.toml, package.json, etc.]
+
 ```
 
 ### Directory Standards
@@ -544,6 +558,7 @@ cp .claude/templates/PROJECT.md PROJECT.md
 ```
 
 Display:
+
 ```
 ✅ Created PROJECT.md from template at root (312 lines)
 
@@ -567,40 +582,54 @@ questions: [
     question: "What is your project's primary goal?",
     header: "Primary Goal",
     options: [
-      { label: "Production application", description: "Full-featured app for users" },
+      {
+        label: "Production application",
+        description: "Full-featured app for users",
+      },
       { label: "Library/SDK", description: "Reusable code for developers" },
       { label: "Internal tool", description: "Company/team utility" },
-      { label: "Learning project", description: "Educational/experimental" }
-    ]
+      { label: "Learning project", description: "Educational/experimental" },
+    ],
   },
   {
     question: "What architecture pattern are you using?",
     header: "Architecture",
     options: [
-      { label: "Monolith", description: "Single codebase, all features together" },
+      {
+        label: "Monolith",
+        description: "Single codebase, all features together",
+      },
       { label: "Microservices", description: "Multiple services, distributed" },
       { label: "Layered", description: "API + Frontend separation" },
-      { label: "Library", description: "Reusable module" }
-    ]
+      { label: "Library", description: "Reusable module" },
+    ],
   },
   {
     question: "How much detail do you want in PROJECT.md?",
     header: "Detail Level",
     options: [
       { label: "Minimal", description: "Just goals and scope (quick start)" },
-      { label: "Standard", description: "Goals, scope, architecture, workflow" },
-      { label: "Comprehensive", description: "Everything including quality standards" }
-    ]
-  }
-]
+      {
+        label: "Standard",
+        description: "Goals, scope, architecture, workflow",
+      },
+      {
+        label: "Comprehensive",
+        description: "Everything including quality standards",
+      },
+    ],
+  },
+];
 ```
 
 Then generate PROJECT.md combining:
+
 - User responses
 - Detected tech stack
 - Detected structure
 
 Display:
+
 ```
 ✅ Generated PROJECT.md (365 lines) at root
 
@@ -646,17 +675,20 @@ Your choice [1-4]:
 ```
 
 **Option 2: Update/Detect Drift**
+
 - Compare PROJECT.md goals with current codebase state
 - Check if tech stack changed
 - Suggest additions for new features
 - Identify stale sections
 
 **Option 3: Refactor**
+
 - Backup existing to PROJECT.md.backup
 - Regenerate from codebase (Option 1 flow)
 - Preserve user-defined CONSTRAINTS and CURRENT SPRINT
 
 **Option 4: Validate**
+
 - Run /align-project validation
 - Report alignment issues
 - Suggest fixes

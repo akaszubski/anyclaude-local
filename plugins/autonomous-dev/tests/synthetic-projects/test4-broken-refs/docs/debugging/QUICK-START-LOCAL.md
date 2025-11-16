@@ -3,6 +3,7 @@
 ## Running Locally
 
 1. Start the debug server:
+
    ```bash
    ./start-local.sh
    ```

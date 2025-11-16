@@ -22,11 +22,13 @@ description: Brief one-line description of what this command does (< 80 chars)
 ## What This Does
 
 Clear explanation of:
+
 - What the command accomplishes
 - What happens when you run it
 - What it doesn't do (if clarification needed)
 
 Example:
+
 ```bash
 # Show expected command output or behavior
 ```
@@ -36,11 +38,13 @@ Example:
 ## When to Use
 
 **Run this command when**:
+
 - ✅ Scenario 1
 - ✅ Scenario 2
 - ✅ Scenario 3
 
 **Don't need it if**:
+
 - ❌ Scenario where command isn't needed
 - ❌ Alternative approach exists
 
@@ -58,19 +62,23 @@ Example:
 **REQUIRED SECTION** - Must include one of:
 
 ### Option A: Script Execution
+
 ```bash
 python "$(dirname "$0")/../scripts/your_script.py"
 ```
 
 ### Option B: Agent Invocation
+
 Invoke the [agent-name] agent to [what it does].
 
 The agent will:
+
 1. Step 1
 2. Step 2
 3. Step 3
 
 ### Option C: Direct Bash Commands
+
 ```bash
 # Execute commands directly
 pytest tests/ --cov=src -v
@@ -81,6 +89,7 @@ pytest tests/ --cov=src -v
 ## Command Authoring Guidelines
 
 ### Required Sections
+
 1. **Frontmatter** (`---description: ...---`)
 2. **Header** (`# Command Name`)
 3. **Usage** (with code block showing syntax)
@@ -88,6 +97,7 @@ pytest tests/ --cov=src -v
 5. **Implementation** (execution instructions)
 
 ### Optional But Recommended
+
 - **When to Use** (helps users know if command applies)
 - **Related Commands** (shows ecosystem connections)
 - **Examples** (concrete use cases)
@@ -96,6 +106,7 @@ pytest tests/ --cov=src -v
 ### Best Practices
 
 **DO**:
+
 - ✅ Start with clear, concise description
 - ✅ Show actual command syntax in usage block
 - ✅ Explain what happens step-by-step
@@ -104,6 +115,7 @@ pytest tests/ --cov=src -v
 - ✅ Use consistent formatting (headers, code blocks, lists)
 
 **DON'T**:
+
 - ❌ Skip the Implementation section (causes silent failures!)
 - ❌ Use vague descriptions ("does stuff")
 - ❌ Forget to show actual command syntax
@@ -117,6 +129,7 @@ pytest tests/ --cov=src -v
 Before committing:
 
 1. **Validate structure**:
+
    ```bash
    python scripts/validate_commands.py
    ```
@@ -136,11 +149,13 @@ Before committing:
 ## Why Implementation Section is Required
 
 **Without Implementation section**:
+
 - ❌ Command only shows documentation (silent failure)
 - ❌ Users confused: "It doesn't do anything!"
 - ❌ Wastes user time with trial-and-error
 
 **With Implementation section**:
+
 - ✅ Command actually executes
 - ✅ Clear what code/agent runs
 - ✅ Validation can verify execution path exists
@@ -152,6 +167,7 @@ Before committing:
 ## Examples
 
 See existing commands for reference:
+
 - `commands/test.md` - Direct bash execution
 - `commands/health-check.md` - Script execution
 - `commands/align-project.md` - Agent invocation

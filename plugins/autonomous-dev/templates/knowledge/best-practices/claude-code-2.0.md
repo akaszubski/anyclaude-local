@@ -32,6 +32,7 @@ plugin-name/
 ### Required: plugin.json
 
 Minimal format:
+
 ```json
 {
   "name": "plugin-name",
@@ -41,13 +42,14 @@ Minimal format:
 ```
 
 Full format with custom paths:
+
 ```json
 {
   "name": "autonomous-dev",
   "version": "2.0.0",
   "description": "PROJECT.md-first autonomous development plugin",
-  "author": {"name": "Author Name"},
-  "repository": {"type": "git", "url": "https://..."},
+  "author": { "name": "Author Name" },
+  "repository": { "type": "git", "url": "https://..." },
   "license": "MIT",
   "components": {
     "agents": "./agents",
@@ -95,6 +97,7 @@ System prompt and instructions...
 ### Tool Examples
 
 **All tools (inherit):**
+
 ```yaml
 ---
 name: orchestrator
@@ -104,6 +107,7 @@ model: sonnet
 ```
 
 **Restricted (security):**
+
 ```yaml
 ---
 name: researcher
@@ -113,6 +117,7 @@ model: sonnet
 ```
 
 **Read-only:**
+
 ```yaml
 ---
 name: planner
@@ -130,6 +135,7 @@ model: opus
 ### Model Selection Strategy
 
 From autonomous-dev:
+
 - **opus**: Complex planning, architecture ($$$)
 - **sonnet**: General implementation ($$)
 - **haiku**: Routine tasks ($)
@@ -167,6 +173,7 @@ allowed-tools: Read, Grep, Glob
 Documentation Claude reads when activated...
 
 ## When This Activates
+
 - Scenario 1
 - Keywords: "keyword1", "keyword2"
 ```
@@ -183,6 +190,7 @@ Documentation Claude reads when activated...
 ### Skill vs Agent
 
 **Use Skills:**
+
 - Reference documentation (standards, best practices)
 - Keyword-based activation
 - No complex workflow
@@ -190,6 +198,7 @@ Documentation Claude reads when activated...
 - Example: `python-standards`, `security-patterns`
 
 **Use Agents:**
+
 - Complex multi-step workflows
 - Explicit invocation
 - Communicates with other agents
@@ -214,7 +223,7 @@ Documentation Claude reads when activated...
 
 **Structure**: Markdown with YAML frontmatter
 
-```markdown
+````markdown
 ---
 description: Brief command description
 argument-hint: [optional-arg]
@@ -231,6 +240,7 @@ allowed-tools: Read, Write, Bash
 ```bash
 /command-name [arguments]
 ```
+````
 
 **Time**: Estimated duration
 
@@ -241,7 +251,8 @@ Detailed explanation...
 ## Example Output
 
 Expected output...
-```
+
+````
 
 ### Frontmatter Fields
 
@@ -294,7 +305,7 @@ Expected output...
     ]
   }
 }
-```
+````
 
 **Option 2: Inline in plugin.json**
 
@@ -316,17 +327,20 @@ Expected output...
 ### Example Hooks
 
 **Auto-format (PostToolUse):**
+
 ```json
 {
   "hooks": {
     "PostToolUse": [
       {
         "matcher": "Write:*.py",
-        "hooks": [{
-          "type": "command",
-          "command": "python ${CLAUDE_PLUGIN_ROOT}/hooks/auto_format.py",
-          "timeout": 30
-        }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ${CLAUDE_PLUGIN_ROOT}/hooks/auto_format.py",
+            "timeout": 30
+          }
+        ]
       }
     ]
   }
@@ -354,6 +368,7 @@ Detects implementation keywords and activates autonomous mode.
 ### Pattern: Artifact-Based Communication
 
 Good (autonomous-dev):
+
 - Orchestrator creates manifest.json
 - Researcher reads manifest, creates research.json
 - Planner reads both, creates architecture.json
@@ -362,6 +377,7 @@ Good (autonomous-dev):
 ### Pattern: Progressive Enhancement
 
 Good (autonomous-dev):
+
 - /commit (2 min)
 - /commit-check (5 min)
 - /commit-push (10 min)
@@ -401,17 +417,21 @@ Good (autonomous-dev):
 ### Local Testing
 
 Create dev marketplace:
+
 ```json
 {
-  "marketplaces": [{
-    "name": "dev",
-    "url": "./dev-marketplace",
-    "plugins": [{"name": "my-plugin", "path": "./plugins/my-plugin"}]
-  }]
+  "marketplaces": [
+    {
+      "name": "dev",
+      "url": "./dev-marketplace",
+      "plugins": [{ "name": "my-plugin", "path": "./plugins/my-plugin" }]
+    }
+  ]
 }
 ```
 
 Install and iterate:
+
 ```bash
 /plugin marketplace add ./dev-marketplace
 /plugin install my-plugin@dev
@@ -423,14 +443,16 @@ Install and iterate:
 ### Distribution
 
 Create marketplace.json in GitHub repo:
+
 ```json
 {
   "name": "my-marketplace",
-  "plugins": [{"name": "my-plugin", "path": "./plugins/my-plugin"}]
+  "plugins": [{ "name": "my-plugin", "path": "./plugins/my-plugin" }]
 }
 ```
 
 Users install:
+
 ```bash
 /plugin marketplace add username/repository
 /plugin install my-plugin@my-marketplace
@@ -439,6 +461,7 @@ Users install:
 ### Versioning
 
 Semantic versioning: MAJOR.MINOR.PATCH
+
 - MAJOR: Breaking changes
 - MINOR: New features
 - PATCH: Bug fixes
@@ -448,6 +471,7 @@ Semantic versioning: MAJOR.MINOR.PATCH
 ## Reference Links
 
 **Official Documentation:**
+
 - Plugins: https://docs.claude.com/en/docs/claude-code/plugins
 - Subagents: https://docs.claude.com/en/docs/claude-code/sub-agents
 - Skills: https://docs.claude.com/en/docs/claude-code/skills
@@ -456,6 +480,7 @@ Semantic versioning: MAJOR.MINOR.PATCH
 - Reference: https://docs.claude.com/en/docs/claude-code/plugins-reference
 
 **Example Plugin:**
+
 - autonomous-dev: https://github.com/akaszubski/autonomous-dev
 - 8 agents, 13 skills, 9 hooks, 21 commands
 

@@ -47,6 +47,7 @@ The researcher agent automatically bootstraps the knowledge base on first use:
 ### First-Time Experience
 
 **New workspace**:
+
 ```bash
 # User installs plugin
 /plugin install autonomous-dev
@@ -66,6 +67,7 @@ The researcher agent automatically bootstraps the knowledge base on first use:
 ```
 
 **Existing workspace**:
+
 ```bash
 # Knowledge base already exists
 "Research API design patterns"
@@ -95,6 +97,7 @@ Knowledge base template with:
 ### Starter Knowledge
 
 **Claude Code 2.0 best practices** (10KB):
+
 - Agent file format and frontmatter
 - Skill creation and auto-activation
 - Hook configuration and lifecycle events
@@ -108,15 +111,16 @@ Knowledge base template with:
 
 ## Separation of Concerns
 
-| Component | Location | Ownership | Lifecycle |
-|-----------|----------|-----------|-----------|
-| **Template** | `plugins/.../templates/` | Plugin developer | Updated with plugin |
-| **Workspace** | `.claude/knowledge/` | User | User adds research |
-| **Cache** | `.claude/cache/` | User | Auto-expire (ephemeral) |
+| Component     | Location                 | Ownership        | Lifecycle               |
+| ------------- | ------------------------ | ---------------- | ----------------------- |
+| **Template**  | `plugins/.../templates/` | Plugin developer | Updated with plugin     |
+| **Workspace** | `.claude/knowledge/`     | User             | User adds research      |
+| **Cache**     | `.claude/cache/`         | User             | Auto-expire (ephemeral) |
 
 ### What's Committed
 
 **Plugin repository**:
+
 ```
 ✅ plugins/autonomous-dev/templates/knowledge/  # Source template
 ❌ .claude/knowledge/                           # Ignored (user data)
@@ -124,6 +128,7 @@ Knowledge base template with:
 ```
 
 **User workspace** (optional):
+
 ```
 ❌ .claude/knowledge/  # In .gitignore by default
 ✅ .claude/knowledge/  # User can commit if team shares knowledge
@@ -138,10 +143,12 @@ Knowledge base template with:
 When plugin is updated (v2.0 → v2.1):
 
 **Template changes**:
+
 - New best practices added to `templates/knowledge/`
 - Updated starter knowledge
 
 **User workspace**:
+
 - NOT automatically updated (user data is sacred)
 - User can manually merge new template entries
 - Future: Agent detects and suggests new entries
@@ -149,6 +156,7 @@ When plugin is updated (v2.0 → v2.1):
 ### Detecting Template Updates
 
 Future enhancement:
+
 ```python
 # In researcher agent
 def check_template_updates():
@@ -172,12 +180,14 @@ def check_template_updates():
 ### For Plugin Developers
 
 **Adding Starter Knowledge**:
+
 1. Add new `.md` files to `templates/knowledge/best-practices/`
 2. Update `templates/knowledge/INDEX.md`
 3. Update version in `plugin.json`
 4. Document in CHANGELOG
 
 **DON'T**:
+
 - Don't include workspace-specific research
 - Don't include user data or secrets
 - Don't make templates too large (keep <1MB total)
@@ -185,6 +195,7 @@ def check_template_updates():
 ### For Users
 
 **Customizing Knowledge Base**:
+
 ```bash
 # Your .claude/knowledge/ is yours to modify
 - Add new research
@@ -197,6 +208,7 @@ def check_template_updates():
 ```
 
 **Resetting to Template**:
+
 ```bash
 # If you want a fresh start
 rm -rf .claude/knowledge/
@@ -214,13 +226,14 @@ rm -rf .claude/knowledge/
 
 **Compared to alternatives**:
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **No starter knowledge** | Simple | Poor first-time experience |
-| **Knowledge in plugin code** | Always updated | User data mixed with code |
-| **Templates + Bootstrap** ✅ | Best UX, clean separation | Requires bootstrap logic |
+| Approach                     | Pros                      | Cons                       |
+| ---------------------------- | ------------------------- | -------------------------- |
+| **No starter knowledge**     | Simple                    | Poor first-time experience |
+| **Knowledge in plugin code** | Always updated            | User data mixed with code  |
+| **Templates + Bootstrap** ✅ | Best UX, clean separation | Requires bootstrap logic   |
 
 **Industry precedent**:
+
 - **Git**: Template in `/usr/share/git-core/templates/`
 - **Docker**: Image (template) → Container (instance)
 - **npm**: `node_modules` bootstrapped from `package.json`
@@ -328,6 +341,7 @@ Agent:
 ## Future Enhancements
 
 **Planned**:
+
 1. Template update detection and merge
 2. Multi-language templates (Python, JS, Rust)
 3. Project-type templates (web, ML, CLI)
@@ -338,11 +352,13 @@ Agent:
 ## Support
 
 **Questions**:
+
 - Template not copying? Check `plugins/autonomous-dev/templates/knowledge/` exists
 - Want to reset? Delete `.claude/knowledge/` and re-run researcher
 - Need different starter knowledge? Edit `templates/knowledge/` in plugin
 
 **Contribute**:
+
 - Submit PRs with new best practices to `templates/knowledge/`
 - Share your research findings (they might become templates!)
 

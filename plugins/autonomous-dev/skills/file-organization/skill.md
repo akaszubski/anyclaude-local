@@ -21,6 +21,7 @@ triggers:
 ## Auto-Invoke Triggers
 
 This skill is automatically invoked:
+
 - **Before file creation**: Validates proposed file location
 - **Before file move**: Validates destination path
 - **Before directory creation**: Validates directory structure
@@ -34,6 +35,7 @@ This skill is automatically invoked:
 **Rule**: Maximum 8 essential .md files in root
 
 **Allowed in root**:
+
 - README.md
 - CHANGELOG.md
 - LICENSE
@@ -50,12 +52,14 @@ This skill is automatically invoked:
 **Rule**: All `.sh` files in `scripts/` subdirectories
 
 **Categories**:
+
 - `scripts/debug/` - Debugging and troubleshooting tools
 - `scripts/test/` - Testing utilities
 - `scripts/build/` - Build and deployment scripts
 - `scripts/` - General utility scripts
 
 **Example**:
+
 - ❌ `./test-auth.sh`
 - ✅ `./scripts/test/test-auth.sh`
 
@@ -64,6 +68,7 @@ This skill is automatically invoked:
 **Rule**: Documentation in `docs/` subdirectories by category
 
 **Categories**:
+
 - `docs/guides/` - User-facing guides
 - `docs/debugging/` - Troubleshooting and debug info
 - `docs/development/` - Developer documentation
@@ -71,6 +76,7 @@ This skill is automatically invoked:
 - `docs/reference/` - API reference, technical specs
 
 **Example**:
+
 - ❌ `./USER-GUIDE.md`
 - ✅ `./docs/guides/user-guide.md`
 
@@ -79,6 +85,7 @@ This skill is automatically invoked:
 **Rule**: All source code in `src/`, all tests in `tests/`
 
 **Example**:
+
 - ❌ `./my-module.ts`
 - ✅ `./src/my-module.ts`
 - ✅ `./tests/unit/my-module.test.ts`
@@ -100,6 +107,7 @@ awk '/## File Organization Standards/,/^## [A-Z]/' PROJECT.md
 ```
 
 **Parse rules**:
+
 ```json
 {
   "root_policy": {
@@ -126,8 +134,8 @@ Check `.claude/config.yml` for exceptions:
 ```yaml
 file_organization:
   exceptions:
-    - "build*.sh"  # Allow build scripts in root
-    - "Dockerfile*"  # Allow Dockerfiles anywhere
+    - "build*.sh" # Allow build scripts in root
+    - "Dockerfile*" # Allow Dockerfiles anywhere
 ```
 
 ---
@@ -146,6 +154,7 @@ FILE_DIR=$(dirname "$FILE_PATH")
 ```
 
 **Categorize**:
+
 - `.sh` → Shell script
 - `.md` → Documentation
 - `.ts`, `.js`, `.py`, `.go`, `.rs` → Source code
@@ -154,6 +163,7 @@ FILE_DIR=$(dirname "$FILE_PATH")
 #### Step 2.2: Check if Location Matches Rules
 
 **For shell scripts (`.sh`)**:
+
 ```bash
 if [[ "$FILE_EXT" == "sh" ]]; then
   if [[ ! "$FILE_PATH" =~ ^scripts/ ]]; then
@@ -171,6 +181,7 @@ fi
 ```
 
 **For markdown files (`.md`)**:
+
 ```bash
 if [[ "$FILE_EXT" == "md" ]]; then
   # Check if essential file
@@ -199,6 +210,7 @@ fi
 ```
 
 **For source code**:
+
 ```bash
 if [[ "$FILE_EXT" =~ ^(ts|js|py|go|rs)$ ]]; then
   # Exclude test files
@@ -233,7 +245,7 @@ fi
 
 ```yaml
 file_organization:
-  enforcement: "auto-fix"  # or "block" or "warn"
+  enforcement: "auto-fix" # or "block" or "warn"
 ```
 
 #### Mode 1: Auto-Fix (Default)
@@ -255,6 +267,7 @@ File created at correct location.
 ```
 
 **Implementation**:
+
 ```bash
 # Instead of creating at wrong location
 # Claude creates at correct location directly
@@ -367,11 +380,13 @@ Create new category? [y/N]
 ```
 
 If yes:
+
 - Create directory
 - Update CLAUDE.md with new category
 - Proceed with file creation
 
 If no:
+
 - Move to `scripts/` root instead
 
 ### Case 2: Configuration Files
@@ -385,6 +400,7 @@ Enforcement: SKIP (config files allowed in root)
 ```
 
 **Allowed in root without restriction**:
+
 - `package.json`, `tsconfig.json`, `pyproject.toml`, `Cargo.toml`
 - `.env`, `.env.example`, `.gitignore`
 - `Dockerfile`, `docker-compose.yml`
@@ -400,6 +416,7 @@ Enforcement: SKIP (hidden dirs have different conventions)
 ```
 
 **Allowed without restrictions**:
+
 - `.github/` - GitHub-specific files
 - `.vscode/` - VS Code settings
 - `.idea/` - JetBrains IDE settings
@@ -456,7 +473,7 @@ Add to `.claude/config.yml`:
 ```yaml
 file_organization:
   # Enforcement level
-  enforcement: "auto-fix"  # Options: "auto-fix", "block", "warn"
+  enforcement: "auto-fix" # Options: "auto-fix", "block", "warn"
 
   # Root directory policy
   root_directory:
@@ -487,7 +504,7 @@ file_organization:
         - "docs/development/"
         - "docs/architecture/"
         - "docs/reference/"
-      root_allowed: false  # Only essential files
+      root_allowed: false # Only essential files
 
     source_code:
       allowed_locations:
@@ -497,11 +514,11 @@ file_organization:
 
   # Exceptions (files/patterns exempt from rules)
   exceptions:
-    - "build*.sh"  # Allow build.sh in root
-    - "Dockerfile*"  # Dockerfiles anywhere
+    - "build*.sh" # Allow build.sh in root
+    - "Dockerfile*" # Dockerfiles anywhere
 
   # Auto-create directories
-  auto_create_dirs: true  # Create target directory if missing
+  auto_create_dirs: true # Create target directory if missing
 ```
 
 ---
@@ -509,6 +526,7 @@ file_organization:
 ## Success Criteria
 
 After implementation:
+
 - ✅ Claude cannot create files in wrong locations (blocked or auto-fixed)
 - ✅ Pre-commit catches any files that slip through
 - ✅ Auto-fix moves files to correct locations with explanation
@@ -521,6 +539,7 @@ After implementation:
 ## Performance
 
 **Fast validation**:
+
 - Rule parsing: < 10ms (cached)
 - Path validation: < 5ms per file
 - Auto-fix: < 50ms (includes directory creation)

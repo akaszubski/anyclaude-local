@@ -13,6 +13,7 @@ Interactive wizard to configure hooks, templates, and GitHub integration after p
 ```
 
 This will guide you through:
+
 1. **Plugin File Copy** - Copy hooks and templates from plugin to project
 2. **Hook Configuration** - Enable automatic formatting, testing, security
 3. **Template Installation** - Set up PROJECT.md from template
@@ -26,6 +27,7 @@ This will guide you through:
 ### Phase 1: Hook Setup (Choose Your Workflow)
 
 **Option A: Slash Commands (Recommended for Beginners)**
+
 ```bash
 # Explicit control - run when needed
 /format          # Format code manually
@@ -35,6 +37,7 @@ This will guide you through:
 ```
 
 **Benefits**:
+
 - ✅ Full control over when checks run
 - ✅ See exactly what's happening
 - ✅ Great for learning
@@ -43,12 +46,14 @@ This will guide you through:
 **Option B: Automatic Hooks (Power Users)**
 
 Enables automatic execution:
+
 - Auto-format on file write/edit
 - Auto-test on commit
 - Auto-security scan on commit
 - Auto-coverage enforcement
 
 **Benefits**:
+
 - ✅ Fully automated workflow
 - ✅ Can't forget to run checks
 - ✅ Maximum quality enforcement
@@ -56,6 +61,7 @@ Enables automatic execution:
 ### Phase 2: Template Setup
 
 Helps you create PROJECT.md from template or codebase:
+
 ```
 1. Analyzes existing codebase (README, structure, git history)
 2. Generates comprehensive PROJECT.md at root (or uses template)
@@ -65,6 +71,7 @@ Helps you create PROJECT.md from template or codebase:
 ### Phase 3: GitHub Integration (Optional)
 
 Sets up GitHub authentication:
+
 ```
 1. Creates .env file
 2. Guides you to create GitHub token
@@ -304,6 +311,7 @@ Next steps:
 #### Option 3: Interactive Wizard
 
 Uses AskUserQuestion to gather:
+
 - Primary project goal
 - Architecture type (monolith, microservices, library, etc.)
 - Tech stack (if not detected)
@@ -365,19 +373,21 @@ Your choice [1-4]:
 ```
 
 **After any option completes**, setup continues to Step 5 (GitHub Integration).
+
 ```
 
 ### Step 5: GitHub Integration (Optional)
 
 ```
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔗 GitHub Integration (Optional)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 GitHub integration enables:
-  ✓ Sprint tracking via Milestones
-  ✓ Issue management
-  ✓ PR automation
+✓ Sprint tracking via Milestones
+✓ Issue management
+✓ PR automation
 
 Setup GitHub integration? [y/N]
 
@@ -417,18 +427,20 @@ Test GitHub connection? [Y/n]
 [If Yes - runs test command]
 
 ✅ GitHub connection successful!
-   Authenticated as: YOUR_USERNAME
-   Repository: YOUR_REPO
-   Milestone found: Sprint 1
+Authenticated as: YOUR_USERNAME
+Repository: YOUR_REPO
+Milestone found: Sprint 1
 
 [If No]
-ℹ️  GitHub setup skipped. You can configure later:
-   See: .claude/docs/GITHUB_AUTH_SETUP.md
+ℹ️ GitHub setup skipped. You can configure later:
+See: .claude/docs/GITHUB_AUTH_SETUP.md
+
 ```
 
 ### Step 6: Complete
 
 ```
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ Setup Complete!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -436,46 +448,41 @@ Test GitHub connection? [Y/n]
 Your autonomous development environment is ready:
 
 Configuration:
-  ✓ Workflow: [Slash Commands OR Automatic Hooks]
-  ✓ PROJECT.md: Configured
-  ✓ GitHub: [Connected OR Skipped]
+✓ Workflow: [Slash Commands OR Automatic Hooks]
+✓ PROJECT.md: Configured
+✓ GitHub: [Connected OR Skipped]
 
 Quick Start:
 
-  For Slash Commands workflow:
-    1. Describe feature: "implement user authentication"
-    2. Run: /auto-implement
-    3. Before commit: /full-check
-    4. Commit: /commit
+For Slash Commands workflow: 1. Describe feature: "implement user authentication" 2. Run: /auto-implement 3. Before commit: /full-check 4. Commit: /commit
 
-  For Automatic Hooks workflow:
-    1. Describe feature: "implement user authentication"
-    2. Run: /auto-implement
-    3. Commit: git commit (hooks run automatically)
+For Automatic Hooks workflow: 1. Describe feature: "implement user authentication" 2. Run: /auto-implement 3. Commit: git commit (hooks run automatically)
 
 Next Steps:
 
-  1. Try a simple feature:
-     "implement a hello world function"
+1. Try a simple feature:
+   "implement a hello world function"
 
-  2. Run quality check:
-     /full-check
+2. Run quality check:
+   /full-check
 
-  3. When done, clear context:
-     /clear
+3. When done, clear context:
+   /clear
 
-  4. Check alignment anytime:
-     /align-project
+4. Check alignment anytime:
+   /align-project
 
 Documentation:
-  - Plugin docs: .claude/README.md (installed)
-  - GitHub setup: .claude/docs/GITHUB_AUTH_SETUP.md
-  - Testing guide: tests/README.md
+
+- Plugin docs: .claude/README.md (installed)
+- GitHub setup: .claude/docs/GITHUB_AUTH_SETUP.md
+- Testing guide: tests/README.md
 
 Need help? Run: /help
 
 Happy coding! 🚀
-```
+
+````
 
 ---
 
@@ -509,17 +516,19 @@ Happy coding! 🚀
     }
   }
 }
-```
+````
 
 ### If PROJECT.md Template Selected
 
 **File**: `.claude/PROJECT.md`
+
 - Copied from `.claude/templates/PROJECT.md`
 - Ready for user to customize
 
 ### If GitHub Integration Selected
 
 **File**: `.env`
+
 ```bash
 # GitHub Personal Access Token
 # Get yours at: https://github.com/settings/tokens
@@ -537,6 +546,7 @@ If you prefer to configure manually:
 ### Enable Hooks Manually
 
 Edit `.claude/settings.local.json`:
+
 ```json
 {
   "hooks": {
@@ -569,16 +579,19 @@ echo ".env" >> .gitignore
 ## Troubleshooting
 
 ### "Hooks not running"
+
 - Check: `.claude/settings.local.json` exists
 - Check: Hooks are in `.claude/hooks/` directory
 - Check: Python 3.11+ installed
 
 ### "GitHub authentication failed"
+
 - Check: `.env` file exists
 - Check: Token has `repo` scope
 - Check: Token is valid (not expired)
 
 ### "PROJECT.md validation failed"
+
 - Run: `/align-project` to see specific issues
 - Check: Required sections exist (GOALS, SCOPE, CONSTRAINTS)
 
@@ -598,8 +611,6 @@ After setup, use these commands:
 
 ---
 
-
-
 ## Implementation
 
 Invoke the setup-wizard agent to intelligently configure your plugin.
@@ -613,6 +624,7 @@ The setup-wizard agent will:
 5. **Validate everything** - Tests all configurations work correctly
 
 The agent analyzes:
+
 - README.md, package.json, pyproject.toml, go.mod, Makefile
 - Directory structure and architecture patterns
 - Git history and development patterns
@@ -620,6 +632,7 @@ The agent analyzes:
 - Tech stack and testing frameworks
 
 Based on analysis, it recommends:
+
 - Python projects: black, isort, pytest, bandit
 - JavaScript/TypeScript: prettier, eslint, jest
 - Go projects: gofmt, go test, staticcheck

@@ -9,6 +9,7 @@
 All commands are now **separate, discoverable slash commands** with clear descriptions. When you type `/` in Claude Code, you'll see autocomplete suggestions for all available commands.
 
 **Total Commands**: 25 (reduced from 33 - removed redundant variants)
+
 - **Testing** (7 commands): `/test*`
 - **Commit** (4 commands): `/commit*`
 - **Alignment** (2 commands): `/align-project*` ⚠️ Reduced - removed 3 redundant variants
@@ -23,77 +24,77 @@ All commands are now **separate, discoverable slash commands** with clear descri
 
 ### Testing Commands (7)
 
-| Command | Time | Description |
-|---------|------|-------------|
-| `/test` | < 60s | Run all automated tests (unit + integration + UAT) |
-| `/test-unit` | < 1s | Unit tests only - fast individual function validation |
-| `/test-integration` | < 10s | Integration tests - validate components work together |
-| `/test-uat` | < 60s | UAT tests - validate complete user workflows (automated) |
-| `/test-uat-genai` | 2-5min | GenAI UX validation - analyze UX quality & goal alignment |
-| `/test-architecture` | 2-5min | GenAI architectural validation - detect drift from intent |
-| `/test-complete` | 5-10min | Complete pre-release validation (all tests + GenAI) |
+| Command              | Time    | Description                                               |
+| -------------------- | ------- | --------------------------------------------------------- |
+| `/test`              | < 60s   | Run all automated tests (unit + integration + UAT)        |
+| `/test-unit`         | < 1s    | Unit tests only - fast individual function validation     |
+| `/test-integration`  | < 10s   | Integration tests - validate components work together     |
+| `/test-uat`          | < 60s   | UAT tests - validate complete user workflows (automated)  |
+| `/test-uat-genai`    | 2-5min  | GenAI UX validation - analyze UX quality & goal alignment |
+| `/test-architecture` | 2-5min  | GenAI architectural validation - detect drift from intent |
+| `/test-complete`     | 5-10min | Complete pre-release validation (all tests + GenAI)       |
 
 ### Commit Commands (4)
 
-| Command | Time | Description |
-|---------|------|-------------|
-| `/commit` | < 5s | Quick commit - format + unit tests + security → local |
-| `/commit-check` | < 60s | Standard commit - all tests + coverage → local |
-| `/commit-push` | 2-5min | Push commit - full integrity + doc sync → GitHub |
+| Command           | Time    | Description                                                   |
+| ----------------- | ------- | ------------------------------------------------------------- |
+| `/commit`         | < 5s    | Quick commit - format + unit tests + security → local         |
+| `/commit-check`   | < 60s   | Standard commit - all tests + coverage → local                |
+| `/commit-push`    | 2-5min  | Push commit - full integrity + doc sync → GitHub              |
 | `/commit-release` | 5-10min | Release - complete validation + version bump + GitHub Release |
 
 ### Alignment Commands (2)
 
-| Command | Time | Description |
-|---------|------|-------------|
-| `/align-project` | 5-10min | Analyze project alignment with PROJECT.md (read-only) |
+| Command               | Time     | Description                                                        |
+| --------------------- | -------- | ------------------------------------------------------------------ |
+| `/align-project`      | 5-10min  | Analyze project alignment with PROJECT.md (read-only)              |
 | `/align-project-safe` | 15-20min | Interactive 3-phase alignment (asks before changes) ⭐ Recommended |
 
 **Removed**: `/align-project-dry-run` (duplicate of `/align-project`), `/align-project-fix` (risky), `/align-project-sync` (too automatic)
 
 ### Issue Commands (3)
 
-| Command | Time | Description |
-|---------|------|-------------|
-| `/issue-auto` | < 5s | Auto-create GitHub Issues from last test run ⭐ Primary |
-| `/issue-from-genai` | < 5s | Create GitHub Issue from GenAI finding (specialized) |
-| `/issue-preview` | < 5s | Preview issues without creating (dry run) |
+| Command             | Time | Description                                             |
+| ------------------- | ---- | ------------------------------------------------------- |
+| `/issue-auto`       | < 5s | Auto-create GitHub Issues from last test run ⭐ Primary |
+| `/issue-from-genai` | < 5s | Create GitHub Issue from GenAI finding (specialized)    |
+| `/issue-preview`    | < 5s | Preview issues without creating (dry run)               |
 
 **Removed**: `/issue` (duplicate of `/issue-auto`), `/issue-from-test` (covered by `/issue-auto`), `/issue-create` (use `gh issue create` CLI directly)
 
 ### GitHub PR Commands (1)
 
-| Command | Time | Description |
-|---------|------|-------------|
+| Command      | Time | Description                                                                 |
+| ------------ | ---- | --------------------------------------------------------------------------- |
 | `/pr-create` | < 5s | Create pull request with optional reviewer assignment (default: draft mode) |
 
 **See**: [PR-AUTOMATION.md](PR-AUTOMATION.md) for complete reference with flags and examples
 
 ### Documentation Commands (2)
 
-| Command | Time | Description |
-|---------|------|-------------|
-| `/sync-docs` | 5-10min | Sync all documentation (filesystem + API + CHANGELOG) ⭐ Complete sync |
-| `/sync-docs-auto` | 1-5min | Auto-detect changes and sync intelligently |
+| Command           | Time    | Description                                                            |
+| ----------------- | ------- | ---------------------------------------------------------------------- |
+| `/sync-docs`      | 5-10min | Sync all documentation (filesystem + API + CHANGELOG) ⭐ Complete sync |
+| `/sync-docs-auto` | 1-5min  | Auto-detect changes and sync intelligently                             |
 
 **Removed**: `/sync-docs-api`, `/sync-docs-changelog`, `/sync-docs-organize` (niche - use `/sync-docs` for all needs)
 **Note**: `/auto-implement` includes doc-master agent (automatic documentation sync)
 
 ### Quality Commands (3)
 
-| Command | Time | Description |
-|---------|------|-------------|
-| `/format` | < 5s | Format code (black, isort, prettier, eslint) |
-| `/security-scan` | < 30s | Scan for secrets & vulnerabilities |
-| `/full-check` | < 60s | Complete check (format + test + security) |
+| Command          | Time  | Description                                  |
+| ---------------- | ----- | -------------------------------------------- |
+| `/format`        | < 5s  | Format code (black, isort, prettier, eslint) |
+| `/security-scan` | < 30s | Scan for secrets & vulnerabilities           |
+| `/full-check`    | < 60s | Complete check (format + test + security)    |
 
 ### Workflow Commands (4)
 
-| Command | Time | Description |
-|---------|------|-------------|
-| `/setup` | 5-10min | Interactive setup wizard for autonomous-dev plugin |
-| `/auto-implement` | 20-30min | Autonomous feature implementation (8-agent pipeline) |
-| `/uninstall` | < 5s | Uninstall or disable autonomous-dev features |
+| Command                             | Time     | Description                                          |
+| ----------------------------------- | -------- | ---------------------------------------------------- |
+| `/setup`                            | 5-10min  | Interactive setup wizard for autonomous-dev plugin   |
+| `/auto-implement`                   | 20-30min | Autonomous feature implementation (8-agent pipeline) |
+| `/uninstall`                        | < 5s     | Uninstall or disable autonomous-dev features         |
 | More commands available via `/help` |
 
 ---
@@ -103,6 +104,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ### Progressive Workflows
 
 **Testing Progression**:
+
 ```
 /test-unit         →  Fast feedback (< 1s)
 /test              →  All automated (< 60s)
@@ -112,6 +114,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ```
 
 **Commit Progression**:
+
 ```
 /commit            →  Quick iteration (< 5s)
 /commit-check      →  Feature complete (< 60s)
@@ -120,6 +123,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ```
 
 **Alignment Progression**:
+
 ```
 /align-project          →  Analysis only (5-10min)
 /align-project-safe     →  Interactive fix (15-20min) ⭐ Recommended
@@ -130,6 +134,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ### Quick Actions
 
 **Fast Development Cycle**:
+
 ```bash
 # 1. Make changes
 # 2. Quick commit
@@ -147,6 +152,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ```
 
 **Issue Tracking**:
+
 ```bash
 # Run tests
 /test-uat-genai
@@ -159,6 +165,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ```
 
 **Documentation Sync**:
+
 ```bash
 # Auto-detect and sync intelligently
 /sync-docs-auto
@@ -241,11 +248,13 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ### Use Progressive Commands
 
 ✅ **Start small, scale up**:
+
 - Use `/test-unit` during development (fast feedback)
 - Use `/test` before committing (complete automated tests)
 - Use `/test-complete` before releases (everything)
 
 ✅ **Commit progressively**:
+
 - Use `/commit` for rapid iteration
 - Use `/commit-check` for feature completion
 - Use `/commit-push` before merge
@@ -254,6 +263,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ### Auto-Detect When Possible
 
 ✅ **Smart commands**:
+
 - `/sync-docs-auto` - Only syncs what changed
 - `/issue-auto` - Detects all findings automatically
 - `/test-complete` - Runs everything in sequence
@@ -261,6 +271,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ### Preview Before Acting
 
 ✅ **Dry run first**:
+
 - `/align-project-dry-run` - See what will change
 - `/issue-preview` - See what issues will be created
 - `/align-project` - Analysis before fix
@@ -268,6 +279,7 @@ All commands are now **separate, discoverable slash commands** with clear descri
 ### Use Interactive for Safety
 
 ✅ **Interactive mode**:
+
 - `/align-project-safe` - Asks before each change (recommended for first time)
 - `/issue-create` - Manual control over issue creation
 
@@ -299,17 +311,20 @@ TEST_AUTO_TRACK_ISSUES=false    # Auto-create issues from tests
 ## Command Discovery
 
 **In Claude Code**:
+
 1. Type `/` to see all commands
 2. Type `/test` to see all test commands
 3. Type `/commit` to see all commit commands
 4. Type `/issue` to see all issue commands
 
 **Each command shows**:
+
 - Short description
 - Time estimate
 - What it does
 
 **Example**:
+
 ```
 /test-unit          Unit tests only - fast validation (< 1s)
 /test-integration   Integration tests - components together (< 10s)

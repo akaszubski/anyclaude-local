@@ -27,24 +27,27 @@ Database schema design, migration strategies, query optimization, and ORM best p
 ### Normalization vs Denormalization
 
 **Normalization** (Eliminate redundancy):
+
 - ✅ Use for: Transactional systems (OLTP)
 - ✅ Benefits: Data integrity, no update anomalies
 - ❌ Drawback: More JOINs, slower reads
 
 **Denormalization** (Add redundancy):
+
 - ✅ Use for: Analytical systems (OLAP), read-heavy apps
 - ✅ Benefits: Faster reads, fewer JOINs
 - ❌ Drawback: Harder to maintain consistency
 
 **Normal Forms Quick Reference**:
 
-| Normal Form | Rule | Example |
-|-------------|------|---------|
-| 1NF | Atomic values, no repeating groups | No CSV in columns |
-| 2NF | 1NF + no partial dependencies | All non-key columns depend on full primary key |
-| 3NF | 2NF + no transitive dependencies | No non-key depends on another non-key |
+| Normal Form | Rule                               | Example                                        |
+| ----------- | ---------------------------------- | ---------------------------------------------- |
+| 1NF         | Atomic values, no repeating groups | No CSV in columns                              |
+| 2NF         | 1NF + no partial dependencies      | All non-key columns depend on full primary key |
+| 3NF         | 2NF + no transitive dependencies   | No non-key depends on another non-key          |
 
 **Practical Approach**:
+
 ```sql
 -- ✅ GOOD: 3NF design (normalized)
 CREATE TABLE users (
@@ -70,6 +73,7 @@ CREATE TABLE orders (
 ```
 
 **When to Denormalize**:
+
 ```sql
 -- ✅ GOOD: Denormalize for performance (read-heavy)
 CREATE TABLE order_summary (
@@ -105,6 +109,7 @@ is_active VARCHAR(5)         -- "true" vs true
 ```
 
 **Money Handling**:
+
 ```sql
 -- ✅ CORRECT: DECIMAL for money
 price DECIMAL(10, 2)  -- Up to 99,999,999.99
@@ -118,6 +123,7 @@ price FLOAT           -- Precision errors: 0.1 + 0.2 ≠ 0.3
 ### Primary Keys
 
 **Auto-Incrementing Integer (Most Common)**:
+
 ```sql
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,  -- PostgreSQL
@@ -127,6 +133,7 @@ CREATE TABLE users (
 ```
 
 **UUID (Distributed Systems)**:
+
 ```sql
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -136,16 +143,17 @@ CREATE TABLE users (
 
 **Comparison**:
 
-| Approach | Pros | Cons | Use When |
-|----------|------|------|----------|
-| **SERIAL/INT** | Simple, small, ordered | Not globally unique | Single database |
-| **UUID** | Globally unique, no conflicts | Larger, unordered | Distributed systems, merging DBs |
+| Approach       | Pros                          | Cons                | Use When                         |
+| -------------- | ----------------------------- | ------------------- | -------------------------------- |
+| **SERIAL/INT** | Simple, small, ordered        | Not globally unique | Single database                  |
+| **UUID**       | Globally unique, no conflicts | Larger, unordered   | Distributed systems, merging DBs |
 
 ---
 
 ### Foreign Keys & Relationships
 
 **One-to-Many**:
+
 ```sql
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -161,6 +169,7 @@ CREATE TABLE posts (
 ```
 
 **Many-to-Many** (Junction Table):
+
 ```sql
 CREATE TABLE students (
     id SERIAL PRIMARY KEY,
@@ -181,11 +190,13 @@ CREATE TABLE enrollments (
 ```
 
 **ON DELETE Options**:
+
 - `CASCADE` - Delete related records (use carefully!)
 - `SET NULL` - Set foreign key to NULL
 - `RESTRICT` - Prevent deletion (default)
 
 **Best Practice**:
+
 ```sql
 -- ✅ GOOD: Explicit CASCADE when you want it
 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
@@ -204,12 +215,14 @@ user_id INTEGER  -- No REFERENCES!
 ### When to Add Indexes
 
 **Always Index**:
+
 - Primary keys (automatic)
 - Foreign keys (manual in most DBs)
 - Frequently queried columns (`WHERE`, `ORDER BY`, `GROUP BY`)
 - Unique constraints (`UNIQUE`)
 
 **Example**:
+
 ```sql
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,                    -- Indexed automatically
@@ -228,18 +241,21 @@ CREATE INDEX idx_posts_created_at ON posts(created_at);
 ### Index Types
 
 **B-Tree (Default)**:
+
 ```sql
 -- For: =, <, >, <=, >=, BETWEEN, ORDER BY
 CREATE INDEX idx_created_at ON posts(created_at);
 ```
 
 **Hash** (PostgreSQL):
+
 ```sql
 -- For: = only (faster than B-tree for equality)
 CREATE INDEX idx_email ON users USING HASH (email);
 ```
 
 **GIN** (Generalized Inverted Index - PostgreSQL):
+
 ```sql
 -- For: Full-text search, JSONB, arrays
 CREATE INDEX idx_tags ON posts USING GIN (tags);  -- Array column
@@ -247,12 +263,14 @@ CREATE INDEX idx_metadata ON posts USING GIN (metadata);  -- JSONB
 ```
 
 **Partial Index**:
+
 ```sql
 -- Index only active users (saves space)
 CREATE INDEX idx_active_users ON users(email) WHERE is_active = true;
 ```
 
 **Composite Index**:
+
 ```sql
 -- For queries filtering by BOTH columns
 CREATE INDEX idx_user_status ON posts(user_id, status);
@@ -270,10 +288,12 @@ SELECT * FROM posts WHERE status = 'published';
 ### Index Tradeoffs
 
 **Pros**:
+
 - ⚡ Faster reads (queries)
 - ⚡ Faster JOINs
 
 **Cons**:
+
 - 🐢 Slower writes (INSERT, UPDATE, DELETE)
 - 💾 More disk space
 - 🔧 More maintenance
@@ -299,6 +319,7 @@ LIMIT 10;
 ```
 
 **What to Look For**:
+
 - ❌ **Seq Scan** (table scan) - Add index!
 - ✅ **Index Scan** - Using index
 - ❌ **High cost** - Optimize query
@@ -307,6 +328,7 @@ LIMIT 10;
 ### N+1 Query Problem
 
 **❌ BAD: N+1 queries (slow)**:
+
 ```python
 # SQLAlchemy
 users = session.query(User).all()
@@ -316,6 +338,7 @@ for user in users:
 ```
 
 **✅ GOOD: Eager loading (fast)**:
+
 ```python
 # SQLAlchemy
 users = session.query(User).options(joinedload(User.posts)).all()
@@ -325,6 +348,7 @@ for user in users:
 ```
 
 **Django ORM**:
+
 ```python
 # ❌ BAD: N+1
 users = User.objects.all()
@@ -340,6 +364,7 @@ for user in users:
 ### Common Optimizations
 
 **Use LIMIT**:
+
 ```sql
 -- ❌ BAD: Load everything
 SELECT * FROM posts ORDER BY created_at DESC;
@@ -348,7 +373,8 @@ SELECT * FROM posts ORDER BY created_at DESC;
 SELECT * FROM posts ORDER BY created_at DESC LIMIT 10;
 ```
 
-**Avoid SELECT ***:
+**Avoid SELECT \***:
+
 ```sql
 -- ❌ BAD: Load all columns
 SELECT * FROM users WHERE id = 1;
@@ -358,6 +384,7 @@ SELECT id, email FROM users WHERE id = 1;
 ```
 
 **Use EXISTS instead of COUNT**:
+
 ```sql
 -- ❌ SLOW: Counts all matching rows
 SELECT COUNT(*) FROM posts WHERE user_id = 1;
@@ -374,6 +401,7 @@ SELECT EXISTS(SELECT 1 FROM posts WHERE user_id = 1 LIMIT 1);
 ### Migration Best Practices
 
 **1. Make Migrations Reversible**:
+
 ```python
 # ✅ GOOD: Can rollback
 def upgrade():
@@ -384,6 +412,7 @@ def downgrade():
 ```
 
 **2. Avoid Locking (Large Tables)**:
+
 ```sql
 -- ❌ BAD: Locks table (blocks reads/writes)
 ALTER TABLE users ADD COLUMN phone VARCHAR(20) NOT NULL DEFAULT '';
@@ -397,6 +426,7 @@ ALTER TABLE users ALTER COLUMN phone SET NOT NULL;
 ```
 
 **3. Test Migrations**:
+
 ```bash
 # Apply migration
 alembic upgrade head
@@ -409,20 +439,24 @@ alembic upgrade head
 ```
 
 **4. Never Edit Merged Migrations**:
+
 - Always create a new migration to fix issues
 - Old migrations are historical record
 
 ### Migration Tools
 
 **Python**:
+
 - **Alembic** (SQLAlchemy)
 - **Django Migrations** (Django ORM)
 
 **Node.js**:
+
 - **Knex.js**
 - **TypeORM**
 
 **Ruby**:
+
 - **ActiveRecord Migrations** (Rails)
 
 ---
@@ -432,6 +466,7 @@ alembic upgrade head
 ### SQLAlchemy (Python)
 
 **Define Models**:
+
 ```python
 from sqlalchemy import Column, Integer, String, ForeignKey, DECIMAL
 from sqlalchemy.orm import relationship
@@ -456,6 +491,7 @@ class Post(Base):
 ```
 
 **Query**:
+
 ```python
 # Create
 user = User(email="test@example.com")
@@ -476,6 +512,7 @@ session.commit()
 ```
 
 **Eager Loading (Avoid N+1)**:
+
 ```python
 from sqlalchemy.orm import joinedload
 
@@ -486,6 +523,7 @@ users = session.query(User).options(joinedload(User.posts)).all()
 ### Django ORM
 
 **Define Models**:
+
 ```python
 from django.db import models
 
@@ -500,6 +538,7 @@ class Post(models.Model):
 ```
 
 **Query**:
+
 ```python
 # Create
 user = User.objects.create(email="test@example.com")
@@ -517,6 +556,7 @@ user.delete()
 ```
 
 **Eager Loading**:
+
 ```python
 # ✅ GOOD: Avoid N+1
 users = User.objects.prefetch_related('posts').all()
@@ -536,6 +576,7 @@ users = User.objects.prefetch_related('posts').all()
 ### Using Transactions
 
 **SQLAlchemy**:
+
 ```python
 from sqlalchemy.orm import Session
 
@@ -554,6 +595,7 @@ with Session(engine) as session:
 ```
 
 **Django**:
+
 ```python
 from django.db import transaction
 
@@ -564,6 +606,7 @@ with transaction.atomic():
 ```
 
 **Raw SQL**:
+
 ```sql
 BEGIN;
     INSERT INTO users (email) VALUES ('test@example.com');
@@ -635,6 +678,7 @@ SELECT * FROM posts WHERE deleted_at IS NULL;
 ```
 
 **ORM (SQLAlchemy)**:
+
 ```python
 class Post(Base):
     __tablename__ = 'posts'
@@ -678,6 +722,7 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
 **ORM (SQLAlchemy)**:
+
 ```python
 from datetime import datetime
 
@@ -716,15 +761,15 @@ CREATE TABLE enrollments (
 
 ### PostgreSQL vs MySQL
 
-| Feature | PostgreSQL | MySQL |
-|---------|-----------|-------|
-| **ACID** | ✅ Full | ✅ Full (InnoDB) |
-| **JSON** | ✅ JSONB (binary) | ⚠️ JSON (text) |
-| **Full-text** | ✅ Built-in | ✅ Built-in |
-| **Window Functions** | ✅ Yes | ✅ Yes (8.0+) |
-| **CTEs** | ✅ Yes | ✅ Yes (8.0+) |
-| **Performance** | ⚡ Complex queries | ⚡ Simple queries |
-| **Use Case** | Data-heavy, analytics | Web apps, simple queries |
+| Feature              | PostgreSQL            | MySQL                    |
+| -------------------- | --------------------- | ------------------------ |
+| **ACID**             | ✅ Full               | ✅ Full (InnoDB)         |
+| **JSON**             | ✅ JSONB (binary)     | ⚠️ JSON (text)           |
+| **Full-text**        | ✅ Built-in           | ✅ Built-in              |
+| **Window Functions** | ✅ Yes                | ✅ Yes (8.0+)            |
+| **CTEs**             | ✅ Yes                | ✅ Yes (8.0+)            |
+| **Performance**      | ⚡ Complex queries    | ⚡ Simple queries        |
+| **Use Case**         | Data-heavy, analytics | Web apps, simple queries |
 
 **Recommendation**: PostgreSQL for most projects (richer features, better JSON support)
 

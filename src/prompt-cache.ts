@@ -50,9 +50,9 @@ export function getCachedPrompt(
   const now = Date.now();
 
   if (cached && now - cached.createdAt < CACHE_TTL_MS) {
-    console.log(
-      "[Prompt Cache] HIT - Reusing cached system+tools",
-      hash.substring(0, 8)
+    debug(
+      1,
+      `[Prompt Cache] HIT - Reusing cached system+tools ${hash.substring(0, 8)}`
     );
     return {
       hash,
@@ -63,9 +63,9 @@ export function getCachedPrompt(
   }
 
   // Cache miss - store this prompt
-  console.log(
-    "[Prompt Cache] MISS - Caching new system+tools",
-    hash.substring(0, 8)
+  debug(
+    1,
+    `[Prompt Cache] MISS - Caching new system+tools ${hash.substring(0, 8)}`
   );
   promptCache.set(hash, {
     system,
@@ -97,7 +97,7 @@ export function clearExpiredCache(): void {
   }
 
   if (cleared > 0) {
-    console.log("[Prompt Cache] Cleared", cleared, "expired entries");
+    debug(1, `[Prompt Cache] Cleared ${cleared} expired entries`);
   }
 }
 

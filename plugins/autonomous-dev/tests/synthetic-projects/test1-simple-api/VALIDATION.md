@@ -80,6 +80,7 @@ cd plugins/autonomous-dev/tests/synthetic-projects/test1-simple-api
 ### 4. Quality Checks
 
 **Run alignment after generation:**
+
 ```bash
 /align-project
 ```

@@ -11,18 +11,18 @@
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "vllm-mlx",
-      "model": "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
+      "model": "/Users/andrewkaszubski/Models/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
       "maxTokens": 262144,
       "serverScript": "scripts/vllm-mlx-server.py",
-      "description": "vLLM-MLX - high-performance inference server with Qwen3 Coder 30B"
+      "description": "vLLM-MLX - high-performance inference server with Qwen3-Coder-30B (better tool calling)"
     },
     "lmstudio": {
-      "enabled": false,
-      "baseUrl": "http://localhost:1234/v1",
+      "enabled": true,
+      "baseUrl": "http://10.55.0.2:8082/v1",
       "apiKey": "lm-studio",
-      "model": "current-model",
+      "model": "/lmstudio-community/MiniMax-M2-MLX-8bit",
       "compatibility": "legacy",
-      "description": "LMStudio (disabled - use vllm-mlx instead)"
+      "description": "Remote LMStudio-compatible server with MiniMax-M2"
     },
     "claude": {
       "enabled": false,

@@ -8,6 +8,7 @@
 Your project now has **fully autonomous development** powered by 8 specialized agents and intelligent automation.
 
 **What's installed:**
+
 - ✅ Agents & Skills: Auto-active immediately
 - ✅ Commands: Available immediately (`/align-project`, `/auto-implement`, etc.)
 - ⚠️ Hooks & Templates: Copied but require setup (opt-in for safety)
@@ -21,6 +22,7 @@ Your project now has **fully autonomous development** powered by 8 specialized a
 ```
 
 This will:
+
 1. Copy hooks and templates to your project
 2. Configure your workflow (slash commands or automatic hooks)
 3. Set up PROJECT.md from template
@@ -37,6 +39,7 @@ vim PROJECT.md
 ```
 
 Update these sections:
+
 - **GOALS**: What you're trying to achieve
 - **SCOPE**: What's in/out of scope
 - **CONSTRAINTS**: Your technical limits
@@ -117,22 +120,26 @@ orchestrator prompts you to /clear
 ## 📚 13 Skills Auto-Load (Comprehensive SDLC Coverage)
 
 **Core Development:**
+
 - **python-standards** - PEP 8, type hints, docstrings
 - **testing-guide** - TDD workflow, pytest patterns, three-layer testing
 - **security-patterns** - OWASP, secrets management, input validation
 - **consistency-enforcement** - Prevents documentation drift, auto-validates counts
 
 **Architecture & Design:**
+
 - **architecture-patterns** - Design patterns, ADRs, SOLID principles
 - **api-design** - REST APIs, versioning, OpenAPI documentation
 - **database-design** - Schema design, migrations, ORMs, query optimization
 
 **Process & Workflow:**
+
 - **code-review** - Review standards, constructive feedback
 - **git-workflow** - Commit conventions, branching, PR workflows
 - **project-management** - PROJECT.md structure, sprints, roadmaps
 
 **Documentation & Observability:**
+
 - **documentation-guide** - Docs sync automation, API docs, CHANGELOG
 - **research-patterns** - Web research methodology, knowledge caching
 - **observability** - Logging, debugging, profiling, performance monitoring
@@ -144,12 +151,14 @@ orchestrator prompts you to /clear
 **33 commands available** - all discoverable via autocomplete:
 
 **Most used**:
+
 - `/test-unit` - Fast unit tests (< 1s)
 - `/commit` - Quick commit (< 5s)
 - `/format` - Format code
 - `/full-check` - Run all checks
 
 **Progressive workflows**:
+
 - `/commit` → `/commit-check` → `/commit-push` → `/commit-release`
 - `/test-unit` → `/test` → `/test-complete`
 
@@ -158,7 +167,9 @@ See [docs/COMMANDS.md](../../docs/COMMANDS.md) for all 33 commands.
 **Philosophy**: Full control, great for learning
 
 ### Automatic Hooks Mode (optional)
+
 Configure via `/setup` to enable:
+
 - ✅ Auto-format after file write
 - ✅ Auto-test before commit
 - ✅ Auto-security scan before commit
@@ -171,11 +182,13 @@ Configure via `/setup` to enable:
 ### Why This Matters
 
 **Without /clear**:
+
 - Context grows to 50K+ tokens after 3-4 features
 - System becomes slow and unreliable
 - Eventually fails completely
 
 **With /clear**:
+
 - Context stays <1K tokens per feature
 - Fast and reliable for 100+ features
 - Consistent performance
@@ -213,11 +226,13 @@ Result: Context stays minimal
 **Purpose**: Define project goals, scope, constraints
 
 **How it works**:
+
 - Orchestrator reads PROJECT.md before each feature
 - Validates feature aligns with your goals
 - Rejects misaligned features with explanation
 
 **Example rejection**:
+
 ```
 User: "Add blockchain integration"
 
@@ -235,11 +250,13 @@ Suggestion: Focus on core features or update PROJECT.md if strategy changed
 ## 💡 Examples
 
 ### Simple Feature
+
 ```bash
 /auto-implement health check endpoint returning {"status": "ok"}
 ```
 
 ### Medium Complexity
+
 ```bash
 /auto-implement user authentication with:
 - JWT tokens with refresh tokens
@@ -249,6 +266,7 @@ Suggestion: Focus on core features or update PROJECT.md if strategy changed
 ```
 
 ### Complex Feature
+
 ```bash
 /auto-implement REST API for blog posts with:
 - CRUD operations
@@ -263,11 +281,13 @@ Suggestion: Focus on core features or update PROJECT.md if strategy changed
 ## 🔧 Troubleshooting
 
 ### "Context budget exceeded"
+
 ```bash
 /clear  # Then retry
 ```
 
 ### "Feature doesn't align with PROJECT.md"
+
 ```bash
 # Check goals
 cat PROJECT.md | grep -A 5 "## GOALS"
@@ -278,12 +298,14 @@ cat PROJECT.md | grep -A 5 "## GOALS"
 ```
 
 ### "Tests failing"
+
 ```bash
 # See details
 cat docs/sessions/$(ls -t docs/sessions/ | head -1)
 ```
 
 ### "Hooks not running"
+
 ```bash
 # Make executable
 chmod +x scripts/hooks/*.py
