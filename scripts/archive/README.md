@@ -15,17 +15,18 @@ The custom `vllm-mlx-server.py` (1400 lines) was replaced with MLX-Textgen becau
 
 ## Performance Comparison
 
-| Metric | vllm-mlx-server.py | MLX-Textgen | Improvement |
-|--------|-------------------|-------------|-------------|
-| First request | ~50 seconds | ~3 seconds | **15x faster** |
-| Follow-up requests | ~50 seconds | **~0.55 seconds** | **90x faster** |
-| KV Cache | ❌ Broken | ✅ Working | N/A |
-| Cache files | None created | 26MB safetensors | ✅ |
-| Code complexity | 1400 lines | pip package | Simplified |
+| Metric             | vllm-mlx-server.py | MLX-Textgen       | Improvement    |
+| ------------------ | ------------------ | ----------------- | -------------- |
+| First request      | ~50 seconds        | ~3 seconds        | **15x faster** |
+| Follow-up requests | ~50 seconds        | **~0.55 seconds** | **90x faster** |
+| KV Cache           | ❌ Broken          | ✅ Working        | N/A            |
+| Cache files        | None created       | 26MB safetensors  | ✅             |
+| Code complexity    | 1400 lines         | pip package       | Simplified     |
 
 ## What Was Replaced
 
 **Old:** `scripts/vllm-mlx-server.py`
+
 - Custom FastAPI server
 - Manual tool calling parsing (Harmony, Qwen XML formats)
 - Broken KV caching implementation
@@ -33,6 +34,7 @@ The custom `vllm-mlx-server.py` (1400 lines) was replaced with MLX-Textgen becau
 - 1400 lines of Python code
 
 **New:** `scripts/mlx-textgen-server.sh`
+
 - Wrapper script for MLX-Textgen pip package
 - Native tool calling support
 - Working disk-based KV caching
@@ -65,9 +67,54 @@ anyclaude --mode=vllm-mlx
 ## Migration Documentation
 
 For full migration details, see:
+
 - `docs/architecture/mlx-textgen-migration.md` - Design document
 - `docs/architecture/mlx-textgen-implementation-plan.md` - Step-by-step plan
 - Git commit message for this migration
+
+---
+
+## Restoration (v2.2.1)
+
+**Date Restored:** 2025-11-17
+**Restored As:** `scripts/mlx-server.py`
+
+The vLLM-MLX server was restored as a **legacy reference backend** for:
+
+1. **Educational purposes** - Shows how to implement custom MLX server
+2. **Reference implementation** - Demonstrates KV caching patterns
+3. **Legacy support** - Users who need specific vLLM-MLX features
+
+**Important Notes:**
+
+- **MLX-Textgen remains production backend** (recommended for all users)
+- Restored file is located at `scripts/mlx-server.py` (not in archive)
+- Disabled by default in `.anyclauderc.example.json`
+- Both MLX backends have same tool calling limitations
+- See `docs/guides/mlx-migration.md` for migration guide
+
+**Configuration:**
+
+```json
+{
+  "backend": "vllm-mlx-legacy",
+  "backends": {
+    "vllm-mlx-legacy": {
+      "enabled": false,
+      "port": 8082,
+      "serverScript": "scripts/mlx-server.py"
+    }
+  }
+}
+```
+
+**Restoration validates:**
+
+- File integrity (1803 lines, ~80KB)
+- Executable permissions
+- Python syntax validity
+- Security patterns (no hardcoded secrets, safe path handling)
+- Integration with config and documentation
 
 ---
 

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Legacy MLX Server Restored** - Restored vLLM-MLX server as `scripts/mlx-server.py` for reference
+  - Source: `scripts/archive/vllm-mlx-server.py` (custom MLX implementation)
+  - Purpose: Reference implementation for custom MLX servers
+  - Status: Legacy backend, **MLX-Textgen remains production backend**
+  - Documentation: Created `docs/guides/mlx-migration.md` explaining differences
+  - Note: Both MLX backends have tool calling limitations (use `--mode=claude` or `--mode=openrouter` for production)
+
 ## [2.1.1] - 2025-11-02
 
 ### Fixed
