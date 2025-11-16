@@ -9,6 +9,7 @@
 ## Pre-Migration Checklist
 
 ### Safety First
+
 - [ ] Git status clean (no uncommitted changes that matter)
 - [ ] Create feature branch: `git checkout -b feature/mlx-textgen-migration`
 - [ ] Commit current working state
@@ -16,6 +17,7 @@
 - [ ] Document current performance baseline
 
 ### Environment Check
+
 - [ ] Verify Python 3.10+ installed
 - [ ] Verify pip working
 - [ ] Verify MLX dependencies available
@@ -27,6 +29,7 @@
 ## Phase 1: Preparation (15-20 min)
 
 ### 1.1 Git Commit Current State
+
 ```bash
 # Check status
 git status
@@ -50,6 +53,7 @@ git push origin main
 ```
 
 ### 1.2 Create Backup
+
 ```bash
 # Backup current server
 cp scripts/vllm-mlx-server.py scripts/vllm-mlx-server.py.backup
@@ -59,6 +63,7 @@ mkdir -p scripts/archive
 ```
 
 ### 1.3 Document Current Performance
+
 ```bash
 # Run a test request and record time
 echo "Baseline performance:" > /tmp/performance-baseline.txt
@@ -66,6 +71,7 @@ time anyclaude --mode=vllm-mlx <<< "read README.md and summarize" 2>&1 | tee -a 
 ```
 
 **Checklist:**
+
 - [ ] Git commit created
 - [ ] Pushed to remote
 - [ ] Backup created
@@ -76,6 +82,7 @@ time anyclaude --mode=vllm-mlx <<< "read README.md and summarize" 2>&1 | tee -a 
 ## Phase 2: Installation & Standalone Testing (30-45 min)
 
 ### 2.1 Install MLX-Textgen
+
 ```bash
 # Install main package
 pip install mlx-textgen
@@ -88,6 +95,7 @@ mlx_textgen serve --help
 ```
 
 **Expected output:**
+
 ```
 Usage: mlx_textgen serve [OPTIONS]
 
@@ -99,6 +107,7 @@ Options:
 ```
 
 ### 2.2 Test Standalone (First Request - Cache Creation)
+
 ```bash
 # Start server in background
 mlx_textgen serve \
@@ -131,6 +140,7 @@ time curl -s http://localhost:8082/v1/chat/completions \
 ```
 
 ### 2.3 Test KV Cache (Second Request - Cache Hit)
+
 ```bash
 # Same request again - should be much faster
 time curl -s http://localhost:8082/v1/chat/completions \
@@ -148,6 +158,7 @@ time curl -s http://localhost:8082/v1/chat/completions \
 ```
 
 ### 2.4 Test Tool Calling
+
 ```bash
 # Test with tools
 curl -s http://localhost:8082/v1/chat/completions \
@@ -176,6 +187,7 @@ curl -s http://localhost:8082/v1/chat/completions \
 ```
 
 ### 2.5 Verify Cache Files Created
+
 ```bash
 # Check cache directory
 ls -lh ~/.anyclaude/mlx-textgen-cache/
@@ -184,6 +196,7 @@ ls -lh ~/.anyclaude/mlx-textgen-cache/
 ```
 
 ### 2.6 Shutdown Test Server
+
 ```bash
 # Kill test server
 kill $TEXTGEN_PID
@@ -193,6 +206,7 @@ ps aux | grep mlx_textgen
 ```
 
 **Checklist:**
+
 - [ ] MLX-Textgen installed successfully
 - [ ] Standalone test successful
 - [ ] Cache creation verified (slower first request)
@@ -205,6 +219,7 @@ ps aux | grep mlx_textgen
 ## Phase 3: Integration with anyclaude (45-60 min)
 
 ### 3.1 Create MLX-Textgen Launcher Script
+
 ```bash
 # Create launcher script
 cat > scripts/mlx-textgen-server.sh << 'EOF'
@@ -252,6 +267,7 @@ chmod +x scripts/mlx-textgen-server.sh
 ```
 
 ### 3.2 Update `.anyclauderc.json`
+
 ```json
 {
   "backend": "vllm-mlx",
@@ -270,6 +286,7 @@ chmod +x scripts/mlx-textgen-server.sh
 ```
 
 ### 3.3 Test Auto-Launch
+
 ```bash
 # Kill any running servers
 pkill -f mlx_textgen
@@ -288,6 +305,7 @@ curl -s http://localhost:8081/v1/models | jq .
 ```
 
 **Checklist:**
+
 - [ ] Launcher script created
 - [ ] Configuration updated
 - [ ] Auto-launch works
@@ -298,6 +316,7 @@ curl -s http://localhost:8081/v1/models | jq .
 ## Phase 4: Comprehensive Testing (30-45 min)
 
 ### 4.1 Test Tool Calling with Claude Code
+
 ```bash
 # Run anyclaude
 anyclaude --mode=vllm-mlx
@@ -308,12 +327,14 @@ anyclaude --mode=vllm-mlx
 ```
 
 **Verify:**
+
 - [ ] Read tool called
 - [ ] File content returned
 - [ ] Summary generated
 - [ ] No errors
 
 ### 4.2 Test Multi-Turn Conversation (KV Cache Reuse)
+
 ```bash
 # First turn
 # > read README.md and summarize
@@ -325,11 +346,13 @@ anyclaude --mode=vllm-mlx
 ```
 
 **Verify:**
+
 - [ ] First turn: normal speed (~45-50s)
 - [ ] Second turn: **10-20x faster** (~2-5s)
 - [ ] Cache hit logged in `~/.anyclaude/logs/mlx-textgen-server.log`
 
 ### 4.3 Test Backend Switching
+
 ```bash
 # Switch to LMStudio
 anyclaude --mode=lmstudio
@@ -347,11 +370,13 @@ anyclaude --mode=openrouter
 ```
 
 **Verify:**
+
 - [ ] All backends still work
 - [ ] Switching is seamless
 - [ ] No errors
 
 ### 4.4 Verify Three-Layer Caching
+
 ```bash
 # Check client-side cache metrics
 cat .anyclaude-cache-metrics.json | jq .
@@ -364,11 +389,13 @@ ls -lh ~/.anyclaude/mlx-textgen-cache/
 ```
 
 **Verify:**
+
 - [ ] Layer 1 (client): Token savings reported
 - [ ] Layer 2 (response): Hit rate reported
 - [ ] Layer 3 (KV): Cache files created
 
 ### 4.5 Performance Benchmark
+
 ```bash
 # Record performance
 echo "After MLX-Textgen migration:" > /tmp/performance-after.txt
@@ -388,10 +415,12 @@ cat /tmp/performance-after.txt | grep real
 ```
 
 **Success Criteria:**
+
 - [ ] First request: ≤60s (acceptable)
 - [ ] Second request: ≤5s (**10-20x improvement**)
 
 **Checklist:**
+
 - [ ] Tool calling works
 - [ ] Multi-turn conversation works
 - [ ] KV cache provides speedup
@@ -404,7 +433,8 @@ cat /tmp/performance-after.txt | grep real
 ## Phase 5: Cleanup & Documentation (20-30 min)
 
 ### 5.1 Archive Old Server
-```bash
+
+````bash
 # Move to archive
 mv scripts/vllm-mlx-server.py scripts/archive/
 mv scripts/vllm-mlx-server.py.backup scripts/archive/
@@ -429,11 +459,12 @@ The custom `vllm-mlx-server.py` was replaced with MLX-Textgen because:
 If needed, copy back to `scripts/`:
 ```bash
 cp scripts/archive/vllm-mlx-server.py scripts/
-```
+````
 
 Then update `.anyclauderc.json` to use old server.
 EOF
-```
+
+````
 
 ### 5.2 Update Documentation
 
@@ -448,9 +479,10 @@ EOF
 - Multi-slot disk cache (doesn't overwrite)
 - Native tool calling support
 - Optimized for Apple Silicon
-```
+````
 
 **CLAUDE.md:**
+
 ```markdown
 # Update architecture section
 
@@ -470,12 +502,14 @@ requests via disk-based KV caching.
 ```
 
 ### 5.3 Update Architecture Docs
+
 ```bash
 # Add migration doc to index
 # (Already created in docs/architecture/)
 ```
 
 ### 5.4 Git Commit
+
 ```bash
 # Add all changes
 git add -A
@@ -516,6 +550,7 @@ git push origin main
 ```
 
 **Checklist:**
+
 - [ ] Old server archived
 - [ ] Documentation updated (README, CLAUDE.md)
 - [ ] Architecture docs updated
@@ -549,11 +584,13 @@ anyclaude --mode=vllm-mlx
 After migration is complete, verify:
 
 ### Performance
+
 - [ ] First request: ≤60s (cache creation)
 - [ ] Follow-up requests: ≤5s (**target: 2-5s**)
 - [ ] Speedup: ≥10x on follow-up requests
 
 ### Functionality
+
 - [ ] Tool calling works (Read, Write, Edit, Bash, Grep, Glob)
 - [ ] Multi-turn conversations work
 - [ ] All backends work (vllm-mlx, lmstudio, openrouter, claude)
@@ -561,6 +598,7 @@ After migration is complete, verify:
 - [ ] No errors in logs
 
 ### Quality
+
 - [ ] Three cache layers all working
 - [ ] Cache files created on disk
 - [ ] Documentation updated
@@ -584,6 +622,7 @@ After migration is complete, verify:
 ## Ready to Execute?
 
 Review the design and plan, then:
+
 1. Confirm you want to proceed
 2. Execute Phase 1 (git commit current state)
 3. Proceed phase by phase

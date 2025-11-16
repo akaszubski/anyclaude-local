@@ -7,9 +7,9 @@
 
 An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of:
 
-- **Local models** (vLLM-MLX auto-launch, LMStudio) for 100% privacy
+- **Local models** (MLX-Textgen auto-launch, LMStudio) for 100% privacy
 - **OpenRouter** for access to 400+ cloud models at 84% lower cost than Claude API
-- **Fast inference on Apple Silicon** with vLLM-MLX's automatic prompt caching
+- **Fast inference on Apple Silicon** with MLX-Textgen's working KV caching (10-90x speedup)
 
 ## ✨ Features
 
@@ -17,7 +17,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 - 🏠 **100% Local** - No cloud API keys required
 - 🔒 **Privacy First** - Your code never leaves your machine
-- ⚡ **vLLM-MLX Support** - Auto-launches server, prompt caching (40-50% faster), tool calling
+- ⚡ **MLX-Textgen Support** - Auto-launches server, working KV caching (10-90x speedup), tool calling
 - 🧩 **LMStudio Support** - Works with Qwen Coder, Mistral, Llama, DeepSeek
 
 ### Cloud Models (Cost Effective)
@@ -38,9 +38,17 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 ---
 
-## 🆕 Latest Improvements (v2.1.0)
+## 🆕 Latest Improvements (v2.2.0)
 
-### ✅ Streaming Response Fixes
+### ✅ MLX-Textgen Migration (MAJOR Performance Boost)
+
+- **Replaced**: Custom vllm-mlx-server.py (1400 lines) → MLX-Textgen (production-ready pip package)
+- **Performance**: First requests ~3s (was ~50s), follow-ups **~0.5s** (was ~50s)
+- **KV Caching**: Now working! 10-90x speedup on multi-turn conversations
+- **Simplified**: Less code to maintain, better reliability
+- **Added**: Disk-based multi-slot cache (doesn't overwrite previous caches)
+
+### ✅ Streaming Response Fixes (v2.1.0)
 
 - **Fixed**: Message_stop safeguard now ensures responses always complete (never hang)
 - **Added**: Fallback message_stop in flush() callback for edge cases

@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for vLLM-MLX.
+anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for MLX-Textgen.
 
-**Primary Backend**: vLLM-MLX (fast, efficient, supports tool calling and prompt caching)
+**Primary Backend**: MLX-Textgen (production-grade, working KV caching, 10-90x faster follow-ups)
 
 **Legacy Support**: LMStudio (manual connection only, no auto-launch)
 
@@ -158,20 +158,24 @@ If you notice files out of place:
 
 The proxy works by:
 
-1. Spawning a local HTTP server that mimics the Anthropic API
-2. Intercepting `/v1/messages` requests
-3. Converting Anthropic message format to OpenAI Chat Completions format
-4. Routing to LMStudio (via OpenAI SDK with `compatibility: 'legacy'`)
-5. Converting responses back to Anthropic format
-6. Setting `ANTHROPIC_BASE_URL` to point Claude Code at the proxy
+1. Auto-launching MLX-Textgen server (production-grade MLX inference with KV caching)
+2. Spawning a local HTTP server that mimics the Anthropic API
+3. Intercepting `/v1/messages` requests
+4. Converting Anthropic message format to OpenAI Chat Completions format
+5. Routing to MLX-Textgen (or other backends like LMStudio, OpenRouter)
+6. Converting responses back to Anthropic format
+7. Setting `ANTHROPIC_BASE_URL` to point Claude Code at the proxy
+
+**Performance:** MLX-Textgen provides 10-90x speedup on follow-up requests via disk-based KV caching.
 
 Key components:
 
-- `src/main.ts`: Entry point that configures LMStudio provider and spawns Claude with proxy
+- `src/main.ts`: Entry point that configures backend provider and spawns Claude with proxy
 - `src/anthropic-proxy.ts`: HTTP server that handles request/response translation
+- `src/server-launcher.ts`: Auto-launch orchestration for MLX-Textgen
 - `src/convert-anthropic-messages.ts`: Bidirectional message format conversion
 - `src/convert-to-anthropic-stream.ts`: Stream response conversion
-- `src/json-schema.ts`: Schema adaptation for LMStudio
+- `scripts/mlx-textgen-server.sh`: MLX-Textgen launcher script
 
 See [PROJECT.md](PROJECT.md) for complete architectural deep-dive.
 
@@ -242,6 +246,7 @@ If a user reports tool calling problems with a local model:
    - Stream conversion messages showing what format was detected
 
 **Common issues**:
+
 - Model outputs custom format instead of OpenAI tool calls (e.g., commentary format)
 - Model not trained on tool calling
 - vllm-mlx chat template not configured for tool calling
@@ -260,6 +265,7 @@ If a user reports tool calling problems with a local model:
   - Can fail with complex nested JSON
 
 **Recommended Models for Tool Calling**:
+
 - ✅ Qwen 2.5 72B (via OpenRouter)
 - ✅ GLM-4.6 (via OpenRouter)
 - ✅ Claude 3.5 Sonnet (via `--mode=claude`)

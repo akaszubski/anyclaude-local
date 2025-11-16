@@ -82,6 +82,7 @@ Configuration:
 When reporting an issue:
 
 1. **Run with debug logging**:
+
    ```bash
    ANYCLAUDE_DEBUG=2 anyclaude
    # Reproduce the issue
@@ -89,6 +90,7 @@ When reporting an issue:
    ```
 
 2. **Find the log file**:
+
    ```bash
    ls -lt ~/.anyclaude/logs/debug-session-*.log | head -1
    ```
@@ -99,6 +101,7 @@ When reporting an issue:
    ```
 
 Claude will analyze:
+
 - ✅ Model and backend configuration
 - ✅ Tool schemas sent to the model
 - ✅ Model's actual response format
@@ -110,6 +113,7 @@ Claude will analyze:
 ### Tool Calling Not Working
 
 **What to look for:**
+
 ```bash
 # Check if tools are being sent
 grep "tools.*function" debug-session-*.log
@@ -126,6 +130,7 @@ grep "ERROR\|error" debug-session-*.log
 ### Streaming Truncated
 
 **What to look for:**
+
 ```bash
 # Check for backpressure messages
 grep "Backpressure\|buffer" debug-session-*.log
@@ -139,6 +144,7 @@ grep "timeout\|finish" debug-session-*.log
 ### Server Startup Failures
 
 **What to look for:**
+
 ```bash
 # Check server launch logs
 grep "server-launcher\|vllm-mlx" debug-session-*.log
@@ -150,6 +156,7 @@ tail ~/.anyclaude/logs/vllm-mlx-server.log
 ### Connection Timeouts
 
 **What to look for:**
+
 ```bash
 # Check timeout configuration
 grep "timeout\|Request timeout" debug-session-*.log

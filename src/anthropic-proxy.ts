@@ -559,15 +559,17 @@ export const createAnthropicProxy = ({
           modelInfoQueried = true;
 
           // Determine which backend URL to query based on mode and config
-          const backendUrlToQuery = backendUrl || (() => {
-            // Fallback: try to determine from provider name
-            if (providerName === "lmstudio") {
-              return process.env.LMSTUDIO_URL || "http://localhost:1234";
-            } else if (providerName === "vllm-mlx") {
-              return process.env.VLLM_MLX_URL || "http://localhost:8081";
-            }
-            return "http://localhost:1234"; // Conservative default
-          })();
+          const backendUrlToQuery =
+            backendUrl ||
+            (() => {
+              // Fallback: try to determine from provider name
+              if (providerName === "lmstudio") {
+                return process.env.LMSTUDIO_URL || "http://localhost:1234";
+              } else if (providerName === "vllm-mlx") {
+                return process.env.VLLM_MLX_URL || "http://localhost:8081";
+              }
+              return "http://localhost:1234"; // Conservative default
+            })();
 
           try {
             debug(
@@ -581,16 +583,14 @@ export const createAnthropicProxy = ({
 
             if (modelInfo) {
               cachedModelName = modelInfo.name;
-              debug(
-                1,
-                `[Backend Query] Detected model: ${modelInfo.name}`
-              );
+              debug(1, `[Backend Query] Detected model: ${modelInfo.name}`);
 
               // vLLM-MLX and most OpenAI-compatible servers don't return context in /v1/models
               // Try LMStudio-specific API if available (has context length)
               if (providerName === "lmstudio") {
                 try {
-                  const contextLength = await getModelContextLength(backendUrlToQuery);
+                  const contextLength =
+                    await getModelContextLength(backendUrlToQuery);
                   if (contextLength) {
                     cachedContextLength = contextLength;
                     debug(
@@ -1258,7 +1258,8 @@ export const createAnthropicProxy = ({
               lastTokenTime &&
               finalUsageData?.output_tokens
             ) {
-              const generationDuration = (lastTokenTime - firstTokenTime) / 1000; // Convert to seconds
+              const generationDuration =
+                (lastTokenTime - firstTokenTime) / 1000; // Convert to seconds
               if (generationDuration > 0) {
                 tokensPerSecond =
                   finalUsageData.output_tokens / generationDuration;

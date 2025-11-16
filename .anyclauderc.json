@@ -13,8 +13,8 @@
       "apiKey": "vllm-mlx",
       "model": "/Users/andrewkaszubski/Models/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
       "maxTokens": 262144,
-      "serverScript": "scripts/vllm-mlx-server.py",
-      "description": "vLLM-MLX - high-performance inference server with Qwen3-Coder-30B (better tool calling)"
+      "serverScript": "scripts/mlx-textgen-server.sh",
+      "description": "MLX-Textgen - production-grade server with working KV caching (10-20x faster follow-ups)"
     },
     "lmstudio": {
       "enabled": true,

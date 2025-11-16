@@ -29,11 +29,13 @@ All templates located in `.github/ISSUE_TEMPLATE/`
 **GPT-OSS-20B Specific Issue** (v2.1.1):
 
 ✅ **Single-turn tool calling works**:
+
 - First tool call: `Read(README.md)` - SUCCESS
 - JSON extracted correctly: `{"file_path":"/path/to/README.md"}`
 - Harmony format parsing: ✅ WORKING
 
 ❌ **Multi-turn tool calling fails**:
+
 - After successful first call, model receives tool results
 - Model gets confused by error messages
 - Starts generating invalid parameters: `{"file?":"?"}`, `{"path?":"?"}`

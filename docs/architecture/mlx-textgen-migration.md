@@ -9,6 +9,7 @@
 Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** server to enable working KV caching and 10-20x performance improvement for follow-up requests.
 
 **Expected Performance:**
+
 - First request: ~45-50s (builds cache)
 - Follow-up requests: **2-5s** (vs current 45-50s)
 - 10-20x speedup on repeated contexts
@@ -50,6 +51,7 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
 ### Current Issues
 
 **vllm-mlx-server.py problems:**
+
 1. ❌ **KV caching broken** - `mlx_lm` Python API for caching doesn't exist
 2. ⚠️ **Complex tool calling** - 200+ lines of manual parsing (Harmony, Qwen XML formats)
 3. ⚠️ **Single-threaded** - GPU lock prevents parallel requests
@@ -57,6 +59,7 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
 5. ⚠️ **Performance** - No KV caching = slow follow-up requests (45-50s each)
 
 **What works well:**
+
 1. ✅ Client-side caching (84.6% token savings)
 2. ✅ Response caching (42.9% hit rate)
 3. ✅ Multi-backend abstraction
@@ -99,6 +102,7 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
 ### New Benefits
 
 **MLX-Textgen advantages:**
+
 1. ✅ **Working KV caching** - 10-20x speedup on follow-up requests
 2. ✅ **Multi-slot disk cache** - Doesn't overwrite previous caches
 3. ✅ **Native tool calling** - No manual parsing needed
@@ -107,6 +111,7 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
 6. ✅ **Simpler** - 1400 lines → `pip install mlx-textgen`
 
 **anyclaude proxy still provides:**
+
 1. ✅ Anthropic API compatibility (MLX-Textgen doesn't speak Anthropic format)
 2. ✅ Client-side caching layer (token reduction)
 3. ✅ Multi-backend abstraction (switch backends seamlessly)
@@ -121,18 +126,21 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
 After migration, you'll have **three working cache layers**:
 
 ### Layer 1: Client-Side (anyclaude proxy)
+
 **Location:** `src/prompt-cache.ts`
 **What:** Hashes system prompt + tools, reuses across requests
 **Savings:** 84.6% token transmission reduction
 **Speed:** Minimal impact (hash lookup)
 
 ### Layer 2: Response Cache (anyclaude proxy)
+
 **Location:** `src/anthropic-proxy.ts` (PromptCache class)
 **What:** Caches complete JSON responses by request hash
 **Savings:** 42.9% hit rate (identical requests)
 **Speed:** Instant (disk I/O)
 
 ### Layer 3: MLX KV Cache (MLX-Textgen)
+
 **Location:** MLX-Textgen's cache directory
 **What:** Caches model's key-value computations (the heavy part!)
 **Savings:** 10-20x speedup on prefix reuse
@@ -145,12 +153,14 @@ After migration, you'll have **three working cache layers**:
 ## Migration Strategy
 
 ### Phase 1: Preparation ✓
+
 - [x] Design new architecture
 - [ ] Commit current working state to git
 - [ ] Create backup of `vllm-mlx-server.py`
 - [ ] Document current performance metrics
 
 ### Phase 2: Installation & Testing
+
 - [ ] Install MLX-Textgen: `pip install mlx-textgen`
 - [ ] Test standalone with Qwen3-Coder-30B
 - [ ] Verify tool calling works
@@ -158,6 +168,7 @@ After migration, you'll have **three working cache layers**:
 - [ ] Test KV cache persistence
 
 ### Phase 3: Integration
+
 - [ ] Create new `scripts/mlx-textgen-server.sh` launcher
 - [ ] Update `.anyclauderc.json` configuration
 - [ ] Update `src/main.ts` to support MLX-Textgen
@@ -165,6 +176,7 @@ After migration, you'll have **three working cache layers**:
 - [ ] Test auto-launch/shutdown
 
 ### Phase 4: Testing
+
 - [ ] Test tool calling with Claude Code
 - [ ] Test multi-turn conversations (KV cache reuse)
 - [ ] Test backend switching (MLX-Textgen ↔ LMStudio ↔ OpenRouter)
@@ -172,6 +184,7 @@ After migration, you'll have **three working cache layers**:
 - [ ] Performance benchmarks
 
 ### Phase 5: Cleanup & Documentation
+
 - [ ] Archive `vllm-mlx-server.py` → `scripts/archive/`
 - [ ] Update README.md
 - [ ] Update CLAUDE.md
@@ -183,6 +196,7 @@ After migration, you'll have **three working cache layers**:
 ## Configuration Changes
 
 ### Current `.anyclauderc.json`:
+
 ```json
 {
   "backend": "vllm-mlx",
@@ -199,6 +213,7 @@ After migration, you'll have **three working cache layers**:
 ```
 
 ### Proposed `.anyclauderc.json`:
+
 ```json
 {
   "backend": "vllm-mlx",
@@ -237,6 +252,7 @@ anyclaude --mode=vllm-mlx
 ```
 
 All changes are isolated to:
+
 - `.anyclauderc.json` (config)
 - `scripts/mlx-textgen-server.sh` (new launcher)
 - `scripts/vllm-mlx-server.py` (archived, not deleted)
@@ -248,18 +264,21 @@ Your proxy code (`src/`) remains **unchanged**.
 ## Success Criteria
 
 **Performance:**
+
 - [ ] First request: ≤60s (acceptable for cache creation)
 - [ ] Follow-up requests: ≤5s (10x faster than current 45-50s)
 - [ ] Tool calling works (Read, Write, Edit, Bash, etc.)
 - [ ] No errors in logs
 
 **Functionality:**
+
 - [ ] All backends still work (vllm-mlx, lmstudio, openrouter, claude)
 - [ ] Auto-launch/shutdown works
 - [ ] Multi-turn conversations work
 - [ ] Three cache layers all working
 
 **Quality:**
+
 - [ ] No regressions (existing features still work)
 - [ ] Documentation updated
 - [ ] Git history clean
@@ -282,15 +301,18 @@ Your proxy code (`src/`) remains **unchanged**.
 ## Dependencies
 
 ### New:
+
 - `mlx-textgen` (Python package)
   - Includes: `mlx-lm`, `mlx-vlm`, `Outlines`, `FastAPI`
 
 ### Unchanged:
+
 - `@anthropic-ai/sdk`
 - `@ai-sdk/openai-compatible`
 - All existing anyclaude dependencies
 
 ### No Conflicts:
+
 MLX-Textgen uses standard dependencies that won't conflict with existing setup.
 
 ---
@@ -298,18 +320,21 @@ MLX-Textgen uses standard dependencies that won't conflict with existing setup.
 ## Risk Assessment
 
 **Low Risk:**
+
 - MLX-Textgen is production-ready (actively maintained)
 - No changes to proxy layer (proven to work)
 - Easy rollback (just config changes)
 - Standalone testing before integration
 
 **Medium Risk:**
+
 - MLX-Textgen may have different tool calling format
   - **Mitigation:** Test extensively before committing
 - Performance may vary with different models
   - **Mitigation:** Benchmark with Qwen3-30B specifically
 
 **High Risk:**
+
 - None identified
 
 ---

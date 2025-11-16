@@ -236,7 +236,9 @@ export function displayDebugStartup(): void {
 
     // Only show log file path, keep screen clean
     if (debugLogPath) {
-      process.stderr.write(`[anyclaude] Debug mode (level ${level}): ${debugLogPath}\n`);
+      process.stderr.write(
+        `[anyclaude] Debug mode (level ${level}): ${debugLogPath}\n`
+      );
     }
   }
 }

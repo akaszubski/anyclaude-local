@@ -14,18 +14,22 @@ When Claude Code requests the model to call a tool, the model should output Open
 
 ```json
 {
-  "choices": [{
-    "delta": {
-      "tool_calls": [{
-        "id": "call_abc123",
-        "type": "function",
-        "function": {
-          "name": "Read",
-          "arguments": "{\"file_path\":\"/path/to/file.md\"}"
-        }
-      }]
+  "choices": [
+    {
+      "delta": {
+        "tool_calls": [
+          {
+            "id": "call_abc123",
+            "type": "function",
+            "function": {
+              "name": "Read",
+              "arguments": "{\"file_path\":\"/path/to/file.md\"}"
+            }
+          }
+        ]
+      }
     }
-  }]
+  ]
 }
 ```
 
@@ -51,6 +55,7 @@ The model outputs a custom "commentary channel" format:
 ```
 
 This format:
+
 - ❌ Is not valid OpenAI tool calling
 - ❌ Is not parsed by anyclaude's conversion logic
 - ❌ Gets displayed to Claude Code as text instead of executing as a tool
@@ -69,6 +74,7 @@ Backend URL: http://localhost:8081/v1
 ```
 
 **Questions to answer:**
+
 - [ ] Is the correct model loaded? (gpt-oss-20b-5bit)
 - [ ] Is vllm-mlx backend being used?
 - [ ] Is the server responding on the expected port?
@@ -78,11 +84,13 @@ Backend URL: http://localhost:8081/v1
 Search debug log for tool definitions sent in request.
 
 **Look for:**
+
 - `[ANYCLAUDE DEBUG]` messages with tool schemas
 - Count of tools sent (should be ~17: Read, Write, Edit, Bash, etc.)
 - JSON schema format for each tool
 
 **Questions to answer:**
+
 - [ ] Are tools being sent in OpenAI format (`{"type": "function", "function": {...}}`)?
 - [ ] Are the schemas valid and complete?
 - [ ] Are there any schema transformations applied (union types, etc.)?
@@ -92,11 +100,13 @@ Search debug log for tool definitions sent in request.
 Search for the model's actual output in the log.
 
 **Look for:**
+
 - `[Stream Conversion]` messages showing raw chunks
 - Text output from the model
 - Any tool_calls in the response
 
 **Questions to answer:**
+
 - [ ] Does the model output `tool_calls` at all?
 - [ ] Does it output text with the commentary format?
 - [ ] When in the stream does this happen?
@@ -107,6 +117,7 @@ Search for the model's actual output in the log.
 **Hypothesis**: The model may not recognize the tool calling format expected by vllm-mlx.
 
 **Questions to answer:**
+
 - [ ] Does the model support OpenAI tool calling format?
 - [ ] Does it use a different chat template?
 - [ ] Is there a system prompt needed to enable tool calling?
@@ -115,10 +126,12 @@ Search for the model's actual output in the log.
 ### 5. Compare with Working Models
 
 Reference: `docs/debugging/tool-calling-fix.md` states:
+
 - ✅ Qwen3-Coder-30B works perfectly
 - ✅ GPT-OSS-20B works perfectly (supposedly)
 
 **Questions to answer:**
+
 - [ ] What's different about this gpt-oss-20b-5bit vs the tested version?
 - [ ] Is this a quantization issue? (5-bit vs full precision)
 - [ ] Is this a model version issue?
@@ -147,11 +160,13 @@ grep "tool_use" ~/.anyclaude/logs/debug-session-*.log
 Look at what the model outputs and compare to:
 
 **OpenAI format** (expected):
+
 ```json
-{"tool_calls": [{"function": {"name": "Read", "arguments": "..."}}]}
+{ "tool_calls": [{ "function": { "name": "Read", "arguments": "..." } }] }
 ```
 
 **Commentary format** (actual):
+
 ```
 <|channel|>commentary to=functions.Read...
 ```
@@ -161,22 +176,27 @@ Look at what the model outputs and compare to:
 Classify the issue into one of these categories:
 
 #### A. Model Doesn't Support Tool Calling
+
 - Model was not trained on tool calling
 - Solution: Document limitation, recommend different model
 
 #### B. Model Uses Different Format
+
 - Model expects different prompt structure
 - Solution: Add model-specific adapter in `src/convert-anthropic-messages.ts`
 
 #### C. vllm-mlx Configuration Issue
+
 - Server needs different parameters
 - Solution: Update vllm-mlx server launch options in `scripts/vllm-mlx-server.py`
 
 #### D. Schema Transformation Issue
+
 - Tool schemas are being mangled by `src/json-schema.ts`
 - Solution: Fix schema conversion for this model
 
 #### E. Chat Template Issue
+
 - Model needs specific chat template for tool calling
 - Solution: Configure chat template in vllm-mlx launch
 
@@ -185,6 +205,7 @@ Classify the issue into one of these categories:
 Based on root cause category, test solutions:
 
 **For A (Model limitation):**
+
 ```bash
 # Test with known working model
 ANYCLAUDE_DEBUG=2 anyclaude --mode=vllm-mlx
@@ -192,24 +213,28 @@ ANYCLAUDE_DEBUG=2 anyclaude --mode=vllm-mlx
 ```
 
 **For B (Different format):**
+
 ```bash
 # Check model card/docs for expected tool format
 # Search for gpt-oss-20b tool calling examples
 ```
 
 **For C (Server config):**
+
 ```bash
 # Try different vllm-mlx launch options
 python scripts/vllm-mlx-server.py --model /path/to/model --enable-tool-calling
 ```
 
 **For D (Schema issue):**
+
 ```bash
 # Add debug logging to json-schema.ts to see transformations
 # Check if union types are being handled correctly
 ```
 
 **For E (Chat template):**
+
 ```bash
 # Check what chat template is being used
 curl http://localhost:8081/v1/models
@@ -225,7 +250,8 @@ Some models need specific system prompts to enable tool calling:
 ```typescript
 // In src/convert-anthropic-messages.ts
 if (modelName.includes("gpt-oss")) {
-  systemPrompt += "\n\nYou have access to tools. When calling a tool, output valid JSON in this format: {\"tool_calls\": [...]}";
+  systemPrompt +=
+    '\n\nYou have access to tools. When calling a tool, output valid JSON in this format: {"tool_calls": [...]}';
 }
 ```
 
@@ -263,6 +289,7 @@ If model doesn't support tool calling, document it:
 ## Tested Models
 
 ### gpt-oss-20b-5bit ❌
+
 - Tool calling: NOT SUPPORTED
 - Reason: Model outputs custom commentary format instead of OpenAI tool calls
 - Workaround: Use text-based commands instead
@@ -280,6 +307,7 @@ The fix is successful when:
 5. ✅ Model can continue the conversation with the result
 
 **Test case:**
+
 ```
 User: "Read README.md and summarize"
 Expected: Tool executes, file is read, summary is provided
@@ -297,6 +325,7 @@ When analyzing the debug log:
 5. **Compare to working models** - what's different?
 
 The debug log will have ALL the information needed. Look for:
+
 - Request body with tools array
 - Response with model output
 - Stream conversion messages showing what format was detected

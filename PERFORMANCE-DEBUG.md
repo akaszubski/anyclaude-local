@@ -85,6 +85,7 @@ This tells us if LMStudio itself is slow or if anyclaude adds overhead.
 ```
 
 **KEY QUESTION:** Is the slow model also slow in LMStudio's own UI?
+
 - **If YES** → LMStudio/model is the bottleneck, not anyclaude
 - **If NO** → anyclaude proxy is adding overhead
 
@@ -147,6 +148,7 @@ ANYCLAUDE_DEBUG=0 time anyclaude
 ### Scenario A: LMStudio is the bottleneck
 
 **Symptoms:**
+
 - Slow model shows many `[Keepalive]` messages (3+)
 - Slow model is ALSO slow in LMStudio's own chat UI
 - Same prompt size for both models
@@ -155,6 +157,7 @@ ANYCLAUDE_DEBUG=0 time anyclaude
 Large models (42B) need more compute to process prompts than small models (20B). This is normal. LMStudio needs ~30-60 seconds to process a large prompt with a large model.
 
 **Solution:**
+
 - Switch to vLLM-MLX (faster inference engine)
 - Use smaller context (reduce system prompt size)
 - Use smaller model
@@ -163,6 +166,7 @@ Large models (42B) need more compute to process prompts than small models (20B).
 ### Scenario B: anyclaude proxy is the bottleneck
 
 **Symptoms:**
+
 - Similar keepalive counts for both models
 - Slow model is FAST in LMStudio's chat UI
 - Slow model generates many more chunks (reasoning tokens)
@@ -171,6 +175,7 @@ Large models (42B) need more compute to process prompts than small models (20B).
 Thinking models generate reasoning tokens before the answer. Each token goes through anyclaude's stream conversion, which adds overhead.
 
 **Solutions:**
+
 - Disable debug logging (`ANYCLAUDE_DEBUG=0`)
 - Optimize stream conversion (batch chunks)
 - Consider direct vLLM-MLX connection
@@ -178,6 +183,7 @@ Thinking models generate reasoning tokens before the answer. Each token goes thr
 ### Scenario C: Large context window is the issue
 
 **Symptoms:**
+
 - Prompt size is much larger than expected (>50KB)
 - Long conversation history accumulating
 - Many tools defined (Claude Code sends 10+ tools)
@@ -187,6 +193,7 @@ Thinking models generate reasoning tokens before the answer. Each token goes thr
 Your qwen3-42b-thinking model has 262K context vs gpt-oss-20b likely has 8-32K context.
 
 When Claude Code sends a request with:
+
 - Large system prompt (~5-10K tokens)
 - 10-15 tool definitions (~3-5K tokens)
 - Conversation history (grows over time)
@@ -196,6 +203,7 @@ When Claude Code sends a request with:
 Small models hit their context limit and effectively ignore older messages. Large models process everything.
 
 **Solutions:**
+
 - Start a fresh Claude Code conversation (type `/exit` then relaunch)
 - Check actual prompt size being sent (Test 3 above)
 - Consider if you need 262K context for simple coding tasks

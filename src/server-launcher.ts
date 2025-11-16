@@ -15,6 +15,7 @@ interface ServerLauncherConfig {
   model?: string;
   baseUrl?: string;
   pythonVenv?: string;
+  serverScript?: string;
 }
 
 /**
@@ -118,7 +119,7 @@ export function startLMStudioServer(config: ServerLauncherConfig): void {
 export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const port = config.port || 8081;
   const modelPath = config.model;
-  const serverScript = "scripts/vllm-mlx-server.py";
+  const serverScript = config.serverScript || "scripts/vllm-mlx-server.py";
   const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
 
   // Return early if no model path - user must provide model path for auto-launch
@@ -175,16 +176,21 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   }
 
   // Log file for server output (helps with debugging)
-  const logFile = path.join(logDir, "vllm-mlx-server.log");
+  const logFile = path.join(logDir, "mlx-textgen-server.log");
   const logStream = fs.createWriteStream(logFile, { flags: "a" });
   logStream.write(
-    `\n=== vLLM-MLX Server Started at ${new Date().toISOString()} ===\n`
+    `\n=== MLX Server Started at ${new Date().toISOString()} ===\n`
   );
 
-  // Build command to activate venv and start vLLM-MLX
-  // Redirect stderr to stdout so we capture all output
-  // Disable macOS crash reporting dialog with PYTHONUNBUFFERED and disabling crash handler
-  const command = `source ${activateScript} && PYTHONUNBUFFERED=1 python3 ${serverScriptPath} --model "${modelPath}" --port ${port} 2>&1`;
+  // Build command based on script type
+  let command: string;
+  if (serverScriptPath.endsWith(".sh")) {
+    // Shell script launcher (MLX-Textgen)
+    command = `bash ${serverScriptPath} "${modelPath}" ${port} "${logFile}" 2>&1`;
+  } else {
+    // Python script launcher (legacy vllm-mlx-server.py)
+    command = `source ${activateScript} && PYTHONUNBUFFERED=1 python3 ${serverScriptPath} --model "${modelPath}" --port ${port} 2>&1`;
+  }
 
   const serverProcess = spawn("bash", ["-c", command], {
     stdio: ["ignore", "pipe", "pipe"],
@@ -339,7 +345,7 @@ export async function waitForServerReady(
         `[anyclaude] Exit code: ${exitCode}${signal ? ` (signal: ${signal})` : ""}`
       );
       console.error(
-        `[anyclaude] Check logs at: ${path.join(os.homedir(), ".anyclaude", "logs", "vllm-mlx-server.log")}`
+        `[anyclaude] Check logs at: ${path.join(os.homedir(), ".anyclaude", "logs", "mlx-textgen-server.log")}`
       );
       return false;
     }
