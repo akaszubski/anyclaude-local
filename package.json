@@ -82,9 +82,10 @@
     "test:regression:timeout": "node tests/regression/test_message_stop_timeout_fix.js",
     "test:regression:logging": "node tests/regression/test_request_logging_fix.js",
     "test:regression:system-prompt": "node tests/regression/test_system_prompt_regression.js",
-    "test:integration": "npm run test:integration:format && npm run test:integration:cache",
+    "test:integration": "npm run test:integration:format && npm run test:integration:cache && npm run test:integration:tools",
     "test:integration:format": "node tests/integration/test_claude_code_e2e.js",
     "test:integration:cache": "node tests/integration/test_genai_cache_validation.js",
+    "test:integration:tools": "node tests/integration/test-proxy-tool-integration.js",
     "typecheck": "tsc --noEmit",
     "fmt": "prettier --write .",
     "install:global": "npm run build && npm pack --silent && npm install -g anyclaude-*.tgz"

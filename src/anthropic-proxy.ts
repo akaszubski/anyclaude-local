@@ -14,6 +14,7 @@ import {
 import { convertToAnthropicStream } from "./convert-to-anthropic-stream";
 import { convertToLanguageModelMessage } from "./convert-to-language-model-prompt";
 import { providerizeSchema } from "./json-schema";
+import { convertAnthropicToolsToOpenAI } from "./tool-schema-converter";
 import {
   writeDebugToTempFile,
   logDebugError,
@@ -39,6 +40,7 @@ import {
 } from "./cache-metrics";
 import { getCachedPrompt, getCacheStats } from "./prompt-cache";
 import { getCacheMonitor } from "./cache-monitor-dashboard";
+import { extractMarkers } from "./cache-control-extractor";
 import { getTimeoutConfig } from "./timeout-config";
 import { createHash } from "crypto";
 
@@ -461,6 +463,21 @@ export const createAnthropicProxy = ({
         // FIX #3: Log the request for observability and debugging
         logRequest(body, providerName, model);
 
+        // Extract cache_control markers for backend caching
+        const cacheMarkers = extractMarkers(body);
+        if (cacheMarkers.hasSystemCache && isVerboseDebugEnabled()) {
+          debug(
+            2,
+            `[Cache Control] Detected cacheable content:`,
+            {
+              systemCache: cacheMarkers.hasSystemCache,
+              userBlocks: cacheMarkers.cacheableUserBlocks,
+              estimatedTokens: cacheMarkers.estimatedCacheTokens,
+              cacheKey: cacheMarkers.cacheKey?.substring(0, 16) + '...',
+            }
+          );
+        }
+
         const provider = providers[providerName];
         if (!provider) {
           throw new Error(`Provider not configured: ${providerName}`);
@@ -514,6 +531,19 @@ export const createAnthropicProxy = ({
               input_schema: tool.input_schema,
             });
           });
+
+          // Log OpenAI conversion for verification (using integrated tool-schema-converter)
+          try {
+            const openAITools = convertAnthropicToolsToOpenAI(body.tools as any);
+            debug(3, `[Tools] OpenAI format conversion:`, {
+              count: openAITools.length,
+              sample: openAITools[0], // Show first tool as example
+            });
+          } catch (err) {
+            debug(3, `[Tools] OpenAI conversion failed:`, {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
         }
 
         // Sort tools by name for deterministic cache keys

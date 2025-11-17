@@ -17,7 +17,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 - 🏠 **100% Local** - No cloud API keys required
 - 🔒 **Privacy First** - Your code never leaves your machine
-- ⚡ **MLX-Textgen Support** - Auto-launches server, working KV caching (10-90x speedup), tool calling
+- ⚡ **MLX-Textgen Support** - Auto-launches server (KV caching works but tool calling fails - see Known Limitations)
 - 🧩 **LMStudio Support** - Works with Qwen Coder, Mistral, Llama, DeepSeek
 
 ### Cloud Models (Cost Effective)
@@ -40,13 +40,13 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 ## 🆕 Latest Improvements (v2.2.0)
 
-### ✅ MLX-Textgen Migration (MAJOR Performance Boost)
+### ⚠️ MLX-Textgen Migration (Incomplete)
 
 - **Replaced**: Custom vllm-mlx-server.py (1400 lines) → MLX-Textgen (production-ready pip package)
-- **Performance**: First requests ~3s (was ~50s), follow-ups **~0.5s** (was ~50s)
-- **KV Caching**: Now working! 10-90x speedup on multi-turn conversations
-- **Simplified**: Less code to maintain, better reliability
-- **Added**: Disk-based multi-slot cache (doesn't overwrite previous caches)
+- **KV Caching**: Works in standalone testing (0.5s follow-ups vs 50s)
+- **Tool Calling**: DOES NOT WORK - makes it unusable for Claude Code
+- **Status**: Migration complete but not practical for real use
+- **Recommendation**: Use `--mode=claude` or `--mode=openrouter` for actual work
 
 ### ✅ Streaming Response Fixes (v2.1.0)
 
@@ -74,6 +74,67 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 - **Added**: Deterministic tool ordering for consistent cache hits
 - **Result**: 60-85% cache hit rate (vs 20-30% before), 30-50% token cost reduction
 
+### ✅ Production Hardening (Phase 3)
+
+Production-grade error recovery, metrics monitoring, and configuration validation:
+
+**ErrorHandler - Graceful Error Recovery**
+
+- Automatic cache disabling after 5 consecutive errors (prevents error storms)
+- Auto-recovery when 10 consecutive requests succeed (re-enables cache)
+- OOM detection with automatic cache clearing to free memory
+- Network retry with exponential backoff (3 retries, configurable delays)
+- Error message sanitization to prevent path disclosure
+- Thread-safe error tracking for concurrent requests
+
+**MetricsCollector - Real-Time Performance Monitoring**
+
+- Cache hit/miss tracking (calculate hit rates)
+- Latency percentiles: P50, P95, P99 (with linear interpolation)
+- Memory monitoring: current, peak, and growth metrics
+- Throughput calculation: requests per second
+- Dual export formats: JSON (for dashboards) and Prometheus (for Grafana)
+- Thread-safe with minimal lock contention
+
+**ConfigValidator - Pre-Startup Validation**
+
+- Environment variable validation (type, range, required checks)
+- Model path validation (existence, permissions, required files)
+- Port conflict detection (privilege level warnings for ports < 1024)
+- Dependency version checking (installed and meets minimum version)
+- Comprehensive configuration validation on server startup
+
+**New `/v1/metrics` Endpoint**
+
+- Real-time performance metrics: `GET /v1/metrics`
+- JSON format: `GET /v1/metrics?format=json`
+- Prometheus format: `GET /v1/metrics?format=prometheus`
+- Zero overhead when not queried
+
+**Example Usage:**
+
+```bash
+# Monitor cache hit rate
+curl http://localhost:8080/v1/metrics | jq '.cache.hit_rate'
+
+# Get P99 latency for SLA monitoring
+curl http://localhost:8080/v1/metrics | jq '.latency.p99_ms'
+
+# Export to Prometheus for Grafana
+curl http://localhost:8080/v1/metrics?format=prometheus
+```
+
+**Test Coverage**: 151 tests across 3 modules + integration tests
+- ErrorHandler: 44 unit tests (cache degradation, OOM recovery, network retry, error sanitization)
+- MetricsCollector: 52 unit tests (cache tracking, latency calculation, memory monitoring, throughput)
+- ConfigValidator: 60 unit tests (port validation, env vars, model paths, dependencies)
+- Integration: 18 tests for `/v1/metrics` endpoint (JSON, Prometheus, real-time updates)
+- Stability: 100-request stress test suite
+
+**Status**: Production-ready (all 151 tests pass, zero security issues)
+
+See [Production Hardening API Reference](docs/reference/production-hardening-api.md) for complete documentation.
+
 ---
 
 ## 🧪 Tested Configuration
@@ -100,6 +161,57 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 - OpenAI Chat Completions API compatibility required
 
 **Your Mileage May Vary:** Performance depends heavily on your specific hardware. Models requiring more VRAM than available will need quantization or won't run at all.
+
+---
+
+## ⚠️ Known Limitations
+
+### MLX-Textgen Tool Calling (v2.2.0)
+
+**Status:** Tool calling does NOT work with local MLX models via MLX-Textgen
+
+**What Works:**
+
+- ✅ Basic text generation (simple Q&A without tools)
+- ✅ KV caching in standalone testing (0.5s follow-ups)
+- ✅ Server auto-launch and model loading
+- ✅ 131K context window (Hermes-3)
+
+**What Doesn't Work:**
+
+- ❌ Tool calling (Read, Write, Edit, Bash, etc.)
+- ❌ Claude Code's interactive file operations
+
+**Models Tested (All Failed):**
+
+- Qwen3-Coder-30B → XML format incompatible, infinite loop
+- OpenAI GPT OSS 20B/120B → MLX-Textgen crashes ("None has no element 0")
+- Hermes-3-Llama-3.1-8B → Stream hangs after 2 tokens
+
+**Root Cause:** MLX-Textgen's tool calling implementation is incompatible with anyclaude's stream converter, even for models documented to support tool calling.
+
+**Workaround:**
+
+```bash
+# Use real Claude API for tool calling tasks
+anyclaude --mode=claude
+
+# Use MLX-Textgen for fast text generation
+anyclaude --mode=vllm-mlx
+```
+
+**Alternative:** Use OpenRouter with GLM-4.6 ($0.60/$2 per 1M tokens) which has working tool calling at 80% lower cost than Claude API.
+
+---
+
+## 🧪 Tool Calling Testing Infrastructure (Phase 1.2)
+
+New tool calling verification framework (TDD RED phase - tests written, implementation pending):
+
+- **Modules**: `src/tool-schema-converter.ts`, `src/tool-response-parser.ts` - Format conversion between Anthropic and OpenAI
+- **Tests**: 53+ tests (unit, integration, manual) with 80%+ coverage target
+- **Documentation**: `tests/TEST-PLAN-PHASE-1.2.md`, `tests/TEST-ARTIFACTS-PHASE-1.2.md`
+- **Interactive**: `tests/manual/test-mlx-server-interactive.sh` for quick verification
 
 ---
 
@@ -424,6 +536,62 @@ This will show you real measurements like:
 - `[Request Complete] lmstudio/model: 3542ms`
 - `[First Chunk] after 150ms`
 - Token generation speed
+
+### RAM-Based KV Cache (M3 Ultra)
+
+For systems with large RAM (M3 Ultra: 512GB), anyclaude includes an optional RAM-based KV cache that dramatically improves response times for repeated requests.
+
+**Performance**:
+- GET latency: <1ms (100-200x faster than disk cache)
+- SET latency: <50ms
+- Throughput: 3.7M operations/sec (vs 10K target - 370x better)
+- Follow-up requests: 0.3-1s total (vs 0.5-10s with disk cache)
+
+**Features**:
+- Thread-safe concurrent access with minimal lock contention
+- LRU eviction with configurable memory limit (default 300GB for M3 Ultra)
+- Security: 10KB max key length (prevents DoS), input validation, memory limit enforcement
+- Monitoring: Cache hit/miss rates, separate key/value memory tracking
+- Zero external dependencies (Python stdlib only)
+
+**Usage**:
+
+```python
+from scripts.ram_cache import InMemoryKVCacheManager
+
+# Initialize with memory limit
+cache = InMemoryKVCacheManager(max_memory_mb=300000)  # 300GB
+
+# Store and retrieve
+cache.set('my_key', b'cached_value')
+result = cache.get('my_key')  # Returns bytes or None
+
+# Monitor performance
+stats = cache.get_stats()
+print(f"Hit rate: {stats['hit_rate']:.2%}")
+print(f"Memory used: {stats['memory_used_mb']:.1f} MB")
+print(f"Key memory: {stats['key_memory_mb']:.1f} MB")
+print(f"Value memory: {stats['value_memory_mb']:.1f} MB")
+```
+
+**Testing**:
+
+```bash
+# Run unit tests (40 tests)
+python3 -m unittest tests.unit.test_ram_cache -v
+
+# Run integration tests (17 tests)
+python3 -m unittest tests.integration.test_ram_cache_e2e -v
+
+# Run performance benchmarks
+python3 scripts/benchmark_ram_cache.py
+```
+
+**Security Considerations**:
+- Maximum key length: 10KB (prevents memory DoS attacks)
+- Memory limit with LRU eviction (prevents out-of-memory)
+- Input validation: rejects None values, empty keys, non-bytes values
+- Thread-safe: Single lock protects all shared state
 
 ### Visual Indicators
 

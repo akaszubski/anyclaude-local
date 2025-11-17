@@ -52,6 +52,14 @@ async function runAllTests() {
       file: path.join(__dirname, "unit", "test_tool_calling.js"),
       description: "Tool Calling Edge Cases Tests",
     },
+    {
+      file: path.join(__dirname, "unit", "test-tool-schema-conversion.js"),
+      description: "Tool Schema Conversion Tests (Anthropic → OpenAI)",
+    },
+    {
+      file: path.join(__dirname, "unit", "test-tool-response-parsing.js"),
+      description: "Tool Response Parsing Tests (OpenAI → Anthropic)",
+    },
     // Phase 1: Stream + File I/O Error Tests
     {
       file: path.join(__dirname, "unit", "test-stream-error-handling.js"),

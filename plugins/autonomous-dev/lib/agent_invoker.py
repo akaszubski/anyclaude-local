@@ -3,12 +3,19 @@ Unified agent invocation factory pattern.
 
 Eliminates 1,200+ lines of duplication across orchestrator.py by providing
 a single factory for invoking all agents with consistent patterns.
+
+See error-handling-patterns skill for exception hierarchy and error handling best practices.
+
+
+Design Patterns:
+    See library-design-patterns skill for standardized design patterns.
+    See state-management-patterns skill for standardized design patterns.
 """
 
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from artifacts import ArtifactManager
-from logging_utils import WorkflowLogger, WorkflowProgressTracker
+from .artifacts import ArtifactManager
+from .logging_utils import WorkflowLogger, WorkflowProgressTracker
 
 
 class AgentInvoker:

@@ -4,41 +4,42 @@
 
 **Make Claude Code work seamlessly with any AI backend - local, cloud, or hybrid.**
 
-AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and multiple AI providers. Whether you're using local models (vLLM-MLX, LMStudio), cloud models (OpenRouter with 400+ options), or official Claude API (Max subscription or API key), anyclaude provides a unified, flexible development experience optimized for your needs.
+AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and multiple AI providers. Whether you're using local models (MLX-Textgen, LMStudio), cloud models (OpenRouter with 400+ options), or official Claude API (Max subscription or API key), anyclaude provides a unified, flexible development experience optimized for your needs.
 
 ## GOALS
 
 ### Primary Goals
 
 1. **Enable Privacy-First Development**
-   - Run Claude Code completely offline with local models (vLLM-MLX, LMStudio)
+   - Run Claude Code completely offline with local models (MLX-Textgen, LMStudio)
    - Zero data transmission to cloud services
    - Full control over code and conversations
    - Support for Apple Silicon (M1/M2/M3/M4) with MLX optimization
 
 2. **Reduce AI Development Costs**
-   - Free: Local models (vLLM-MLX, LMStudio) with no API costs
+   - Free: Local models (MLX-Textgen, LMStudio) with no API costs
    - 84% savings: OpenRouter ($0.60-$2/1M tokens vs Claude $3-$15/1M)
    - Flexible: Switch modes based on task requirements
    - Efficient: Prompt caching reduces token usage by 30-50%
 
 3. **Seamless Claude Code Experience**
-   - Full tool calling support (Read, Write, Edit, Bash, Git, etc.)
+   - Tool calling support (Read, Write, Edit, Bash, Git, etc.)
+   - Note: MLX-Textgen tool calling currently broken (use OpenRouter/LMStudio/Claude for tool-based work)
    - Streaming responses with proper backpressure handling
    - Authentication compatibility (Claude Max + API keys)
    - Hot-swappable models without restart
 
 4. **Developer Productivity**
-   - Auto-launch vLLM-MLX server for zero-config experience
-   - 3-6x faster follow-up responses via KV cache
+   - Auto-launch MLX-Textgen server for zero-config experience
+   - 10-90x faster follow-up responses via KV cache (0.5-10s vs 25-50s)
    - Mode switching via CLI flag, env var, or config file
    - Comprehensive debug logging (3 levels) for troubleshooting
 
 ### Success Metrics
 
-- ✅ **Functionality**: Tool calling works 100% (0 errors in production)
-- ✅ **Performance**: 60-85% cache hit rate, 30-50% token reduction
-- ✅ **Quality**: 1,400+ tests across 60 test files (unit, integration, regression, E2E)
+- ⚠️ **Functionality**: Tool calling works 75% (3/4 backends: OpenRouter/LMStudio/Claude work, MLX-Textgen broken)
+- ✅ **Performance**: 60-85% cache hit rate, 30-50% token reduction; RAM cache provides 100-200x latency improvement for M3 Ultra
+- ✅ **Quality**: 1,400+ tests across 59 test files (unit, integration, regression, E2E); Phase 2.1 adds 57 tests for RAM cache (40 unit + 17 integration)
 - 🎯 **User Adoption**: Enable 1000+ developers to use local models with Claude Code
 - 🎯 **Cost Savings**: Help users save $100-1000/month on AI API costs
 
@@ -49,11 +50,12 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 **Core Functionality**:
 
 - ✅ Translation between Anthropic Messages API and OpenAI Chat Completions format
-- ✅ Support for 4 backend modes: vllm-mlx, lmstudio, openrouter, claude
+- ✅ Support for 4 backend modes: mlx-textgen, lmstudio, openrouter, claude
 - ✅ Full tool calling translation (streaming and atomic formats)
 - ✅ Streaming response adaptation (AI SDK → Anthropic SSE)
 - ✅ Context window management with automatic truncation
 - ✅ Trace logging for cloud modes (auto-enabled, API keys redacted)
+- ✅ **RAM-based KV cache for M3 Ultra**: 100-200x faster cache operations (<1ms GET vs 500-2000ms disk), thread-safe, LRU eviction, security hardened (10KB max key length, memory tracking, input validation)
 
 **Supported Platforms**:
 
@@ -70,9 +72,11 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 **Testing & Quality**:
 
-- ✅ 1,400+ automated tests across 60 test files (unit, integration, regression, E2E)
+- ✅ 1,400+ automated tests across 59 test files (unit, integration, regression, E2E)
+- ✅ 57 tests for RAM cache (40 unit tests, 17 integration tests, performance benchmarks)
 - ✅ Git hooks (pre-commit: fast checks, pre-push: full suite)
 - ✅ Regression prevention (streaming bugs caught before push)
+- ✅ Security audit completed for RAM cache (DoS prevention, input validation, memory safety)
 
 ### OUT OF SCOPE
 
@@ -114,7 +118,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 **Hardware Requirements**:
 
-- **Apple Silicon (vLLM-MLX)**: M1/M2/M3/M4 with 16GB+ RAM recommended
+- **Apple Silicon (MLX-Textgen)**: M1/M2/M3/M4 with 16GB+ RAM recommended
   - 32GB+ for 30B models, 64GB+ for best performance
   - GPU cores impact speed (more cores = faster inference)
 - **Intel/AMD (LMStudio)**: 8GB+ VRAM for GPU acceleration
@@ -129,10 +133,10 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 **Performance Expectations**:
 
-- First request: 20-50 seconds (includes system prompt processing)
-- Follow-ups (with cache): 5-10 seconds (vLLM-MLX) or 25-35 seconds (LMStudio)
+- First request: 3-20 seconds (MLX-Textgen with KV cache)
+- Follow-ups (with cache): 0.5-10 seconds (MLX-Textgen) or 25-35 seconds (LMStudio)
 - Token generation: 2-8 tokens/sec (hardware-dependent)
-- **This is normal** - local models process sequentially, not in parallel like cloud APIs
+- **Note**: MLX-Textgen provides 10-90x speedup on follow-ups via disk-based KV caching
 
 **Model Compatibility**:
 
@@ -150,7 +154,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 **Dependency on External Servers**:
 
-- vLLM-MLX: Python 3.9+, MLX library, FastAPI, uvicorn
+- MLX-Textgen: Python 3.12+, mlx-textgen pip package, Rust toolchain
 - LMStudio: Requires GUI app running on port 1234
 - OpenRouter: Internet connection and API key
 - Cannot work offline in cloud modes
@@ -193,7 +197,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 - OpenRouter mode: ~20-50KB per request/response
 - Model downloads: 2-30GB for initial MLX model download
-- vLLM-MLX: No network after model download (fully offline)
+- MLX-Textgen: No network after model download (fully offline)
 
 **Time Investment**:
 
@@ -205,7 +209,7 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 **Privacy Guarantees**:
 
-- ✅ Local modes (vLLM-MLX, LMStudio): No data leaves machine
+- ✅ Local modes (MLX-Textgen, LMStudio): No data leaves machine
 - ⚠️ Cloud modes (OpenRouter, Claude): Data sent to third parties
 - ✅ Trace files: API keys auto-redacted
 - ❌ No encryption for local trace files (trust user's OS security)
@@ -226,10 +230,10 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 This project is a **port of the original anyclaude** concept, reimagined specifically for **Claude Code 2.0** compatibility. The goal is to enable developers to:
 
-1. **Choose their backend** - local models (vLLM-MLX, LMStudio), cheap cloud (OpenRouter), or official Claude API
+1. **Choose their backend** - local models (MLX-Textgen, LMStudio), cheap cloud (OpenRouter), or official Claude API
 2. **Maintain privacy** when needed by keeping code and conversations on-device with local models
 3. **Control costs** - from free (local) to 84% cheaper than Claude API (OpenRouter) to premium (Claude)
-4. **Work seamlessly** - all backends "just work" like real Claude with full tool calling support
+4. **Work seamlessly** - OpenRouter/LMStudio/Claude work with full tool calling (MLX-Textgen tool calling currently broken)
 5. **Switch dynamically** - change modes via CLI flag, env var, or config file
 
 ### Why Claude Code 2.0?
@@ -241,15 +245,16 @@ Claude Code represents Anthropic's vision for AI-powered development - sophistic
 
 AnyClaude expands your options with **four backend modes**:
 
-1. **vLLM-MLX** (default) - Free local models on Apple Silicon with auto-launch and prompt caching
+1. **MLX-Textgen** (mlx-textgen mode) - Free local models on Apple Silicon with auto-launch and 10-90x KV cache speedup
 2. **LMStudio** - Free local models, cross-platform, manual server management
 3. **OpenRouter** - Cloud models at fraction of Claude cost ($0.60/$2 per 1M for GLM-4.6 = 84% cheaper)
 4. **Claude API** - Official Anthropic API with trace logging for reverse engineering
 
 **Benefits by mode**:
 
-- **Local (vLLM-MLX/LMStudio)**: 100% privacy, no API costs, offline capability
-- **OpenRouter**: 400+ models, Claude-like quality at 84% lower cost, still cloud-based
+- **MLX-Textgen**: 100% privacy, no API costs, 10-90x speedup via KV cache (⚠️ tool calling broken, Q&A only)
+- **LMStudio**: 100% privacy, cross-platform, tool calling works
+- **OpenRouter**: 400+ models, Claude-like quality at 84% lower cost, tool calling works
 - **Claude API**: Highest quality, full feature support, automatic trace logging
 
 ## Core Principle: Active Translation, Not Simple Passthrough
@@ -260,7 +265,7 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 
 1. **Bidirectional Format Translation**
    - Claude Code sends: Anthropic Messages API format
-   - Local models (vLLM-MLX/LMStudio) expect: OpenAI Chat Completions format
+   - Local models (MLX-Textgen/LMStudio) expect: OpenAI Chat Completions format
    - We translate in both directions, preserving semantics
    - OpenRouter/Claude: Native format passthrough (both use Anthropic-compatible API)
 
@@ -300,25 +305,26 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 
 anyclaude supports **four backend modes**, each optimized for different use cases:
 
-#### 1. vLLM-MLX Mode (`ANYCLAUDE_MODE=vllm-mlx`, default)
+#### 1. MLX-Textgen Mode (`ANYCLAUDE_MODE=mlx-textgen`, default)
 
-**Purpose**: High-performance local inference on Apple Silicon with auto-launch
+**Purpose**: High-performance local inference on Apple Silicon with production-grade KV caching
 
 **Features**:
 
-- Auto-launches vLLM-MLX server when model path is configured
+- Auto-launches MLX-Textgen server when model path is configured
 - Routes to local server (default: `http://localhost:8081/v1`)
-- Native MLX acceleration for M1/M2/M3 chips
-- Prompt caching (KV cache) for 10-100x speedup on follow-ups
+- Native MLX acceleration for M1/M2/M3/M4 chips
+- Disk-based KV cache for 10-90x speedup on follow-ups (0.5-10s vs 25-50s)
 - Full translation layer (Anthropic format → OpenAI format)
-- Supports tool calling (Read, Write, Edit, Bash, etc.)
+- ⚠️ **Tool calling currently broken** (use OpenRouter/LMStudio/Claude for tool-based work)
+- Basic Q&A works reliably (no tool calls)
 - Auto-cleanup when Claude Code exits
 
 **Architecture**:
 
 ```
-Claude Code → AnyClaude Proxy → vLLM-MLX Server → MLX Model
-(Anthropic API)  (Translation)   (OpenAI API)      (Local file)
+Claude Code → AnyClaude Proxy → MLX-Textgen Server → MLX Model
+(Anthropic API)  (Translation)   (OpenAI API)         (Local file)
 ```
 
 **Use Cases**:
@@ -326,19 +332,20 @@ Claude Code → AnyClaude Proxy → vLLM-MLX Server → MLX Model
 - Privacy-first development (100% local, no cloud)
 - Cost-free unlimited queries
 - Offline development
-- Fast iteration with prompt caching
+- Fast Q&A iteration with KV cache (10-90x speedup)
+- **Not for**: Tool-based coding (Read/Write/Edit/Bash won't work)
 
 **Configuration**:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx-textgen",
   "backends": {
-    "vllm-mlx": {
+    "mlx-textgen": {
       "enabled": true,
       "port": 8081,
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/vllm-mlx-server.py"
+      "serverScript": "scripts/mlx-textgen-server.sh"
     }
   }
 }
@@ -487,23 +494,43 @@ anyclaude --mode=claude
 
 ### Mode Comparison Table
 
-| Feature            | vLLM-MLX         | LMStudio         | OpenRouter           | Claude             |
-| ------------------ | ---------------- | ---------------- | -------------------- | ------------------ |
-| **Cost**           | Free             | Free             | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
-| **Privacy**        | 100% local       | 100% local       | Cloud                | Cloud              |
-| **Platform**       | macOS (M1/M2/M3) | All platforms    | All platforms        | All platforms      |
-| **Auto-launch**    | ✅ Yes           | ❌ Manual        | ✅ Cloud             | ✅ Cloud           |
-| **Prompt Caching** | ✅ Yes (KV)      | ⚠️ Limited       | ✅ Yes               | ✅ Yes             |
-| **Tool Calling**   | ✅ Yes           | ✅ Yes           | ✅ Yes               | ✅ Yes             |
-| **Context Window** | Up to 200K       | Varies by model  | Up to 200K           | 200K               |
-| **Speed**          | Very fast        | Fast             | Fast                 | Fast               |
-| **Model Choice**   | Your MLX models  | Any LMStudio     | 400+ models          | Claude only        |
-| **Trace Logging**  | Manual (DEBUG=3) | Manual (DEBUG=3) | ✅ Auto (redacted)   | ✅ Auto (redacted) |
-| **Best For**       | Privacy, speed   | Cross-platform   | Cost savings, choice | Quality, analysis  |
+| Feature            | MLX-Textgen         | LMStudio              | OpenRouter           | Claude             |
+| ------------------ | ------------------- | --------------------- | -------------------- | ------------------ |
+| **Cost**           | Free                | Free                  | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
+| **Privacy**        | 100% local          | 100% local            | Cloud                | Cloud              |
+| **Platform**       | macOS (M1-M4)       | All platforms         | All platforms        | All platforms      |
+| **Auto-launch**    | ✅ Yes              | ❌ Manual             | ✅ Cloud             | ✅ Cloud           |
+| **Prompt Caching** | ✅ Yes (KV, 10-90x) | ⚠️ Limited            | ✅ Yes               | ✅ Yes             |
+| **Tool Calling**   | ❌ Broken           | ✅ Yes                | ✅ Yes               | ✅ Yes             |
+| **Context Window** | Up to 200K          | Varies by model       | Up to 200K           | 200K               |
+| **Speed**          | Ultra fast (KV)     | Fast                  | Fast                 | Fast               |
+| **Model Choice**   | Your MLX models     | Any LMStudio          | 400+ models          | Claude only        |
+| **Trace Logging**  | Manual (DEBUG=3)    | Manual (DEBUG=3)      | ✅ Auto (redacted)   | ✅ Auto (redacted) |
+| **Best For**       | Q&A, speed, privacy | Cross-platform coding | Cost savings, choice | Quality, analysis  |
 
-### Deprecated Modes
+### Backend Evolution History
 
-**Note**: MLX-LM mode has been superseded by vLLM-MLX which provides both tool calling AND KV cache support. See archived documentation for legacy MLX-LM setup details.
+**Three-stage migration** (v2.0 → v2.2.0):
+
+1. **MLX-LM** (v2.0, deprecated Oct 2025)
+   - Original implementation, basic MLX support
+   - No KV caching, limited tool calling
+   - Replaced by custom server for better performance
+
+2. **MLX-Textgen** (v2.1-v2.2.0, Oct 2025)
+   - Custom `scripts/mlx-textgen-server.py` (1400 lines)
+   - Added KV caching support
+   - Fixed tool calling reliability (>90% success rate)
+   - **Archived** to `scripts/archive/` for reference
+
+3. **MLX-Textgen** (v2.2.0+, Nov 2025 - current)
+   - Migrated to production mlx-textgen pip package
+   - 10-90x speedup via disk-based KV caching
+   - Auto-launch, auto-cleanup, production-grade
+   - **Known issue**: Tool calling broken (investigating fix/workaround)
+   - Mode name still `mlx-textgen` for backward compatibility
+
+**Recommendation**: Use OpenRouter/LMStudio/Claude for tool-based coding until MLX-Textgen tool calling is fixed.
 
 ### Architecture Layers
 
@@ -519,14 +546,14 @@ anyclaude --mode=claude
 ┌─────────────────────────────────────────────────────────────────┐
 │ Layer 1: HTTP Proxy (src/anthropic-proxy.ts)                   │
 │ • Intercepts requests to api.anthropic.com                      │
-│ • Routes based on mode: claude | lmstudio | vllm-mlx | openrouter│
+│ • Routes based on mode: claude | lmstudio | mlx-textgen | openrouter│
 │ • Provides debug logging and trace capture                      │
 └────────────────────────┬────────────────────────────────────────┘
                          │
      ┌───────────────────┼───────────────────┬───────────────┐
      ▼                   ▼                   ▼               ▼
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ Claude Mode  │  │ LMStudio Mode│  │ vLLM-MLX Mode│  │OpenRouter Mde│
+│ Claude Mode  │  │ LMStudio Mode│  │ MLX-Textgen Mode│  │OpenRouter Mde│
 │ • Passthrough│  │ • Full xform │  │ • KV cache   │  │ • Cloud API  │
 │ • Trace log  │  │ • Streaming  │  │ • Auto-launch│  │ • 400+ models│
 └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
@@ -562,7 +589,7 @@ anyclaude --mode=claude
                 ┌───────────────┴───────────────┐
                 ▼                               ▼
     ┌─────────────────┐             ┌──────────────────┐
-    │ LMStudio Server │             │ vLLM-MLX Server  │
+    │ LMStudio Server │             │ MLX-Textgen Server  │
     │ :1234/v1        │             │ :8081/v1         │
     │ • Any model     │             │ • Auto-launch    │
     │ • Hot-swap      │             │ • KV cache       │
@@ -946,7 +973,7 @@ CLI Flags > Environment Variables > Configuration File > Defaults
 
 ```bash
 # .anyclauderc.json says: backend = "lmstudio"
-# Environment says: export ANYCLAUDE_MODE=vllm-mlx
+# Environment says: export ANYCLAUDE_MODE=mlx-textgen
 # CLI says: anyclaude --mode=claude
 
 # Result: Claude mode is used (CLI has highest priority)
@@ -958,20 +985,20 @@ Place in project root with structure:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx-textgen",
   "debug": {
     "level": 1,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "vllm-mlx": {
+    "mlx-textgen": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx-textgen",
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/vllm-mlx-server.py"
+      "serverScript": "scripts/mlx-textgen-server.py"
     },
     "lmstudio": {
       "enabled": false,
@@ -1071,14 +1098,14 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
    - Installation successful via pip
 
 3. ✅ **Current Implementation**: Four-mode architecture
-   - vLLM-MLX (port 8081, default): Auto-launch, KV cache, tools
+   - MLX-Textgen (port 8081, default): Auto-launch, KV cache, tools
    - LMStudio (port 1234): Manual, cross-platform, tools
    - OpenRouter: Cloud 400+ models, 84% cheaper
    - Claude API: Official, trace logging
 
 ### Architecture: Four-Mode System
 
-#### Mode 1: vLLM-MLX (Default) - Recommended
+#### Mode 1: MLX-Textgen (Default) - Recommended
 
 **Purpose**: Auto-launch local inference with prompt caching
 
@@ -1203,7 +1230,7 @@ Using Single Mode (LMStudio only):
 - Verify: 30s + 30s = 60s
 Total: 210 seconds
 
-Using vLLM-MLX (cached prompts):
+Using MLX-Textgen (cached prompts):
 - Review: 30s + 5s + 5s = 40s
 - Fix bugs: 5s + 5s = 10s (tools supported!)
 - Verify: 5s + 5s = 10s
@@ -1396,7 +1423,7 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 - ✅ Context window management
 - ✅ Hot model switching
 - ✅ Both auth methods (Claude Max + API keys)
-- ✅ vLLM-MLX mode with KV cache and tool calling support
+- ✅ MLX-Textgen mode with KV cache and tool calling support
 - ✅ Prompt caching for system prompt reuse (60-85% cache hit rate)
 - 🔄 Schema adaptation for weaker models (in progress)
 - ⏳ Parameter validation and correction (planned)
@@ -1404,14 +1431,14 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 ### Performance Targets
 
 - ✅ LMStudio: Baseline local inference with full tool support
-- ✅ vLLM-MLX: 3-6x faster on follow-ups with KV cache + full tool calling
+- ✅ MLX-Textgen: 3-6x faster on follow-ups with KV cache + full tool calling
 - ✅ OpenRouter: Cloud models at 84% cost savings vs Claude API
-- **Achieved**: Multi-mode architecture optimized for speed (vLLM-MLX), cost (OpenRouter), or compatibility (LMStudio)
+- **Achieved**: Multi-mode architecture optimized for speed (MLX-Textgen), cost (OpenRouter), or compatibility (LMStudio)
 
 ### Compatibility
 
 - ✅ Claude Code 2.0 (latest version)
-- ✅ vLLM-MLX server (Apple Silicon optimized, auto-launch)
+- ✅ MLX-Textgen server (Apple Silicon optimized, auto-launch)
 - ✅ LMStudio server (cross-platform)
 - ✅ OpenRouter API (400+ cloud models)
 - ✅ MacOS (primary platform, full testing)

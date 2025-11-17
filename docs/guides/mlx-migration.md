@@ -13,16 +13,16 @@ This guide explains the differences and migration path between these backends.
 
 ## Quick Comparison
 
-| Feature | MLX-Textgen (Production) | vLLM-MLX (Legacy) |
-|---------|-------------------------|-------------------|
-| **Status** | Active, supported | Archived, reference only |
-| **KV Caching** | Disk-based, 10-90x speedup | In-memory, limited |
-| **Tool Calling** | **FAILS** (known limitation) | **FAILS** (known limitation) |
-| **Auto-launch** | Yes, via `scripts/mlx-textgen-server.sh` | Yes, via `scripts/mlx-server.py` |
-| **Port** | 8080 (default) | 8082 (if enabled) |
-| **Dependencies** | `mlx-textgen` package | `mlx-lm`, `fastapi`, `uvicorn` |
-| **Performance** | Production-grade caching | Basic performance |
-| **Use Case** | **Recommended for all users** | Reference implementation only |
+| Feature          | MLX-Textgen (Production)                 | vLLM-MLX (Legacy)                |
+| ---------------- | ---------------------------------------- | -------------------------------- |
+| **Status**       | Active, supported                        | Archived, reference only         |
+| **KV Caching**   | Disk-based, 10-90x speedup               | In-memory, limited               |
+| **Tool Calling** | **FAILS** (known limitation)             | **FAILS** (known limitation)     |
+| **Auto-launch**  | Yes, via `scripts/mlx-textgen-server.sh` | Yes, via `scripts/mlx-server.py` |
+| **Port**         | 8080 (default)                           | 8082 (if enabled)                |
+| **Dependencies** | `mlx-textgen` package                    | `mlx-lm`, `fastapi`, `uvicorn`   |
+| **Performance**  | Production-grade caching                 | Basic performance                |
+| **Use Case**     | **Recommended for all users**            | Reference implementation only    |
 
 ## Why MLX-Textgen is Production Backend
 
@@ -144,12 +144,14 @@ anyclaude
 ### Caching Implementation
 
 **MLX-Textgen**:
+
 - Disk-based KV cache (survives restarts)
 - Automatic cache invalidation
 - Cache version tracking
 - ~10-90x speedup on cached prompts
 
 **vLLM-MLX**:
+
 - In-memory KV cache (lost on restart)
 - Manual cache management
 - Response-level caching
@@ -158,12 +160,14 @@ anyclaude
 ### Server Implementation
 
 **MLX-Textgen**:
+
 - External package (`mlx-textgen`)
 - Shell script launcher (`scripts/mlx-textgen-server.sh`)
 - Minimal configuration needed
 - Battle-tested in production
 
 **vLLM-MLX**:
+
 - Custom Python server (`scripts/mlx-server.py`)
 - ~1800 lines of custom code
 - FastAPI + uvicorn stack
@@ -232,6 +236,7 @@ ANYCLAUDE_DEBUG=2 anyclaude
 ### Port conflicts
 
 **Default ports**:
+
 - MLX-Textgen: 8080
 - vLLM-MLX: 8082
 

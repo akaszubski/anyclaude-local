@@ -27,6 +27,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 - **[Architecture Summary](architecture/ARCHITECTURE_SUMMARY.md)** - System overview and design patterns
 - **[Model Adapters](architecture/model-adapters.md)** - Model-specific handling and optimization
 - **[Tool Calling Enhancement](architecture/tool-calling-enhancement.md)** - Tool system implementation
+- **[Cache Control Headers](architecture/cache-control-headers.md)** - **NEW!** Anthropic cache_control marker detection and extraction (Phase 2.2)
 
 ---
 
@@ -49,6 +50,17 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 **Contributing & Test Documentation**
 
 - **[Testing Guide](testing/TESTING.md)** - Overview of 170+ test suite
+- **[Cache Control Tests](testing/cache-control-tests.md)** - **NEW!** Phase 2.2 cache_control test suite documentation (84 tests)
+- **[Production Hardening Tests](testing/production-hardening-tests.md)** - **NEW!** Phase 3 complete test documentation (151 tests)
+  - ErrorHandler unit tests (44): Cache degradation, OOM recovery, network retry
+  - MetricsCollector unit tests (52): Cache tracking, latency percentiles, memory, throughput
+  - ConfigValidator unit tests (60): Port validation, env vars, model paths, dependencies
+  - Integration + regression tests (18 + 11): Metrics endpoint, error recovery
+- **[Production Hardening Implementation](development/production-hardening-implementation.md)** - **NEW!** Phase 3 detailed implementation guide
+  - ErrorHandler: Error recovery with graceful degradation (44 tests)
+  - MetricsCollector: Performance metrics with JSON/Prometheus export (52 tests)
+  - ConfigValidator: Pre-startup configuration validation (60 tests)
+  - Integration guide for MLX server (18 integration tests + 11 regression tests)
 - **[Comprehensive Testing](development/TESTING_COMPREHENSIVE.md)** - Detailed test documentation
   - Unit tests (100 error handling)
   - Integration tests (30 component interactions)
@@ -84,6 +96,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 - **[Implementation Summary](caching/IMPLEMENTATION_SUMMARY.md)** - Cache implementation details
 - **[Quick Start](caching/QUICK_START.md)** - Getting started with caching
 - **[Prompt Cache Explanation](caching/PROMPT_CACHE_EXPLANATION.md)** - Technical details
+- **[Cache Control Headers](architecture/cache-control-headers.md)** - Phase 2.2 implementation for cache_control detection (see Architecture section)
 
 ---
 
@@ -91,6 +104,12 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 **Technical References**
 
+- **[Production Hardening API](reference/production-hardening-api.md)** - **NEW!** Phase 3 API reference
+  - `/v1/metrics` endpoint with JSON/Prometheus formats
+  - ErrorHandler class API (CacheError, OOMError, NetworkError)
+  - MetricsCollector class API (15 methods)
+  - ConfigValidator class API (8 methods)
+  - Integration examples and security notes
 - **[Claude Code Auth](reference/claude-code-auth.md)** - Authentication mechanism
 - **[GitHub Issues Summary](reference/github-issues-summary.md)** - Known issues and status
 - **[Path Setup](reference/path-setup-complete.md)** - Environment configuration

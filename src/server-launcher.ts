@@ -13,6 +13,7 @@ interface ServerLauncherConfig {
   backend: string;
   port?: number;
   model?: string;
+  modelPath?: string;
   baseUrl?: string;
   pythonVenv?: string;
   serverScript?: string;
@@ -118,7 +119,7 @@ export function startLMStudioServer(config: ServerLauncherConfig): void {
  */
 export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const port = config.port || 8081;
-  const modelPath = config.model;
+  const modelPath = config.modelPath || config.model;
   const serverScript = config.serverScript || "scripts/vllm-mlx-server.py";
   const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
 
@@ -311,6 +312,9 @@ export function launchBackendServer(
       backend: mode,
       port,
       model: backendConfig.model,
+      modelPath: backendConfig.modelPath,
+      serverScript: backendConfig.serverScript,
+      pythonVenv: config.pythonVenv,
     });
   } else if (mode === "lmstudio") {
     startLMStudioServer({

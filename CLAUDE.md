@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for MLX-Textgen.
 
-**Primary Backend**: MLX-Textgen (production-grade, working KV caching, 10-90x faster follow-ups)
+**Primary Backend**: MLX-Textgen (KV caching works, but **tool calling FAILS** - unusable for Claude Code)
+
+**⚠️ KNOWN LIMITATION**: Tool calling does not work with any local MLX models (Qwen3, OpenAI GPT OSS, Hermes-3 all fail). Use `--mode=claude` or `--mode=openrouter` for actual Claude Code work.
 
 **Legacy Support**: LMStudio (manual connection only, no auto-launch)
 
@@ -216,6 +218,28 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
 
 ## Environment Variables
 
+**vLLM-MLX Configuration:**
+
+- `VLLM_MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
+- `VLLM_MLX_MODEL`: Model name/path (overrides config file)
+- `VLLM_MLX_API_KEY`: API key (default: `vllm-mlx`)
+
+**Cache Warmup Configuration** (vLLM-MLX only):
+
+- `KV_CACHE_WARMUP`: Enable/disable cache warmup (default: "1" = enabled)
+  - When enabled, pre-warms KV cache during server startup
+  - Eliminates 30-50s cold-start penalty on first request
+  - First request then runs at ~0.3-1s (same as subsequent requests)
+- `WARMUP_TIMEOUT_SEC`: Timeout for cache warmup in seconds (default: 60)
+  - Valid range: 1-300 seconds
+  - If warmup takes longer, it will be cancelled and server will start normally
+  - Graceful degradation: server starts even if warmup fails
+- `WARMUP_SYSTEM_FILE`: Custom system prompt file for cache warmup (optional)
+  - Must be a file in `~/.anyclaude/system-prompts/` directory
+  - File size limit: 1MB maximum
+  - If not specified, uses default system prompt
+  - Security: All paths validated against whitelist (prevents path traversal attacks)
+
 **LMStudio Configuration:**
 
 - `LMSTUDIO_URL`: LMStudio server URL (default: `http://localhost:1234/v1`)
@@ -231,7 +255,7 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
   - This saves full prompts and responses to `~/.anyclaude/traces/claude/` for analysis
   - To disable: `ANYCLAUDE_DEBUG=0 anyclaude --mode=claude`
 - `PROXY_ONLY`: Run proxy server without spawning Claude Code
-- `ANYCLAUDE_MODE`: claude | lmstudio (default: lmstudio)
+- `ANYCLAUDE_MODE`: claude | lmstudio | vllm-mlx (default: lmstudio)
 
 ## Debugging Tool Calling Issues
 
@@ -323,8 +347,8 @@ anyclaude
 **That's it!** anyclaude will:
 
 1. **Read config** from `.anyclauderc.json` (if it exists)
-2. **Launch vLLM-MLX server** automatically with your model
-3. **Wait for server** to load the model (~30-50 seconds)
+2. **Launch MLX-Textgen server** automatically with your model
+3. **Wait for server** to load the model (~3-50 seconds)
 4. **Run Claude Code** pointing to your local server
 5. **Auto-cleanup** when you exit Claude Code (type `/exit`)
 
@@ -332,10 +356,10 @@ anyclaude
 
 ### Auto-Launch Workflow (Default)
 
-When you run `anyclaude` with a `.anyclauderc.json` that specifies vLLM-MLX with a model path:
+When you run `anyclaude` with a `.anyclauderc.json` that specifies MLX-Textgen with a model path:
 
 ```bash
-# .anyclauderc.json configured with vllm-mlx backend
+# .anyclauderc.json configured with mlx-textgen backend
 anyclaude
 # → Server launches automatically
 # → Waits for model to load
@@ -349,15 +373,15 @@ Create this file in your project root to configure anyclaude:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx-textgen",
   "backends": {
-    "vllm-mlx": {
+    "mlx-textgen": {
       "enabled": true,
-      "port": 8081,
-      "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "port": 8080,
+      "baseUrl": "http://localhost:8080/v1",
+      "apiKey": "mlx-textgen",
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/vllm-mlx-server.py"
+      "serverScript": "scripts/mlx-textgen-server.sh"
     },
     "lmstudio": {
       "enabled": false,
@@ -381,23 +405,23 @@ Create this file in your project root to configure anyclaude:
 **See `.anyclauderc.example.json` for a complete configuration example with all backends.**
 **See `.anyclauderc.example-openrouter.json` for OpenRouter-specific quick start.**
 
-**Key fields for vllm-mlx auto-launch:**
+**Key fields for mlx-textgen auto-launch:**
 
-- `backend`: Set to `"vllm-mlx"` to use this backend
+- `backend`: Set to `"mlx-textgen"` to use this backend (production default)
 - `model`: Full path to your MLX model (e.g., `/Users/you/.../Qwen3-Coder-30B-A3B-Instruct-MLX-4bit`)
   - If model path is configured, anyclaude auto-launches the server
   - If missing or set to `"current-model"`, expects server to be running already
-- `port`: Where to run the server (default: 8081)
+- `port`: Where to run the server (default: 8080)
 
 ### Auto-Launch Workflow
 
-When you run `anyclaude` with vllm-mlx configured:
+When you run `anyclaude` with mlx-textgen configured:
 
-1. **Check**: Is a server already running on port 8081?
-2. **If no**: Auto-launch the vLLM-MLX server with your configured model
-3. **Wait**: Wait for server to load the model (30-50 seconds)
+1. **Check**: Is a server already running on port 8080?
+2. **If no**: Auto-launch the MLX-Textgen server with your configured model
+3. **Wait**: Wait for server to load the model (3-50 seconds)
 4. **Launch**: Spawn Claude Code with proxy pointing to your local server
-5. **Run**: Use Claude Code normally
+5. **Run**: Use Claude Code normally (note: tool calling will not work with MLX models)
 6. **Exit**: When you exit Claude Code (type `/exit`), server shuts down automatically
 
 ### Manual Server Mode
@@ -406,9 +430,9 @@ If you want to run the server separately:
 
 ```bash
 # Terminal 1: Start server manually
-python3 scripts/vllm-mlx-server.py \
+scripts/mlx-textgen-server.sh \
   --model /path/to/model \
-  --port 8081
+  --port 8080
 
 # Terminal 2: Run anyclaude (uses running server)
 anyclaude
@@ -479,7 +503,7 @@ See [openrouter.ai/models](https://openrouter.ai/models) for full list.
 # Override backend mode
 anyclaude --mode=claude          # Use real Claude API
 anyclaude --mode=openrouter      # Use OpenRouter (cloud models)
-anyclaude --mode=vllm-mlx        # Use local vLLM-MLX
+anyclaude --mode=mlx-textgen     # Use local MLX-Textgen (production)
 anyclaude --mode=lmstudio        # Use local LMStudio
 
 # Debug logging
@@ -502,11 +526,11 @@ anyclaude --test-model
 
 ### Environment Variables
 
-**vLLM-MLX Configuration:**
+**MLX-Textgen Configuration (Production):**
 
-- `VLLM_MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
-- `VLLM_MLX_MODEL`: Model name/path (overrides config file)
-- `VLLM_MLX_API_KEY`: API key (default: `vllm-mlx`)
+- `MLX_TEXTGEN_URL`: Server URL (default: `http://localhost:8080/v1`)
+- `MLX_TEXTGEN_MODEL`: Model name/path (overrides config file)
+- `MLX_TEXTGEN_API_KEY`: API key (default: `mlx-textgen`)
 
 **LMStudio Configuration:**
 
@@ -516,7 +540,7 @@ anyclaude --test-model
 
 **Mode & Debug:**
 
-- `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | vllm-mlx)
+- `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | mlx-textgen | openrouter)
 - `ANYCLAUDE_DEBUG`: Debug level (0-3)
 - `ANYCLAUDE_NO_AUTO_LAUNCH`: Disable server auto-launch
 - `ANYCLAUDE_SKIP_SETUP_CHECK`: Skip dependency checks
@@ -528,7 +552,7 @@ anyclaude --test-model
 
 ```bash
 # Check server logs
-tail ~/.anyclaude/logs/vllm-mlx-server.log
+tail ~/.anyclaude/logs/mlx-textgen-server.log
 
 # Try with more debug output
 ANYCLAUDE_DEBUG=2 anyclaude
@@ -537,8 +561,8 @@ ANYCLAUDE_DEBUG=2 anyclaude
 **Port already in use:**
 
 ```bash
-# Check what's using port 8081
-lsof -i :8081
+# Check what's using port 8080
+lsof -i :8080
 
 # Kill it if needed
 kill -9 <PID>
@@ -550,7 +574,7 @@ kill -9 <PID>
 
 - This is normal for large models (30-50 seconds for 30B models)
 - Anyclaude waits up to 2 minutes (120 seconds)
-- Check `~/.anyclaude/logs/vllm-mlx-server.log` for progress
+- Check `~/.anyclaude/logs/mlx-textgen-server.log` for progress
 
 **Responses are truncated mid-stream:**
 

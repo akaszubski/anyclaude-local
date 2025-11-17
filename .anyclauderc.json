@@ -1,9 +1,9 @@
 {
-  "backend": "vllm-mlx",
+  "backend": "lmstudio",
   "debug": {
-    "level": 0,
-    "enableTraces": false,
-    "enableStreamLogging": false
+    "level": 3,
+    "enableTraces": true,
+    "enableStreamLogging": true
   },
   "backends": {
     "vllm-mlx": {
@@ -11,18 +11,19 @@
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "vllm-mlx",
-      "model": "/Users/andrewkaszubski/Models/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
-      "maxTokens": 262144,
+      "model": "hermes-3-llama-3.1-8b",
+      "modelPath": "/Users/andrewkaszubski/Models/mlx-community/Hermes-3-Llama-3.1-8B-4bit",
+      "maxTokens": 131072,
       "serverScript": "scripts/mlx-textgen-server.sh",
-      "description": "MLX-Textgen - production-grade server with working KV caching (10-20x faster follow-ups)"
+      "description": "MLX-Textgen - Hermes-3 8B (UNUSABLE: tool calling fails, only basic Q&A works)"
     },
     "lmstudio": {
       "enabled": true,
-      "baseUrl": "http://10.55.0.2:8082/v1",
+      "baseUrl": "http://localhost:1234/v1",
       "apiKey": "lm-studio",
-      "model": "/lmstudio-community/MiniMax-M2-MLX-8bit",
+      "model": "current-model",
       "compatibility": "legacy",
-      "description": "Remote LMStudio-compatible server with MiniMax-M2"
+      "description": "Local LMStudio with openai-gpt-oss-20b (100+ tokens/sec, tool calling works)"
     },
     "claude": {
       "enabled": false,
