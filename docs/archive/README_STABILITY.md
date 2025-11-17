@@ -29,7 +29,7 @@
 - Root causes: Backpressure not handled, message-stop race condition
 - Impact: Unpredictable results, hard to debug
 
-### Problem 3: vLLM-MLX Instability
+### Problem 3: MLX Instability
 
 - Tokenizer differences from LMStudio
 - Whitespace handling issues
@@ -158,11 +158,11 @@ anyclaude --mode=lmstudio
 
 ### Medium Term (Apply Fixes)
 
-Implement the 5 fixes (2-3 hours) to stabilize vLLM-MLX
+Implement the 5 fixes (2-3 hours) to stabilize MLX
 
 ### Long Term (Choose Backend)
 
-- Use vLLM-MLX if performance > stability
+- Use MLX if performance > stability
 - Use LMStudio if stability > performance
 - Use both for different tasks
 
@@ -185,7 +185,7 @@ Your setup **isn't broken**, it's just **over-configured**.
 
 The system prompt is trying to be helpful by including all documentation, but:
 
-- vLLM-MLX doesn't cache like Anthropic API
+- MLX doesn't cache like Anthropic API
 - It processes full prompt on every request
 - This causes unnecessary latency
 

@@ -17,14 +17,14 @@
 
 **Chosen Path:**
 
-- ✅ **Custom vllm-mlx-server.py**: You already built this!
+- ✅ **Custom mlx-server.py**: You already built this!
   - Tool calling worked (why you used it before)
   - KV cache implemented (lines 235-656)
   - Full control to optimize for M3 Ultra
 
 ### Evidence This Will Work
 
-From `scripts/archive/vllm-mlx-server.py`:
+From `scripts/archive/mlx-server.py`:
 
 - **Line 235-370**: MLXKVCacheManager class (working)
 - **Line 317-332**: Cache creation with mlx_lm APIs
@@ -43,7 +43,7 @@ From `scripts/archive/vllm-mlx-server.py`:
 
 ```bash
 # Restore your working server
-cp scripts/archive/vllm-mlx-server.py scripts/mlx-server.py
+cp scripts/archive/mlx-server.py scripts/mlx-server.py
 
 # Verify it runs
 python scripts/mlx-server.py \
@@ -61,7 +61,7 @@ python scripts/mlx-server.py --model /path/to/Qwen3-30B --port 8081
 
 # Terminal 2: Test with anyclaude
 # Update .anyclauderc.json to point to custom server
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 
 # In Claude Code:
 > "Read the README.md file"
@@ -83,7 +83,7 @@ MLX-Textgen output format incompatible with anyclaude's stream converter
 
 ```bash
 # Enable full trace logging
-ANYCLAUDE_DEBUG=3 anyclaude --mode=vllm-mlx 2> /tmp/tool-debug.log
+ANYCLAUDE_DEBUG=3 anyclaude --mode=mlx 2> /tmp/tool-debug.log
 
 # Check what format the model outputs
 grep -A 20 "tool_calls\|function\|<tool_call>" /tmp/tool-debug.log
@@ -420,7 +420,7 @@ Usable: ✅ Yes!
 **Debug**:
 
 ```bash
-ANYCLAUDE_DEBUG=3 anyclaude --mode=vllm-mlx 2> /tmp/debug.log
+ANYCLAUDE_DEBUG=3 anyclaude --mode=mlx 2> /tmp/debug.log
 grep -A 10 "tool_calls\|function_call" /tmp/debug.log
 ```
 
@@ -521,7 +521,7 @@ If custom server doesn't work:
 
 **Server**:
 
-- `scripts/archive/vllm-mlx-server.py` (restore from here)
+- `scripts/archive/mlx-server.py` (restore from here)
 - `scripts/mlx-server.py` (new working version)
 
 **Proxy**:
@@ -545,7 +545,7 @@ If custom server doesn't work:
 
 ```bash
 # 1. Restore the server
-cp scripts/archive/vllm-mlx-server.py scripts/mlx-server.py
+cp scripts/archive/mlx-server.py scripts/mlx-server.py
 
 # 2. Test it runs
 python scripts/mlx-server.py \
@@ -556,7 +556,7 @@ python scripts/mlx-server.py \
 # Update .anyclauderc.json
 
 # 4. Test a simple query
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 > "What is 2+2?"
 ```
 

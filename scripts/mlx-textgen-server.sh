@@ -1,6 +1,6 @@
 #!/bin/bash
 # MLX-Textgen Server Launcher for anyclaude
-# Replaces vllm-mlx-server.py with production-grade server
+# Replaces mlx-server.py with production-grade server
 
 set -e
 

@@ -101,7 +101,7 @@ What you'll understand:
 
 - System prompt analysis (11.4KB breakdown)
 - Streaming and truncation root causes
-- vLLM-MLX vs LMStudio comparison
+- MLX vs LMStudio comparison
 - Message conversion stability issues
 - Performance expectations
 
@@ -109,7 +109,7 @@ Sections:
 
 1. System Prompt Analysis (size, cost, impact)
 2. Streaming & Truncation Issues (4 root causes)
-3. vLLM-MLX vs LMStudio Performance
+3. MLX vs LMStudio Performance
 4. Message Conversion Stability
 5. Key Findings (verified issues)
 6. Recommendations (7 strategies)
@@ -252,7 +252,7 @@ Result: **Optimized system** (full potential reached)
 The problem:
 
 - System prompt includes all documentation (~11.4KB)
-- vLLM-MLX doesn't have caching like Anthropic API
+- MLX doesn't have caching like Anthropic API
 - Full prompt sent on every request
 - This causes 10-20 second latency hit
 
@@ -335,7 +335,7 @@ If after reading all documentation you have questions:
 
 - Debug output: `ANYCLAUDE_DEBUG=3 anyclaude`
 - Request logs: `cat ~/.anyclaude/request-logs/*.jsonl | jq .`
-- vLLM logs: `cat ~/.anyclaude/logs/vllm-mlx-server.log`
+- vLLM logs: `cat ~/.anyclaude/logs/mlx-server.log`
 
 ---
 

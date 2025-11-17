@@ -2,7 +2,7 @@
  * Cache Metrics Tracking Module
  *
  * Tracks prompt caching performance and provides insights into cache utilization.
- * Works with both Anthropic API (real Claude) and vLLM-MLX backends.
+ * Works with both Anthropic API (real Claude) and MLX backends.
  */
 
 import * as fs from "fs";

@@ -4,14 +4,14 @@
 
 anyclaude supports **four backend modes** to fit your needs:
 
-1. **vLLM-MLX** (default) - Local models on Apple Silicon with auto-launch
+1. **MLX** (default) - Local models on Apple Silicon with auto-launch
 2. **LMStudio** - Local models cross-platform, manual server management
 3. **OpenRouter** - 400+ cloud models at fraction of Claude API cost
 4. **Claude** - Real Anthropic API for full features and reverse engineering
 
 ## Why Switch Modes?
 
-**Use vLLM-MLX when**:
+**Use MLX when**:
 
 - You have Apple Silicon (M1/M2/M3)
 - You want the fastest local experience
@@ -46,7 +46,7 @@ anyclaude supports **four backend modes** to fit your needs:
 
 ```bash
 # Override mode for this session only
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 anyclaude --mode=lmstudio
 anyclaude --mode=openrouter
 anyclaude --mode=claude
@@ -71,7 +71,7 @@ Edit `.anyclauderc.json`:
 {
   "backend": "openrouter", // ← Change this to switch default mode
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "model": "/path/to/your/model"
     },
@@ -90,25 +90,25 @@ Edit `.anyclauderc.json`:
 }
 ```
 
-**Priority**: CLI flag > Environment variable > Config file > Default (vllm-mlx)
+**Priority**: CLI flag > Environment variable > Config file > Default (mlx)
 
 ---
 
 ## Mode Details
 
-### vLLM-MLX Mode (Default)
+### MLX Mode (Default)
 
 **Setup**:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/vllm-mlx-server.py"
+      "serverScript": "scripts/mlx-server.py"
     }
   }
 }
@@ -121,7 +121,7 @@ Edit `.anyclauderc.json`:
 anyclaude
 
 # Or explicit mode
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 **Output**:
@@ -131,7 +131,7 @@ anyclaude --mode=vllm-mlx
 [anyclaude] Port: 8081
 [anyclaude] Model: /path/to/model
 [anyclaude] Server: auto-launch enabled
-[anyclaude] Starting vLLM-MLX server...
+[anyclaude] Starting MLX server...
 [anyclaude] Waiting for server to load model (30-50 seconds)...
 [anyclaude] Server ready! 🚀
 ```
@@ -295,7 +295,7 @@ anyclaude --mode=claude
 
 ## Mode Comparison
 
-| Feature            | vLLM-MLX         | LMStudio         | OpenRouter           | Claude             |
+| Feature            | MLX         | LMStudio         | OpenRouter           | Claude             |
 | ------------------ | ---------------- | ---------------- | -------------------- | ------------------ |
 | **Cost**           | Free             | Free             | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
 | **Privacy**        | 100% local       | 100% local       | Cloud                | Cloud              |
@@ -330,7 +330,7 @@ anyclaude --mode=claude  # Uses Max Plan subscription
 
 ```bash
 # Use local model for all work
-anyclaude  # defaults to vllm-mlx
+anyclaude  # defaults to mlx
 
 # Only use cloud when absolutely needed
 anyclaude --mode=claude  # for trace analysis
@@ -346,7 +346,7 @@ anyclaude --mode=claude
 # Test: "What files changed?" → Check traces
 
 # Step 2: Test local model
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 # Test same: "What files changed?"
 
 # Step 3: Compare
@@ -363,7 +363,7 @@ PROMPT="Refactor this function to use async/await"
 # Test each mode
 anyclaude --mode=openrouter  # GLM-4.6
 anyclaude --mode=openrouter  # Switch model to Qwen
-anyclaude --mode=vllm-mlx    # Local model
+anyclaude --mode=mlx    # Local model
 anyclaude --mode=claude      # Official Claude
 
 # Compare results and costs
@@ -377,7 +377,7 @@ Add to `~/.bashrc` or `~/.zshrc`:
 
 ```bash
 # Quick mode switching
-alias ac-local='anyclaude --mode=vllm-mlx'
+alias ac-local='anyclaude --mode=mlx'
 alias ac-lm='anyclaude --mode=lmstudio'
 alias ac-or='anyclaude --mode=openrouter'
 alias ac-claude='anyclaude --mode=claude'
@@ -390,7 +390,7 @@ alias ac-free='OPENROUTER_MODEL="google/gemini-2.0-flash-exp:free" anyclaude --m
 Then use:
 
 ```bash
-ac-local   # vLLM-MLX
+ac-local   # MLX
 ac-or      # OpenRouter with GLM-4.6
 ac-cheap   # OpenRouter with Qwen (cheaper)
 ac-claude  # Real Claude API
@@ -443,7 +443,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 # Or add to .anyclauderc.json
 ```
 
-### vLLM-MLX Server Won't Start
+### MLX Server Won't Start
 
 **Issue**: Auto-launch fails
 
@@ -451,8 +451,8 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 1. Check model path: `ls /path/to/model`
 2. Check port: `lsof -i :8081` (should be free)
-3. Check logs: `~/.anyclaude/logs/vllm-mlx-server.log`
-4. Manual start: `python3 scripts/vllm-mlx-server.py --model /path/to/model`
+3. Check logs: `~/.anyclaude/logs/mlx-server.log`
+4. Manual start: `python3 scripts/mlx-server.py --model /path/to/model`
 
 ---
 
@@ -461,7 +461,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 - **[Authentication Guide](authentication.md)** - Setup API keys for cloud modes
 - **[OpenRouter Setup](openrouter-setup.md)** - Complete OpenRouter configuration
 - **[Trace Analysis](trace-analysis.md)** - Analyze Claude Code's prompts
-- **[vLLM-MLX Setup](vllm-mlx-setup.md)** - Configure local MLX models
+- **[MLX Setup](mlx-setup.md)** - Configure local MLX models
 
 ---
 

@@ -148,7 +148,7 @@ case "$TEST_TYPE" in
     format|integration)
         echo -e "${BLUE}Next Steps:${NC}"
         echo "  1. Start proxy:       ${YELLOW}PROXY_ONLY=true bun run src/main.ts${NC}"
-        echo "  2. Start vLLM-MLX:    ${YELLOW}python3 scripts/vllm-mlx-server.py --model <path>${NC}"
+        echo "  2. Start MLX:    ${YELLOW}python3 scripts/mlx-server.py --model <path>${NC}"
         echo "  3. Run Claude Code:   ${YELLOW}anyclaude${NC}"
         echo "  4. Monitor logs:      ${YELLOW}tail -f ~/.anyclaude/request-logs/*.jsonl | jq .${NC}"
         echo ""

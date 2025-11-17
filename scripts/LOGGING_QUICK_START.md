@@ -98,9 +98,9 @@ if is_verbose_debug_enabled():
     debug(2, "Detailed diagnostics")
 ```
 
-## Integrating with vllm-mlx-server.py
+## Integrating with mlx-server.py
 
-Replace the top of vllm-mlx-server.py:
+Replace the top of mlx-server.py:
 
 ```python
 # OLD:
@@ -109,14 +109,14 @@ logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(name)s] %(levelname)s: %(message)s'
 )
-logger = logging.getLogger("vllm-mlx")
+logger = logging.getLogger("mlx")
 
 # NEW:
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 from utils_logging import setup_logger, display_debug_startup
 
-logger = setup_logger("vllm-mlx")
+logger = setup_logger("mlx")
 display_debug_startup()  # Shows debug info if ANYCLAUDE_DEBUG set
 ```
 

@@ -2,7 +2,7 @@
 
 ## Your Situation
 
-You want stable, reliable Claude Code running locally on your Apple Silicon hardware with vLLM-MLX.
+You want stable, reliable Claude Code running locally on your Apple Silicon hardware with MLX.
 
 **Status**: ⚠️ Unstable (truncating frequently) → Can be fixed in 2-3 hours
 

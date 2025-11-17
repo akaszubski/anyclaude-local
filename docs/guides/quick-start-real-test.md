@@ -6,7 +6,7 @@
 
 ## What We've Built
 
-✅ **vLLM-MLX Server** - Local inference with prompt caching + tool calling
+✅ **MLX Server** - Local inference with prompt caching + tool calling
 ✅ **anyclaude Proxy** - Translates Anthropic API → OpenAI format
 ✅ **Automated Test** - 3 requests with cache verification
 ✅ **Results Analysis** - Shows cache hits, token counts, proof of caching
@@ -19,7 +19,7 @@
 
 ```bash
 source ~/.venv-mlx/bin/activate && \
-python /Users/akaszubski/Documents/GitHub/anyclaude/scripts/vllm-mlx-server.py \
+python /Users/akaszubski/Documents/GitHub/anyclaude/scripts/mlx-server.py \
   --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" \
   --port 8081
 ```
@@ -110,7 +110,7 @@ python scripts/analyze-traces.py --detail 2
 
 ✅ **Traces Generated**
 
-- Files in `~/.anyclaude/traces/vllm-mlx/`
+- Files in `~/.anyclaude/traces/mlx/`
 - Each contains full request/response
 
 ---
@@ -123,7 +123,7 @@ python scripts/analyze-traces.py --detail 2
 # Check server in Terminal 1 is still outputting logs
 # If crashed, restart it:
 source ~/.venv-mlx/bin/activate && \
-python scripts/vllm-mlx-server.py \
+python scripts/mlx-server.py \
   --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" \
   --port 8081
 ```
@@ -136,7 +136,7 @@ curl http://localhost:8081/v1/models
 
 # Verify config is correct:
 cat .anyclauderc.json | grep backend
-# Should show: "backend": "vllm-mlx"
+# Should show: "backend": "mlx"
 
 # Rebuild anyclaude:
 bun run build
@@ -145,7 +145,7 @@ bun run build
 ### "Cache not working (0%)"
 
 ```bash
-# Check vLLM-MLX server has caching support:
+# Check MLX server has caching support:
 curl -X POST http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"test","messages":[{"role":"user","content":"test"}],"stream":false}' | jq '.usage'
@@ -171,7 +171,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 
 - `scripts/run-real-test.sh` - Automated test runner
 - `scripts/analyze-traces.py` - Results analyzer
-- `scripts/vllm-mlx-server.py` - Server with caching + tools (restored)
+- `scripts/mlx-server.py` - Server with caching + tools (restored)
 
 **Documentation:**
 
@@ -182,7 +182,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 
 **Configuration:**
 
-- `.anyclauderc.json` - Set to vllm-mlx backend
+- `.anyclauderc.json` - Set to mlx backend
 
 ---
 
@@ -191,7 +191,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 Once you confirm caching is working:
 
 1. **Use anyclaude normally** - Just run `anyclaude` and it will use cached prompts
-2. **Monitor performance** - Traces saved to `~/.anyclaude/traces/vllm-mlx/`
+2. **Monitor performance** - Traces saved to `~/.anyclaude/traces/mlx/`
 3. **Check metrics** - Run `python scripts/analyze-traces.py` anytime
 4. **Switch backends** - Set `.anyclauderc.json` backend to "lmstudio" or "claude" if needed
 
@@ -201,7 +201,7 @@ Once you confirm caching is working:
 
 ```bash
 # Terminal 1 (Server - leave running):
-source ~/.venv-mlx/bin/activate && python /Users/akaszubski/Documents/GitHub/anyclaude/scripts/vllm-mlx-server.py --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" --port 8081
+source ~/.venv-mlx/bin/activate && python /Users/akaszubski/Documents/GitHub/anyclaude/scripts/mlx-server.py --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" --port 8081
 
 # Terminal 2 (Test):
 cd /Users/akaszubski/Documents/GitHub/anyclaude && bash scripts/run-real-test.sh

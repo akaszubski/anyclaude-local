@@ -11,7 +11,7 @@
  * - X-Cache-Hash: SHA256 hash of cacheable content (64-char hex)
  * - X-Cache-Tokens: Estimated token count as string
  *
- * These headers are sent to the backend (vLLM-MLX, LMStudio, etc.)
+ * These headers are sent to the backend (MLX, LMStudio, etc.)
  * and may be used for caching decisions.
  *
  * Prerequisites:

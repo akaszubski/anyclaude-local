@@ -13,7 +13,7 @@ A comprehensive prompt caching performance tracking and analysis system for anyc
    - Single one-off requests don't benefit
    - Real improvement comes with repeated identical requests
 
-2. **vLLM-MLX Limitations**
+2. **MLX Limitations**
    - Cache control headers are transmitted but not fully optimized
    - KV cache benefits mainly reduce time-to-first-token (TTFT)
    - Doesn't reduce overall token generation latency
@@ -218,7 +218,7 @@ Request 3: 290ms (cache hit) → 85% faster ✓
 
 - Repeated identical prompts within 5 minutes
 - Cached content > 1000 tokens
-- Using Anthropic Claude API (not vLLM-MLX)
+- Using Anthropic Claude API (not MLX)
 - Same system instructions + different user messages
 
 **Limited Benefit When:**
@@ -226,7 +226,7 @@ Request 3: 290ms (cache hit) → 85% faster ✓
 - One-off requests
 - Small prompts (<500 tokens)
 - Cache expired (>5 minutes)
-- Using vLLM-MLX (cache headers not optimized)
+- Using MLX (cache headers not optimized)
 
 ## Files Changed/Created
 
@@ -308,7 +308,7 @@ tail -100 ~/.anyclaude/cache-metrics/*.json
    - Savings display during operation
    - ROI calculation for cache optimization
 
-5. **vLLM-MLX Optimization**
+5. **MLX Optimization**
    - Investigate full cache control integration
    - Implement native KV cache optimization
    - Benchmark latency improvements

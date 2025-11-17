@@ -247,7 +247,7 @@ When implementing, ensure tests pass by:
 
 ### File Operations
 
-- [ ] Copy `scripts/archive/vllm-mlx-server.py` → `scripts/mlx-server.py`
+- [ ] Copy `scripts/archive/mlx-server.py` → `scripts/mlx-server.py`
 - [ ] Set executable: `chmod +x scripts/mlx-server.py`
 - [ ] Verify Python3 shebang
 - [ ] Test CLI: `python3 scripts/mlx-server.py --help`

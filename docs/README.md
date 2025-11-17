@@ -2,7 +2,7 @@
 
 Complete documentation for anyclaude - the translation layer enabling Claude Code with:
 
-- **Local models** (vLLM-MLX, LMStudio) for 100% privacy
+- **Local models** (MLX, LMStudio) for 100% privacy
 - **Cloud models** (OpenRouter) for 400+ models at 84% lower cost than Claude API
 - **Official Claude API** for full features
 
@@ -40,7 +40,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 - **[OpenRouter Setup](guides/openrouter-setup.md)** - **NEW!** 400+ models at fraction of Claude cost
 - **[Mode Switching](guides/mode-switching.md)** - Switch between local, OpenRouter, and Claude modes
 - **[Auto-Launch](guides/auto-launch.md)** - Server auto-launch configuration
-- **[Crash Fix Guide](guides/crash-fix.md)** - Fixing vLLM-MLX server crashes
+- **[Crash Fix Guide](guides/crash-fix.md)** - Fixing MLX server crashes
 - **[Trace Analysis](guides/trace-analysis.md)** - **NEW!** Analyzing Claude Code prompts
 
 ---
@@ -78,7 +78,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 - **[Tool Call Debug](debugging/tool-call-debug.md)** - Debugging tool execution
 - **[Trace Analysis](debugging/trace-analysis.md)** - Using trace files
 - **[Capture Tool Calls](debugging/capture-tool-calls.md)** - Recording tool events
-- **[vLLM-MLX Crash Analysis](debugging/vllm-mlx-crash-analysis.md)** - Server crash debugging
+- **[MLX Crash Analysis](debugging/mlx-crash-analysis.md)** - Server crash debugging
 - **[MLX Integration Findings](debugging/mlx-integration-findings.md)** - MLX-specific insights
 - **[Stream Truncation Fix](debugging/stream-truncation-fix.md)** - SSE stream issues
 

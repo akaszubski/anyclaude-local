@@ -1,0 +1,40 @@
+{
+  "backend": "vllm-mlx",
+  "debug": {
+    "level": 3,
+    "enableTraces": true,
+    "enableStreamLogging": true
+  },
+  "backends": {
+    "vllm-mlx": {
+      "enabled": true,
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "vllm-mlx",
+      "model": "gpt-oss-20b-5bit",
+      "modelPath": "/Users/andrewkaszubski/Models/NexVeridian/gpt-oss-20b-5bit",
+      "maxTokens": 131072,
+      "serverScript": "scripts/mlx-server.py",
+      "description": "OpenAI GPT OSS 20B (5-bit) - Slower but tool calling works"
+    },
+    "lmstudio": {
+      "enabled": true,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model",
+      "compatibility": "legacy",
+      "description": "Local LMStudio with openai-gpt-oss-20b (100+ tokens/sec, tool calling works)"
+    },
+    "claude": {
+      "enabled": false,
+      "description": "Real Anthropic API"
+    },
+    "openrouter": {
+      "enabled": true,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "",
+      "model": "qwen/qwen3-coder",
+      "description": "OpenRouter - Qwen3 Coder 480B (3s, $0.22/$0.95, 262K) - Reliable tool calling, precise"
+    }
+  }
+}

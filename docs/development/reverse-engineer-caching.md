@@ -1,6 +1,6 @@
 # Reverse Engineering Anthropic's Prompt Caching
 
-**Goal**: Understand exactly how Claude Code uses Anthropic's prompt caching, then replicate it in our vllm-mlx backend.
+**Goal**: Understand exactly how Claude Code uses Anthropic's prompt caching, then replicate it in our mlx backend.
 
 ## Quick Start
 
@@ -18,7 +18,7 @@
 ./scripts/debug/analyze-cache-traces.sh
 
 # Step 3: View implementation template
-cat ~/.anyclaude/analysis/vllm-mlx-cache-implementation.md
+cat ~/.anyclaude/analysis/mlx-cache-implementation.md
 ```
 
 ## What We're Looking For
@@ -165,7 +165,7 @@ const headers = {
 };
 ```
 
-### Layer 2: Backend (scripts/vllm-mlx-server.py)
+### Layer 2: Backend (scripts/mlx-server.py)
 
 **Read cache markers:**
 
@@ -222,8 +222,8 @@ else:
 **Verify caching works:**
 
 ```bash
-# Run with vllm-mlx backend
-anyclaude --mode=vllm-mlx
+# Run with mlx backend
+anyclaude --mode=mlx
 
 # First request (should be slow, create cache)
 # Ask: "What is 2+2?"
@@ -246,7 +246,7 @@ tail ~/.anyclaude/logs/debug-session-*.log | grep "cache_read_input_tokens"
 
 ✅ Second identical request returns `cache_read_input_tokens > 0`
 
-✅ vllm-mlx backend implements same pattern
+✅ mlx backend implements same pattern
 
 ✅ Local caching achieves 20-30x speedup on follow-up requests
 
@@ -273,8 +273,8 @@ tail ~/.anyclaude/logs/debug-session-*.log | grep "cache_read_input_tokens"
 - Check Anthropic API version in traces
 - Try making multiple identical requests
 
-**Cache not working in vllm-mlx?**
+**Cache not working in mlx?**
 
 - Verify cache markers detected in proxy
-- Check vllm-mlx logs for cache hit/miss
+- Check mlx logs for cache hit/miss
 - Ensure KV cache directory exists and is writable

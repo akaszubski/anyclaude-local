@@ -38,11 +38,11 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "description": "Run Claude Code with local models (vLLM-MLX auto-launch, LMStudio) or cheap cloud models (OpenRouter). Enhanced port of anyclaude for Claude Code 2.0 with 100% privacy or 84% cost savings.",
+  "description": "Run Claude Code with local models (MLX auto-launch, LMStudio) or cheap cloud models (OpenRouter). Enhanced port of anyclaude for Claude Code 2.0 with 100% privacy or 84% cost savings.",
   "keywords": [
     "claude",
     "claude-code",
-    "vllm-mlx",
+    "mlx",
     "lmstudio",
     "openrouter",
     "mlx",

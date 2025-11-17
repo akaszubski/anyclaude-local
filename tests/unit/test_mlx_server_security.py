@@ -31,7 +31,7 @@ class MLXServerSecurityTests(unittest.TestCase):
         """Set up test environment"""
         cls.repo_root = Path(__file__).parent.parent.parent
         cls.dest_file = cls.repo_root / 'scripts' / 'mlx-server.py'
-        cls.archive_file = cls.repo_root / 'scripts' / 'archive' / 'vllm-mlx-server.py'
+        cls.archive_file = cls.repo_root / 'scripts' / 'archive' / 'mlx-server.py'
 
         # Read file content if it exists
         cls.content = None
@@ -485,7 +485,7 @@ class MLXServerIntegrationTests(unittest.TestCase):
 
         has_mlx_reference = (
             'mlx-server' in content.lower() or
-            'vllm-mlx-server' in content.lower()
+            'mlx-server' in content.lower()
         )
 
         self.assertTrue(

@@ -158,7 +158,7 @@ Large models (42B) need more compute to process prompts than small models (20B).
 
 **Solution:**
 
-- Switch to vLLM-MLX (faster inference engine)
+- Switch to MLX (faster inference engine)
 - Use smaller context (reduce system prompt size)
 - Use smaller model
 - Upgrade hardware
@@ -178,7 +178,7 @@ Thinking models generate reasoning tokens before the answer. Each token goes thr
 
 - Disable debug logging (`ANYCLAUDE_DEBUG=0`)
 - Optimize stream conversion (batch chunks)
-- Consider direct vLLM-MLX connection
+- Consider direct MLX connection
 
 ### Scenario C: Large context window is the issue
 

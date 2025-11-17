@@ -287,7 +287,10 @@ export function truncateMessages(
 /**
  * Log context warning if approaching limit
  */
-export function logContextWarning(stats: ContextStats, mode?: "claude" | "lmstudio" | "vllm-mlx" | "openrouter"): void {
+export function logContextWarning(
+  stats: ContextStats,
+  mode?: "claude" | "lmstudio" | "mlx" | "openrouter"
+): void {
   // Skip warnings for cloud models with large context windows
   if (mode === "claude" || mode === "openrouter") {
     return;

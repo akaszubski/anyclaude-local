@@ -1,15 +1,15 @@
-# Quick Start: anyclaude with vLLM-MLX
+# Quick Start: anyclaude with MLX
 
 ## The Fix
 
-Your `anyclaude` was crashing Python because it was trying to auto-spawn the vLLM-MLX server as a subprocess. This is now fixed by disabling auto-launch. **You'll start the server manually instead**, which is actually more reliable.
+Your `anyclaude` was crashing Python because it was trying to auto-spawn the MLX server as a subprocess. This is now fixed by disabling auto-launch. **You'll start the server manually instead**, which is actually more reliable.
 
 ## 2-Terminal Setup
 
 ### Terminal 1: Start the Server
 
 ```bash
-source ~/.venv-mlx/bin/activate && python3 /Users/akaszubski/Documents/GitHub/anyclaude/scripts/vllm-mlx-server.py \
+source ~/.venv-mlx/bin/activate && python3 /Users/akaszubski/Documents/GitHub/anyclaude/scripts/mlx-server.py \
   --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" \
   --port 8081
 ```
@@ -17,7 +17,7 @@ source ~/.venv-mlx/bin/activate && python3 /Users/akaszubski/Documents/GitHub/an
 Wait for this output:
 
 ```
-[2025-10-29 ...] [vllm-mlx] INFO: Model loaded successfully
+[2025-10-29 ...] [mlx] INFO: Model loaded successfully
 INFO:     Application startup complete.
 ```
 
@@ -51,14 +51,14 @@ Your `.anyclauderc.json` now has:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "model": "current-model", // ← This disables auto-launch
-      "serverScript": "scripts/vllm-mlx-server.py"
+      "serverScript": "scripts/mlx-server.py"
     }
   }
 }
@@ -83,7 +83,7 @@ ANYCLAUDE_DEBUG=1 anyclaude
 Check logs at:
 
 ```bash
-cat ~/.anyclaude/logs/vllm-mlx-server.log
+cat ~/.anyclaude/logs/mlx-server.log
 ```
 
 ### If you want to switch back to auto-launch (risky)...
@@ -101,14 +101,14 @@ But expect the crash dialog to return.
 Add to your shell profile (`~/.zshrc` or `~/.bash_profile`):
 
 ```bash
-# Start vLLM-MLX server in background
-alias vllm-start='source ~/.venv-mlx/bin/activate && python3 ~/Documents/GitHub/anyclaude/scripts/vllm-mlx-server.py --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" --port 8081 &'
+# Start MLX server in background
+alias vllm-start='source ~/.venv-mlx/bin/activate && python3 ~/Documents/GitHub/anyclaude/scripts/mlx-server.py --model "/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit" --port 8081 &'
 
 # Check if server is running
 alias vllm-status='lsof -i :8081 && echo "Server running" || echo "Server not running"'
 
 # Kill server
-alias vllm-stop='pkill -f "vllm-mlx-server.py"'
+alias vllm-stop='pkill -f "mlx-server.py"'
 ```
 
 Then:
@@ -124,7 +124,7 @@ anyclaude   # Terminal 2
 ✅ Qwen3-Coder-30B local model with prompt caching
 ✅ Tool calling support
 ✅ Full Claude Code IDE features
-✅ Traces logged to `~/.anyclaude/traces/vllm-mlx/`
+✅ Traces logged to `~/.anyclaude/traces/mlx/`
 
 ## Debug Output
 
@@ -146,7 +146,7 @@ ANYCLAUDE_DEBUG=3 anyclaude
 
 You're all set. The crash issue is fixed. Just remember the 2-terminal setup:
 
-1. **Terminal 1**: `source ~/.venv-mlx/bin/activate && python3 .../vllm-mlx-server.py ...`
+1. **Terminal 1**: `source ~/.venv-mlx/bin/activate && python3 .../mlx-server.py ...`
 2. **Terminal 2**: `anyclaude`
 
 That's it!

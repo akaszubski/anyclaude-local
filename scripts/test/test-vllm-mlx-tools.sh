@@ -1,11 +1,11 @@
 #!/bin/bash
-# Test vLLM-MLX tool calling functionality
+# Test MLX tool calling functionality
 
 set -e
 
 BASE_URL="${1:-http://localhost:8081}"
 
-echo "🧪 vLLM-MLX Tool Calling Test"
+echo "🧪 MLX Tool Calling Test"
 echo "=============================="
 echo "Base URL: $BASE_URL"
 echo ""

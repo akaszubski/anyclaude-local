@@ -308,7 +308,7 @@ npm test
 1. Watch request logs for patterns
 2. Track cache hit rates over time
 3. Monitor for any truncation or timeout issues
-4. Compare vLLM-MLX vs LMStudio performance
+4. Compare MLX vs LMStudio performance
 
 ---
 

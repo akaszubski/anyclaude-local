@@ -14,7 +14,7 @@ Prompt caching helps reduce latency and costs when working with large, repetitiv
   - Cache read: 10% of base price (90% savings)
 - **TTL (Time-to-Live)**: 5-minute default, extendable to 1-hour
 
-### vLLM-MLX Caching
+### MLX Caching
 
 - Supports **Automatic Prefix Caching (APC)** via KV cache
 - Reduces **time-to-first-token (TTFT)** significantly
@@ -49,7 +49,7 @@ The proxy automatically sets cache control on:
    - Limited latency benefit for single requests
    - Real benefit comes with repeated identical requests
 
-2. **vLLM-MLX Limitations**:
+2. **MLX Limitations**:
    - Cache control headers are set but may not be fully utilized
    - KV cache benefits depend on model size and batch processing
    - Single-request scenarios see minimal latency benefit
@@ -76,7 +76,7 @@ ANYCLAUDE_MODE=claude ANYCLAUDE_DEBUG=2 anyclaude
 2. Subsequent requests (within 5 min): Reuse cached content
 3. Cost: Write once (at 1.25x), read many times (at 0.1x)
 
-### For vLLM-MLX (Local Mode)
+### For MLX (Local Mode)
 
 ```bash
 # Enable prefix caching in vLLM
@@ -252,7 +252,7 @@ vs (cached request):
 
 ## Known Limitations
 
-1. **vLLM-MLX**: Cache control headers not fully utilized yet
+1. **MLX**: Cache control headers not fully utilized yet
 2. **Ephemeral Cache**: 5-minute TTL limits cross-conversation reuse
 3. **LRU Eviction**: Cache can be evicted under memory pressure
 4. **Single Request**: Cache benefits invisible in one-off requests

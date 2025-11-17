@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example: How to integrate utils_logging.py into vllm-mlx-server.py
+Example: How to integrate utils_logging.py into mlx-server.py
 
 This file demonstrates the recommended patterns for using the logging utility
 in your FastAPI server and other Python scripts.
@@ -37,7 +37,7 @@ from utils_logging import (
 # STEP 1: Setup logger at module level
 # ============================================================================
 
-logger = setup_logger("vllm-mlx-server-example")
+logger = setup_logger("mlx-server-example")
 
 
 # ============================================================================
@@ -200,11 +200,11 @@ async def main():
 
 
 # ============================================================================
-# STEP 5: Integration Points in vllm-mlx-server.py
+# STEP 5: Integration Points in mlx-server.py
 # ============================================================================
 
 """
-To integrate into vllm-mlx-server.py, add these at the top:
+To integrate into mlx-server.py, add these at the top:
 
 ```python
 # At imports
@@ -218,7 +218,7 @@ from scripts.utils_logging import (
 )
 
 # Replace the logging.basicConfig with:
-logger = setup_logger("vllm-mlx")
+logger = setup_logger("mlx")
 display_debug_startup()
 
 # In your PromptCache class:

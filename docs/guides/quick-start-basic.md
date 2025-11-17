@@ -19,10 +19,10 @@ This script will:
 ## Then Just Run
 
 ```bash
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
-Claude Code will open and connect to your local vLLM-MLX server.
+Claude Code will open and connect to your local MLX server.
 
 ---
 
@@ -40,7 +40,7 @@ Claude Code will open and connect to your local vLLM-MLX server.
 
 ### 3. Configuration (`.anyclauderc.json`)
 
-- vLLM-MLX backend settings
+- MLX backend settings
 - Model path
 - Port configuration
 
@@ -82,25 +82,25 @@ Update `.anyclauderc.json` with the correct path to your MLX model directory.
 ### Standard mode (with all logging)
 
 ```bash
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 ### With debug output
 
 ```bash
-ANYCLAUDE_DEBUG=1 anyclaude --mode=vllm-mlx
+ANYCLAUDE_DEBUG=1 anyclaude --mode=mlx
 ```
 
 ### With verbose debug logging
 
 ```bash
-ANYCLAUDE_DEBUG=2 anyclaude --mode=vllm-mlx
+ANYCLAUDE_DEBUG=2 anyclaude --mode=mlx
 ```
 
 ### With trace debug (includes tool calls)
 
 ```bash
-ANYCLAUDE_DEBUG=3 anyclaude --mode=vllm-mlx
+ANYCLAUDE_DEBUG=3 anyclaude --mode=mlx
 ```
 
 ---
@@ -131,17 +131,17 @@ Edit `.anyclauderc.json` to customize:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "debug": {
     "level": 0,
     "enableTraces": false
   },
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/your/mlx/model"
     }
   }
@@ -153,7 +153,7 @@ Edit `.anyclauderc.json` to customize:
 ## Next Steps
 
 1. Run: `scripts/setup-complete.sh`
-2. Run: `anyclaude --mode=vllm-mlx`
+2. Run: `anyclaude --mode=mlx`
 3. Start asking Claude Code questions!
 
 Need help? Check `CLAUDE.md` or see `docs/` for detailed guides.

@@ -29,7 +29,7 @@ def apply_fixes():
     # Fix 2: Add metrics authentication setup (VUL-006)
     print("Fix 2: Adding metrics authentication setup...")
     # Find the __init__ method and add security setup after self.app = FastAPI
-    init_pattern = r"(self\.app = FastAPI\(title=\"vLLM-MLX Server\"\))"
+    init_pattern = r"(self\.app = FastAPI\(title=\"MLX Server\"\))"
     init_replacement = r"""\1
 
         # Production hardening: Metrics endpoint authentication (VUL-006 fix)

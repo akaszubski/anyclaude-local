@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Test script for vLLM-MLX server launcher
+ * Test script for MLX server launcher
  * Verifies that the server launcher can:
  * 1. Detect the venv
  * 2. Build the correct command
@@ -12,7 +12,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
-console.log("Testing vLLM-MLX Server Launcher Integration");
+console.log("Testing MLX Server Launcher Integration");
 console.log("===========================================\n");
 
 // Test 1: Check venv exists
@@ -29,13 +29,13 @@ if (fs.existsSync(activateScript)) {
   console.log("  ✓ PASS: Venv is properly configured\n");
 } else {
   console.log(
-    "  ✗ FAIL: Venv not found. Run: scripts/setup-vllm-mlx-venv.sh\n"
+    "  ✗ FAIL: Venv not found. Run: scripts/setup-mlx-venv.sh\n"
   );
   process.exit(1);
 }
 
 // Test 2: Check server script exists
-const serverScript = path.resolve("scripts/vllm-mlx-server.py");
+const serverScript = path.resolve("scripts/mlx-server.py");
 
 console.log("✓ Test 2: Check server script");
 console.log(`  Server script: ${serverScript}`);
@@ -58,8 +58,8 @@ console.log(`  Exists: ${fs.existsSync(configPath)}\n`);
 if (fs.existsSync(configPath)) {
   try {
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    const model = config.backends?.["vllm-mlx"]?.model;
-    const port = config.backends?.["vllm-mlx"]?.port || 8081;
+    const model = config.backends?.["mlx"]?.model;
+    const port = config.backends?.["mlx"]?.port || 8081;
 
     console.log(`  Backend selected: ${config.backend}`);
     console.log(`  Model path: ${model}`);
@@ -108,7 +108,7 @@ console.log("  ✓ Virtual environment configured");
 console.log("  ✓ Server launcher updated to use venv");
 console.log("  ✓ Build successful\n");
 console.log("Next Steps:");
-console.log("  1. Start anyclaude: anyclaude --mode=vllm-mlx");
+console.log("  1. Start anyclaude: anyclaude --mode=mlx");
 console.log("  2. First startup: ~30 seconds to load model");
-console.log('  3. Watch for: "vLLM-MLX server started successfully"');
+console.log('  3. Watch for: "MLX server started successfully"');
 console.log("  4. Claude Code will launch automatically\n");

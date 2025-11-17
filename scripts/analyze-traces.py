@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, List, Any
 import sys
 
-def get_trace_files(backend: str = "vllm-mlx", limit: int = 10) -> List[Path]:
+def get_trace_files(backend: str = "mlx", limit: int = 10) -> List[Path]:
     """Get most recent trace files for a backend"""
     trace_dir = Path.home() / ".anyclaude" / "traces" / backend
 
@@ -134,7 +134,7 @@ def print_detailed(traces: List[Dict[str, Any]], index: int = 0):
         return
 
     trace = traces[index]
-    trace_file = Path.home() / ".anyclaude" / "traces" / "vllm-mlx" / trace["file"]
+    trace_file = Path.home() / ".anyclaude" / "traces" / "mlx" / trace["file"]
 
     with open(trace_file) as f:
         data = json.load(f)
@@ -213,13 +213,13 @@ def print_detailed(traces: List[Dict[str, Any]], index: int = 0):
 
 def main():
     """Main function"""
-    backend = "vllm-mlx"
+    backend = "mlx"
 
     if len(sys.argv) > 1:
         if sys.argv[1] == "--help":
             print("Usage: analyze-traces.py [--backend BACKEND] [--detail INDEX]")
             print("\nExamples:")
-            print("  analyze-traces.py                    # Show summary of vllm-mlx traces")
+            print("  analyze-traces.py                    # Show summary of mlx traces")
             print("  analyze-traces.py --backend claude   # Show summary of claude traces")
             print("  analyze-traces.py --detail 0         # Show details of first trace")
             return

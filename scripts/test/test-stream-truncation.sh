@@ -129,7 +129,7 @@ else
     echo -e "${RED}❌ Some tests failed!${NC}"
     echo ""
     echo "💡 Debugging tips:"
-    echo "  - Check vLLM-MLX server logs: tail -f ~/.anyclaude/logs/vllm-mlx-server.log"
+    echo "  - Check MLX server logs: tail -f ~/.anyclaude/logs/mlx-server.log"
     echo "  - Run with debug logging: ANYCLAUDE_DEBUG=2 anyclaude"
     echo "  - Check test output: cat $TEMP_DIR/test_*.txt"
     exit 1

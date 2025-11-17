@@ -13,7 +13,7 @@
  * - toolCount: Number of tools in the request
  * - messageCount: Number of messages in the conversation
  * - streaming: Whether streaming was enabled
- * - provider: Backend provider (vllm-mlx, lmstudio, claude, openrouter)
+ * - provider: Backend provider (mlx, lmstudio, claude, openrouter)
  * - model: Model name/path
  */
 

@@ -1,10 +1,10 @@
-# vLLM-MLX Setup Guide
+# MLX Setup Guide
 
-This guide walks you through setting up and using vLLM-MLX with anyclaude for high-performance local model inference on Apple Silicon Macs.
+This guide walks you through setting up and using MLX with anyclaude for high-performance local model inference on Apple Silicon Macs.
 
-## What is vLLM-MLX?
+## What is MLX?
 
-**vLLM-MLX** combines:
+**MLX** combines:
 
 - **vLLM**: A production-grade inference engine with advanced features like prompt caching and continuous batching
 - **MLX**: Apple's machine learning framework optimized for Apple Silicon (M1/M2/M3+)
@@ -29,13 +29,13 @@ This gives you:
 
 ```bash
 cd /path/to/anyclaude
-scripts/setup-vllm-mlx-venv.sh
+scripts/setup-mlx-venv.sh
 ```
 
 This script will:
 
 - Create a Python virtual environment at `~/.venv-mlx`
-- Install all required dependencies (mlx, vllm-mlx, certifi, etc.)
+- Install all required dependencies (mlx, mlx, certifi, etc.)
 - Verify the installation
 
 The setup takes 5-10 minutes depending on your internet connection.
@@ -46,15 +46,15 @@ Edit `.anyclauderc.json` in your anyclaude directory:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/your/model",
-      "description": "vLLM-MLX with your chosen model"
+      "description": "MLX with your chosen model"
     }
   }
 }
@@ -65,21 +65,21 @@ Replace `/path/to/your/model` with the actual path to your downloaded model.
 ### 3. Launch anyclaude
 
 ```bash
-# Default (uses vllm-mlx backend from config)
+# Default (uses mlx backend from config)
 anyclaude
 
 # Or explicitly specify
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 
 # With debug logging
-ANYCLAUDE_DEBUG=1 anyclaude --mode=vllm-mlx
+ANYCLAUDE_DEBUG=1 anyclaude --mode=mlx
 ```
 
 anyclaude will:
 
 1. Check if the venv exists (if not, show setup instructions)
 2. Activate the venv automatically
-3. Start the vLLM-MLX server
+3. Start the MLX server
 4. Wait for the model to load (~20-30 seconds)
 5. Launch Claude Code connected to the local server
 
@@ -87,7 +87,7 @@ anyclaude will:
 
 ### Where to Get Models
 
-vLLM-MLX works with quantized models optimized for MLX. Popular sources:
+MLX works with quantized models optimized for MLX. Popular sources:
 
 **Hugging Face** (recommended):
 
@@ -130,7 +130,7 @@ Keep models in a consistent location:
 Then update `.anyclauderc.json`:
 
 ```json
-"vllm-mlx": {
+"mlx": {
   "model": "/Users/yourname/ai-models/qwen3-coder-30b"
 }
 ```
@@ -142,7 +142,7 @@ Then update `.anyclauderc.json`:
 **Error: "Python virtual environment not found"**
 
 ```bash
-scripts/setup-vllm-mlx-venv.sh
+scripts/setup-mlx-venv.sh
 ```
 
 **Error: "cannot import name 'where' from 'certifi'"**
@@ -150,7 +150,7 @@ scripts/setup-vllm-mlx-venv.sh
 This means certifi is corrupted. The setup script fixes this:
 
 ```bash
-scripts/setup-vllm-mlx-venv.sh
+scripts/setup-mlx-venv.sh
 ```
 
 If you need to manually fix it:
@@ -182,7 +182,7 @@ pip install --upgrade --force-reinstall certifi
 1. Check if other processes are consuming CPU/GPU
 2. Reduce other app memory usage
 3. Try a smaller/faster model
-4. Check debug logs: `ANYCLAUDE_DEBUG=1 anyclaude --mode=vllm-mlx`
+4. Check debug logs: `ANYCLAUDE_DEBUG=1 anyclaude --mode=mlx`
 
 **Out of memory errors:**
 
@@ -199,7 +199,7 @@ To use a different port:
 ```json
 {
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "port": 9000,
       "baseUrl": "http://localhost:9000/v1"
     }
@@ -212,31 +212,31 @@ To use a different port:
 If you prefer to start the server manually:
 
 ```bash
-ANYCLAUDE_NO_AUTO_LAUNCH=true anyclaude --mode=vllm-mlx
+ANYCLAUDE_NO_AUTO_LAUNCH=true anyclaude --mode=mlx
 ```
 
 Then in another terminal:
 
 ```bash
 source ~/.venv-mlx/bin/activate
-python3 scripts/vllm-mlx-server.py --model /path/to/model --port 8081
+python3 scripts/mlx-server.py --model /path/to/model --port 8081
 ```
 
 ### Environment Variables
 
 ```bash
 # Control debug output
-ANYCLAUDE_DEBUG=1 anyclaude --mode=vllm-mlx    # Basic debug
-ANYCLAUDE_DEBUG=2 anyclaude --mode=vllm-mlx    # Verbose
-ANYCLAUDE_DEBUG=3 anyclaude --mode=vllm-mlx    # Trace (includes tool calls)
+ANYCLAUDE_DEBUG=1 anyclaude --mode=mlx    # Basic debug
+ANYCLAUDE_DEBUG=2 anyclaude --mode=mlx    # Verbose
+ANYCLAUDE_DEBUG=3 anyclaude --mode=mlx    # Trace (includes tool calls)
 
 # Custom venv path
 export VENV_PATH=/custom/path/.venv
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 
 # Disable auto-launch
 export ANYCLAUDE_NO_AUTO_LAUNCH=true
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 ## Performance Tips
@@ -251,7 +251,7 @@ For Claude Code (code generation & tool use):
 
 ### Batch Size & Context
 
-Edit `scripts/vllm-mlx-server.py` if needed:
+Edit `scripts/mlx-server.py` if needed:
 
 ```python
 # Default batch size (good for 32GB+ RAM)
@@ -267,7 +267,7 @@ max_num_seqs = 4  # default: 8
 
 ## Comparing with Other Backends
 
-| Feature        | vLLM-MLX    | MLX-LM         | LMStudio      |
+| Feature        | MLX    | MLX-LM         | LMStudio      |
 | -------------- | ----------- | -------------- | ------------- |
 | Speed          | ⚡⚡⚡ Fast | ⚡⚡ Moderate  | ⚡⚡ Moderate |
 | Tool Calling   | ✓ Good      | ⚠️ Basic       | ✓ Good        |

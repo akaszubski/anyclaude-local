@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Integration Test: vLLM-MLX System Prompt Normalization Fix
+ * Integration Test: MLX System Prompt Normalization Fix
  *
  * Tests that the actual proxy code (main.ts fetch interceptor) properly
- * normalizes system prompts for vLLM-MLX to prevent:
+ * normalizes system prompts for MLX to prevent:
  * - JSON parsing errors
  * - Looping/unpredictable model responses
  * - Malformed request bodies
  *
  * This test validates the fix at the integration level by:
  * 1. Simulating the fetch interception in main.ts
- * 2. Verifying system prompts are normalized only for vLLM-MLX
+ * 2. Verifying system prompts are normalized only for MLX
  * 3. Ensuring other providers are not affected
  */
 
@@ -21,7 +21,7 @@ let passed = 0;
 let failed = 0;
 
 /**
- * Simulate the fetch interception logic from main.ts for vLLM-MLX
+ * Simulate the fetch interception logic from main.ts for MLX
  */
 function simulateVLLMMlxFetch(requestBody) {
   const body = JSON.parse(requestBody);
@@ -60,7 +60,7 @@ function simulateVLLMMlxFetch(requestBody) {
  */
 function normalizeSystemPromptInProxy(system, providerName) {
   // This is the exact logic from anthropic-proxy.ts lines 458-462
-  if (system && providerName === "vllm-mlx") {
+  if (system && providerName === "mlx") {
     system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
   }
   return system;
@@ -107,12 +107,12 @@ function test_proxy_level_normalization() {
 It helps with software development.
 It is helpful and honest.`;
 
-  const normalized = normalizeSystemPromptInProxy(systemPrompt, "vllm-mlx");
+  const normalized = normalizeSystemPromptInProxy(systemPrompt, "mlx");
 
   assert.strictEqual(
     normalized,
     "Claude Code is an AI assistant. It helps with software development. It is helpful and honest.",
-    "Proxy should normalize system prompt for vllm-mlx"
+    "Proxy should normalize system prompt for mlx"
   );
   console.log("   ✅ Proxy-level normalization works correctly");
   passed++;
@@ -122,11 +122,11 @@ It is helpful and honest.`;
  * Test 3: LMStudio is NOT affected by the normalization logic
  */
 function test_lmstudio_not_affected() {
-  console.log("\n✓ Test 3: LMStudio is not affected by vllm-mlx normalization");
+  console.log("\n✓ Test 3: LMStudio is not affected by mlx normalization");
 
   const systemPrompt = "You are helpful.\nBe honest.";
 
-  // LMStudio shouldn't normalize (only vllm-mlx does)
+  // LMStudio shouldn't normalize (only mlx does)
   const lmstudioResult = normalizeSystemPromptInProxy(systemPrompt, "lmstudio");
   assert.strictEqual(
     lmstudioResult,
@@ -146,7 +146,7 @@ function test_claude_mode_not_affected() {
 
   const systemPrompt = "You are helpful.\nBe honest.";
 
-  // Claude shouldn't normalize (only vllm-mlx does)
+  // Claude shouldn't normalize (only mlx does)
   const claudeResult = normalizeSystemPromptInProxy(systemPrompt, "claude");
   assert.strictEqual(
     claudeResult,
@@ -170,7 +170,7 @@ function test_double_normalization() {
   const systemPrompt = "You are helpful.\nBe honest.";
 
   // First normalization (proxy-level)
-  let normalized = normalizeSystemPromptInProxy(systemPrompt, "vllm-mlx");
+  let normalized = normalizeSystemPromptInProxy(systemPrompt, "mlx");
   assert.strictEqual(normalized, "You are helpful. Be honest.");
 
   // Second normalization (fetch-level) - should be idempotent
@@ -206,7 +206,7 @@ Tools available:
 - Edit code
 - Run tests`;
 
-  const normalized = normalizeSystemPromptInProxy(systemPrompt, "vllm-mlx");
+  const normalized = normalizeSystemPromptInProxy(systemPrompt, "mlx");
 
   // Check no newlines remain
   assert.ok(!normalized.includes("\n"), "Newlines should be removed");
@@ -232,7 +232,7 @@ Use **bold** and *italic* for formatting.
 Handle JSON: {"key": "value"}.
 Handle code: \`code\` blocks.`;
 
-  const normalized = normalizeSystemPromptInProxy(systemPrompt, "vllm-mlx");
+  const normalized = normalizeSystemPromptInProxy(systemPrompt, "mlx");
 
   // Verify special chars are preserved
   assert.ok(normalized.includes("**bold**"), "Bold markers preserved");
@@ -250,9 +250,9 @@ Handle code: \`code\` blocks.`;
 function test_null_system_prompt() {
   console.log("\n✓ Test 8: Null/undefined system prompt handling");
 
-  const nullResult = normalizeSystemPromptInProxy(null, "vllm-mlx");
-  const undefinedResult = normalizeSystemPromptInProxy(undefined, "vllm-mlx");
-  const emptyResult = normalizeSystemPromptInProxy("", "vllm-mlx");
+  const nullResult = normalizeSystemPromptInProxy(null, "mlx");
+  const undefinedResult = normalizeSystemPromptInProxy(undefined, "mlx");
+  const emptyResult = normalizeSystemPromptInProxy("", "mlx");
 
   assert.strictEqual(nullResult, null, "Null should be preserved");
   assert.strictEqual(
@@ -322,9 +322,9 @@ function test_normalization_idempotency() {
   console.log("\n✓ Test 10: Normalization is idempotent");
 
   const originalPrompt = "You are helpful.\nBe honest.";
-  const first = normalizeSystemPromptInProxy(originalPrompt, "vllm-mlx");
-  const second = normalizeSystemPromptInProxy(first, "vllm-mlx");
-  const third = normalizeSystemPromptInProxy(second, "vllm-mlx");
+  const first = normalizeSystemPromptInProxy(originalPrompt, "mlx");
+  const second = normalizeSystemPromptInProxy(first, "mlx");
+  const third = normalizeSystemPromptInProxy(second, "mlx");
 
   assert.strictEqual(
     first,
@@ -368,7 +368,7 @@ function runTests() {
 
   if (failed === 0) {
     console.log(
-      "\n✅ All vLLM-MLX system prompt fix integration tests passed!"
+      "\n✅ All MLX system prompt fix integration tests passed!"
     );
     process.exit(0);
   }

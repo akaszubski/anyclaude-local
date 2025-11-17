@@ -1,16 +1,16 @@
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "debug": {
     "level": 3,
     "enableTraces": true,
     "enableStreamLogging": true
   },
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "gpt-oss-20b-5bit",
       "modelPath": "/Users/andrewkaszubski/Models/NexVeridian/gpt-oss-20b-5bit",
       "maxTokens": 131072,

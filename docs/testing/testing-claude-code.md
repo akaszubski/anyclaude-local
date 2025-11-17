@@ -194,11 +194,11 @@ PROXY_ONLY=true bun run src/main.ts
 ANYCLAUDE_PROXY_PORT=60877 npm run test:integration:format
 ```
 
-### Option 3: Full End-to-End (With vLLM-MLX)
+### Option 3: Full End-to-End (With MLX)
 
 ```bash
-# Terminal 1: Start vLLM-MLX server
-python3 scripts/vllm-mlx-server.py --model /path/to/model
+# Terminal 1: Start MLX server
+python3 scripts/mlx-server.py --model /path/to/model
 
 # Terminal 2: Start the proxy
 PROXY_ONLY=true bun run src/main.ts
@@ -500,11 +500,11 @@ npm run test:integration:cache -- --no-parallel
 
 ### "Streaming tests fail"
 
-Ensure vLLM-MLX or LMStudio isn't returning truncated responses:
+Ensure MLX or LMStudio isn't returning truncated responses:
 
 ```bash
 # Check server logs
-tail -f ~/.anyclaude/logs/vllm-mlx-server.log
+tail -f ~/.anyclaude/logs/mlx-server.log
 ```
 
 ## Next Steps

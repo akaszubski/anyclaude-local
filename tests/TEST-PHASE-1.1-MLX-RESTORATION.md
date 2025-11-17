@@ -222,7 +222,7 @@ Once tests are GREEN, implementation must include:
 
 ### File Restoration
 
-- [ ] Copy `scripts/archive/vllm-mlx-server.py` to `scripts/mlx-server.py`
+- [ ] Copy `scripts/archive/mlx-server.py` to `scripts/mlx-server.py`
 - [ ] Verify executable permissions (`chmod +x`)
 - [ ] Verify Python3 shebang
 - [ ] Test `--help` command works
@@ -298,7 +298,7 @@ When updating the MLX server in the future:
 ## Related Files
 
 - Implementation plan: `docs/development/optimum-implementation-plan.md`
-- Archive: `scripts/archive/vllm-mlx-server.py`
+- Archive: `scripts/archive/mlx-server.py`
 - Production backend: `scripts/mlx-textgen-server.sh`
 - Test runner: `scripts/test/run-mlx-restoration-tests.sh`
 

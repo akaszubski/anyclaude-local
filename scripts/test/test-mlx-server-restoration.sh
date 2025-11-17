@@ -1,6 +1,6 @@
 #!/bin/bash
 # Test MLX Server Restoration (Phase 1.1)
-# Tests for restoring scripts/archive/vllm-mlx-server.py to scripts/mlx-server.py
+# Tests for restoring scripts/archive/mlx-server.py to scripts/mlx-server.py
 #
 # This test suite validates:
 # - File structure and permissions
@@ -27,14 +27,14 @@ TESTS_FAILED=0
 # Base directory
 REPO_ROOT="/Users/andrewkaszubski/Documents/GitHub/anyclaude"
 DEST_FILE="$REPO_ROOT/scripts/mlx-server.py"
-ARCHIVE_FILE="$REPO_ROOT/scripts/archive/vllm-mlx-server.py"
+ARCHIVE_FILE="$REPO_ROOT/scripts/archive/mlx-server.py"
 
 echo "=========================================="
 echo "MLX Server Restoration Test Suite"
 echo "=========================================="
 echo ""
 echo "Testing restoration of mlx-server.py"
-echo "Source: scripts/archive/vllm-mlx-server.py"
+echo "Source: scripts/archive/mlx-server.py"
 echo "Destination: scripts/mlx-server.py"
 echo ""
 
@@ -330,7 +330,7 @@ fi
 ARCHIVE_README="$REPO_ROOT/scripts/archive/README.md"
 if [ -f "$ARCHIVE_README" ]; then
     if grep -q "mlx-server.py" "$ARCHIVE_README" || \
-       grep -q "vllm-mlx-server.py" "$ARCHIVE_README"; then
+       grep -q "mlx-server.py" "$ARCHIVE_README"; then
         pass_test "Archive README documents the MLX server files"
     else
         fail_test "Archive README documents the MLX server files" \

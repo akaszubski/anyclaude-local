@@ -3,7 +3,7 @@
 echo "=== Step 1: Send initial request ==="
 RESPONSE1=$(curl -s -X POST http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer vllm-mlx" \
+  -H "Authorization: Bearer mlx" \
   -d '{
   "model": "gpt-oss-20b",
   "messages": [
@@ -46,7 +46,7 @@ echo ""
 echo "=== Step 2: Send tool result with the same tool_call_id ==="
 RESPONSE2=$(curl -s -X POST http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer vllm-mlx" \
+  -H "Authorization: Bearer mlx" \
   -d "{
   \"model\": \"gpt-oss-20b\",
   \"messages\": [

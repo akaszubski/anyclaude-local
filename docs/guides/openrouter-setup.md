@@ -278,7 +278,7 @@ Some free/cheap models may have:
 
 ## Comparison: OpenRouter vs Local vs Claude
 
-| Feature      | OpenRouter                 | Local (vLLM-MLX)        | Claude API                |
+| Feature      | OpenRouter                 | Local (MLX)        | Claude API                |
 | ------------ | -------------------------- | ----------------------- | ------------------------- |
 | Cost         | $0.05/session              | Free                    | $0.30/session             |
 | Privacy      | Cloud (sent to OpenRouter) | 100% local              | Cloud (sent to Anthropic) |

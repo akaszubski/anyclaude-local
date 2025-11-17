@@ -370,7 +370,7 @@ function testNoNewlineStrippingInProxy() {
     // Look for the commented-out code
     const hasDisabledCode =
       proxyContent.includes("// if (system && providerName ===") &&
-      proxyContent.includes("vllm-mlx") &&
+      proxyContent.includes("mlx") &&
       proxyContent.includes("//   system = system.replace");
 
     if (!hasDisabledCode) {

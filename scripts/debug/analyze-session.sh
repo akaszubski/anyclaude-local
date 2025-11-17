@@ -9,7 +9,7 @@ echo ""
 # 1. Latest trace file
 echo "📊 LATEST TRACE FILE:"
 echo "────────────────────────────────────────────────────────"
-LATEST_TRACE=$(ls -t ~/.anyclaude/traces/vllm-mlx/trace-*.json 2>/dev/null | head -1)
+LATEST_TRACE=$(ls -t ~/.anyclaude/traces/mlx/trace-*.json 2>/dev/null | head -1)
 if [ -n "$LATEST_TRACE" ]; then
   echo "File: $LATEST_TRACE"
   echo ""
@@ -44,7 +44,7 @@ fi
 # 2. Server logs (last 50 lines)
 echo "📝 SERVER LOGS (Last 50 lines):"
 echo "────────────────────────────────────────────────────────"
-tail -50 ~/.anyclaude/logs/vllm-mlx-server.log 2>/dev/null || echo "No server logs found"
+tail -50 ~/.anyclaude/logs/mlx-server.log 2>/dev/null || echo "No server logs found"
 echo ""
 
 # 3. Cache metrics
@@ -60,7 +60,7 @@ echo ""
 # 4. All traces from last hour
 echo "📁 RECENT TRACE FILES (Last hour):"
 echo "────────────────────────────────────────────────────────"
-find ~/.anyclaude/traces/vllm-mlx -name "trace-*.json" -mmin -60 -ls 2>/dev/null | \
+find ~/.anyclaude/traces/mlx -name "trace-*.json" -mmin -60 -ls 2>/dev/null | \
   awk '{print $11, "("$7" bytes)"}' || echo "No recent traces"
 echo ""
 

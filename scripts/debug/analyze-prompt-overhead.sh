@@ -112,13 +112,13 @@ if [ $OVERHEAD_PERCENT -gt 90 ]; then
     echo "Recommendations:"
     echo "  1. Strip unnecessary tool descriptions"
     echo "  2. Simplify system prompt for local models"
-    echo "  3. Use prompt caching (vLLM-MLX only)"
+    echo "  3. Use prompt caching (MLX only)"
     echo "  4. Consider context compression"
 elif [ $OVERHEAD_PERCENT -gt 70 ]; then
     echo "🟡 WARNING: Overhead is $OVERHEAD_PERCENT% of total prompt"
     echo ""
     echo "Recommendations:"
-    echo "  1. Enable prompt caching (vLLM-MLX)"
+    echo "  1. Enable prompt caching (MLX)"
     echo "  2. Consider simplifying tool descriptions"
 elif [ $OVERHEAD_PERCENT -gt 50 ]; then
     echo "🟢 MODERATE: Overhead is $OVERHEAD_PERCENT% of total prompt"

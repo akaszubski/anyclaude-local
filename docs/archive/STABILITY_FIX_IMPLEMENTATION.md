@@ -279,7 +279,7 @@ Edit `src/convert-to-anthropic-stream.ts` around line 36:
 
 ### Current Issue
 
-Whitespace stripping breaks structured prompts for vLLM-MLX.
+Whitespace stripping breaks structured prompts for MLX.
 
 ### The Fix
 
@@ -291,17 +291,17 @@ Edit `src/anthropic-proxy.ts` around line 475:
 
 ```typescript
 // FIND THIS (around line 475-477):
-// Normalize system prompt for vLLM-MLX strict JSON validation
-// vLLM-MLX rejects newlines/excess whitespace in system prompt
-if (system && providerName === "vllm-mlx") {
+// Normalize system prompt for MLX strict JSON validation
+// MLX rejects newlines/excess whitespace in system prompt
+if (system && providerName === "mlx") {
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // REPLACE WITH THIS:
-// Handle system prompt for vLLM-MLX
+// Handle system prompt for MLX
 // Only trim edges and normalize excessive whitespace
 // Keep structure intact for model comprehension
-if (system && providerName === "vllm-mlx") {
+if (system && providerName === "mlx") {
   // Only trim edges and normalize excessive runs of whitespace
   // But preserve intentional line breaks and structure
   system = system
@@ -316,7 +316,7 @@ if (system && providerName === "vllm-mlx") {
 1. Preserves readability of instructions
 2. Maintains code block formatting
 3. Doesn't break model comprehension
-4. Still passes vLLM-MLX validation
+4. Still passes MLX validation
 
 ---
 
@@ -534,7 +534,7 @@ logResponse(
 - [ ] **FIX #4**: Preserve whitespace structure
   - [ ] Update `src/anthropic-proxy.ts` line 475
   - [ ] Test: Formatting still correct
-  - [ ] Verify: vLLM-MLX still accepts format
+  - [ ] Verify: MLX still accepts format
 
 - [ ] **FIX #5**: Add request logging
   - [ ] Create `src/request-logger.ts`
@@ -553,7 +553,7 @@ logResponse(
   - [ ] No truncation on long responses
   - [ ] Latency improved (check logs)
   - [ ] All tests pass
-  - [ ] vLLM-MLX working stable
+  - [ ] MLX working stable
 
 ---
 

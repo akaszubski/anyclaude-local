@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-vLLM-MLX Server Lite: Simplified version for testing with OpenAI-compatible API
+MLX Server Lite: Simplified version for testing with OpenAI-compatible API
 This version demonstrates prompt caching and tool calling without heavy MLX loading
 """
 
@@ -20,7 +20,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(name)s] %(levelname)s: %(message)s'
 )
-logger = logging.getLogger("vllm-mlx-lite")
+logger = logging.getLogger("mlx-lite")
 
 
 class VLLMMLXServerLite:
@@ -29,7 +29,7 @@ class VLLMMLXServerLite:
         self.port = port
         self.host = host
         self.model_name = Path(model_path).name if model_path else "current-model"
-        self.app = FastAPI(title="vLLM-MLX Server Lite")
+        self.app = FastAPI(title="MLX Server Lite")
         self.prompt_cache = {}
         self._setup_routes()
 
@@ -63,7 +63,7 @@ class VLLMMLXServerLite:
                     {
                         "id": self.model_name,
                         "object": "model",
-                        "owned_by": "vllm-mlx",
+                        "owned_by": "mlx",
                         "permission": []
                     }
                 ]
@@ -176,7 +176,7 @@ class VLLMMLXServerLite:
 
     def run(self):
         """Start the server"""
-        logger.info(f"Starting vLLM-MLX Server Lite on {self.host}:{self.port}")
+        logger.info(f"Starting MLX Server Lite on {self.host}:{self.port}")
         logger.info(f"Model: {self.model_name}")
         logger.info(f"Features: Prompt caching, Tool calling, Streaming")
         uvicorn.run(self.app, host=self.host, port=self.port, log_level="info")
@@ -185,7 +185,7 @@ class VLLMMLXServerLite:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="vLLM-MLX Server Lite")
+    parser = argparse.ArgumentParser(description="MLX Server Lite")
     parser.add_argument("--model", required=True, help="Path to MLX model directory")
     parser.add_argument("--port", type=int, default=8081, help="Server port")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")

@@ -60,6 +60,7 @@ anyclaude --mode=openrouter
 ### 🏆 RECOMMENDED: Best Overall
 
 **Qwen3 Coder 480B** - `qwen/qwen3-coder`
+
 - Cost: $0.22 / $0.95 per 1M tokens
 - Context: 262K (2nd largest)
 - Speed: ⚡⚡ Fast (1.74s benchmark)
@@ -69,6 +70,7 @@ anyclaude --mode=openrouter
 ### ⚠️ Fastest But Limited
 
 **Gemini 2.5 Flash Lite** - `google/gemini-2.5-flash-lite`
+
 - Cost: $0.10 / $0.40 per 1M tokens ✨ **CHEAPEST OF FAST MODELS**
 - Context: 1M ✨ **LARGEST CONTEXT**
 - Speed: ⚡⚡⚡ Fastest (0.61s benchmark) ✨ **BEATS GPT-4o!**
@@ -80,6 +82,7 @@ anyclaude --mode=openrouter
 ### Fastest
 
 **GPT-4o** - `openai/gpt-4o`
+
 - Cost: $5.00 / $15.00 per 1M tokens
 - Context: 128K
 - Speed: ⚡⚡⚡ Fastest (0.74s benchmark)
@@ -88,6 +91,7 @@ anyclaude --mode=openrouter
 ### Cheapest
 
 **DeepSeek V3.1** - `deepseek/deepseek-chat-v3.1`
+
 - Cost: $0.20 / $0.80 per 1M tokens (cheapest!)
 - Context: 160K
 - Speed: ⚡ Moderate (2.64s benchmark)
@@ -96,6 +100,7 @@ anyclaude --mode=openrouter
 ### Free Option
 
 **Gemini 2.0 Flash** - `google/gemini-2.0-flash-exp:free`
+
 - Cost: **FREE!**
 - Context: 1M (massive!)
 - Speed: ⚡ Moderate
@@ -111,6 +116,7 @@ anyclaude --mode=openrouter
 ### Avoid
 
 **GLM-4.6** - `z-ai/glm-4.6`
+
 - 🐌 Very slow (64s benchmark - 37x slower than Qwen3!)
 - Not recommended for interactive coding
 
@@ -160,14 +166,14 @@ anyclaude-openrouter
 
 Based on benchmark results:
 
-| Model | Speed | Cost (in/out) | Context | Best For |
-|-------|-------|---------------|---------|----------|
-| **Gemini 2.5 Flash Lite** | **0.61s ⚡⚡⚡** | **$0.10/$0.40** | **1M** | **🏆 EVERYTHING!** (fastest + cheapest + largest) |
-| GPT-4o | 0.74s ⚡⚡⚡ | $5/$15 | 128K | When Gemini unavailable |
-| Qwen3 Coder | 1.74s ⚡⚡ | $0.22/$0.95 | 262K | Backup option |
-| Gemini 2.5 Flash | 1.73s ⚡⚡ | $0.30/$2.50 | 1M | Premium Gemini |
-| DeepSeek V3.1 | 2.64s ⚡ | $0.20/$0.80 | 160K | Simple tasks |
-| GLM-4.6 | 64s 🐌 | $0.60/$2 | 200K | ❌ Avoid |
+| Model                     | Speed            | Cost (in/out)   | Context | Best For                                          |
+| ------------------------- | ---------------- | --------------- | ------- | ------------------------------------------------- |
+| **Gemini 2.5 Flash Lite** | **0.61s ⚡⚡⚡** | **$0.10/$0.40** | **1M**  | **🏆 EVERYTHING!** (fastest + cheapest + largest) |
+| GPT-4o                    | 0.74s ⚡⚡⚡     | $5/$15          | 128K    | When Gemini unavailable                           |
+| Qwen3 Coder               | 1.74s ⚡⚡       | $0.22/$0.95     | 262K    | Backup option                                     |
+| Gemini 2.5 Flash          | 1.73s ⚡⚡       | $0.30/$2.50     | 1M      | Premium Gemini                                    |
+| DeepSeek V3.1             | 2.64s ⚡         | $0.20/$0.80     | 160K    | Simple tasks                                      |
+| GLM-4.6                   | 64s 🐌           | $0.60/$2        | 200K    | ❌ Avoid                                          |
 
 ### Benchmark Your Own Setup
 
@@ -185,11 +191,13 @@ Network latency and OpenRouter routing can affect speeds. Run your own benchmark
 ### Model not working
 
 1. Check your OpenRouter API key in `.env`:
+
    ```bash
    grep OPENROUTER_API_KEY .env
    ```
 
 2. Verify model ID is correct:
+
    ```bash
    jq -r '.backends.openrouter.model' .anyclauderc.json
    ```

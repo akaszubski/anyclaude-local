@@ -365,6 +365,7 @@
    - Files: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/ram_cache.py`
 
 2. **Add Key Size Validation**
+
    ```python
    MAX_KEY_SIZE_BYTES = 10000  # 10KB max key
    if len(key.encode('utf-8') if isinstance(key, str) else key) > MAX_KEY_SIZE_BYTES:

@@ -9,6 +9,7 @@ This session fixed critical bugs in OpenRouter integration and added comprehensi
 ### Issue #1: OpenRouter Provider Not Using OpenAI Format
 
 **Symptom:**
+
 ```
 Error: Invalid input: expected string, received array at path ["input"]
 ```
@@ -17,24 +18,29 @@ Error: Invalid input: expected string, received array at path ["input"]
 `src/anthropic-proxy.ts:821` was missing `openrouter` from the OpenAI-compatible provider check.
 
 **Fix:**
+
 ```typescript
 // Before:
 const languageModel =
-  providerName === "lmstudio" || providerName === "vllm-mlx"
+  providerName === "lmstudio" || providerName === "mlx"
     ? (provider as any).chat(model)
     : provider.languageModel(model);
 
 // After:
 const languageModel =
-  providerName === "lmstudio" || providerName === "vllm-mlx" || providerName === "openrouter"
+  providerName === "lmstudio" ||
+  providerName === "mlx" ||
+  providerName === "openrouter"
     ? (provider as any).chat(model)
     : provider.languageModel(model);
 ```
 
 **Files Changed:**
+
 - `src/anthropic-proxy.ts:828`
 
 **Test Coverage Needed:**
+
 - Verify OpenRouter uses `.chat()` method (OpenAI format)
 - Verify tool calling works with OpenRouter
 - Verify streaming works with OpenRouter
@@ -44,6 +50,7 @@ const languageModel =
 ### Issue #2: Context Warnings Showing "LOCAL MODEL LIMITATION" for Cloud Models
 
 **Symptom:**
+
 ```
 ⚠️  IMPORTANT - LOCAL MODEL LIMITATION:
   Claude Sonnet 4.5 auto-compresses context while preserving
@@ -56,9 +63,13 @@ This warning appeared even when using OpenRouter (cloud models).
 Context warning logic in `src/context-manager.ts` didn't skip warnings for cloud models.
 
 **Fix:**
+
 ```typescript
 // src/context-manager.ts:272-300
-export function logContextWarning(stats: ContextStats, mode?: "claude" | "lmstudio" | "vllm-mlx" | "openrouter"): void {
+export function logContextWarning(
+  stats: ContextStats,
+  mode?: "claude" | "lmstudio" | "mlx" | "openrouter"
+): void {
   // Skip warnings for cloud models with large context windows
   if (mode === "claude" || mode === "openrouter") {
     return;
@@ -68,19 +79,22 @@ export function logContextWarning(stats: ContextStats, mode?: "claude" | "lmstud
 ```
 
 **Files Changed:**
+
 - `src/context-manager.ts:272-300`
 - `src/anthropic-proxy.ts:697-726` (made truncation warnings mode-aware)
 
 **Test Coverage Needed:**
+
 - Verify no warnings for `mode=claude`
 - Verify no warnings for `mode=openrouter`
-- Verify warnings still appear for `mode=lmstudio` and `mode=vllm-mlx`
+- Verify warnings still appear for `mode=lmstudio` and `mode=mlx`
 
 ---
 
 ### Issue #3: Context Limit Detection Using Wrong Model Name
 
 **Symptom:**
+
 ```
 Limit: 26214 tokens (80% of claude-haiku-4-5-20251001)
 ```
@@ -91,6 +105,7 @@ Should have shown ~210K tokens (80% of 262K for qwen/qwen3-coder).
 Context limit calculation was using the configured model name instead of the actual model from `body.model` (what Claude Code sends).
 
 **Fix:**
+
 ```typescript
 // src/anthropic-proxy.ts:673
 // Before:
@@ -101,9 +116,11 @@ const modelNameForContext = body.model || cachedModelName || model;
 ```
 
 **Files Changed:**
+
 - `src/anthropic-proxy.ts:673`
 
 **Test Coverage Needed:**
+
 - Verify context limit uses `body.model` when available
 - Verify fallback to `cachedModelName` works
 - Verify fallback to config `model` works
@@ -143,9 +160,11 @@ Added comprehensive model ID mappings:
 ```
 
 **Files Changed:**
+
 - `src/context-manager.ts:24-43`
 
 **Test Coverage Needed:**
+
 - Verify all OpenRouter model IDs return correct context limits
 - Verify Claude model IDs return correct context limits
 - Verify unknown models fall back to 32K default
@@ -161,12 +180,12 @@ Added comprehensive model ID mappings:
 
 ```javascript
 // Test 1: OpenRouter uses OpenAI format
-test('OpenRouter provider uses .chat() method', () => {
+test("OpenRouter provider uses .chat() method", () => {
   // Verify providerName === "openrouter" uses .chat()
 });
 
 // Test 2: Tool calling works with OpenRouter
-test('OpenRouter supports tool calling', async () => {
+test("OpenRouter supports tool calling", async () => {
   // Mock OpenRouter API
   // Send request with tools
   // Verify tools are in OpenAI format
@@ -174,7 +193,7 @@ test('OpenRouter supports tool calling', async () => {
 });
 
 // Test 3: Streaming works with OpenRouter
-test('OpenRouter streaming works', async () => {
+test("OpenRouter streaming works", async () => {
   // Mock streaming response
   // Verify SSE events are converted properly
 });
@@ -217,25 +236,29 @@ test('Unknown models fall back to 32K default', () => {
 
 ```javascript
 // Test 1: No warnings for cloud models
-test('No context warnings for mode=claude', () => {
-  const stats = { /* ... */ };
-  const spy = jest.spyOn(console, 'error');
-  logContextWarning(stats, 'claude');
+test("No context warnings for mode=claude", () => {
+  const stats = {
+    /* ... */
+  };
+  const spy = jest.spyOn(console, "error");
+  logContextWarning(stats, "claude");
   expect(spy).not.toHaveBeenCalled();
 });
 
-test('No context warnings for mode=openrouter', () => {
-  const stats = { /* ... */ };
-  const spy = jest.spyOn(console, 'error');
-  logContextWarning(stats, 'openrouter');
+test("No context warnings for mode=openrouter", () => {
+  const stats = {
+    /* ... */
+  };
+  const spy = jest.spyOn(console, "error");
+  logContextWarning(stats, "openrouter");
   expect(spy).not.toHaveBeenCalled();
 });
 
 // Test 2: Warnings still appear for local models
-test('Context warnings appear for mode=lmstudio', () => {
-  const stats = { exceedsLimit: true, /* ... */ };
-  const spy = jest.spyOn(console, 'error');
-  logContextWarning(stats, 'lmstudio');
+test("Context warnings appear for mode=lmstudio", () => {
+  const stats = { exceedsLimit: true /* ... */ };
+  const spy = jest.spyOn(console, "error");
+  logContextWarning(stats, "lmstudio");
   expect(spy).toHaveBeenCalled();
 });
 
@@ -249,14 +272,14 @@ test('Warning message does not mention "LOCAL MODEL LIMITATION" for cloud', () =
 
 Performance benchmarks for OpenRouter models:
 
-| Model | Speed | Cost (in/out per 1M) | Context |
-|-------|-------|---------------------|---------|
-| Gemini 2.5 Flash Lite | 0.61s | $0.10/$0.40 | 1M |
-| GPT-4o | 0.74s | $5.00/$15.00 | 128K |
-| Qwen3 Coder 480B | 1.74s | $0.22/$0.95 | 262K |
-| Gemini 2.5 Flash | 1.73s | $0.30/$2.50 | 1M |
-| DeepSeek V3.1 | 2.64s | $0.20/$0.80 | 160K |
-| GLM-4.6 | 64.57s | $0.60/$2.00 | 200K |
+| Model                 | Speed  | Cost (in/out per 1M) | Context |
+| --------------------- | ------ | -------------------- | ------- |
+| Gemini 2.5 Flash Lite | 0.61s  | $0.10/$0.40          | 1M      |
+| GPT-4o                | 0.74s  | $5.00/$15.00         | 128K    |
+| Qwen3 Coder 480B      | 1.74s  | $0.22/$0.95          | 262K    |
+| Gemini 2.5 Flash      | 1.73s  | $0.30/$2.50          | 1M      |
+| DeepSeek V3.1         | 2.64s  | $0.20/$0.80          | 160K    |
+| GLM-4.6               | 64.57s | $0.60/$2.00          | 200K    |
 
 ## Features Added
 
@@ -271,6 +294,7 @@ Performance benchmarks for OpenRouter models:
 - Automatic config backup
 
 **Usage:**
+
 ```bash
 ./scripts/select-openrouter-model.sh
 ```
@@ -278,12 +302,14 @@ Performance benchmarks for OpenRouter models:
 ### Benchmark Scripts
 
 **Files:**
+
 - `/tmp/quick-benchmark.sh` - Benchmark all major models
 - `/tmp/benchmark-gemini-v2.sh` - Gemini-specific benchmarks
 
 ## Documentation Updates
 
 **Files Updated:**
+
 - `docs/guides/openrouter-model-selection.md` - Complete guide to model selection
 - `scripts/shell-aliases.sh` - Added OpenRouter aliases
 - `CLAUDE.md` - Updated with OpenRouter best practices (if applicable)
@@ -320,6 +346,6 @@ If you were using OpenRouter before these fixes:
 - [ ] Model selector works for all 10 models
 - [ ] Context limits correctly detected for all supported models
 - [ ] No warnings appear for cloud models (claude, openrouter)
-- [ ] Warnings still appear for local models (lmstudio, vllm-mlx)
+- [ ] Warnings still appear for local models (lmstudio, mlx)
 - [ ] Benchmark scripts run successfully
 - [ ] Documentation is accurate and up-to-date

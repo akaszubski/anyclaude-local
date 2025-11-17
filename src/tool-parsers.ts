@@ -6,7 +6,7 @@
  * - Llama JSON format: {"name": "...", "arguments": {...}}
  * - Mistral format: [TOOL_CALLS] [{"name": "...", "arguments": {...}}]
  *
- * Note: vLLM-MLX and LMStudio handle tool calling natively via OpenAI format.
+ * Note: MLX and LMStudio handle tool calling natively via OpenAI format.
  */
 
 import { v4 as uuidv4 } from "uuid";

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Rename vllm-mlx → mlx across the codebase
+# Rename mlx → mlx across the codebase
 # This is a major refactoring affecting ~930 occurrences
 
 set -e
@@ -13,14 +13,14 @@ BLUE='\033[0;34m'
 RESET='\033[0m'
 
 echo "================================================================================"
-echo "RENAME: vllm-mlx → mlx"
+echo "RENAME: mlx → mlx"
 echo "================================================================================"
 echo ""
 echo "This script will rename all occurrences of:"
-echo "  - vllm-mlx → mlx"
-echo "  - vllm_mlx → mlx"
-echo "  - VLLM_MLX → MLX"
-echo "  - vLLM-MLX → MLX"
+echo "  - mlx → mlx"
+echo "  - mlx → mlx"
+echo "  - MLX → MLX"
+echo "  - MLX → MLX"
 echo ""
 echo -e "${YELLOW}WARNING: This affects ~930 occurrences across the codebase${RESET}"
 echo ""
@@ -33,7 +33,7 @@ mkdir -p "$BACKUP_DIR"
 # Find all affected files (excluding node_modules, dist, .git)
 echo ""
 echo "Finding affected files..."
-affected_files=$(grep -rl "vllm-mlx\|vllm_mlx\|VLLM_MLX\|vLLM-MLX" \
+affected_files=$(grep -rl "mlx\|mlx\|MLX\|MLX" \
   --include="*.ts" \
   --include="*.js" \
   --include="*.json" \
@@ -89,10 +89,10 @@ echo "$affected_files" | while read -r file; do
 
     # Perform replacements
     sed \
-      -e 's/vllm-mlx/mlx/g' \
-      -e 's/vllm_mlx/mlx/g' \
-      -e 's/VLLM_MLX/MLX/g' \
-      -e 's/vLLM-MLX/MLX/g' \
+      -e 's/mlx/mlx/g' \
+      -e 's/mlx/mlx/g' \
+      -e 's/MLX/MLX/g' \
+      -e 's/MLX/MLX/g' \
       -e 's/"mlx"/"mlx"/g' \
       "$file" > "$temp_file"
 
@@ -117,7 +117,7 @@ echo ""
 echo "Next steps:"
 echo "  1. Review changes: git diff"
 echo "  2. Test the code: npm run build && npm test"
-echo "  3. If OK: git add . && git commit -m 'refactor: rename vllm-mlx to mlx'"
+echo "  3. If OK: git add . && git commit -m 'refactor: rename mlx to mlx'"
 echo "  4. If NOT OK: ./scripts/restore-from-backup.sh $BACKUP_DIR"
 echo ""
 echo "================================================================================"

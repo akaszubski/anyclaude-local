@@ -17,7 +17,7 @@
  *
  * Prerequisites:
  * - Proxy running: PROXY_ONLY=true bun run src/main.ts
- * - vLLM-MLX or LMStudio running with a model loaded
+ * - MLX or LMStudio running with a model loaded
  *
  * Run with:
  * - node tests/integration/test_genai_cache_validation.js
@@ -793,7 +793,7 @@ function runAllTests() {
     `  1. Start proxy: ${colors.cyan}PROXY_ONLY=true bun run src/main.ts${colors.reset}`
   );
   console.log(
-    `  2. Start server: ${colors.cyan}python3 scripts/vllm-mlx-server.py --model <path>${colors.reset}`
+    `  2. Start server: ${colors.cyan}python3 scripts/mlx-server.py --model <path>${colors.reset}`
   );
   console.log(`  3. Test with Claude: ${colors.cyan}anyclaude${colors.reset}`);
   console.log(

@@ -206,8 +206,8 @@ tail -f ~/.anyclaude/request-logs/*.jsonl | jq '.'
 ### Complete End-to-End
 
 ```bash
-# Terminal 1: Start vLLM-MLX
-python3 scripts/vllm-mlx-server.py --model /path/to/model
+# Terminal 1: Start MLX
+python3 scripts/mlx-server.py --model /path/to/model
 
 # Terminal 2: Start Claude Code with anyclaude
 anyclaude

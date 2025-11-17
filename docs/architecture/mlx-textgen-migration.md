@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** server to enable working KV caching and 10-20x performance improvement for follow-up requests.
+Migrate from custom `mlx-server.py` to production-grade **MLX-Textgen** server to enable working KV caching and 10-20x performance improvement for follow-up requests.
 
 **Expected Performance:**
 
@@ -36,7 +36,7 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
                       ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Backend Servers                                             │
-│ ├─ vllm-mlx → vllm-mlx-server.py (CUSTOM, 1400 lines)      │
+│ ├─ mlx → mlx-server.py (CUSTOM, 1400 lines)      │
 │ │   ├─ MLX model loading                                    │
 │ │   ├─ OpenAI API endpoint                                  │
 │ │   ├─ Tool calling parsing (complex)                       │
@@ -50,7 +50,7 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
 
 ### Current Issues
 
-**vllm-mlx-server.py problems:**
+**mlx-server.py problems:**
 
 1. ❌ **KV caching broken** - `mlx_lm` Python API for caching doesn't exist
 2. ⚠️ **Complex tool calling** - 200+ lines of manual parsing (Harmony, Qwen XML formats)
@@ -87,7 +87,7 @@ Migrate from custom `vllm-mlx-server.py` to production-grade **MLX-Textgen** ser
                       ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Backend Servers                                             │
-│ ├─ vllm-mlx → MLX-Textgen (PRODUCTION-READY)               │
+│ ├─ mlx → MLX-Textgen (PRODUCTION-READY)               │
 │ │   ✅ Built-in KV caching (disk-based, multi-slot)         │
 │ │   ✅ Tool calling (native support)                         │
 │ │   ✅ OpenAI API (drop-in compatible)                       │
@@ -156,7 +156,7 @@ After migration, you'll have **three working cache layers**:
 
 - [x] Design new architecture
 - [ ] Commit current working state to git
-- [ ] Create backup of `vllm-mlx-server.py`
+- [ ] Create backup of `mlx-server.py`
 - [ ] Document current performance metrics
 
 ### Phase 2: Installation & Testing
@@ -185,7 +185,7 @@ After migration, you'll have **three working cache layers**:
 
 ### Phase 5: Cleanup & Documentation
 
-- [ ] Archive `vllm-mlx-server.py` → `scripts/archive/`
+- [ ] Archive `mlx-server.py` → `scripts/archive/`
 - [ ] Update README.md
 - [ ] Update CLAUDE.md
 - [ ] Update docs/architecture/
@@ -199,14 +199,14 @@ After migration, you'll have **three working cache layers**:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "model": "/Users/.../Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
-      "serverScript": "scripts/vllm-mlx-server.py"
+      "serverScript": "scripts/mlx-server.py"
     }
   }
 }
@@ -216,9 +216,9 @@ After migration, you'll have **three working cache layers**:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
@@ -245,17 +245,17 @@ If migration fails, rollback is simple:
 git checkout .anyclauderc.json
 
 # 2. Use archived server
-cp scripts/archive/vllm-mlx-server.py scripts/
+cp scripts/archive/mlx-server.py scripts/
 
 # 3. Restart
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 All changes are isolated to:
 
 - `.anyclauderc.json` (config)
 - `scripts/mlx-textgen-server.sh` (new launcher)
-- `scripts/vllm-mlx-server.py` (archived, not deleted)
+- `scripts/mlx-server.py` (archived, not deleted)
 
 Your proxy code (`src/`) remains **unchanged**.
 
@@ -272,7 +272,7 @@ Your proxy code (`src/`) remains **unchanged**.
 
 **Functionality:**
 
-- [ ] All backends still work (vllm-mlx, lmstudio, openrouter, claude)
+- [ ] All backends still work (mlx, lmstudio, openrouter, claude)
 - [ ] Auto-launch/shutdown works
 - [ ] Multi-turn conversations work
 - [ ] Three cache layers all working

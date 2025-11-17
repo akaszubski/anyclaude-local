@@ -3,17 +3,20 @@
 ## What We Kept ✅
 
 ### 1. **Qwen2.5-Coder-7B Model** (2.5x faster)
+
 - **File**: `.anyclauderc.json`
 - **Impact**: ~5000 tok/sec vs 1949 tok/sec (gpt-oss-20b)
 - **Benefit**: Significantly faster processing
 
 ### 2. **Message History Trimming** (Better KV cache hits)
+
 - **File**: `scripts/mlx-server.py` + `scripts/lib/smart_cache.py`
 - **Change**: Keep only last 2 conversation turns (4 messages)
 - **Benefit**: Makes prompts more cache-friendly for MLX's automatic KV caching
 - **Impact**: Better prefix overlap = higher cache hit rates
 
 ### 3. **MLX KV Cache Logging** (Visibility)
+
 - **File**: `scripts/mlx-server.py`
 - **Change**: Added logging for prompt structure and token counts
 - **Benefit**: Can see what's being cached and why
@@ -21,11 +24,13 @@
 ## What We Removed ❌
 
 ### 1. **Proxy-Side Caching** (BROKEN)
+
 - **Why removed**: Complex cache key matching between TypeScript and Python
 - **Problem**: Tools weren't being restored on cache hits
 - **Result**: "I don't have access to files" errors
 
 ### 2. **Server-Side Cache Marker Detection** (OVERCOMPLICATED)
+
 - **Why removed**: Fighting with MLX's built-in automatic caching
 - **Problem**: Added complexity without clear benefit
 - **Result**: Confusing state management
@@ -33,6 +38,7 @@
 ## Performance Expectations
 
 ### First Request (Cold)
+
 ```
 System prompt: ~3,500 tokens
 Tools: ~15,700 tokens
@@ -46,6 +52,7 @@ Processing: ~19,300 tok ÷ 5000 tok/sec = ~4 seconds
 ```
 
 ### Second Request (Warm - MLX KV Cache Hit)
+
 ```
 System prompt: ~3,500 tokens (CACHED by MLX)
 Tools: ~15,700 tokens (CACHED by MLX)
@@ -59,6 +66,7 @@ Processing: ~100 tok ÷ 5000 tok/sec = ~0.02 seconds
 ```
 
 ### Multi-Turn Conversations
+
 ```
 Request 3: system + tools + last 2 turns
 → MLX KV cache: reuses system+tools prefix
@@ -83,6 +91,7 @@ Request 3: system + tools + last 2 turns
 ```
 
 **Key Insight**: We don't need proxy-level caching because MLX's automatic KV cache is FAST:
+
 - **Cache MISS**: 23 seconds (old model)
 - **Cache HIT**: 0.021 seconds (64x faster!)
 
@@ -122,19 +131,21 @@ anyclaude
 
 ## Trade-Offs Accepted
 
-| Metric | Real Claude | Anyclaude (Stable) |
-|--------|-------------|-------------------|
-| **First request** | 1-2s | 6-7s |
-| **Cached request** | 1-2s | 1-3s |
-| **Tool reliability** | 100% | 100% ✅ |
-| **Complexity** | N/A | Low ✅ |
+| Metric               | Real Claude | Anyclaude (Stable) |
+| -------------------- | ----------- | ------------------ |
+| **First request**    | 1-2s        | 6-7s               |
+| **Cached request**   | 1-2s        | 1-3s               |
+| **Tool reliability** | 100%        | 100% ✅            |
+| **Complexity**       | N/A         | Low ✅             |
 
 ## Files Changed
 
 ### Configuration
+
 - `.anyclauderc.json`: Qwen2.5-Coder-7B-Instruct-4bit model
 
 ### Python (MLX Server)
+
 - `scripts/mlx-server.py`:
   - ✅ Message history trimming (max_history=2)
   - ✅ MLX KV cache logging
@@ -143,6 +154,7 @@ anyclaude
   - ✅ Message optimization (max_history=2)
 
 ### TypeScript (Proxy)
+
 - `src/anthropic-proxy.ts`:
   - ❌ Removed cache key generation
   - ✅ Kept cache metrics tracking (for logging only)

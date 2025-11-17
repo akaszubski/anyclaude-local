@@ -1,11 +1,11 @@
-# Archived: vllm-mlx-server.py
+# Archived: mlx-server.py
 
 **Date Archived:** 2025-11-16
 **Reason:** Replaced with MLX-Textgen (production-grade solution)
 
 ## Why Archived
 
-The custom `vllm-mlx-server.py` (1400 lines) was replaced with MLX-Textgen because:
+The custom `mlx-server.py` (1400 lines) was replaced with MLX-Textgen because:
 
 1. **MLX KV caching Python API doesn't exist** - Our implementation was broken
 2. **MLX-Textgen provides production-ready alternative** with working KV caching
@@ -15,7 +15,7 @@ The custom `vllm-mlx-server.py` (1400 lines) was replaced with MLX-Textgen becau
 
 ## Performance Comparison
 
-| Metric             | vllm-mlx-server.py | MLX-Textgen       | Improvement    |
+| Metric             | mlx-server.py | MLX-Textgen       | Improvement    |
 | ------------------ | ------------------ | ----------------- | -------------- |
 | First request      | ~50 seconds        | ~3 seconds        | **15x faster** |
 | Follow-up requests | ~50 seconds        | **~0.55 seconds** | **90x faster** |
@@ -25,7 +25,7 @@ The custom `vllm-mlx-server.py` (1400 lines) was replaced with MLX-Textgen becau
 
 ## What Was Replaced
 
-**Old:** `scripts/vllm-mlx-server.py`
+**Old:** `scripts/mlx-server.py`
 
 - Custom FastAPI server
 - Manual tool calling parsing (Harmony, Qwen XML formats)
@@ -47,21 +47,21 @@ If needed, restore the old server:
 
 ```bash
 # 1. Copy old server back
-cp scripts/archive/vllm-mlx-server.py scripts/
+cp scripts/archive/mlx-server.py scripts/
 
 # 2. Update .anyclauderc.json
 # Change: "serverScript": "scripts/mlx-textgen-server.sh"
-# To:     "serverScript": "scripts/vllm-mlx-server.py"
+# To:     "serverScript": "scripts/mlx-server.py"
 
 # 3. Restart anyclaude
 pkill -f mlx_textgen
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 ## Files in Archive
 
-- `vllm-mlx-server.py` - Original custom server (working state before migration)
-- `vllm-mlx-server.py.backup` - Backup copy created during migration
+- `mlx-server.py` - Original custom server (working state before migration)
+- `mlx-server.py.backup` - Backup copy created during migration
 - `README.md` - This file
 
 ## Migration Documentation
@@ -79,11 +79,11 @@ For full migration details, see:
 **Date Restored:** 2025-11-17
 **Restored As:** `scripts/mlx-server.py`
 
-The vLLM-MLX server was restored as a **legacy reference backend** for:
+The MLX server was restored as a **legacy reference backend** for:
 
 1. **Educational purposes** - Shows how to implement custom MLX server
 2. **Reference implementation** - Demonstrates KV caching patterns
-3. **Legacy support** - Users who need specific vLLM-MLX features
+3. **Legacy support** - Users who need specific MLX features
 
 **Important Notes:**
 
@@ -97,9 +97,9 @@ The vLLM-MLX server was restored as a **legacy reference backend** for:
 
 ```json
 {
-  "backend": "vllm-mlx-legacy",
+  "backend": "mlx-legacy",
   "backends": {
-    "vllm-mlx-legacy": {
+    "mlx-legacy": {
       "enabled": false,
       "port": 8082,
       "serverScript": "scripts/mlx-server.py"

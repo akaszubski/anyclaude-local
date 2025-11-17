@@ -1,10 +1,10 @@
-# vLLM-MLX Server Logging Integration Guide
+# MLX Server Logging Integration Guide
 
-This guide shows how to integrate the `utils_logging.py` module into `vllm-mlx-server.py` for structured logging with debug levels and performance tracking.
+This guide shows how to integrate the `utils_logging.py` module into `mlx-server.py` for structured logging with debug levels and performance tracking.
 
 ## Current Setup
 
-Your vllm-mlx-server uses basic Python logging:
+Your mlx-server uses basic Python logging:
 
 ```python
 import logging
@@ -12,12 +12,12 @@ logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(name)s] %(levelname)s: %(message)s'
 )
-logger = logging.getLogger("vllm-mlx")
+logger = logging.getLogger("mlx")
 ```
 
 ## Integration Steps
 
-### Step 1: Update Imports (Top of vllm-mlx-server.py)
+### Step 1: Update Imports (Top of mlx-server.py)
 
 Replace the logging setup with:
 
@@ -40,7 +40,7 @@ from utils_logging import (
 )
 
 # Setup logger
-logger = setup_logger("vllm-mlx")
+logger = setup_logger("mlx")
 
 # Display debug info if ANYCLAUDE_DEBUG is set
 display_debug_startup()
@@ -197,7 +197,7 @@ async def handle_exception(request: Request, exc: Exception):
             "HTTP",
             500,
             debug_file,
-            {"provider": "vllm-mlx", "model": "current"}
+            {"provider": "mlx", "model": "current"}
         )
 
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -211,13 +211,13 @@ async def handle_exception(request: Request, exc: Exception):
 
 ```bash
 # Level 1: Basic debug messages
-ANYCLAUDE_DEBUG=1 python3 scripts/vllm-mlx-server.py
+ANYCLAUDE_DEBUG=1 python3 scripts/mlx-server.py
 
 # Level 2: Verbose + performance metrics
-ANYCLAUDE_DEBUG=2 python3 scripts/vllm-mlx-server.py
+ANYCLAUDE_DEBUG=2 python3 scripts/mlx-server.py
 
 # Level 3: Full trace with all data structures
-ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
+ANYCLAUDE_DEBUG=3 python3 scripts/mlx-server.py
 ```
 
 ## What You'll See
@@ -225,36 +225,36 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 ### Level 0 (Default)
 
 ```
-[2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
-[2025-10-28 22:46:27] [vllm-mlx] INFO: Chat request completed successfully
+[2025-10-28 22:46:27] [mlx] INFO: Processing chat request
+[2025-10-28 22:46:27] [mlx] INFO: Chat request completed successfully
 ```
 
 ### Level 1 (Basic Debug)
 
 ```
-[2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
-[2025-10-28 22:46:27] [vllm-mlx] DEBUG: Processing request
+[2025-10-28 22:46:27] [mlx] INFO: Processing chat request
+[2025-10-28 22:46:27] [mlx] DEBUG: Processing request
 [2025-10-28 22:46:27] [anyclaude] DEBUG: Cache put {"key":"...","size_kb":1.2,"cache_size":0}
-[2025-10-28 22:46:27] [vllm-mlx] INFO: Chat request completed successfully
+[2025-10-28 22:46:27] [mlx] INFO: Chat request completed successfully
 ```
 
 ### Level 2 (Verbose + Performance)
 
 ```
-[2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
-[2025-10-28 22:46:27] [vllm-mlx] DEBUG: Cache put {"key":"...","size_kb":1.2}
+[2025-10-28 22:46:27] [mlx] INFO: Processing chat request
+[2025-10-28 22:46:27] [mlx] DEBUG: Cache put {"key":"...","size_kb":1.2}
 [2025-10-28 22:46:27] [anyclaude] DEBUG: [Timer] chat_completion @ request_parsed: 10.45ms
 [2025-10-28 22:46:27] [anyclaude] DEBUG: [Timer] chat_completion @ cache_check: 15.67ms
 [2025-10-28 22:46:27] [anyclaude] DEBUG: [Timer] chat_completion @ model_loaded: 1250.34ms
 [2025-10-28 22:46:27] [anyclaude] DEBUG: [Timer] chat_completion @ inference_complete: 5000.12ms
 [2025-10-28 22:46:32] [anyclaude] DEBUG: [Timer] chat_completion completed in 5400.50ms
-[2025-10-28 22:46:32] [vllm-mlx] INFO: Chat request completed successfully
+[2025-10-28 22:46:32] [mlx] INFO: Chat request completed successfully
 ```
 
 ### Level 3 (Full Trace)
 
 ```
-[2025-10-28 22:46:27] [vllm-mlx] INFO: Processing chat request
+[2025-10-28 22:46:27] [mlx] INFO: Processing chat request
 [2025-10-28 22:46:27] [anyclaude] DEBUG: Chat request {
   "model": "qwen2.5-7b",
   "messages": [...],
@@ -284,7 +284,7 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 1. **Start server with debug:**
 
    ```bash
-   ANYCLAUDE_DEBUG=2 python3 scripts/vllm-mlx-server.py
+   ANYCLAUDE_DEBUG=2 python3 scripts/mlx-server.py
    ```
 
 2. **Make a request:**
@@ -320,7 +320,7 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 
 ## Files Modified
 
-- `scripts/vllm-mlx-server.py` - Add imports and integrate logging
+- `scripts/mlx-server.py` - Add imports and integrate logging
 - No other files need changes (utils_logging.py is standalone)
 
 ## Next Steps
@@ -328,4 +328,4 @@ ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
 1. Read `scripts/LOGGING_GUIDE.md` for complete API reference
 2. Read `scripts/LOGGING_QUICK_START.md` for quick examples
 3. Run `example_logging_integration.py` to see patterns
-4. Integrate into your vllm-mlx-server.py using this guide
+4. Integrate into your mlx-server.py using this guide

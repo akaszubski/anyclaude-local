@@ -123,8 +123,8 @@ echo ""
 # Create implementation template
 echo "🔧 Generating implementation template..."
 
-cat > "$ANALYSIS_DIR/vllm-mlx-cache-implementation.md" << 'TEMPLATE'
-# vLLM-MLX Cache Implementation (Based on Anthropic API Analysis)
+cat > "$ANALYSIS_DIR/mlx-cache-implementation.md" << 'TEMPLATE'
+# MLX Cache Implementation (Based on Anthropic API Analysis)
 
 ## Observed Anthropic Behavior
 
@@ -193,16 +193,16 @@ function extractCacheMarkers(body: AnthropicMessagesRequest) {
 ### 2. Pass to Backend in Custom Header
 
 ```typescript
-// Add to request sent to vllm-mlx
+// Add to request sent to mlx
 const headers = {
   'X-Cache-Control-System': markers.systemCacheable ? 'ephemeral' : 'none',
   'X-Cache-Control-Tools': markers.toolsCacheable ? 'ephemeral' : 'none'
 };
 ```
 
-### 3. Implement in vLLM-MLX Server
+### 3. Implement in MLX Server
 
-File: `scripts/vllm-mlx-server.py` (or new version)
+File: `scripts/mlx-server.py` (or new version)
 
 ```python
 async def handle_chat_completion(request: Request):
@@ -276,7 +276,7 @@ async def handle_chat_completion(request: Request):
 
 TEMPLATE
 
-echo "✅ Implementation template created: $ANALYSIS_DIR/vllm-mlx-cache-implementation.md"
+echo "✅ Implementation template created: $ANALYSIS_DIR/mlx-cache-implementation.md"
 echo ""
 
 echo "🎯 Next Steps:"
@@ -288,7 +288,7 @@ echo "2. Review analysis:"
 echo "   cat $ANALYSIS_DIR/cache-analysis.txt"
 echo ""
 echo "3. Review implementation template:"
-echo "   cat $ANALYSIS_DIR/vllm-mlx-cache-implementation.md"
+echo "   cat $ANALYSIS_DIR/mlx-cache-implementation.md"
 echo ""
-echo "4. Implement cache control in vllm-mlx server"
+echo "4. Implement cache control in mlx server"
 echo ""

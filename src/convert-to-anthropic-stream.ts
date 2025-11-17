@@ -491,7 +491,7 @@ export function convertToAnthropicStream(
         default: {
           const unknownChunk = chunk as any;
           // FIXED: Skip unknown chunk types instead of terminating the stream
-          // This prevents truncated responses when vLLM-MLX sends unexpected chunk types
+          // This prevents truncated responses when MLX sends unexpected chunk types
           debug(
             2,
             `[Stream Conversion] Skipping unknown chunk type: ${unknownChunk.type}`,
@@ -574,10 +574,13 @@ export function convertToAnthropicStream(
       errorSent = true;
 
       const errorMessage = hasErrorContent
-        ? (error.message || String(error))
+        ? error.message || String(error)
         : "Server connection lost - backend may have crashed";
 
-      debug(1, `[Stream Conversion] ⚠️  Aborting stream with error: ${errorMessage}`);
+      debug(
+        1,
+        `[Stream Conversion] ⚠️  Aborting stream with error: ${errorMessage}`
+      );
 
       // Abort the transform readable stream to propagate error to consumer
       // Only cancel if the stream is not already locked (being consumed)
@@ -585,7 +588,10 @@ export function convertToAnthropicStream(
         if (!transform.readable.locked) {
           transform.readable.cancel(new Error(errorMessage));
         } else {
-          debug(1, `[Stream Conversion] Stream already locked, skipping cancel`);
+          debug(
+            1,
+            `[Stream Conversion] Stream already locked, skipping cancel`
+          );
         }
       } catch (e) {
         debug(1, `[Stream Conversion] Failed to cancel readable:`, e);

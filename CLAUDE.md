@@ -218,13 +218,13 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
 
 ## Environment Variables
 
-**vLLM-MLX Configuration:**
+**MLX Configuration:**
 
-- `VLLM_MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
-- `VLLM_MLX_MODEL`: Model name/path (overrides config file)
-- `VLLM_MLX_API_KEY`: API key (default: `vllm-mlx`)
+- `MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
+- `MLX_MODEL`: Model name/path (overrides config file)
+- `MLX_API_KEY`: API key (default: `mlx`)
 
-**Cache Warmup Configuration** (vLLM-MLX only):
+**Cache Warmup Configuration** (MLX only):
 
 - `KV_CACHE_WARMUP`: Enable/disable cache warmup (default: "1" = enabled)
   - When enabled, pre-warms KV cache during server startup
@@ -255,7 +255,7 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
   - This saves full prompts and responses to `~/.anyclaude/traces/claude/` for analysis
   - To disable: `ANYCLAUDE_DEBUG=0 anyclaude --mode=claude`
 - `PROXY_ONLY`: Run proxy server without spawning Claude Code
-- `ANYCLAUDE_MODE`: claude | lmstudio | vllm-mlx (default: lmstudio)
+- `ANYCLAUDE_MODE`: claude | lmstudio | mlx (default: lmstudio)
 
 ## Debugging Tool Calling Issues
 
@@ -273,7 +273,7 @@ If a user reports tool calling problems with a local model:
 
 - Model outputs custom format instead of OpenAI tool calls (e.g., commentary format)
 - Model not trained on tool calling
-- vllm-mlx chat template not configured for tool calling
+- mlx chat template not configured for tool calling
 - Schema transformation issues with union types
 
 **Known Model Limitations** (as of v2.1.1):

@@ -18,7 +18,7 @@ let failed = 0;
 // ============================================================================
 
 /**
- * Test 1: Fetch timeout to vLLM-MLX server
+ * Test 1: Fetch timeout to MLX server
  *
  * Scenario: Request to backend exceeds timeout threshold
  * Expected: AbortController cancels request, error thrown

@@ -44,7 +44,7 @@ A **sophisticated translation layer** that sits between Claude Code and local LL
 ├──────────────────────────────────────┤
 │  • LMStudio (GPU/CPU)                │
 │  • MLX-LM (Apple Silicon native)     │
-│  • vLLM-MLX (MLX + caching)          │
+│  • MLX (MLX + caching)          │
 │  • Anthropic API (fallback)          │
 └──────────────────────────────────────┘
 ```
@@ -249,13 +249,13 @@ This is achieved by:
 ### Pattern 2: Provider Abstraction
 
 ```typescript
-type ProviderName = 'claude' | 'lmstudio' | 'mlx-lm' | 'vllm-mlx';
+type ProviderName = 'claude' | 'lmstudio' | 'mlx-lm' | 'mlx';
 
 const providers: Record<ProviderName, LanguageModelV2> = {
   'claude': createAnthropic(...),
   'lmstudio': createOpenAI(...),
   'mlx-lm': createOpenAI(...),
-  'vllm-mlx': createOpenAI(...)
+  'mlx': createOpenAI(...)
 };
 ```
 
@@ -324,7 +324,7 @@ anyclaude/
 │   ├── server-launcher.ts              # Backend server management
 │   └── ...
 ├── scripts/
-│   └── vllm-mlx-server.py             # MLX server implementation
+│   └── mlx-server.py             # MLX server implementation
 ├── tests/
 │   └── ...
 └── docs/
@@ -418,7 +418,7 @@ Each backend has different capabilities.
 - Limited to loaded model (can't change model)
 - Startup time 30-60 seconds
 
-**vLLM-MLX**:
+**MLX**:
 
 - Experimental implementation
 - Limited error recovery

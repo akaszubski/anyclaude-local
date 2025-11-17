@@ -11,15 +11,15 @@ echo ""
 
 # Check vLLM server is running
 if ! curl -s http://localhost:8081/v1/models > /dev/null 2>&1; then
-    echo "❌ vLLM-MLX server not running on port 8081"
+    echo "❌ MLX server not running on port 8081"
     echo ""
     echo "Start it in another terminal:"
     echo "  source ~/.venv-mlx/bin/activate"
-    echo "  python scripts/vllm-mlx-server.py --model /path/to/model --port 8081"
+    echo "  python scripts/mlx-server.py --model /path/to/model --port 8081"
     exit 1
 fi
 
-echo "✅ vLLM-MLX server running"
+echo "✅ MLX server running"
 echo ""
 
 # Check anyclaude is built
@@ -42,7 +42,7 @@ echo ""
 
 # Clear old traces before test
 echo "1️⃣  Clearing old traces..."
-rm -rf ~/.anyclaude/traces/vllm-mlx/*
+rm -rf ~/.anyclaude/traces/mlx/*
 echo "✅ Cleared"
 echo ""
 
@@ -104,7 +104,7 @@ echo "════════════════════════�
 echo ""
 
 # Count cache hits
-TRACE_FILES=$(ls ~/.anyclaude/traces/vllm-mlx/*.json 2>/dev/null | wc -l)
+TRACE_FILES=$(ls ~/.anyclaude/traces/mlx/*.json 2>/dev/null | wc -l)
 
 echo "Total Requests: $TRACE_FILES"
 echo ""
@@ -125,8 +125,8 @@ echo ""
 # Check for cache hits in traces
 echo "Actual behavior (from analysis above):"
 
-FIRST_TRACE=$(ls -t ~/.anyclaude/traces/vllm-mlx/*.json 2>/dev/null | tail -1)
-SECOND_TRACE=$(ls -t ~/.anyclaude/traces/vllm-mlx/*.json 2>/dev/null | tail -2 | head -1)
+FIRST_TRACE=$(ls -t ~/.anyclaude/traces/mlx/*.json 2>/dev/null | tail -1)
+SECOND_TRACE=$(ls -t ~/.anyclaude/traces/mlx/*.json 2>/dev/null | tail -2 | head -1)
 
 if [ ! -z "$FIRST_TRACE" ]; then
     python << EOF
@@ -152,11 +152,11 @@ echo ""
 echo "✅ Test complete!"
 echo ""
 echo "Files saved:"
-echo "  Traces: ~/.anyclaude/traces/vllm-mlx/*.json"
+echo "  Traces: ~/.anyclaude/traces/mlx/*.json"
 echo "  Analysis: $TEST_DIR/analysis.txt"
 echo ""
 echo "Next steps:"
-echo "  1. Review trace files: ls -lh ~/.anyclaude/traces/vllm-mlx/"
+echo "  1. Review trace files: ls -lh ~/.anyclaude/traces/mlx/"
 echo "  2. See detailed analysis: python scripts/analyze-traces.py"
 echo "  3. View specific trace: python scripts/analyze-traces.py --detail 0"
 echo ""

@@ -1,0 +1,101 @@
+{
+  "// COMMENT": "AnyClaude Configuration File",
+  "// USAGE": "Copy this to .anyclauderc.json and customize for your setup",
+  "// DOCS": "See CLAUDE.md for detailed configuration guide",
+
+  "backend": "mlx-textgen",
+  "debug": {
+    "level": 0,
+    "enableTraces": false,
+    "enableStreamLogging": false
+  },
+  "backends": {
+    "mlx-textgen": {
+      "enabled": true,
+      "port": 8080,
+      "baseUrl": "http://localhost:8080/v1",
+      "apiKey": "mlx-textgen",
+      "model": "/path/to/your/mlx/model",
+      "maxTokens": 262144,
+      "serverScript": "scripts/mlx-textgen-server.sh",
+      "description": "Production MLX backend - disk-based KV caching, 10-90x speedup"
+    },
+    "vllm-mlx-legacy": {
+      "enabled": false,
+      "port": 8082,
+      "baseUrl": "http://localhost:8082/v1",
+      "apiKey": "vllm-mlx",
+      "model": "/path/to/your/mlx/model",
+      "maxTokens": 262144,
+      "serverScript": "scripts/mlx-server.py",
+      "description": "Legacy MLX backend - for reference only, use mlx-textgen instead"
+    },
+    "lmstudio": {
+      "enabled": false,
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "current-model",
+      "compatibility": "legacy",
+      "description": "LMStudio - manual server management, switch models in LMStudio UI"
+    },
+    "openrouter": {
+      "enabled": false,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-YOUR_API_KEY_HERE",
+      "model": "z-ai/glm-4.6",
+      "description": "OpenRouter - 400+ cloud models, 84% cheaper than Claude API"
+    },
+    "claude": {
+      "enabled": false,
+      "description": "Real Anthropic Claude API (requires ANTHROPIC_API_KEY env var)"
+    }
+  },
+
+  "// BACKEND OPTIONS": {
+    "mlx-textgen": "Production MLX backend - disk-based KV cache, 10-90x speedup (recommended)",
+    "vllm-mlx-legacy": "Legacy MLX backend - for reference only, use mlx-textgen instead",
+    "lmstudio": "Local models - cross-platform, manual server",
+    "openrouter": "Cloud models - access GLM-4.6, Qwen, Claude, GPT-4 via one API",
+    "claude": "Official Claude API - full features, highest cost"
+  },
+
+  "// POPULAR OPENROUTER MODELS": {
+    "z-ai/glm-4.6": "$0.60/$2 per 1M tokens - 200K context, excellent for coding",
+    "qwen/qwen-2.5-72b-instruct": "$0.35/$0.70 per 1M tokens - cheaper alternative",
+    "google/gemini-2.0-flash-exp:free": "FREE - limited context but great for testing",
+    "anthropic/claude-3.5-sonnet": "$3/$15 per 1M tokens - via OpenRouter",
+    "openai/gpt-4": "$10/$30 per 1M tokens - via OpenRouter"
+  },
+
+  "// ENVIRONMENT VARIABLES": {
+    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|mlx-textgen|openrouter)",
+    "ANYCLAUDE_DEBUG": "Debug level (0=off, 1=basic, 2=verbose, 3=trace with prompts)",
+    "OPENROUTER_API_KEY": "Your OpenRouter API key (get from openrouter.ai)",
+    "OPENROUTER_MODEL": "Override OpenRouter model",
+    "ANTHROPIC_API_KEY": "Your Anthropic API key (for claude mode)",
+    "MLX_TEXTGEN_MODEL": "Override MLX-Textgen model path",
+    "LMSTUDIO_MODEL": "Override LMStudio model"
+  },
+
+  "// QUICK START": {
+    "1. Choose backend": "Set 'backend' to mlx-textgen, lmstudio, openrouter, or claude",
+    "2. Configure backend": "Fill in the appropriate backend section above",
+    "3. Run": "anyclaude (or: anyclaude --mode=openrouter to override)"
+  },
+
+  "// TRACE LOGGING": {
+    "When enabled": "ANYCLAUDE_DEBUG=3 or automatic for claude/openrouter modes",
+    "Saves to": "~/.anyclaude/traces/{mode}/",
+    "Purpose": "Analyze Claude Code's prompts and tool usage patterns",
+    "Disable": "ANYCLAUDE_DEBUG=0 anyclaude --mode=claude"
+  },
+
+  "// COST COMPARISON (per 1M tokens)": {
+    "GLM-4.6 (OpenRouter)": "$0.60 input / $2.00 output",
+    "Qwen 2.5 72B (OpenRouter)": "$0.35 input / $0.70 output",
+    "Claude 3.5 Sonnet (Direct)": "$3.00 input / $15.00 output",
+    "Claude 3.5 Sonnet (via OpenRouter)": "$3.00 input / $15.00 output",
+    "GPT-4 (via OpenRouter)": "$10.00 input / $30.00 output",
+    "Local models (MLX-Textgen/LMStudio)": "$0 (hardware costs only)"
+  }
+}

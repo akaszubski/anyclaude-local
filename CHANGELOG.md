@@ -155,8 +155,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Status**: RED phase (TDD) - tests written, implementation pending
   - **Documentation**: All modules have complete JSDoc comments explaining format conversions and edge cases
 
-- **Legacy MLX Server Restored** - Restored vLLM-MLX server as `scripts/mlx-server.py` for reference
-  - Source: `scripts/archive/vllm-mlx-server.py` (custom MLX implementation)
+- **Legacy MLX Server Restored** - Restored MLX server as `scripts/mlx-server.py` for reference
+  - Source: `scripts/archive/mlx-server.py` (custom MLX implementation)
   - Purpose: Reference implementation for custom MLX servers
   - Status: Legacy backend, **MLX-Textgen remains production backend**
   - Documentation: Created `docs/guides/mlx-migration.md` explaining differences
@@ -252,7 +252,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created `docs/archive/README.md` index
   - Root directory now has 7 essential markdown files (meets standards)
   - New guides: OpenRouter Setup, Trace Analysis
-  - Updated all documentation for 4-mode system (vllm-mlx, lmstudio, openrouter, claude)
+  - Updated all documentation for 4-mode system (mlx, lmstudio, openrouter, claude)
 
 ### Changed
 
@@ -264,7 +264,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **Web Search** - Removed DuckDuckGo web search (unreliable, not needed)
-  - WebSearch tool filtered out for local models (vllm-mlx, lmstudio, openrouter)
+  - WebSearch tool filtered out for local models (mlx, lmstudio, openrouter)
   - Use `--mode=claude` if web search capability needed
   - Removed: `src/web-search-handler.ts`, related tests
 - **Legacy config files** - Removed old configuration formats
@@ -302,15 +302,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- vLLM-MLX streaming now buffers response before sending to check for tool calls
+- MLX streaming now buffers response before sending to check for tool calls
 - Tool call deltas sent incrementally per OpenAI spec (name first, then arguments)
 
 ## [2.2.0] - 2025-10-31
 
 ### Fixed
 
-- **🎉 Native Tool Calling for vLLM-MLX!** - Tool calling now works reliably (>90% vs 30% before)
-  - **Root cause**: vLLM-MLX server used fragile text parsing instead of native mlx_lm tool calling
+- **🎉 Native Tool Calling for MLX!** - Tool calling now works reliably (>90% vs 30% before)
+  - **Root cause**: MLX server used fragile text parsing instead of native mlx_lm tool calling
   - **Implementation**: Pass `tools` parameter directly to `mlx_lm.generate()` (line 256)
   - Added 3 helper methods: `_extract_tool_calls()`, `_validate_tool_call()`, `_format_tool_call_openai()` (lines 287-373)
   - Updated streaming and non-streaming response handling to use native extraction with fallback (lines 636, 743)
@@ -352,14 +352,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added "One Command, Three Modes" feature section
   - Added v2.2.0 tool calling fix to "Latest Improvements"
   - Updated "Choosing the Right Mode" comparison table
-  - Clarified Quick Start with three setup options (vLLM-MLX, LMStudio, Real Claude)
+  - Clarified Quick Start with three setup options (MLX, LMStudio, Real Claude)
   - Added mode switching instructions
   - Updated documentation section with all new guides
   - **Result**: README now accurately reflects current capabilities and architecture
 
 - **Three-mode architecture clarified** - One command, three backends
   - **Mode 1**: Real Claude API (passthrough to api.anthropic.com, as designed by Anthropic)
-  - **Mode 2**: vLLM-MLX (local with auto-launch, caching, native tool calling)
+  - **Mode 2**: MLX (local with auto-launch, caching, native tool calling)
   - **Mode 3**: LMStudio (local with manual server, easy model switching)
   - Switch modes: `ANYCLAUDE_MODE=<mode> anyclaude` or edit `.anyclauderc.json`
   - **Result**: Users can choose the right backend for their needs
@@ -368,7 +368,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Files Modified**:
 
-- `scripts/vllm-mlx-server.py`: ~100 lines changed (70 new, 30 modified)
+- `scripts/mlx-server.py`: ~100 lines changed (70 new, 30 modified)
   - Line 256: Updated `_generate_safe()` signature to accept tools
   - Lines 265-268: Add tools to mlx_lm.generate() options
   - Lines 287-373: Added 3 helper methods
@@ -380,7 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Architecture**:
 
 ```
-Claude Code → anyclaude proxy → vllm-mlx-server.py → mlx_lm.generate(tools) → MLX framework
+Claude Code → anyclaude proxy → mlx-server.py → mlx_lm.generate(tools) → MLX framework
 ```
 
 **Methodology**:
@@ -396,10 +396,10 @@ Claude Code → anyclaude proxy → vllm-mlx-server.py → mlx_lm.generate(tools
 
 - **🎉 Token tracking completely fixed!** - Cache metrics now show accurate token counts and savings
   - **Root cause #1**: Stream converter used wrong field names (`inputTokens` instead of `promptTokens`)
-  - **Root cause #2**: vLLM-MLX server didn't send usage data in streaming responses
+  - **Root cause #2**: MLX server didn't send usage data in streaming responses
   - Created robust `token-extractor.ts` that tries multiple field name variations
   - Handles `promptTokens` (AI SDK), `inputTokens` (Anthropic), `prompt_tokens` (OpenAI)
-  - Fixed vLLM-MLX server to calculate and send token counts in streaming final event
+  - Fixed MLX server to calculate and send token counts in streaming final event
   - Added tiktoken-based estimation fallback for backends without usage data
   - Extracts cached token counts for accurate cache performance measurement
   - **Result**: Cache metrics now show 60-80% token savings, enabling optimization

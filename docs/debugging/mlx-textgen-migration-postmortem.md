@@ -6,7 +6,7 @@
 
 ## Objective
 
-Replace custom `vllm-mlx-server.py` (1400 lines) with production-grade MLX-Textgen to achieve:
+Replace custom `mlx-server.py` (1400 lines) with production-grade MLX-Textgen to achieve:
 
 - ✅ Working disk-based KV caching (10-90x speedup)
 - ❌ Maintain tool calling compatibility with Claude Code
@@ -98,7 +98,7 @@ MLX-Textgen's tool calling implementation is **incompatible with anyclaude's str
 ### Migration Artifacts (Keep)
 
 1. **`scripts/mlx-textgen-server.sh`** - Working launcher
-2. **`scripts/archive/vllm-mlx-server.py`** - Original server (for rollback)
+2. **`scripts/archive/mlx-server.py`** - Original server (for rollback)
 3. **`scripts/archive/README.md`** - Rollback procedure
 4. **Updated `src/server-launcher.ts`** - Supports both .py and .sh scripts
 5. **Performance baseline doc** - Pre-migration metrics
@@ -120,7 +120,7 @@ MLX-Textgen's tool calling implementation is **incompatible with anyclaude's str
 
 ### For Users
 
-**DO NOT USE `--mode=vllm-mlx` for real work.** Use instead:
+**DO NOT USE `--mode=mlx` for real work.** Use instead:
 
 ```bash
 # For tool calling (Read, Write, Edit, Bash)

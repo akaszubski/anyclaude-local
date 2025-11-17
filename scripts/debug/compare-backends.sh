@@ -1,5 +1,5 @@
 #!/bin/bash
-# Compare LMStudio vs vLLM-MLX performance with same model
+# Compare LMStudio vs MLX performance with same model
 
 set -e
 
@@ -33,7 +33,7 @@ TEST_PROMPT="write hello world in python"
 # Cleanup old traces
 echo "🧹 Cleaning old traces..."
 rm -rf ~/.anyclaude/traces/lmstudio/*.json 2>/dev/null || true
-rm -rf ~/.anyclaude/traces/vllm-mlx/*.json 2>/dev/null || true
+rm -rf ~/.anyclaude/traces/mlx/*.json 2>/dev/null || true
 echo ""
 
 # Test 1: LMStudio
@@ -90,24 +90,24 @@ echo ""
 echo "✅ LMStudio test complete"
 echo ""
 
-# Test 2: vLLM-MLX
+# Test 2: MLX
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "TEST 2: vLLM-MLX Backend"
+echo "TEST 2: MLX Backend"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 # Update config to use this model
 TMP_CONFIG=$(mktemp)
-jq ".backends.\"vllm-mlx\".model = \"$MODEL_PATH\"" .anyclauderc.json > "$TMP_CONFIG"
+jq ".backends.\"mlx\".model = \"$MODEL_PATH\"" .anyclauderc.json > "$TMP_CONFIG"
 mv "$TMP_CONFIG" .anyclauderc.json
 
-echo "🚀 Testing vLLM-MLX..."
+echo "🚀 Testing MLX..."
 echo "   Auto-launching server with: $MODEL_NAME"
 echo "   Prompt: \"$TEST_PROMPT\""
 echo ""
 
 # Run proxy with auto-launch
-PROXY_ONLY=true ANYCLAUDE_DEBUG=2 ANYCLAUDE_MODE=vllm-mlx node dist/main.js &
+PROXY_ONLY=true ANYCLAUDE_DEBUG=2 ANYCLAUDE_MODE=mlx node dist/main.js &
 PROXY_PID=$!
 
 # Wait for server to start (longer for model loading)
@@ -137,12 +137,12 @@ curl -s -X POST "http://localhost:$PROXY_PORT/v1/messages" \
     \"stream\": true
   }" > /tmp/vllm-response.txt
 
-# Stop proxy (will also stop vLLM-MLX server)
+# Stop proxy (will also stop MLX server)
 kill $PROXY_PID 2>/dev/null || true
 sleep 5
 
 echo ""
-echo "✅ vLLM-MLX test complete"
+echo "✅ MLX test complete"
 echo ""
 
 # Analysis
@@ -156,7 +156,7 @@ echo "📊 Performance Metrics:"
 echo ""
 
 LMSTUDIO_TRACE=$(ls -t ~/.anyclaude/traces/lmstudio/*.json 2>/dev/null | head -1)
-VLLM_TRACE=$(ls -t ~/.anyclaude/traces/vllm-mlx/*.json 2>/dev/null | head -1)
+VLLM_TRACE=$(ls -t ~/.anyclaude/traces/mlx/*.json 2>/dev/null | head -1)
 
 if [ -f "$LMSTUDIO_TRACE" ]; then
     echo "LMStudio:"
@@ -167,7 +167,7 @@ if [ -f "$LMSTUDIO_TRACE" ]; then
 fi
 
 if [ -f "$VLLM_TRACE" ]; then
-    echo "vLLM-MLX:"
+    echo "MLX:"
     echo "  Trace: $(basename $VLLM_TRACE)"
     echo "  Input tokens: $(jq -r '.response.body.usage.input_tokens // "N/A"' $VLLM_TRACE)"
     echo "  Output tokens: $(jq -r '.response.body.usage.output_tokens // "N/A"' $VLLM_TRACE)"
@@ -176,7 +176,7 @@ fi
 
 echo "📁 Trace Files:"
 echo "  LMStudio: $LMSTUDIO_TRACE"
-echo "  vLLM-MLX: $VLLM_TRACE"
+echo "  MLX: $VLLM_TRACE"
 echo ""
 
 echo "🔍 To analyze differences:"

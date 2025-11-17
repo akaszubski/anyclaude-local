@@ -655,7 +655,7 @@ async function runAllTests() {
   console.log("\nTo test actual Claude Code with the proxy, run:");
   console.log("  anyclaude");
   console.log("\nThe proxy will:");
-  console.log("  1. Start a local LMStudio/vLLM-MLX server");
+  console.log("  1. Start a local LMStudio/MLX server");
   console.log("  2. Translate Claude Code API calls to OpenAI format");
   console.log("  3. Send responses back in Claude Code format");
   console.log("  4. Log all requests to ~/.anyclaude/request-logs/");

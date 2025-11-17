@@ -202,7 +202,7 @@ export const createAnthropicProxy = ({
                     }
                   }
 
-                  // Record cache metrics for monitoring (Claude and vLLM-MLX)
+                  // Record cache metrics for monitoring (Claude and MLX)
                   if (parsedResponse?.usage && body) {
                     const usage = parsedResponse.usage;
                     const inputTokens = usage.input_tokens || 0;
@@ -244,14 +244,14 @@ export const createAnthropicProxy = ({
                         );
                       }
                     } else {
-                      // vLLM-MLX: infer cache hits from repeated request hashes
+                      // MLX: infer cache hits from repeated request hashes
                       // Track this request for pattern detection
                       const currentEntry = monitor
                         .getMetrics()
                         .entries.get(hash);
 
                       if (currentEntry && currentEntry.misses > 0) {
-                        // We've seen this hash before - vLLM-MLX likely cached it
+                        // We've seen this hash before - MLX likely cached it
                         // Estimate cache read tokens: assume system prompt + tools were cached (~70% of input)
                         const estimatedCacheReadTokens = Math.floor(
                           inputTokens * 0.7
@@ -517,9 +517,9 @@ export const createAnthropicProxy = ({
 
         // Note: Previously attempted to normalize system prompt by removing newlines,
         // but this mangled the carefully structured Claude Code instructions.
-        // vLLM-MLX actually handles newlines fine in the system prompt.
+        // MLX actually handles newlines fine in the system prompt.
         // Disabling this normalization to preserve system prompt structure.
-        // if (system && providerName === "vllm-mlx") {
+        // if (system && providerName === "mlx") {
         //   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
         // }
 
@@ -554,14 +554,20 @@ export const createAnthropicProxy = ({
         let toolsToUse = body.tools;
         if (!toolsToUse && cachedTools) {
           if (isDebugEnabled()) {
-            debug(1, `[Cache Control] Restoring ${cachedTools.length} cached tools`);
+            debug(
+              1,
+              `[Cache Control] Restoring ${cachedTools.length} cached tools`
+            );
           }
           toolsToUse = cachedTools;
         } else if (toolsToUse && toolsToUse.length > 0) {
           // Cache tools for future requests
           cachedTools = toolsToUse;
           if (isDebugEnabled()) {
-            debug(1, `[Cache Control] Caching ${toolsToUse.length} tools for future requests`);
+            debug(
+              1,
+              `[Cache Control] Caching ${toolsToUse.length} tools for future requests`
+            );
           }
         }
 
@@ -614,8 +620,8 @@ export const createAnthropicProxy = ({
               // Fallback: try to determine from provider name
               if (providerName === "lmstudio") {
                 return process.env.LMSTUDIO_URL || "http://localhost:1234";
-              } else if (providerName === "vllm-mlx") {
-                return process.env.VLLM_MLX_URL || "http://localhost:8081";
+              } else if (providerName === "mlx") {
+                return process.env.MLX_URL || "http://localhost:8081";
               }
               return "http://localhost:1234"; // Conservative default
             })();
@@ -634,7 +640,7 @@ export const createAnthropicProxy = ({
               cachedModelName = modelInfo.name;
               debug(1, `[Backend Query] Detected model: ${modelInfo.name}`);
 
-              // vLLM-MLX and most OpenAI-compatible servers don't return context in /v1/models
+              // MLX and most OpenAI-compatible servers don't return context in /v1/models
               // Try LMStudio-specific API if available (has context length)
               if (providerName === "lmstudio") {
                 try {
@@ -695,7 +701,8 @@ export const createAnthropicProxy = ({
           messagesToSend = result.messages;
 
           if (result.truncated) {
-            const isCloudModel = (mode as string) === "claude" || mode === "openrouter";
+            const isCloudModel =
+              (mode as string) === "claude" || mode === "openrouter";
             const limitationWarning = !isCloudModel
               ? `⚠️  IMPORTANT - LOCAL MODEL LIMITATION:\n` +
                 `  Claude Sonnet 4.5 auto-compresses context while preserving\n` +
@@ -823,13 +830,15 @@ export const createAnthropicProxy = ({
           }, timeoutConfig.timeout); // Configurable timeout for request completion
 
           try {
-            // Use .chat() for OpenAI providers (lmstudio, vllm-mlx, openrouter) and .languageModel() for Anthropic
+            // Use .chat() for OpenAI providers (lmstudio, mlx, openrouter) and .languageModel() for Anthropic
             const languageModel =
-              providerName === "lmstudio" || providerName === "vllm-mlx" || providerName === "openrouter"
+              providerName === "lmstudio" ||
+              providerName === "mlx" ||
+              providerName === "openrouter"
                 ? (provider as any).chat(model)
                 : provider.languageModel(model);
 
-            // No tool parser needed - OpenAI-compatible providers (vllm-mlx, lmstudio, openrouter) handle tool calling natively
+            // No tool parser needed - OpenAI-compatible providers (mlx, lmstudio, openrouter) handle tool calling natively
 
             debug(
               1,
@@ -1287,8 +1296,12 @@ export const createAnthropicProxy = ({
               );
             } else {
               // Already streaming - send error as SSE event and close stream properly
-              const errorMessage = error?.message || "Backend server connection lost";
-              debug(1, `[Stream Error] ⚠️  Sending error event to Claude Code: ${errorMessage}`);
+              const errorMessage =
+                error?.message || "Backend server connection lost";
+              debug(
+                1,
+                `[Stream Error] ⚠️  Sending error event to Claude Code: ${errorMessage}`
+              );
 
               try {
                 // Send error event
@@ -1309,7 +1322,11 @@ export const createAnthropicProxy = ({
                 );
                 res.end();
               } catch (writeError) {
-                debug(1, `[Stream Error] Failed to write error event:`, writeError);
+                debug(
+                  1,
+                  `[Stream Error] Failed to write error event:`,
+                  writeError
+                );
                 nodeWritable.destroy(error);
               }
             }
@@ -1356,7 +1373,11 @@ export const createAnthropicProxy = ({
                 );
                 res.end();
               } catch (writeError) {
-                debug(1, `[Write Error] Failed to write error event:`, writeError);
+                debug(
+                  1,
+                  `[Write Error] Failed to write error event:`,
+                  writeError
+                );
               }
             }
           });
@@ -1402,7 +1423,7 @@ export const createAnthropicProxy = ({
                 const cacheCreationTokens =
                   finalUsageData.cache_creation_input_tokens || 0;
 
-                // If vLLM-MLX didn't provide usage data, estimate it
+                // If MLX didn't provide usage data, estimate it
                 if (inputTokens === 0 && body) {
                   // Estimate input tokens from request body
                   let estimatedInput = 0;
@@ -1429,7 +1450,7 @@ export const createAnthropicProxy = ({
                   inputTokens = estimatedInput;
                   debug(
                     1,
-                    `[Token Estimation] Estimated ${inputTokens} input tokens (vLLM-MLX didn't provide usage)`
+                    `[Token Estimation] Estimated ${inputTokens} input tokens (MLX didn't provide usage)`
                   );
                 }
 
@@ -1453,7 +1474,7 @@ export const createAnthropicProxy = ({
 
                 const monitor = getCacheMonitor();
 
-                // In streaming mode, we're always using vLLM-MLX or LMStudio
+                // In streaming mode, we're always using MLX or LMStudio
                 // Infer cache hits from repeated request hashes
                 const currentEntry = monitor.getMetrics().entries.get(hash);
 

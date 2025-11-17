@@ -26,7 +26,7 @@
     {
       "role": "tool",
       "tool_call_id": "call_0",
-      "content": "# anyclaude\n\nTranslation layer for Claude Code that enables using local MLX models through the Anthropic API format. Intercepts Anthropic API calls and translates them to/from OpenAI Chat Completions format for vLLM-MLX.\n\n## Features\n- Auto-launches vLLM-MLX server with your configured model\n- Prompt caching for faster responses\n- Tool calling support\n- Streaming responses"
+      "content": "# anyclaude\n\nTranslation layer for Claude Code that enables using local MLX models through the Anthropic API format. Intercepts Anthropic API calls and translates them to/from OpenAI Chat Completions format for MLX.\n\n## Features\n- Auto-launches MLX server with your configured model\n- Prompt caching for faster responses\n- Tool calling support\n- Streaming responses"
     }
   ],
   "tools": [

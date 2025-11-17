@@ -20,11 +20,11 @@
       "serverScript": "scripts/mlx-textgen-server.sh",
       "description": "Production MLX backend - disk-based KV caching, 10-90x speedup"
     },
-    "vllm-mlx-legacy": {
+    "mlx-legacy": {
       "enabled": false,
       "port": 8082,
       "baseUrl": "http://localhost:8082/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/your/mlx/model",
       "maxTokens": 262144,
       "serverScript": "scripts/mlx-server.py",
@@ -53,7 +53,7 @@
 
   "// BACKEND OPTIONS": {
     "mlx-textgen": "Production MLX backend - disk-based KV cache, 10-90x speedup (recommended)",
-    "vllm-mlx-legacy": "Legacy MLX backend - for reference only, use mlx-textgen instead",
+    "mlx-legacy": "Legacy MLX backend - for reference only, use mlx-textgen instead",
     "lmstudio": "Local models - cross-platform, manual server",
     "openrouter": "Cloud models - access GLM-4.6, Qwen, Claude, GPT-4 via one API",
     "claude": "Official Claude API - full features, highest cost"

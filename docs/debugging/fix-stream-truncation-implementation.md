@@ -20,7 +20,7 @@ The response would cut off mid-sentence, appearing incomplete to the user.
 
 The issue wasn't in Claude Code or the proxy's HTTP buffering - it was in **how the streaming pipeline handled backpressure**:
 
-1. **AI SDK stream** (from vLLM-MLX) generates chunks rapidly
+1. **AI SDK stream** (from MLX) generates chunks rapidly
 2. **convertToAnthropicStream** (Web Streams Transform) converts to Anthropic SSE format
 3. **WritableStream** (custom) buffers data for res.write()
 4. When **res.write() signals backpressure** (returns false), the WritableStream waited for drain

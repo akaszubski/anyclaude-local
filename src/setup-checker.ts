@@ -121,7 +121,7 @@ export function checkModelConfiguration(): DependencyCheckResult {
 
   try {
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    const modelPath = config.backends?.["vllm-mlx"]?.model;
+    const modelPath = config.backends?.["mlx"]?.model;
 
     if (!modelPath) {
       return {
@@ -194,7 +194,7 @@ export function runFullSetupCheck(): SetupCheckResult {
   if (!venvCheck.ok) {
     issues.push(venvCheck.message);
     if (venvCheck.canFix) {
-      suggestions.push("Set up Python venv: scripts/setup-vllm-mlx-venv.sh");
+      suggestions.push("Set up Python venv: scripts/setup-mlx-venv.sh");
     }
   }
 
@@ -206,15 +206,15 @@ export function runFullSetupCheck(): SetupCheckResult {
     const config = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), ".anyclauderc.json"), "utf8")
     );
-    modelPath = config.backends?.["vllm-mlx"]?.model;
+    modelPath = config.backends?.["mlx"]?.model;
   } else {
     issues.push(modelCheck.message);
     if (modelCheck.canFix) {
       suggestions.push(
-        "Update .anyclauderc.json with vllm-mlx backend configuration"
+        "Update .anyclauderc.json with mlx backend configuration"
       );
       suggestions.push(
-        "Set backends.vllm-mlx.model to your MLX model directory path"
+        "Set backends.mlx.model to your MLX model directory path"
       );
     }
   }
@@ -313,12 +313,12 @@ export function shouldFailStartup(mode: string): boolean {
     return true;
   }
 
-  // Only vllm-mlx mode requires Python (for auto-launch)
+  // Only mlx mode requires Python (for auto-launch)
   // lmstudio and openrouter modes connect to existing servers
-  if (mode === "vllm-mlx" && !result.pythonVenvExists) {
+  if (mode === "mlx" && !result.pythonVenvExists) {
     console.error("\n❌ ERROR: Python environment required for mode: " + mode);
     console.error("\nSet up Python environment:");
-    console.error("  scripts/setup-vllm-mlx-venv.sh");
+    console.error("  scripts/setup-mlx-venv.sh");
     console.error("");
     return true;
   }

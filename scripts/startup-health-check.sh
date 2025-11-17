@@ -14,19 +14,19 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Check 1: vLLM-MLX server is running
+# Check 1: MLX server is running
 echo ""
-echo "1️⃣  Checking vLLM-MLX server..."
+echo "1️⃣  Checking MLX server..."
 
 if ! curl -s http://localhost:8081/v1/models > /dev/null 2>&1; then
-    echo -e "${RED}❌ vLLM-MLX server NOT running on port 8081${NC}"
+    echo -e "${RED}❌ MLX server NOT running on port 8081${NC}"
     echo "   Start it with:"
     echo "   source ~/.venv-mlx/bin/activate"
-    echo "   python scripts/vllm-mlx-server.py --model /path/to/model --port 8081"
+    echo "   python scripts/mlx-server.py --model /path/to/model --port 8081"
     exit 1
 fi
 
-echo -e "${GREEN}✅ vLLM-MLX server is running${NC}"
+echo -e "${GREEN}✅ MLX server is running${NC}"
 
 # Check 2: Server responds to requests
 echo ""
@@ -71,10 +71,10 @@ echo "5️⃣  Checking anyclaude config..."
 if [ ! -f ".anyclauderc.json" ]; then
     echo -e "${YELLOW}⚠️  .anyclauderc.json not found${NC}"
 else
-    if grep -q "vllm-mlx" .anyclauderc.json; then
-        echo -e "${GREEN}✅ vllm-mlx configured in .anyclauderc.json${NC}"
+    if grep -q "mlx" .anyclauderc.json; then
+        echo -e "${GREEN}✅ mlx configured in .anyclauderc.json${NC}"
     else
-        echo -e "${YELLOW}⚠️  vllm-mlx backend not configured${NC}"
+        echo -e "${YELLOW}⚠️  mlx backend not configured${NC}"
     fi
 fi
 

@@ -4,7 +4,7 @@
 
 **Status**: ⚠️ UNSTABLE → ✅ FIXABLE in 2-3 hours
 
-Your goal is correct: Make Claude Code work reliably locally using vLLM-MLX on Apple Silicon.
+Your goal is correct: Make Claude Code work reliably locally using MLX on Apple Silicon.
 
 **The reality**:
 
@@ -21,7 +21,7 @@ Your goal is correct: Make Claude Code work reliably locally using vLLM-MLX on A
 
 - **Status**: This is fine, keep it all
 - **Why**: The full context helps Claude understand how to approach problems
-- **Caching**: vLLM-MLX is already caching what it can
+- **Caching**: MLX is already caching what it can
 - **Latency**: The 10-20 second startup is hardware limitation, not a bug
 - **Decision**: Don't reduce it - you'll get worse results
 
@@ -119,7 +119,7 @@ const requestLog = {
 - Losing it means worse code quality
 - The latency is hardware limitation, not a bug
 
-❌ **DON'T expect vLLM-MLX to match Anthropic API speed**
+❌ **DON'T expect MLX to match Anthropic API speed**
 
 - Local hardware is inherently slower
 - Anthropic servers are optimized for this
@@ -181,7 +181,7 @@ After fixes:
 
 ## Architecture Trade-offs (Accept These)
 
-### Local (vLLM-MLX)
+### Local (MLX)
 
 - ✅ Privacy - data never leaves your machine
 - ✅ No API costs - runs locally
@@ -201,7 +201,7 @@ After fixes:
 
 ### Best Use Cases
 
-**Use vLLM-MLX locally for**:
+**Use MLX locally for**:
 
 - Long analysis tasks (startup time doesn't matter)
 - Building code (latency acceptable)
@@ -236,7 +236,7 @@ After fixes:
 
 1. System prompt size (keep full context)
 2. Hardware latency (accept trade-off)
-3. vLLM-MLX speed (hardware limitation)
+3. MLX speed (hardware limitation)
 
 ---
 
@@ -310,7 +310,7 @@ The real issue was truncation, not prompt size. Now you know the difference.
 
 Your system is slow because:
 
-- vLLM-MLX on Apple Silicon is inherently slower than cloud APIs
+- MLX on Apple Silicon is inherently slower than cloud APIs
 - This is expected and normal
 - It's the trade-off for running locally and privately
 

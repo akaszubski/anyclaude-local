@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Unit Tests: vLLM-MLX System Prompt Normalization
+ * Unit Tests: MLX System Prompt Normalization
  *
  * Tests that system prompts with newlines and excess whitespace are properly
- * normalized for vLLM-MLX to prevent JSON parsing errors that cause:
+ * normalized for MLX to prevent JSON parsing errors that cause:
  * - Looping/repetitive responses
  * - Unpredictable model behavior
  * - Malformed model input
  *
- * Issue: vLLM-MLX has strict JSON validation that rejects:
+ * Issue: MLX has strict JSON validation that rejects:
  * - Newlines in system prompt strings
  * - Excess whitespace (multiple spaces)
  *
- * Fix: Normalize system prompts before sending to vLLM-MLX
+ * Fix: Normalize system prompts before sending to MLX
  */
 
 const assert = require("assert");
@@ -22,13 +22,13 @@ let passed = 0;
 let failed = 0;
 
 /**
- * Mock the fetch interception that happens in main.ts for vLLM-MLX
+ * Mock the fetch interception that happens in main.ts for MLX
  */
 class VLLMMLXFetchInterceptor {
   interceptAndNormalize(requestBody) {
     const body = JSON.parse(requestBody);
 
-    // Simulate the normalization that happens in main.ts for vLLM-MLX
+    // Simulate the normalization that happens in main.ts for MLX
     if (body.messages && Array.isArray(body.messages)) {
       for (const msg of body.messages) {
         // Clean system role messages
@@ -294,7 +294,7 @@ function test_system_prompt_array_format() {
     .map((s) => (typeof s === "string" ? s : s.text))
     .join("\n");
 
-  // Then normalize (as done in vllm-mlx fetch interceptor)
+  // Then normalize (as done in mlx fetch interceptor)
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
   const expectedContent = "You are Claude. You are helpful. Be honest.";
@@ -445,7 +445,7 @@ function runTests() {
   console.log("╚══════════════════════════════════════════════════════════╝");
 
   if (failed === 0 && passed === 10) {
-    console.log("\n✅ All vLLM-MLX system prompt normalization tests passed!");
+    console.log("\n✅ All MLX system prompt normalization tests passed!");
     process.exit(0);
   }
   process.exit(failed > 0 ? 1 : 0);

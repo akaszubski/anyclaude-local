@@ -43,7 +43,7 @@ interface AnyclaudeConfig {
       compatibility?: string;
       description?: string;
     };
-    "vllm-mlx"?: {
+    "mlx"?: {
       enabled?: boolean;
       port?: number;
       baseUrl?: string;
@@ -96,13 +96,13 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
       if (
         mode === "claude" ||
         mode === "lmstudio" ||
-        mode === "vllm-mlx" ||
+        mode === "mlx" ||
         mode === "openrouter"
       ) {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'vllm-mlx', or 'openrouter'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'mlx', or 'openrouter'.`
       );
       process.exit(1);
     }
@@ -152,7 +152,7 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
   if (
     envMode === "claude" ||
     envMode === "lmstudio" ||
-    envMode === "vllm-mlx" ||
+    envMode === "mlx" ||
     envMode === "openrouter"
   ) {
     return envMode as AnyclaudeMode;
@@ -164,15 +164,15 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
     if (
       backend === "claude" ||
       backend === "lmstudio" ||
-      backend === "vllm-mlx" ||
+      backend === "mlx" ||
       backend === "openrouter"
     ) {
       return backend as AnyclaudeMode;
     }
   }
 
-  // Default to vllm-mlx (was lmstudio before)
-  return "vllm-mlx";
+  // Default to mlx (was lmstudio before)
+  return "mlx";
 }
 
 // Check for --test-model flag before anything else
@@ -244,24 +244,24 @@ function getBackendConfig(
         configBackends?.lmstudio?.model ||
         defaultConfig.model,
     };
-  } else if (backend === "vllm-mlx") {
+  } else if (backend === "mlx") {
     const defaultConfig = {
       baseURL: "http://localhost:8081/v1",
-      apiKey: "vllm-mlx",
+      apiKey: "mlx",
       model: "current-model",
     };
     return {
       baseURL:
-        process.env.VLLM_MLX_URL ||
-        configBackends?.["vllm-mlx"]?.baseUrl ||
+        process.env.MLX_URL ||
+        configBackends?.["mlx"]?.baseUrl ||
         defaultConfig.baseURL,
       apiKey:
-        process.env.VLLM_MLX_API_KEY ||
-        configBackends?.["vllm-mlx"]?.apiKey ||
+        process.env.MLX_API_KEY ||
+        configBackends?.["mlx"]?.apiKey ||
         defaultConfig.apiKey,
       model:
-        process.env.VLLM_MLX_MODEL ||
-        configBackends?.["vllm-mlx"]?.model ||
+        process.env.MLX_MODEL ||
+        configBackends?.["mlx"]?.model ||
         defaultConfig.model,
     };
   } else if (backend === "openrouter") {
@@ -290,7 +290,7 @@ function getBackendConfig(
 
 // Configure providers based on mode
 const lmstudioConfig = getBackendConfig("lmstudio", config.backends);
-const vllmMlxConfig = getBackendConfig("vllm-mlx", config.backends);
+const vllmMlxConfig = getBackendConfig("mlx", config.backends);
 const openrouterConfig = getBackendConfig("openrouter", config.backends);
 
 // Launch backend server if needed (non-blocking)
@@ -379,28 +379,28 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
-  "vllm-mlx": createOpenAI({
+  "mlx": createOpenAI({
     baseURL: vllmMlxConfig?.baseURL || "http://localhost:8081/v1",
-    apiKey: vllmMlxConfig?.apiKey || "vllm-mlx",
+    apiKey: vllmMlxConfig?.apiKey || "mlx",
     // @ts-ignore - compatibility is valid but not in TypeScript types
     compatibility: "legacy", // Required for models like gpt-oss-20b with custom tool calling format
     fetch: (async (url, init) => {
       if (init?.body && typeof init.body === "string") {
         const body = JSON.parse(init.body);
 
-        // Map max_tokens for vLLM-MLX compatibility
+        // Map max_tokens for MLX compatibility
         const maxTokens = body.max_tokens;
         delete body.max_tokens;
         if (typeof maxTokens !== "undefined") {
           body.max_completion_tokens = maxTokens;
         }
 
-        // Remove parameters that vLLM-MLX doesn't support
+        // Remove parameters that MLX doesn't support
         delete body.reasoning;
         delete body.service_tier;
 
-        // FIX: Clean system prompt for vLLM-MLX (JSON parsing issues with newlines)
-        // vLLM-MLX's server has strict JSON validation, normalize newlines in all messages
+        // FIX: Clean system prompt for MLX (JSON parsing issues with newlines)
+        // MLX's server has strict JSON validation, normalize newlines in all messages
         if (body.messages && Array.isArray(body.messages)) {
           for (const msg of body.messages) {
             // Clean system role messages
@@ -426,13 +426,16 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
           }
         }
 
-        // Keep tool calling enabled for vLLM-MLX
-        // vLLM-MLX supports tools parameter
+        // Keep tool calling enabled for MLX
+        // MLX supports tools parameter
 
-        // DEBUG: Log tools being sent to vLLM-MLX
+        // DEBUG: Log tools being sent to MLX
         if (body.tools && isDebugEnabled()) {
-          debug(1, `[vLLM-MLX → Request] Sending ${body.tools.length || Object.keys(body.tools).length} tools to server`);
-          debug(2, `[vLLM-MLX → Tools]`, body.tools);
+          debug(
+            1,
+            `[MLX → Request] Sending ${body.tools.length || Object.keys(body.tools).length} tools to server`
+          );
+          debug(2, `[MLX → Tools]`, body.tools);
         }
 
         init.body = JSON.stringify(body);
@@ -440,11 +443,11 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
 
       const response = await globalThis.fetch(url, init);
 
-      // Log vLLM-MLX responses when debugging
+      // Log MLX responses when debugging
       if (isDebugEnabled() && response.body && response.ok) {
         debug(
           1,
-          `[vLLM-MLX → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`
+          `[MLX → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`
         );
       }
 
@@ -539,14 +542,14 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         ? "claude-3-5-sonnet-20241022"
         : mode === "openrouter"
           ? openrouterConfig?.model || "z-ai/glm-4.6"
-          : mode === "vllm-mlx"
+          : mode === "mlx"
             ? vllmMlxConfig?.model || "current-model"
             : lmstudioConfig?.model || "current-model",
     mode,
     backendUrl:
       mode === "lmstudio"
         ? lmstudioConfig?.baseURL
-        : mode === "vllm-mlx"
+        : mode === "mlx"
           ? vllmMlxConfig?.baseURL
           : mode === "openrouter"
             ? openrouterConfig?.baseURL
@@ -575,10 +578,10 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     console.log(
       `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in LMStudio)`
     );
-  } else if (mode === "vllm-mlx") {
+  } else if (mode === "mlx") {
     const endpoint = vllmMlxConfig?.baseURL || "http://localhost:8081/v1";
-    console.log(`[anyclaude] vLLM-MLX endpoint: ${endpoint}`);
-    const modelConfig = config.backends?.["vllm-mlx"]?.model;
+    console.log(`[anyclaude] MLX endpoint: ${endpoint}`);
+    const modelConfig = config.backends?.["mlx"]?.model;
     if (modelConfig && modelConfig !== "current-model") {
       console.log(
         `[anyclaude] Model: Auto-launching ${path.basename(modelConfig)}`
@@ -616,7 +619,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     logSessionContext({
       mode,
       model:
-        mode === "vllm-mlx"
+        mode === "mlx"
           ? vllmMlxConfig?.model || "current-model"
           : mode === "lmstudio"
             ? lmstudioConfig?.model || "current-model"
@@ -626,7 +629,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       backendUrl:
         mode === "lmstudio"
           ? lmstudioConfig?.baseURL
-          : mode === "vllm-mlx"
+          : mode === "mlx"
             ? vllmMlxConfig?.baseURL
             : mode === "openrouter"
               ? openrouterConfig?.baseURL

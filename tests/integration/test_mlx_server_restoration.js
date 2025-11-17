@@ -1,7 +1,7 @@
 /**
  * Integration Test: MLX Server Restoration (Phase 1.1)
  *
- * Tests the restoration of scripts/archive/vllm-mlx-server.py to scripts/mlx-server.py
+ * Tests the restoration of scripts/archive/mlx-server.py to scripts/mlx-server.py
  * This validates:
  * - File structure and content integrity
  * - Configuration integration
@@ -149,7 +149,7 @@ runner.test("File size is similar to archived version", () => {
   const destPath = path.join(runner.repoRoot, "scripts/mlx-server.py");
   const archivePath = path.join(
     runner.repoRoot,
-    "scripts/archive/vllm-mlx-server.py"
+    "scripts/archive/mlx-server.py"
   );
 
   if (!runner.fileExists(destPath)) {
@@ -441,7 +441,7 @@ runner.test("Archive README documents MLX server files", () => {
   const content = runner.readFile(readmePath);
 
   runner.assert(
-    content.includes("mlx-server") || content.includes("vllm-mlx-server"),
+    content.includes("mlx-server") || content.includes("mlx-server"),
     "Archive README should document MLX server files"
   );
 });

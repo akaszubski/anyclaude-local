@@ -1,5 +1,5 @@
 #!/bin/bash
-# Benchmark vLLM-MLX cache effectiveness with real measurements
+# Benchmark MLX cache effectiveness with real measurements
 
 set -e
 
@@ -7,7 +7,7 @@ BASE_URL="${1:-http://localhost:8081}"
 SAMPLES="${2:-5}"
 
 echo "=================================================="
-echo "vLLM-MLX CACHE PERFORMANCE BENCHMARK"
+echo "MLX CACHE PERFORMANCE BENCHMARK"
 echo "=================================================="
 echo "Server: $BASE_URL"
 echo "Samples: $SAMPLES per test"
@@ -16,7 +16,7 @@ echo ""
 # Check server is running
 if ! curl -s "$BASE_URL/health" > /dev/null 2>&1; then
     echo "❌ Server not responding at $BASE_URL"
-    echo "Start with: PROXY_ONLY=true anyclaude --mode=vllm-mlx"
+    echo "Start with: PROXY_ONLY=true anyclaude --mode=mlx"
     exit 1
 fi
 

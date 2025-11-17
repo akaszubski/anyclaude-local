@@ -31,7 +31,7 @@ ANYCLAUDE_DEBUG=2 anyclaude
 ~/.anyclaude/logs/debug-session-2025-11-16T02-30-45.log
 
 # Trace files (full request/response, only when enableTraces: true)
-~/.anyclaude/traces/vllm-mlx/2025-11-16T02-30-45.json
+~/.anyclaude/traces/mlx/2025-11-16T02-30-45.json
 ~/.anyclaude/traces/claude/2025-11-16T02-30-45.json
 ~/.anyclaude/traces/openrouter/2025-11-16T02-30-45.json
 ```
@@ -44,14 +44,14 @@ ANYCLAUDE_DEBUG=2 anyclaude
 ────────────────────────────────────────────────────────────
 SESSION CONFIGURATION
 ────────────────────────────────────────────────────────────
-Backend Mode: vllm-mlx
+Backend Mode: mlx
 Model: /Users/.../gpt-oss-20b-5bit
 Backend URL: http://localhost:8081/v1
 Proxy URL: http://localhost:63596
 
 Configuration:
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "debugLevel": "2",
   "configFile": ".anyclauderc.json"
 }
@@ -147,10 +147,10 @@ grep "timeout\|finish" debug-session-*.log
 
 ```bash
 # Check server launch logs
-grep "server-launcher\|vllm-mlx" debug-session-*.log
+grep "server-launcher\|mlx" debug-session-*.log
 
 # Also check server logs
-tail ~/.anyclaude/logs/vllm-mlx-server.log
+tail ~/.anyclaude/logs/mlx-server.log
 ```
 
 ### Connection Timeouts
@@ -186,20 +186,20 @@ Traces saved to: `~/.anyclaude/traces/{backend}/`
 
 ```bash
 # View latest trace (pretty JSON)
-jq . ~/.anyclaude/traces/vllm-mlx/*.json | tail -1000
+jq . ~/.anyclaude/traces/mlx/*.json | tail -1000
 
 # Extract tool schemas
-jq '.request.body.tools' ~/.anyclaude/traces/vllm-mlx/*.json
+jq '.request.body.tools' ~/.anyclaude/traces/mlx/*.json
 
 # Extract model response
-jq '.response.body' ~/.anyclaude/traces/vllm-mlx/*.json
+jq '.response.body' ~/.anyclaude/traces/mlx/*.json
 ```
 
 ### Compare Backends
 
 ```bash
-# Run with vllm-mlx
-ANYCLAUDE_DEBUG=2 anyclaude --mode=vllm-mlx
+# Run with mlx
+ANYCLAUDE_DEBUG=2 anyclaude --mode=mlx
 # (do something)
 
 # Run with claude (for comparison)
@@ -250,7 +250,7 @@ When analyzing debug logs, follow this workflow:
    - Format mismatch (model uses different format)
    - Configuration issue (wrong parameters)
    - Schema issue (union types, etc.)
-   - Server issue (vllm-mlx config)
+   - Server issue (mlx config)
 
 5. **Propose solution**:
    - Code fix with file paths

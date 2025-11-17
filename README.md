@@ -30,7 +30,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 ### General
 
 - 🚀 **Simple Setup** - Running in under 5 minutes
-- 🎯 **Multi-Mode** - Switch between vLLM-MLX, LMStudio, OpenRouter, and real Claude API
+- 🎯 **Multi-Mode** - Switch between MLX, LMStudio, OpenRouter, and real Claude API
 - 🛑 **Auto-Cleanup** - Server processes terminate cleanly when you exit
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
 - 💻 **Global Command** - Install once, run `anyclaude` from anywhere
@@ -42,7 +42,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 ### ⚠️ MLX-Textgen Migration (Incomplete)
 
-- **Replaced**: Custom vllm-mlx-server.py (1400 lines) → MLX-Textgen (production-ready pip package)
+- **Replaced**: Custom mlx-server.py (1400 lines) → MLX-Textgen (production-ready pip package)
 - **KV Caching**: Works in standalone testing (0.5s follow-ups vs 50s)
 - **Tool Calling**: DOES NOT WORK - makes it unusable for Claude Code
 - **Status**: Migration complete but not practical for real use
@@ -69,7 +69,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 ### ✅ Cache Performance Tuning
 
-- **Increased**: vLLM-MLX cache from 32 to 256 entries (default)
+- **Increased**: MLX cache from 32 to 256 entries (default)
 - **Added**: Cache metrics tracking and monitoring
 - **Added**: Deterministic tool ordering for consistent cache hits
 - **Result**: 60-85% cache hit rate (vs 20-30% before), 30-50% token cost reduction
@@ -198,7 +198,7 @@ See [Production Hardening API Reference](docs/reference/production-hardening-api
 anyclaude --mode=claude
 
 # Use MLX-Textgen for fast text generation
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 **Alternative:** Use OpenRouter with GLM-4.6 ($0.60/$2 per 1M tokens) which has working tool calling at 80% lower cost than Claude API.
@@ -237,7 +237,7 @@ New tool calling verification framework (TDD RED phase - tests written, implemen
   - Package: `@ai-sdk/anthropic@^1.2.12`
 
 - **[@ai-sdk/openai](https://github.com/vercel-labs/ai/tree/main/packages/openai)** - AI SDK for OpenAI-compatible servers
-  - Used for: Communicating with LMStudio and vLLM-MLX servers
+  - Used for: Communicating with LMStudio and MLX servers
   - Package: `@ai-sdk/openai@^2.0.6`
 
 - **[ai](https://github.com/vercel-labs/ai)** - Vercel AI SDK core library
@@ -288,9 +288,9 @@ bun install -g $(pwd)
 which anyclaude
 ```
 
-### Quick Setup (vLLM-MLX Recommended)
+### Quick Setup (MLX Recommended)
 
-1. **Install vLLM-MLX dependencies** (one-time)
+1. **Install MLX dependencies** (one-time)
 
    ```bash
    python3 -m venv ~/.venv-mlx
@@ -302,9 +302,9 @@ which anyclaude
 
    ```json
    {
-     "backend": "vllm-mlx",
+     "backend": "mlx",
      "backends": {
-       "vllm-mlx": {
+       "mlx": {
          "enabled": true,
          "port": 8081,
          "model": "/path/to/mlx-model"
@@ -327,10 +327,10 @@ That's it! Server launches automatically, model loads, Claude Code starts. When 
 1. Open LMStudio, download a model, click "Start Server"
 2. Run: `anyclaude --mode=lmstudio`
 
-**vLLM-MLX (manual start, if not using auto-launch):**
+**MLX (manual start, if not using auto-launch):**
 
-1. Run: `source ~/.venv-mlx/bin/activate && python3 scripts/vllm-mlx-server.py --model /path/to/model --port 8081`
-2. In another terminal: `anyclaude --mode=vllm-mlx`
+1. Run: `source ~/.venv-mlx/bin/activate && python3 scripts/mlx-server.py --model /path/to/model --port 8081`
+2. In another terminal: `anyclaude --mode=mlx`
 
 **Real Claude API:**
 
@@ -348,7 +348,7 @@ AnyClaude supports **4 modes** to fit your workflow - from free local privacy to
 ### Quick Start (4 modes available)
 
 ```bash
-# MODE 1: vLLM-MLX (default, recommended for Apple Silicon)
+# MODE 1: MLX (default, recommended for Apple Silicon)
 # Auto-launches server with prompt caching
 anyclaude  # Uses .anyclauderc.json config
 
@@ -370,21 +370,21 @@ anyclaude --mode=claude
 
 | Mode            | Cost                   | Privacy    | Tools  | Cache   | Best For                |
 | --------------- | ---------------------- | ---------- | ------ | ------- | ----------------------- |
-| **vLLM-MLX** ⭐ | Free                   | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
+| **MLX** ⭐ | Free                   | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
 | **LMStudio**    | Free                   | 100% local | ✅ Yes | Limited | **Cross-platform**      |
 | **OpenRouter**  | $0.60-$2/1M (84% less) | Cloud      | ✅ Yes | ✅ Yes  | **Cost savings**        |
 | **Claude API**  | $3-$15/1M              | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
 
 ### Cost Example (50K input + 10K output tokens)
 
-- **vLLM-MLX**: $0 (free, local)
+- **MLX**: $0 (free, local)
 - **LMStudio**: $0 (free, local)
 - **OpenRouter (GLM-4.6)**: $0.05 (84% cheaper!)
 - **Claude API**: $0.30 (premium)
 
 ### When to Use Each Mode
 
-**vLLM-MLX (Default)**
+**MLX (Default)**
 
 - Privacy-first development (100% local)
 - Apple Silicon users (M1/M2/M3)
@@ -424,7 +424,7 @@ anyclaude
 
 # Via config file (.anyclauderc.json)
 {
-  "backend": "vllm-mlx",  // Change this
+  "backend": "mlx",  // Change this
   "backends": { ... }
 }
 ```
@@ -474,7 +474,7 @@ anyclaude
 - **[src/main.ts](src/main.ts)** - Entry point and mode selection
   - Spawns proxy server and optionally launches Claude Code
   - Handles configuration loading from `.anyclauderc.json`
-  - Supports multiple backends (vllm-mlx, lmstudio, openrouter, claude)
+  - Supports multiple backends (mlx, lmstudio, openrouter, claude)
 
 - **[src/anthropic-proxy.ts](src/anthropic-proxy.ts)** - HTTP proxy server
   - Mimics Anthropic API on local port
@@ -829,21 +829,21 @@ Create `.anyclauderc.json` in your project root to configure backends:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "debug": {
     "level": 0,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/vllm-mlx-server.py",
-      "description": "vLLM-MLX with auto-launch and prompt caching"
+      "serverScript": "scripts/mlx-server.py",
+      "description": "MLX with auto-launch and prompt caching"
     },
     "lmstudio": {
       "enabled": false,
@@ -867,10 +867,10 @@ Create `.anyclauderc.json` in your project root to configure backends:
 
 **Configuration Priority:**
 
-1. CLI flags (`--mode=vllm-mlx`) - Highest priority
-2. Environment variables (`ANYCLAUDE_MODE=vllm-mlx`)
-3. Config file (`backend: "vllm-mlx"` in `.anyclauderc.json`)
-4. Defaults - Lowest priority (vllm-mlx)
+1. CLI flags (`--mode=mlx`) - Highest priority
+2. Environment variables (`ANYCLAUDE_MODE=mlx`)
+3. Config file (`backend: "mlx"` in `.anyclauderc.json`)
+4. Defaults - Lowest priority (mlx)
 
 ### Environment Variables
 
@@ -878,12 +878,12 @@ Override specific settings via environment variables:
 
 ```bash
 # Mode selection (overrides config file)
-export ANYCLAUDE_MODE=vllm-mlx  # or lmstudio, openrouter, or claude
+export ANYCLAUDE_MODE=mlx  # or lmstudio, openrouter, or claude
 
-# vLLM-MLX configuration
-export VLLM_MLX_URL=http://localhost:8081/v1
-export VLLM_MLX_MODEL=/path/to/your/mlx/model
-export VLLM_MLX_API_KEY=vllm-mlx
+# MLX configuration
+export MLX_URL=http://localhost:8081/v1
+export MLX_MODEL=/path/to/your/mlx/model
+export MLX_API_KEY=mlx
 
 # LMStudio configuration
 export LMSTUDIO_URL=http://localhost:1234/v1
@@ -911,7 +911,7 @@ export PROXY_ONLY=true
 
 ```bash
 # Select mode via CLI (highest priority)
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 anyclaude --mode=lmstudio
 anyclaude --mode=openrouter
 anyclaude --mode=claude
@@ -926,7 +926,7 @@ anyclaude --test-model
 
 **Modes:**
 
-- **`vllm-mlx` mode** (default): Auto-launch vLLM-MLX server with prompt caching (Apple Silicon optimized)
+- **`mlx` mode** (default): Auto-launch MLX server with prompt caching (Apple Silicon optimized)
 - **`lmstudio` mode**: Use local LMStudio models (privacy-first, zero cloud dependency, cross-platform)
 - **`openrouter` mode**: Use cloud models via OpenRouter (400+ models, 84% cheaper than Claude API)
 - **`claude` mode**: Use real Anthropic API with trace logging for reverse engineering
@@ -942,22 +942,22 @@ anyclaude --test-model
 
 ```bash
 # Method 1: Environment variable
-export ANYCLAUDE_MODE=vllm-mlx  # or lmstudio, openrouter, or claude
+export ANYCLAUDE_MODE=mlx  # or lmstudio, openrouter, or claude
 anyclaude
 
 # Method 2: CLI flag (takes priority over env var)
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 
 # Method 3: Config file (.anyclauderc.json)
-# Set "backend": "vllm-mlx" in .anyclauderc.json
+# Set "backend": "mlx" in .anyclauderc.json
 
 # Method 4: Default (no configuration)
-anyclaude  # Uses vllm-mlx mode
+anyclaude  # Uses mlx mode
 ```
 
-### vLLM-MLX Mode (Apple Silicon Optimized)
+### MLX Mode (Apple Silicon Optimized)
 
-**Why use vllm-mlx mode (default)?**
+**Why use mlx mode (default)?**
 
 - **Auto-launch**: Server starts automatically when you run `anyclaude`
 - **Prompt caching**: Built-in KV cache for 10-100x speedup on follow-up requests
@@ -982,9 +982,9 @@ pip install mlx-lm fastapi uvicorn pydantic
 
 # 2. Configure .anyclauderc.json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "model": "/path/to/your/mlx/model"
@@ -1020,17 +1020,17 @@ mlx-community/Qwen2.5-7B-Instruct-4bit
 ```bash
 # Start server manually (if ANYCLAUDE_NO_AUTO_LAUNCH=true)
 source ~/.venv-mlx/bin/activate
-python3 scripts/vllm-mlx-server.py --model /path/to/model --port 8081
+python3 scripts/mlx-server.py --model /path/to/model --port 8081
 
 # In another terminal
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
-**Note**: vLLM-MLX only works on Apple Silicon (M1/M2/M3/M4). For Intel/AMD, use `lmstudio` mode.
+**Note**: MLX only works on Apple Silicon (M1/M2/M3/M4). For Intel/AMD, use `lmstudio` mode.
 
 ---
 
-### Why vLLM-MLX Over LMStudio?
+### Why MLX Over LMStudio?
 
 **The Problem with LMStudio:**
 
@@ -1050,9 +1050,9 @@ Request 3: Process 18,500 tokens → 40 seconds
 ...still slow even after "warmup"
 ```
 
-**The vLLM-MLX Solution:**
+**The MLX Solution:**
 
-vLLM-MLX has **built-in KV (Key-Value) cache** that automatically caches prompts:
+MLX has **built-in KV (Key-Value) cache** that automatically caches prompts:
 
 ```
 Request 1: Process 18,500 tokens → 20-30s (initial cache build)
@@ -1062,7 +1062,7 @@ Request 3+: Reuse cache → ~5-10s consistently
 
 **Performance Comparison (Same Model, Same Hardware):**
 
-| Metric              | LMStudio      | vLLM-MLX       | Improvement     |
+| Metric              | LMStudio      | MLX       | Improvement     |
 | ------------------- | ------------- | -------------- | --------------- |
 | First Request       | 50s           | 20-30s         | 2x faster       |
 | Second Request      | 44s           | 5-10s          | **4-9x faster** |
@@ -1075,17 +1075,17 @@ Request 3+: Reuse cache → ~5-10s consistently
 1. **Claude Code's design assumes prompt caching** - Real Claude API caches system prompts automatically
 2. **LMStudio wasn't built for this use case** - It's designed for single-turn completions, not multi-turn agent workflows
 3. **Every Claude Code request includes 12,622 tokens of tool definitions** - Without caching, this is reprocessed 100+ times per session
-4. **vLLM-MLX makes Claude Code feel responsive** - 5-10 second responses vs 40-50 second waits
+4. **MLX makes Claude Code feel responsive** - 5-10 second responses vs 40-50 second waits
 5. **Auto-launch eliminates manual server management** - Just run `anyclaude` and it handles everything
 
 **When to Use LMStudio:**
 
-- ✅ You're on Intel/AMD (vLLM-MLX requires Apple Silicon)
+- ✅ You're on Intel/AMD (MLX requires Apple Silicon)
 - ✅ You need a GUI for model management
 - ✅ You want to hot-swap models frequently
 - ⚠️ You have patience for 40-50 second responses
 
-**When to Use vLLM-MLX:**
+**When to Use MLX:**
 
 - ✅ You're on Apple Silicon (M1/M2/M3/M4)
 - ✅ You want Claude Code to feel fast and responsive
@@ -1112,9 +1112,9 @@ Claude Code sends this on **every single request**:
 ```
 
 **Without KV cache** (LMStudio): All 18,490 tokens reprocessed every time
-**With KV cache** (vLLM-MLX): System + tools cached, only new messages processed
+**With KV cache** (MLX): System + tools cached, only new messages processed
 
-This is why vLLM-MLX is **4-9x faster** - it's not magic, it's proper caching plus auto-launch.
+This is why MLX is **4-9x faster** - it's not magic, it's proper caching plus auto-launch.
 
 ---
 
@@ -1541,9 +1541,9 @@ This is an **enhanced port** of the original anyclaude project, adapted for Clau
 | Feature              | Original anyclaude                       | anyclaude-local (this fork)                            |
 | -------------------- | ---------------------------------------- | ------------------------------------------------------ |
 | **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ✅ OpenRouter (400+ models)                            |
-| **Local Backends**   | ✅ LMStudio via failover                 | ✅ vLLM-MLX (auto-launch) + LMStudio                   |
-| **MLX Support**      | ❌ Not supported                         | ✅ vLLM-MLX (auto-launch, KV cache)                    |
-| **Auto-launch**      | ❌ Manual server setup                   | ✅ vLLM-MLX auto-starts/stops                          |
+| **Local Backends**   | ✅ LMStudio via failover                 | ✅ MLX (auto-launch) + LMStudio                   |
+| **MLX Support**      | ❌ Not supported                         | ✅ MLX (auto-launch, KV cache)                    |
+| **Auto-launch**      | ❌ Manual server setup                   | ✅ MLX auto-starts/stops                          |
 | **Trace Logging**    | ❌ Not supported                         | ✅ Auto-enabled for cloud modes                        |
 | **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed (simpler, 4-mode system)                    |
 | **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable                                      |
@@ -1553,7 +1553,7 @@ This is an **enhanced port** of the original anyclaude project, adapted for Clau
 
 **Choose Original anyclaude if**: You need OpenAI, Google, xAI, or GPT-5 specific features
 
-**Choose anyclaude-local if**: You want local privacy (vLLM-MLX/LMStudio) OR cheap cloud (OpenRouter 84% cheaper) with auto-launch and trace logging
+**Choose anyclaude-local if**: You want local privacy (MLX/LMStudio) OR cheap cloud (OpenRouter 84% cheaper) with auto-launch and trace logging
 
 ---
 
@@ -1577,13 +1577,13 @@ This project is an **enhanced port** of [anyclaude](https://github.com/coder/any
 
 **Added:**
 
-- ✅ **vLLM-MLX auto-launch** - Server starts/stops automatically
+- ✅ **MLX auto-launch** - Server starts/stops automatically
 - ✅ **OpenRouter integration** - 400+ models at 84% lower cost than Claude API
 - ✅ **Trace logging system** - Auto-capture Claude Code prompts for analysis
 - ✅ **Cache monitoring** - Performance metrics, hit rate tracking
 - ✅ **1,400+ test suite** - 60 test files covering unit, integration, regression, E2E tests
 - ✅ **Setup validation** - Dependency checking before launch
-- ✅ **4-mode architecture** - vllm-mlx (default), lmstudio, openrouter, claude
+- ✅ **4-mode architecture** - mlx (default), lmstudio, openrouter, claude
 
 **Philosophy:**
 
@@ -1598,7 +1598,7 @@ This project is an **enhanced port** of [anyclaude](https://github.com/coder/any
 The original anyclaude is excellent for multi-cloud usage, but this fork takes a different approach:
 
 1. **Optimized for Claude Code 2.0** - Built specifically for tool-heavy agent workflows
-2. **Local-first with cloud option** - Privacy (vLLM-MLX/LMStudio) OR cost savings (OpenRouter 84% cheaper)
+2. **Local-first with cloud option** - Privacy (MLX/LMStudio) OR cost savings (OpenRouter 84% cheaper)
 3. **Auto-launch convenience** - Server lifecycle management handled automatically
 4. **Enhanced debugging** - Trace logging to reverse-engineer Claude Code's patterns
 5. **Production-ready** - 1,400+ tests across 60 files, regression detection, git hooks
@@ -1671,12 +1671,12 @@ The original anyclaude provided the foundational proxy architecture for translat
 
 **anyclaude-local** builds upon the original with significant enhancements:
 
-- ✅ **vLLM-MLX Auto-Launch** - Automatic server startup with model loading and health checks
+- ✅ **MLX Auto-Launch** - Automatic server startup with model loading and health checks
 - ✅ **OpenRouter Integration** - Access to 400+ cloud models at 84% lower cost than Claude API
 - ✅ **Comprehensive Testing** - 1,400+ automated tests (unit, integration, regression, E2E, performance)
 - ✅ **Enhanced Tool Calling** - Improved reliability for complex multi-tool workflows
 - ✅ **Trace Logging System** - Record and analyze Claude Code prompts for learning effective patterns
-- ✅ **Multi-Mode Architecture** - Seamless switching between vllm-mlx, lmstudio, openrouter, and claude modes
+- ✅ **Multi-Mode Architecture** - Seamless switching between mlx, lmstudio, openrouter, and claude modes
 - ✅ **Git Automation** - Pre-commit and pre-push hooks with regression detection
 - ✅ **Improved Streaming** - Backpressure handling and message_stop safeguards
 
@@ -1696,7 +1696,7 @@ The core architecture from the original anyclaude remains:
 
 - **Coder Technologies Inc.** - For creating the original anyclaude project and making it open source
 - **Anthropic Team** - For Claude Code 2.0 and the powerful AI assistant it provides
-- **vLLM-MLX Team** - For fast, efficient Apple Silicon inference with prompt caching
+- **MLX Team** - For fast, efficient Apple Silicon inference with prompt caching
 - **LMStudio Team** - For accessible local model serving with a great UI
 - **OpenRouter** - For democratizing access to diverse AI models at affordable prices
 - **Open Source Contributors** - To all the dependency projects that make this possible

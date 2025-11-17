@@ -40,7 +40,7 @@ git add -A
 # Commit with detailed message
 git commit -m "chore: prepare for MLX-Textgen migration
 
-Current state before migrating from vllm-mlx-server.py to MLX-Textgen:
+Current state before migrating from mlx-server.py to MLX-Textgen:
 - Custom server: 1400 lines, broken KV caching
 - Performance: 45-50s per request (no caching)
 - Client-side cache: 84.6% token savings
@@ -56,7 +56,7 @@ git push origin main
 
 ```bash
 # Backup current server
-cp scripts/vllm-mlx-server.py scripts/vllm-mlx-server.py.backup
+cp scripts/mlx-server.py scripts/mlx-server.py.backup
 
 # Create archive directory
 mkdir -p scripts/archive
@@ -67,7 +67,7 @@ mkdir -p scripts/archive
 ```bash
 # Run a test request and record time
 echo "Baseline performance:" > /tmp/performance-baseline.txt
-time anyclaude --mode=vllm-mlx <<< "read README.md and summarize" 2>&1 | tee -a /tmp/performance-baseline.txt
+time anyclaude --mode=mlx <<< "read README.md and summarize" 2>&1 | tee -a /tmp/performance-baseline.txt
 ```
 
 **Checklist:**
@@ -225,7 +225,7 @@ ps aux | grep mlx_textgen
 cat > scripts/mlx-textgen-server.sh << 'EOF'
 #!/bin/bash
 # MLX-Textgen Server Launcher for anyclaude
-# Replaces vllm-mlx-server.py
+# Replaces mlx-server.py
 
 MODEL_PATH="${1:-}"
 PORT="${2:-8081}"
@@ -270,9 +270,9 @@ chmod +x scripts/mlx-textgen-server.sh
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
@@ -290,10 +290,10 @@ chmod +x scripts/mlx-textgen-server.sh
 ```bash
 # Kill any running servers
 pkill -f mlx_textgen
-pkill -f vllm-mlx-server
+pkill -f mlx-server
 
 # Start anyclaude (should auto-launch MLX-Textgen)
-anyclaude --mode=vllm-mlx &
+anyclaude --mode=mlx &
 
 # Wait for startup
 sleep 60
@@ -319,7 +319,7 @@ curl -s http://localhost:8081/v1/models | jq .
 
 ```bash
 # Run anyclaude
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 
 # In Claude Code, test:
 # > read README.md and summarize
@@ -360,7 +360,7 @@ anyclaude --mode=lmstudio
 # (Should connect to LMStudio)
 
 # Switch back to MLX-Textgen
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 # > hello
 # (Should use cached prefix if available)
 
@@ -401,10 +401,10 @@ ls -lh ~/.anyclaude/mlx-textgen-cache/
 echo "After MLX-Textgen migration:" > /tmp/performance-after.txt
 
 # First request (cache creation)
-time anyclaude --mode=vllm-mlx <<< "read README.md and summarize" 2>&1 | tee -a /tmp/performance-after.txt
+time anyclaude --mode=mlx <<< "read README.md and summarize" 2>&1 | tee -a /tmp/performance-after.txt
 
 # Second request (cache hit)
-time anyclaude --mode=vllm-mlx <<< "what are the main features?" 2>&1 | tee -a /tmp/performance-after.txt
+time anyclaude --mode=mlx <<< "what are the main features?" 2>&1 | tee -a /tmp/performance-after.txt
 
 # Compare
 echo "BEFORE (baseline):"
@@ -436,19 +436,19 @@ cat /tmp/performance-after.txt | grep real
 
 ````bash
 # Move to archive
-mv scripts/vllm-mlx-server.py scripts/archive/
-mv scripts/vllm-mlx-server.py.backup scripts/archive/
+mv scripts/mlx-server.py scripts/archive/
+mv scripts/mlx-server.py.backup scripts/archive/
 
 # Add README
 cat > scripts/archive/README.md << 'EOF'
-# Archived: vllm-mlx-server.py
+# Archived: mlx-server.py
 
 **Date Archived:** 2025-11-16
 **Reason:** Replaced with MLX-Textgen (production-grade solution)
 
 ## Why Archived
 
-The custom `vllm-mlx-server.py` was replaced with MLX-Textgen because:
+The custom `mlx-server.py` was replaced with MLX-Textgen because:
 - MLX KV caching Python API doesn't exist (our implementation was broken)
 - MLX-Textgen provides production-ready alternative
 - 10-20x performance improvement with working KV caching
@@ -458,7 +458,7 @@ The custom `vllm-mlx-server.py` was replaced with MLX-Textgen because:
 
 If needed, copy back to `scripts/`:
 ```bash
-cp scripts/archive/vllm-mlx-server.py scripts/
+cp scripts/archive/mlx-server.py scripts/
 ````
 
 Then update `.anyclauderc.json` to use old server.
@@ -517,7 +517,7 @@ git add -A
 # Commit with detailed message
 git commit -m "feat: migrate to MLX-Textgen for production-grade KV caching
 
-BREAKING CHANGE: Replaced custom vllm-mlx-server.py with MLX-Textgen
+BREAKING CHANGE: Replaced custom mlx-server.py with MLX-Textgen
 
 Performance improvements:
 - Follow-up requests: 2-5s (was 45-50s)
@@ -531,7 +531,7 @@ Changes:
 - UPDATED: .anyclauderc.json (uses MLX-Textgen)
 - UPDATED: README.md (mentions MLX-Textgen)
 - UPDATED: CLAUDE.md (architecture docs)
-- ARCHIVED: scripts/vllm-mlx-server.py (kept for rollback)
+- ARCHIVED: scripts/mlx-server.py (kept for rollback)
 
 Testing:
 - ✅ Tool calling works
@@ -568,13 +568,13 @@ If something goes wrong:
 pkill -f mlx_textgen
 
 # 2. Restore old server
-cp scripts/archive/vllm-mlx-server.py scripts/
+cp scripts/archive/mlx-server.py scripts/
 
 # 3. Restore old config
 git checkout HEAD~1 .anyclauderc.json
 
 # 4. Restart
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 ---
@@ -593,7 +593,7 @@ After migration is complete, verify:
 
 - [ ] Tool calling works (Read, Write, Edit, Bash, Grep, Glob)
 - [ ] Multi-turn conversations work
-- [ ] All backends work (vllm-mlx, lmstudio, openrouter, claude)
+- [ ] All backends work (mlx, lmstudio, openrouter, claude)
 - [ ] Auto-launch/shutdown works
 - [ ] No errors in logs
 

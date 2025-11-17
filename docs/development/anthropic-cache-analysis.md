@@ -105,7 +105,7 @@ Based on Anthropic docs, responses should include:
 
 **Note**: Our traces have streaming responses (response.body is a string), so usage metrics weren't captured in full response format.
 
-## 🔍 Implications for vllm-mlx Implementation
+## 🔍 Implications for mlx Implementation
 
 ### What to Cache
 
@@ -239,8 +239,8 @@ With system-only caching:
 ## 🔬 Testing Protocol
 
 ```bash
-# Run vllm-mlx with caching implementation
-anyclaude --mode=vllm-mlx
+# Run mlx with caching implementation
+anyclaude --mode=mlx
 
 # Request 1 (cache write)
 > Ask: "What is 2+2?"
@@ -260,12 +260,12 @@ Expected: <2 seconds, cache_read_input_tokens: 18500
 - **Trace Files**: `~/.anyclaude/traces/claude/2025-11-16T*.json`
 - **Analysis Script**: `scripts/debug/analyze-cache-traces.sh`
 - **Anthropic Docs**: https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
-- **Our Implementation**: `src/anthropic-proxy.ts`, `scripts/vllm-mlx-server.py`
+- **Our Implementation**: `src/anthropic-proxy.ts`, `scripts/mlx-server.py`
 
 ## 🎯 Next Steps
 
 1. **Implement proxy cache detection** (extract cache_control from system)
 2. **Pass to backend** (custom header with cache key)
-3. **Implement vllm-mlx KV caching** (load/save KV tensors)
+3. **Implement mlx KV caching** (load/save KV tensors)
 4. **Test end-to-end** (verify 20-30x speedup)
 5. **Document usage** (update README with caching info)

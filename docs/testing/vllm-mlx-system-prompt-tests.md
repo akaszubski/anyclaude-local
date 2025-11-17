@@ -1,16 +1,16 @@
-# vLLM-MLX System Prompt Normalization Tests
+# MLX System Prompt Normalization Tests
 
 ## Overview
 
-These tests validate the fix for a critical issue where vLLM-MLX receives malformed system prompts due to strict JSON parsing:
+These tests validate the fix for a critical issue where MLX receives malformed system prompts due to strict JSON parsing:
 
-**Issue**: vLLM-MLX rejects system prompts with embedded newlines and excess whitespace, causing:
+**Issue**: MLX rejects system prompts with embedded newlines and excess whitespace, causing:
 
 - Looping/repetitive model responses
 - Unpredictable behavior
 - Corrupted input to the model
 
-**Fix**: Normalize system prompts before sending to vLLM-MLX by:
+**Fix**: Normalize system prompts before sending to MLX by:
 
 - Converting newlines to spaces
 - Collapsing multiple spaces to single space
@@ -18,7 +18,7 @@ These tests validate the fix for a critical issue where vLLM-MLX receives malfor
 
 ## Test Files
 
-### 1. Unit Tests: `tests/unit/test-vllm-mlx-system-prompt.js`
+### 1. Unit Tests: `tests/unit/test-mlx-system-prompt.js`
 
 **Purpose**: Test the normalization logic in isolation
 
@@ -38,10 +38,10 @@ These tests validate the fix for a critical issue where vLLM-MLX receives malfor
 **Run**:
 
 ```bash
-node tests/unit/test-vllm-mlx-system-prompt.js
+node tests/unit/test-mlx-system-prompt.js
 ```
 
-### 2. Integration Tests: `tests/integration/test-vllm-mlx-system-prompt-fix.js`
+### 2. Integration Tests: `tests/integration/test-mlx-system-prompt-fix.js`
 
 **Purpose**: Validate the fix works at the integration level
 
@@ -61,7 +61,7 @@ node tests/unit/test-vllm-mlx-system-prompt.js
 **Run**:
 
 ```bash
-node tests/integration/test-vllm-mlx-system-prompt-fix.js
+node tests/integration/test-mlx-system-prompt-fix.js
 ```
 
 ## Implementation Details
@@ -73,7 +73,7 @@ The fix is applied at TWO levels to ensure robustness:
 #### 1. Proxy Level (anthropic-proxy.ts:460)
 
 ```typescript
-if (system && providerName === "vllm-mlx") {
+if (system && providerName === "mlx") {
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 }
 ```
@@ -104,7 +104,7 @@ This normalizes at the fetch call level for extra safety.
 
 2. **Idempotent operation**: Normalizing twice produces same result (safe to apply at multiple levels)
 
-3. **Provider-specific**: Only vLLM-MLX is affected (LMStudio/Claude not modified)
+3. **Provider-specific**: Only MLX is affected (LMStudio/Claude not modified)
 
 4. **Content preservation**: Only whitespace is modified, all text content preserved
 
@@ -170,10 +170,10 @@ These tests catch:
 
 ## Related Issues
 
-- **Issue**: vLLM-MLX strict JSON validation
+- **Issue**: MLX strict JSON validation
 - **Symptom**: Looping/repetitive responses, unpredictable behavior
 - **Root Cause**: Newlines in system prompt strings cause JSON parsing errors
-- **Fix**: Normalize system prompts before sending to vLLM-MLX
+- **Fix**: Normalize system prompts before sending to MLX
 
 ## Files Modified
 
@@ -186,19 +186,19 @@ These tests catch:
 
 ```bash
 # Run unit test
-node tests/unit/test-vllm-mlx-system-prompt.js
+node tests/unit/test-mlx-system-prompt.js
 
 # Run integration test
-node tests/integration/test-vllm-mlx-system-prompt-fix.js
+node tests/integration/test-mlx-system-prompt-fix.js
 
 # Or run together
-node tests/unit/test-vllm-mlx-system-prompt.js && \
-node tests/integration/test-vllm-mlx-system-prompt-fix.js
+node tests/unit/test-mlx-system-prompt.js && \
+node tests/integration/test-mlx-system-prompt-fix.js
 ```
 
 Both should show:
 
 ```
-✅ All vLLM-MLX system prompt normalization tests passed!
-✅ All vLLM-MLX system prompt fix integration tests passed!
+✅ All MLX system prompt normalization tests passed!
+✅ All MLX system prompt fix integration tests passed!
 ```

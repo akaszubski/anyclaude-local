@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║         anyclaude Complete Setup                               ║${NC}"
-echo -e "${BLUE}║         This will install all dependencies for vLLM-MLX         ║${NC}"
+echo -e "${BLUE}║         This will install all dependencies for MLX         ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -110,9 +110,9 @@ if [ ! -f "$CONFIG_FILE" ]; then
     echo ""
     echo "Example configuration:"
     echo "{"
-    echo '  "backend": "vllm-mlx",'
+    echo '  "backend": "mlx",'
     echo '  "backends": {'
-    echo '    "vllm-mlx": {'
+    echo '    "mlx": {'
     echo '      "enabled": true,'
     echo '      "port": 8081,'
     echo '      "baseUrl": "http://localhost:8081/v1",'
@@ -131,9 +131,9 @@ if [ ! -f "$CONFIG_FILE" ]; then
     fi
 else
     echo -e "${GREEN}✅ Configuration file found${NC}"
-    if grep -q "vllm-mlx" "$CONFIG_FILE"; then
-        echo "vLLM-MLX backend is configured"
-        MODEL_PATH=$(grep -A 5 '"vllm-mlx"' "$CONFIG_FILE" | grep '"model"' | grep -o '".*"' | tr -d '"')
+    if grep -q "mlx" "$CONFIG_FILE"; then
+        echo "MLX backend is configured"
+        MODEL_PATH=$(grep -A 5 '"mlx"' "$CONFIG_FILE" | grep '"model"' | grep -o '".*"' | tr -d '"')
         if [ -z "$MODEL_PATH" ]; then
             echo -e "${YELLOW}⚠️  No model path configured${NC}"
         elif [ ! -d "$MODEL_PATH" ]; then
@@ -185,10 +185,10 @@ echo -e "${GREEN}║✅ Setup complete! Ready to run anyclaude                  
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo "To start anyclaude:"
-echo -e "  ${BLUE}anyclaude --mode=vllm-mlx${NC}"
+echo -e "  ${BLUE}anyclaude --mode=mlx${NC}"
 echo ""
 echo "Or with debug logging:"
-echo -e "  ${BLUE}ANYCLAUDE_DEBUG=1 anyclaude --mode=vllm-mlx${NC}"
+echo -e "  ${BLUE}ANYCLAUDE_DEBUG=1 anyclaude --mode=mlx${NC}"
 echo ""
 echo "To check setup status anytime:"
 echo -e "  ${BLUE}anyclaude --check-setup${NC}"

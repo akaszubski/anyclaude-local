@@ -1,10 +1,10 @@
 #!/bin/bash
-# Real integration test for vLLM-MLX with actual server and data collection
+# Real integration test for MLX with actual server and data collection
 
 set -e
 
 BASE_URL="${1:-http://localhost:8081}"
-RESULTS_FILE="/tmp/vllm-mlx-test-results-$(date +%s).json"
+RESULTS_FILE="/tmp/mlx-test-results-$(date +%s).json"
 TIMEOUT=30
 
 # Colors
@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "=================================================="
-echo "vLLM-MLX Real Integration Test"
+echo "MLX Real Integration Test"
 echo "=================================================="
 echo "Server: $BASE_URL"
 echo "Results: $RESULTS_FILE"
@@ -27,7 +27,7 @@ if ! timeout 5 curl -s "$BASE_URL/health" > /dev/null 2>&1; then
     echo -e "${RED}❌ Server not responding at $BASE_URL${NC}"
     echo ""
     echo "Start the server with:"
-    echo "  PROXY_ONLY=true anyclaude --mode=vllm-mlx"
+    echo "  PROXY_ONLY=true anyclaude --mode=mlx"
     echo "Or configure auto-launch in .anyclauderc.json"
     exit 1
 fi

@@ -2,7 +2,7 @@
  * Cache Performance Monitor
  *
  * Tracks and displays cache hit rates, token savings, and other performance metrics
- * from both vLLM-MLX server and Anthropic API responses.
+ * from both MLX server and Anthropic API responses.
  */
 
 import * as fs from "fs";
@@ -64,7 +64,7 @@ class CacheMonitor {
   }
 
   /**
-   * Update cache statistics from vLLM-MLX server
+   * Update cache statistics from MLX server
    */
   updateVLLMStats(stats: any): void {
     this.vllmCacheStats = stats;
@@ -124,7 +124,7 @@ class CacheMonitor {
   getFormattedStats(): string {
     const hitRate = this.getHitRate();
     const vllmInfo = this.vllmCacheStats
-      ? `\n  vLLM-MLX Cache:\n    Hit Rate: ${this.vllmCacheStats.hit_rate}\n    Cached Items: ${this.vllmCacheStats.cached_items}/${this.vllmCacheStats.total_requests}`
+      ? `\n  MLX Cache:\n    Hit Rate: ${this.vllmCacheStats.hit_rate}\n    Cached Items: ${this.vllmCacheStats.cached_items}/${this.vllmCacheStats.total_requests}`
       : "";
 
     return `

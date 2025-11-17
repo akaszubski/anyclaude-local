@@ -6,7 +6,7 @@ anyclaude supports **four backend modes** with different authentication methods:
 
 1. **Claude API** - Traditional API key or Claude Max Plan (session-based)
 2. **OpenRouter** - API key for 400+ models at lower cost
-3. **vLLM-MLX** - No authentication (local server)
+3. **MLX** - No authentication (local server)
 4. **LMStudio** - No authentication (local server)
 
 This guide covers cloud modes (Claude API and OpenRouter). Local modes require no authentication.
@@ -502,7 +502,7 @@ anyclaude --mode=claude
 
 ```bash
 # Use local models (no cloud, no auth)
-anyclaude  # defaults to vllm-mlx if configured
+anyclaude  # defaults to mlx if configured
 ```
 
 ---

@@ -68,7 +68,7 @@ This format:
 Check the debug log for SESSION CONFIGURATION section:
 
 ```
-Backend Mode: vllm-mlx
+Backend Mode: mlx
 Model: /Users/.../gpt-oss-20b-5bit
 Backend URL: http://localhost:8081/v1
 ```
@@ -76,7 +76,7 @@ Backend URL: http://localhost:8081/v1
 **Questions to answer:**
 
 - [ ] Is the correct model loaded? (gpt-oss-20b-5bit)
-- [ ] Is vllm-mlx backend being used?
+- [ ] Is mlx backend being used?
 - [ ] Is the server responding on the expected port?
 
 ### 2. Examine Tool Schema Sent to Model
@@ -114,7 +114,7 @@ Search for the model's actual output in the log.
 
 ### 4. Check for Pattern Recognition Issues
 
-**Hypothesis**: The model may not recognize the tool calling format expected by vllm-mlx.
+**Hypothesis**: The model may not recognize the tool calling format expected by mlx.
 
 **Questions to answer:**
 
@@ -135,7 +135,7 @@ Reference: `docs/debugging/tool-calling-fix.md` states:
 - [ ] What's different about this gpt-oss-20b-5bit vs the tested version?
 - [ ] Is this a quantization issue? (5-bit vs full precision)
 - [ ] Is this a model version issue?
-- [ ] Is this a vllm-mlx configuration issue?
+- [ ] Is this a mlx configuration issue?
 
 ## 🔍 Debugging Steps
 
@@ -185,10 +185,10 @@ Classify the issue into one of these categories:
 - Model expects different prompt structure
 - Solution: Add model-specific adapter in `src/convert-anthropic-messages.ts`
 
-#### C. vllm-mlx Configuration Issue
+#### C. mlx Configuration Issue
 
 - Server needs different parameters
-- Solution: Update vllm-mlx server launch options in `scripts/vllm-mlx-server.py`
+- Solution: Update mlx server launch options in `scripts/mlx-server.py`
 
 #### D. Schema Transformation Issue
 
@@ -198,7 +198,7 @@ Classify the issue into one of these categories:
 #### E. Chat Template Issue
 
 - Model needs specific chat template for tool calling
-- Solution: Configure chat template in vllm-mlx launch
+- Solution: Configure chat template in mlx launch
 
 ### Step 4: Test Hypothesis
 
@@ -208,7 +208,7 @@ Based on root cause category, test solutions:
 
 ```bash
 # Test with known working model
-ANYCLAUDE_DEBUG=2 anyclaude --mode=vllm-mlx
+ANYCLAUDE_DEBUG=2 anyclaude --mode=mlx
 # (Load Qwen3-Coder-30B in server instead)
 ```
 
@@ -222,8 +222,8 @@ ANYCLAUDE_DEBUG=2 anyclaude --mode=vllm-mlx
 **For C (Server config):**
 
 ```bash
-# Try different vllm-mlx launch options
-python scripts/vllm-mlx-server.py --model /path/to/model --enable-tool-calling
+# Try different mlx launch options
+python scripts/mlx-server.py --model /path/to/model --enable-tool-calling
 ```
 
 **For D (Schema issue):**
@@ -257,10 +257,10 @@ if (modelName.includes("gpt-oss")) {
 
 ### Solution 2: Chat Template Override
 
-Force a specific chat template in vllm-mlx:
+Force a specific chat template in mlx:
 
 ```python
-# In scripts/vllm-mlx-server.py
+# In scripts/mlx-server.py
 chat_template = "{% for message in messages %}..." # Custom template
 ```
 
@@ -346,6 +346,6 @@ After debugging this issue, we should understand:
 - `src/convert-to-anthropic-stream.ts` - Stream conversion logic
 - `src/convert-anthropic-messages.ts` - Message format conversion
 - `src/json-schema.ts` - Tool schema transformation
-- `scripts/vllm-mlx-server.py` - vllm-mlx server launcher
+- `scripts/mlx-server.py` - mlx server launcher
 - `docs/debugging/tool-calling-fix.md` - Previous tool calling fixes
 - `docs/reference/github-issues-summary.md` - Model compatibility notes

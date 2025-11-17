@@ -2,7 +2,7 @@
 
 ## The Problem You're Experiencing
 
-Claude Code sends a **9,000 token system prompt** on every single request. When using vLLM-MLX locally:
+Claude Code sends a **9,000 token system prompt** on every single request. When using MLX locally:
 
 ```
 Request 1: Send 9,000 tokens + your message → Process
@@ -72,7 +72,7 @@ Total: 4000ms for 3 requests (55% faster overall)
 
 ## Actual Numbers
 
-Your vLLM-MLX local model processes roughly:
+Your MLX local model processes roughly:
 
 - **100-200 tokens/second** (Qwen 30B)
 
@@ -170,17 +170,17 @@ $ ANYCLAUDE_DEBUG=2 anyclaude
 
 # First request (3 seconds)
 [Prompt Cache] MISS - Caching new system+tools abc123de
-[Request Complete] vllm-mlx/Qwen30B: 3000ms
+[Request Complete] mlx/Qwen30B: 3000ms
 
 # Second request (500ms!)
 [Prompt Cache] HIT - Reusing cached system+tools abc123de
 [Prompt Cache] HIT - Skipping 9000 characters of system prompt
-[Request Complete] vllm-mlx/Qwen30B: 500ms  ← 6x faster!
+[Request Complete] mlx/Qwen30B: 500ms  ← 6x faster!
 
 # Third request (500ms!)
 [Prompt Cache] HIT - Reusing cached system+tools abc123de
 [Prompt Cache] HIT - Skipping 9000 characters of system prompt
-[Request Complete] vllm-mlx/Qwen30B: 480ms  ← Still 6x faster!
+[Request Complete] mlx/Qwen30B: 480ms  ← Still 6x faster!
 
 # Exit
 [Prompt Cache] Final stats: 1 cached prompts
@@ -189,7 +189,7 @@ $ ANYCLAUDE_DEBUG=2 anyclaude
 
 ## Why This Matters
 
-**vLLM-MLX vs Real Claude API Caching**
+**MLX vs Real Claude API Caching**
 
 Real Claude API has "prompt caching" that saves money but not speed (can't skip processing).
 

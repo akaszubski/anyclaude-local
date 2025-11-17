@@ -16,7 +16,7 @@ In `src/anthropic-proxy.ts` (lines 484-490), there was code that stripped all ne
 
 ```typescript
 // BROKEN CODE (now disabled):
-if (system && providerName === "vllm-mlx") {
+if (system && providerName === "mlx") {
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 }
 ```
@@ -25,11 +25,11 @@ This "normalization" was collapsing carefully structured instructions into an in
 
 ## The Fix
 
-The fix is simple: **disable the problematic newline stripping**. vLLM-MLX handles newlines fine in system prompts.
+The fix is simple: **disable the problematic newline stripping**. MLX handles newlines fine in system prompts.
 
 ```typescript
 // FIXED CODE (commented out):
-// if (system && providerName === "vllm-mlx") {
+// if (system && providerName === "mlx") {
 //   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 // }
 ```
@@ -140,7 +140,7 @@ This means:
 
 1. **Automatic tests catch regressions**: The pre-commit and pre-push hooks ensure tests always run
 2. **Targeted tests are better**: A focused test specifically for this issue is more effective than generic tests
-3. **Document the "why"**: Comments explain why the code was commented out (vLLM-MLX handles newlines fine)
+3. **Document the "why"**: Comments explain why the code was commented out (MLX handles newlines fine)
 4. **Validate the fix**: The test verifies the fix is actually in place
 
 ## Related Documentation

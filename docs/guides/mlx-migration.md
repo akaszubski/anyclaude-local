@@ -7,13 +7,13 @@
 anyclaude has two MLX-based backends available:
 
 1. **MLX-Textgen** (Production) - Current default, recommended for all use
-2. **vLLM-MLX** (Legacy) - Restored from archive for reference only
+2. **MLX** (Legacy) - Restored from archive for reference only
 
 This guide explains the differences and migration path between these backends.
 
 ## Quick Comparison
 
-| Feature          | MLX-Textgen (Production)                 | vLLM-MLX (Legacy)                |
+| Feature          | MLX-Textgen (Production)                 | MLX (Legacy)                |
 | ---------------- | ---------------------------------------- | -------------------------------- |
 | **Status**       | Active, supported                        | Archived, reference only         |
 | **KV Caching**   | Disk-based, 10-90x speedup               | In-memory, limited               |
@@ -33,7 +33,7 @@ This guide explains the differences and migration path between these backends.
 3. **Better performance**: 10-90x speedup on follow-up requests
 4. **Simpler codebase**: Less maintenance burden
 
-**vLLM-MLX limitations**:
+**MLX limitations**:
 
 1. In-memory cache only (lost on restart)
 2. Custom implementation requires ongoing maintenance
@@ -42,7 +42,7 @@ This guide explains the differences and migration path between these backends.
 
 ## Migration Path
 
-### If You're Using vLLM-MLX (Legacy)
+### If You're Using MLX (Legacy)
 
 **Recommendation**: Switch to MLX-Textgen immediately.
 
@@ -119,17 +119,17 @@ anyclaude
 
 **Manual mode**: Set `model` to `"current-model"` → expects server running
 
-### vLLM-MLX (Legacy - For Reference Only)
+### MLX (Legacy - For Reference Only)
 
 ```json
 {
-  "backend": "vllm-mlx-legacy",
+  "backend": "mlx-legacy",
   "backends": {
-    "vllm-mlx-legacy": {
+    "mlx-legacy": {
       "enabled": false,
       "port": 8082,
       "baseUrl": "http://localhost:8082/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/your/mlx/model",
       "serverScript": "scripts/mlx-server.py"
     }
@@ -150,7 +150,7 @@ anyclaude
 - Cache version tracking
 - ~10-90x speedup on cached prompts
 
-**vLLM-MLX**:
+**MLX**:
 
 - In-memory KV cache (lost on restart)
 - Manual cache management
@@ -166,7 +166,7 @@ anyclaude
 - Minimal configuration needed
 - Battle-tested in production
 
-**vLLM-MLX**:
+**MLX**:
 
 - Custom Python server (`scripts/mlx-server.py`)
 - ~1800 lines of custom code
@@ -183,12 +183,12 @@ anyclaude
 
 See `CLAUDE.md` for details on tool calling limitations.
 
-## Why vLLM-MLX Was Archived
+## Why MLX Was Archived
 
-The vLLM-MLX backend was archived in v2.2.0 for these reasons:
+The MLX backend was archived in v2.2.0 for these reasons:
 
 1. **MLX-Textgen is superior**: Better caching, production-grade, less maintenance
-2. **No unique advantages**: vLLM-MLX doesn't solve any problems MLX-Textgen doesn't
+2. **No unique advantages**: MLX doesn't solve any problems MLX-Textgen doesn't
 3. **Tool calling fails on both**: Both backends have the same tool calling limitation
 4. **Maintenance burden**: Custom code requires ongoing updates and testing
 
@@ -196,19 +196,19 @@ The file was **restored in v2.2.1** as `scripts/mlx-server.py` for:
 
 - **Reference implementation**: Shows how to build custom MLX server
 - **Educational purposes**: Demonstrates KV caching implementation
-- **Legacy support**: Users who need specific vLLM-MLX features
+- **Legacy support**: Users who need specific MLX features
 
 ## Troubleshooting
 
-### vLLM-MLX won't start
+### MLX won't start
 
 **Solution**: Use MLX-Textgen instead.
 
-If you must use vLLM-MLX:
+If you must use MLX:
 
 ```bash
 # Check logs
-tail ~/.anyclaude/logs/vllm-mlx-server.log
+tail ~/.anyclaude/logs/mlx-server.log
 
 # Verify dependencies
 pip install mlx-lm fastapi uvicorn
@@ -238,7 +238,7 @@ ANYCLAUDE_DEBUG=2 anyclaude
 **Default ports**:
 
 - MLX-Textgen: 8080
-- vLLM-MLX: 8082
+- MLX: 8082
 
 **To change port**:
 
@@ -263,9 +263,9 @@ ANYCLAUDE_DEBUG=2 anyclaude
 2. Production-grade reliability
 3. Less maintenance burden
 4. External support from mlx-textgen team
-5. Same tool calling limitations as vLLM-MLX
+5. Same tool calling limitations as MLX
 
-**When to use vLLM-MLX**: Only for reference/educational purposes
+**When to use MLX**: Only for reference/educational purposes
 
 ## See Also
 
@@ -278,6 +278,6 @@ ANYCLAUDE_DEBUG=2 anyclaude
 
 **MLX-Textgen** (production): Fully supported, recommended for all users
 
-**vLLM-MLX** (legacy): Reference only, no active support
+**MLX** (legacy): Reference only, no active support
 
 For tool calling, use `--mode=claude` or `--mode=openrouter` instead of local MLX backends.

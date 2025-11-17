@@ -6,14 +6,14 @@
  * Tests the complete cache_control header flow:
  * 1. Request with cache_control markers
  * 2. Proxy extracts cache markers and generates headers
- * 3. Headers passed to backend (vLLM-MLX or other)
+ * 3. Headers passed to backend (MLX or other)
  * 4. Backend returns Anthropic usage metrics
  * 5. First request shows cache_creation_input_tokens
  * 6. Second identical request shows cache_read_input_tokens
  *
  * Prerequisites:
  * - Proxy running: PROXY_ONLY=true bun run src/main.ts
- * - Backend running (vLLM-MLX, LMStudio, or Anthropic)
+ * - Backend running (MLX, LMStudio, or Anthropic)
  *
  * Run with: node tests/integration/test-cache-e2e.js
  */

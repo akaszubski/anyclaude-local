@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Setup script for vLLM-MLX Python virtual environment
+# Setup script for MLX Python virtual environment
 # This creates and configures a Python venv with all required dependencies
 
 set -e
@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 VENV_PATH="${HOME}/.venv-mlx"
 PYTHON_VERSION="3.11"
 
-echo -e "${BLUE}vLLM-MLX Virtual Environment Setup${NC}"
+echo -e "${BLUE}MLX Virtual Environment Setup${NC}"
 echo "=================================="
 echo ""
 
@@ -68,7 +68,7 @@ echo -e "${GREEN}✓${NC} Build tools upgraded"
 
 # Install dependencies
 echo ""
-echo "Installing vLLM-MLX dependencies..."
+echo "Installing MLX dependencies..."
 echo "This may take a few minutes depending on your internet connection..."
 echo ""
 
@@ -98,11 +98,11 @@ echo "=================================="
 echo ""
 echo "Virtual environment path: $VENV_PATH"
 echo ""
-echo "You can now use anyclaude with vLLM-MLX:"
-echo "  anyclaude --mode=vllm-mlx"
+echo "You can now use anyclaude with MLX:"
+echo "  anyclaude --mode=mlx"
 echo ""
 echo "Or configure it in .anyclauderc.json:"
-echo '  {"backend": "vllm-mlx", "backends": {"vllm-mlx": {"model": "/path/to/model"}}}'
+echo '  {"backend": "mlx", "backends": {"mlx": {"model": "/path/to/model"}}}'
 echo ""
-echo "Note: The setup script will activate the venv automatically when starting vLLM-MLX"
+echo "Note: The setup script will activate the venv automatically when starting MLX"
 echo ""

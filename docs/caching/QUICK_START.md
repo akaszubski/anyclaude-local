@@ -32,13 +32,13 @@ cat ~/.anyclaude/cache-metrics/*.json | jq
 
 ## Why Cache Didn't Feel Faster
 
-Based on research of Anthropic API, vLLM-MLX, and MLX:
+Based on research of Anthropic API, MLX, and MLX:
 
 | Factor               | Impact                    | Solution                             |
 | -------------------- | ------------------------- | ------------------------------------ |
 | **Ephemeral Cache**  | 5-min TTL only            | Make repeated requests within 5 min  |
 | **Small Payload**    | System prompt ~500 bytes  | Need 1000+ cached tokens for benefit |
-| **vLLM-MLX**         | Cache not fully optimized | Use Anthropic API for real gains     |
+| **MLX**         | Cache not fully optimized | Use Anthropic API for real gains     |
 | **One-off Requests** | No cache reuse            | Create multi-request workflows       |
 
 ## Expected Performance
@@ -51,7 +51,7 @@ Request 2: 300ms  (reads cache) → 85% faster! ✓
 Request 3: 290ms  (reads cache) → 85% faster! ✓
 ```
 
-### vLLM-MLX
+### MLX
 
 - Cache headers set but limited latency benefit
 - Better for cost reduction than speed

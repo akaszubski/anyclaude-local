@@ -1,6 +1,6 @@
 /**
  * Generic Backend Client
- * Works with any OpenAI-compatible API (LMStudio, vLLM-MLX, etc.)
+ * Works with any OpenAI-compatible API (LMStudio, MLX, etc.)
  */
 
 export interface BackendModelInfo {
@@ -40,7 +40,7 @@ export class BackendClient {
 
   /**
    * Get the first available model
-   * (vLLM-MLX typically only serves one model at a time)
+   * (MLX typically only serves one model at a time)
    */
   async getFirstModel(): Promise<BackendModelInfo | null> {
     try {

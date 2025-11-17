@@ -32,12 +32,14 @@ function validateToolCall(schema, input) {
     if (schema.additionalProperties === false) {
       const allowedProps = Object.keys(schema.properties);
       const providedProps = Object.keys(input);
-      const unexpectedProps = providedProps.filter(p => !allowedProps.includes(p));
+      const unexpectedProps = providedProps.filter(
+        (p) => !allowedProps.includes(p)
+      );
 
       if (unexpectedProps.length > 0) {
         return {
           valid: false,
-          error: `An unexpected parameter \`${unexpectedProps[0]}\` was provided`
+          error: `An unexpected parameter \`${unexpectedProps[0]}\` was provided`,
         };
       }
     }
@@ -48,7 +50,7 @@ function validateToolCall(schema, input) {
         if (!(requiredProp in input)) {
           return {
             valid: false,
-            error: `Required parameter \`${requiredProp}\` is missing`
+            error: `Required parameter \`${requiredProp}\` is missing`,
           };
         }
       }
@@ -58,16 +60,16 @@ function validateToolCall(schema, input) {
     for (const [key, value] of Object.entries(input)) {
       const propSchema = schema.properties[key];
 
-      if (propSchema && propSchema.type === 'array' && propSchema.items) {
+      if (propSchema && propSchema.type === "array" && propSchema.items) {
         if (!Array.isArray(value)) {
           return {
             valid: false,
-            error: `Parameter \`${key}\` must be an array`
+            error: `Parameter \`${key}\` must be an array`,
           };
         }
 
         // Validate array items if they're objects
-        if (propSchema.items.type === 'object') {
+        if (propSchema.items.type === "object") {
           for (let i = 0; i < value.length; i++) {
             const item = value[i];
             const itemProps = Object.keys(item);
@@ -78,7 +80,7 @@ function validateToolCall(schema, input) {
                 if (!(requiredProp in item)) {
                   return {
                     valid: false,
-                    error: `Required parameter \`${requiredProp}\` is missing in ${key}[${i}]`
+                    error: `Required parameter \`${requiredProp}\` is missing in ${key}[${i}]`,
                   };
                 }
               }
@@ -87,12 +89,14 @@ function validateToolCall(schema, input) {
             // Check for unexpected properties if additionalProperties: false
             if (propSchema.items.additionalProperties === false) {
               const itemAllowedProps = Object.keys(propSchema.items.properties);
-              const unexpectedItemProps = itemProps.filter(p => !itemAllowedProps.includes(p));
+              const unexpectedItemProps = itemProps.filter(
+                (p) => !itemAllowedProps.includes(p)
+              );
 
               if (unexpectedItemProps.length > 0) {
                 return {
                   valid: false,
-                  error: `Unexpected property \`${unexpectedItemProps[0]}\` in ${key}[${i}]`
+                  error: `Unexpected property \`${unexpectedItemProps[0]}\` in ${key}[${i}]`,
                 };
               }
             }
@@ -105,7 +109,7 @@ function validateToolCall(schema, input) {
   } catch (error) {
     return {
       valid: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -122,7 +126,9 @@ function test(description, schema, input, shouldPass) {
     passed++;
   } else {
     console.log(`✗ ${description}`);
-    console.log(`  Expected: ${shouldPass ? 'pass' : 'fail'}, Got: ${actualPass ? 'pass' : 'fail'}`);
+    console.log(
+      `  Expected: ${shouldPass ? "pass" : "fail"}, Got: ${actualPass ? "pass" : "fail"}`
+    );
     if (result.error) {
       console.log(`  Error: ${result.error}`);
     }
@@ -142,22 +148,22 @@ const askUserQuestionSchema = {
           question: { type: "string" },
           header: { type: "string" },
           options: { type: "array" },
-          multiSelect: { type: "boolean" }
+          multiSelect: { type: "boolean" },
         },
         required: ["question", "header", "options", "multiSelect"],
-        additionalProperties: false
-      }
-    }
+        additionalProperties: false,
+      },
+    },
   },
   required: ["questions"],
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 // Test Cases
 console.log("\n--- Correct Tool Call Format ---");
 
 test(
-  'Valid AskUserQuestion call with correct nesting',
+  "Valid AskUserQuestion call with correct nesting",
   askUserQuestionSchema,
   {
     questions: [
@@ -167,10 +173,10 @@ test(
         multiSelect: false,
         options: [
           { label: "Yes", description: "Rename it" },
-          { label: "No", description: "Keep it" }
-        ]
-      }
-    ]
+          { label: "No", description: "Keep it" },
+        ],
+      },
+    ],
   },
   true
 );
@@ -178,7 +184,7 @@ test(
 console.log("\n--- Gemini 2.5 Flash Lite Bug (Issue #5) ---");
 
 test(
-  'Gemini bug: parameter at wrong level (root instead of nested)',
+  "Gemini bug: parameter at wrong level (root instead of nested)",
   askUserQuestionSchema,
   {
     questions: [
@@ -188,17 +194,17 @@ test(
         multiSelect: false,
         options: [
           { label: "Yes", description: "Rename it" },
-          { label: "No", description: "Keep it" }
-        ]
-      }
+          { label: "No", description: "Keep it" },
+        ],
+      },
     ],
-    header: "Rename Option"  // ❌ Wrong - at root level
+    header: "Rename Option", // ❌ Wrong - at root level
   },
   false
 );
 
 test(
-  'Gemini bug: duplicate parameter at both levels',
+  "Gemini bug: duplicate parameter at both levels",
   askUserQuestionSchema,
   {
     questions: [
@@ -206,10 +212,10 @@ test(
         question: "Test?",
         header: "Test Header",
         multiSelect: false,
-        options: [{ label: "A", description: "Option A" }]
-      }
+        options: [{ label: "A", description: "Option A" }],
+      },
     ],
-    multiSelect: false  // ❌ Wrong - at root level
+    multiSelect: false, // ❌ Wrong - at root level
   },
   false
 );
@@ -217,7 +223,7 @@ test(
 console.log("\n--- Missing Required Parameters ---");
 
 test(
-  'Missing required root parameter',
+  "Missing required root parameter",
   askUserQuestionSchema,
   {
     // Missing 'questions' parameter
@@ -226,7 +232,7 @@ test(
 );
 
 test(
-  'Missing required nested parameter',
+  "Missing required nested parameter",
   askUserQuestionSchema,
   {
     questions: [
@@ -234,9 +240,9 @@ test(
         question: "Test?",
         // Missing 'header' parameter
         multiSelect: false,
-        options: [{ label: "A", description: "Option A" }]
-      }
-    ]
+        options: [{ label: "A", description: "Option A" }],
+      },
+    ],
   },
   false
 );
@@ -244,24 +250,7 @@ test(
 console.log("\n--- Extra Parameters at Different Levels ---");
 
 test(
-  'Extra parameter at root level',
-  askUserQuestionSchema,
-  {
-    questions: [
-      {
-        question: "Test?",
-        header: "Test",
-        multiSelect: false,
-        options: [{ label: "A", description: "Option A" }]
-      }
-    ],
-    extraParam: "should not be here"
-  },
-  false
-);
-
-test(
-  'Extra parameter in nested object',
+  "Extra parameter at root level",
   askUserQuestionSchema,
   {
     questions: [
@@ -270,9 +259,26 @@ test(
         header: "Test",
         multiSelect: false,
         options: [{ label: "A", description: "Option A" }],
-        extraNestedParam: "should not be here"
-      }
-    ]
+      },
+    ],
+    extraParam: "should not be here",
+  },
+  false
+);
+
+test(
+  "Extra parameter in nested object",
+  askUserQuestionSchema,
+  {
+    questions: [
+      {
+        question: "Test?",
+        header: "Test",
+        multiSelect: false,
+        options: [{ label: "A", description: "Option A" }],
+        extraNestedParam: "should not be here",
+      },
+    ],
   },
   false
 );
@@ -280,7 +286,7 @@ test(
 console.log("\n--- Valid Edge Cases ---");
 
 test(
-  'Multiple questions array',
+  "Multiple questions array",
   askUserQuestionSchema,
   {
     questions: [
@@ -288,7 +294,7 @@ test(
         question: "First question?",
         header: "Q1",
         multiSelect: false,
-        options: [{ label: "A", description: "Option A" }]
+        options: [{ label: "A", description: "Option A" }],
       },
       {
         question: "Second question?",
@@ -296,21 +302,21 @@ test(
         multiSelect: true,
         options: [
           { label: "B", description: "Option B" },
-          { label: "C", description: "Option C" }
-        ]
-      }
-    ]
+          { label: "C", description: "Option C" },
+        ],
+      },
+    ],
   },
   true
 );
 
 test(
-  'Empty questions array (edge case)',
+  "Empty questions array (edge case)",
   askUserQuestionSchema,
   {
-    questions: []
+    questions: [],
   },
-  true  // Schema doesn't enforce minItems, so this passes
+  true // Schema doesn't enforce minItems, so this passes
 );
 
 // Summary

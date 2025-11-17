@@ -256,7 +256,7 @@ Conclusion: M3 Ultra can match or beat Claude API with optimization!
    ```
 
 2. **Implement in-memory KV cache:**
-   - Modify `vllm-mlx-server.py` to keep cache in RAM
+   - Modify `mlx-server.py` to keep cache in RAM
    - Test cache hit latency (should be < 100ms)
 
 3. **Benchmark first request:**

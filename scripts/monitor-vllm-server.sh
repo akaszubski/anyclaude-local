@@ -1,5 +1,5 @@
 #!/bin/bash
-# Monitor vLLM-MLX server and auto-restart if it dies
+# Monitor MLX server and auto-restart if it dies
 # Run this in a separate terminal: ./scripts/monitor-vllm-server.sh
 
 set -e
@@ -8,7 +8,7 @@ MODEL_PATH="${1:-/Users/akaszubski/ai-tools/lmstudio/lmstudio-community/Qwen3-Co
 PORT="${2:-8081}"
 
 echo "════════════════════════════════════════════════════════════════"
-echo "🔄 vLLM-MLX Server Monitor"
+echo "🔄 MLX Server Monitor"
 echo "════════════════════════════════════════════════════════════════"
 echo "Model: $MODEL_PATH"
 echo "Port:  $PORT"
@@ -18,11 +18,11 @@ RESTART_COUNT=0
 MAX_RESTARTS=5
 
 while true; do
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting vLLM-MLX server..."
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting MLX server..."
 
     # Start the server
     source ~/.venv-mlx/bin/activate
-    python scripts/vllm-mlx-server.py --model "$MODEL_PATH" --port "$PORT" &
+    python scripts/mlx-server.py --model "$MODEL_PATH" --port "$PORT" &
     SERVER_PID=$!
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Server PID: $SERVER_PID"

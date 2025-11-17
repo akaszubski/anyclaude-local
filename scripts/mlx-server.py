@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-vLLM-MLX Server: OpenAI-compatible inference server with prompt caching and tool support
+MLX Server: OpenAI-compatible inference server with prompt caching and tool support
 Built on MLX for native Apple Silicon optimization
 
 Features:
@@ -90,7 +90,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(name)s] %(levelname)s: %(message)s'
 )
-logger = logging.getLogger("vllm-mlx")
+logger = logging.getLogger("mlx")
 
 # GPU synchronization lock to prevent concurrent GPU operations
 gpu_lock = threading.Lock()
@@ -654,7 +654,7 @@ async def warmup_kv_cache(
 
 
 # ============================================================================
-# vLLM-MLX Server
+# MLX Server
 # ============================================================================
 
 class VLLMMLXServer:
@@ -703,7 +703,7 @@ class VLLMMLXServer:
         except Exception as e:
             logger.warning(f"Config validation error: {e}")
 
-        self.app = FastAPI(title="vLLM-MLX Server")
+        self.app = FastAPI(title="MLX Server")
 
         # Production hardening: Metrics endpoint authentication (VUL-006 fix)
         self.security = HTTPBearer()
@@ -2093,7 +2093,7 @@ namespace functions {{
 
     def run(self):
         """Start the server"""
-        logger.info(f"Starting vLLM-MLX Server on {self.host}:{self.port}")
+        logger.info(f"Starting MLX Server on {self.host}:{self.port}")
 
         # Load model before starting server
         asyncio.run(self.load_model())
@@ -2139,7 +2139,7 @@ namespace functions {{
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="vLLM-MLX Server")
+    parser = argparse.ArgumentParser(description="MLX Server")
     parser.add_argument("--model", required=True, help="Path to MLX model directory")
     parser.add_argument("--port", type=int, default=8081, help="Server port")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")

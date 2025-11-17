@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test vLLM-MLX caching performance
+# Test MLX caching performance
 # This script tests that cached requests return immediately vs uncached requests
 
 set -e
@@ -7,7 +7,7 @@ set -e
 BASE_URL="${1:-http://localhost:8081}"
 MODEL_PATH="${2:-.}"
 
-echo "🧪 vLLM-MLX Cache Performance Test"
+echo "🧪 MLX Cache Performance Test"
 echo "===================================="
 echo "Base URL: $BASE_URL"
 echo ""
@@ -17,7 +17,7 @@ echo "✓ Checking server health..."
 if ! curl -s "$BASE_URL/health" > /dev/null 2>&1; then
     echo "❌ Server not running at $BASE_URL"
     echo "Start the server with:"
-    echo "  VLLM_MLX_URL=$BASE_URL anyclaude --mode=vllm-mlx"
+    echo "  MLX_URL=$BASE_URL anyclaude --mode=mlx"
     exit 1
 fi
 

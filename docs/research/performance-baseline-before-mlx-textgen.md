@@ -4,7 +4,7 @@
 **Hardware:** M3 Ultra with 512GB RAM
 **Model:** Qwen3-Coder-30B-A3B-Instruct-MLX-4bit
 
-## Current Performance (vllm-mlx-server.py)
+## Current Performance (mlx-server.py)
 
 ### Response Times
 
@@ -33,7 +33,7 @@
 - Hit rate: 42.9%
 - **Status:** ✅ Working
 
-**Layer 3: MLX KV Cache (vllm-mlx-server.py)**
+**Layer 3: MLX KV Cache (mlx-server.py)**
 
 - Cache creation attempts: Multiple
 - Cache files created: 0 (empty ~/.anyclaude/kv-cache/)
@@ -72,6 +72,6 @@ Performance measured during actual Claude Code usage:
 
 **Logs analyzed:**
 
-- `~/.anyclaude/logs/vllm-mlx-server.log`
+- `~/.anyclaude/logs/mlx-server.log`
 - `.anyclaude-cache-metrics.json`
 - Debug session logs

@@ -115,25 +115,25 @@ export function startLMStudioServer(config: ServerLauncherConfig): void {
 }
 
 /**
- * Start vLLM-MLX server
+ * Start MLX server
  */
 export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const port = config.port || 8081;
   const modelPath = config.modelPath || config.model;
-  const serverScript = config.serverScript || "scripts/vllm-mlx-server.py";
+  const serverScript = config.serverScript || "scripts/mlx-server.py";
   const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
 
   // Return early if no model path - user must provide model path for auto-launch
   if (!modelPath || modelPath === "current-model") {
     console.log(
-      `[anyclaude] vLLM-MLX: No model path configured in .anyclauderc.json`
+      `[anyclaude] MLX: No model path configured in .anyclauderc.json`
     );
     console.log(
-      `[anyclaude] vLLM-MLX: Expecting server to be running at http://localhost:${port}/v1`
+      `[anyclaude] MLX: Expecting server to be running at http://localhost:${port}/v1`
     );
     debug(
       1,
-      "[server-launcher] vLLM-MLX auto-launch skipped (no model path in config)"
+      "[server-launcher] MLX auto-launch skipped (no model path in config)"
     );
     return;
   }
@@ -147,7 +147,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     process.exit(1);
   }
 
-  console.log(`[anyclaude] Starting vLLM-MLX server...`);
+  console.log(`[anyclaude] Starting MLX server...`);
   console.log(`[anyclaude] Model: ${path.basename(modelPath)}`);
   console.log(`[anyclaude] Port: ${port}`);
   console.log(`[anyclaude] Waiting ~30 seconds for model to load...`);
@@ -166,7 +166,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     console.error(
       `[anyclaude] Python virtual environment not found: ${pythonVenv}`
     );
-    console.error("[anyclaude] Please run: scripts/setup-vllm-mlx-venv.sh");
+    console.error("[anyclaude] Please run: scripts/setup-mlx-venv.sh");
     process.exit(1);
   }
 
@@ -189,7 +189,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     // Shell script launcher (MLX-Textgen)
     command = `bash ${serverScriptPath} "${modelPath}" ${port} "${logFile}" 2>&1`;
   } else {
-    // Python script launcher (legacy vllm-mlx-server.py)
+    // Python script launcher (legacy mlx-server.py)
     command = `source ${activateScript} && PYTHONUNBUFFERED=1 python3 ${serverScriptPath} --model "${modelPath}" --port ${port} 2>&1`;
   }
 
@@ -225,8 +225,8 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
         output.includes("Application startup complete"))
     ) {
       hasStarted = true;
-      debug(1, "[server-launcher] vLLM-MLX server started successfully");
-      console.log(`[anyclaude] vLLM-MLX server is ready`);
+      debug(1, "[server-launcher] MLX server started successfully");
+      console.log(`[anyclaude] MLX server is ready`);
     }
 
     // Also log errors to console
@@ -236,7 +236,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
       output.includes("failed") ||
       output.includes("Error")
     ) {
-      console.error(`[anyclaude] vLLM-MLX: ${output.trim()}`);
+      console.error(`[anyclaude] MLX: ${output.trim()}`);
     }
   };
 
@@ -246,7 +246,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   serverProcess.on("error", (error) => {
     logStream.write(`ERROR: ${error.message}\n`);
     console.error(
-      `[anyclaude] Failed to start vLLM-MLX server: ${error.message}`
+      `[anyclaude] Failed to start MLX server: ${error.message}`
     );
     console.error(`[anyclaude] Check logs at: ${logFile}`);
     process.exit(1);
@@ -260,7 +260,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     logStream.write(`Process ${message} at ${new Date().toISOString()}\n`);
 
     if (!hasStarted && code !== 0) {
-      console.error(`[anyclaude] vLLM-MLX server failed to start (${message})`);
+      console.error(`[anyclaude] MLX server failed to start (${message})`);
       console.error(`[anyclaude] Check logs at: ${logFile}`);
     }
   });
@@ -298,7 +298,7 @@ export function launchBackendServer(
     return;
   }
 
-  const port = backendConfig.port || (mode === "vllm-mlx" ? 8081 : 1234);
+  const port = backendConfig.port || (mode === "mlx" ? 8081 : 1234);
 
   // Check if server is already running
   if (isServerRunning(port)) {
@@ -307,7 +307,7 @@ export function launchBackendServer(
   }
 
   // Launch appropriate server
-  if (mode === "vllm-mlx") {
+  if (mode === "mlx") {
     startVLLMMLXServer({
       backend: mode,
       port,
@@ -332,7 +332,7 @@ export function launchBackendServer(
  */
 export async function waitForServerReady(
   baseUrl: string,
-  timeout: number = 120000 // 2 minutes for vLLM-MLX model loading
+  timeout: number = 120000 // 2 minutes for MLX model loading
 ): Promise<boolean> {
   const startTime = Date.now();
   let attempts = 0;

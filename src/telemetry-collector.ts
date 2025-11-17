@@ -1,5 +1,5 @@
 /**
- * Telemetry Collector for vLLM-MLX
+ * Telemetry Collector for MLX
  * Captures real usage data from actual Claude Code sessions
  * Allows analyzing bottlenecks and identifying improvements
  */
@@ -251,7 +251,7 @@ export class TelemetryCollector {
 
     console.log("\n");
     console.log("╔════════════════════════════════════════╗");
-    console.log("║     vLLM-MLX SESSION SUMMARY           ║");
+    console.log("║     MLX SESSION SUMMARY           ║");
     console.log("╚════════════════════════════════════════╝");
     console.log("");
     console.log(`Session ID: ${summary.session_id}`);

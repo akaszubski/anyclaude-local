@@ -18,7 +18,7 @@ let failed = 0;
 
 function testInvalidJsonConfig() {
   console.log("\n✓ Test 1: Invalid JSON in .anyclauderc");
-  const invalidJson = '{"backend": "vllm-mlx", invalid}';
+  const invalidJson = '{"backend": "mlx", invalid}';
   let error = null;
   try {
     JSON.parse(invalidJson);
@@ -32,7 +32,7 @@ function testInvalidJsonConfig() {
 
 function testMissingRequiredFields() {
   console.log("\n✓ Test 2: Missing required config fields");
-  const config = { backend: "vllm-mlx" };
+  const config = { backend: "mlx" };
   const hasBackends = "backends" in config;
   assert.ok(!hasBackends, "Missing backends field detected");
   console.log("   ✅ Missing fields properly detected");
@@ -41,7 +41,7 @@ function testMissingRequiredFields() {
 
 function testInvalidBackendSpecified() {
   console.log("\n✓ Test 3: Invalid backend specified");
-  const validBackends = ["claude", "lmstudio", "vllm-mlx"];
+  const validBackends = ["claude", "lmstudio", "mlx"];
   const config = { backend: "invalid-backend" };
   const isValid = validBackends.includes(config.backend);
   assert.ok(!isValid, "Invalid backend detected");
@@ -72,11 +72,11 @@ function testConflictingEnvVars() {
   const env = {
     ANYCLAUDE_MODE: "claude",
     LMSTUDIO_URL: "http://localhost:1234",
-    VLLM_MLX_URL: "http://localhost:8081",
+    MLX_URL: "http://localhost:8081",
   };
   // Should not allow conflicting configs
   const hasConflict =
-    env.LMSTUDIO_URL && env.VLLM_MLX_URL && env.ANYCLAUDE_MODE !== "vllm-mlx";
+    env.LMSTUDIO_URL && env.MLX_URL && env.ANYCLAUDE_MODE !== "mlx";
   if (hasConflict) {
     console.log("   [DEBUG] Conflicting env vars detected");
   }

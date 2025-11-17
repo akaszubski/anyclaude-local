@@ -26,7 +26,7 @@ cat ~/.anyclaude/logs/*.log | grep -i "truncat\|end\|stop"
 cat .anyclaude-cache-metrics.json | jq '.metrics | {hitRate: .hitRate, totalRequests: .totalRequests}'
 
 # 4. Check traces for system prompt size
-cat ~/.anyclaude/traces/vllm-mlx/*.json | \
+cat ~/.anyclaude/traces/mlx/*.json | \
   jq '.request.body.system | if type == "array" then map(.text) | join("") | length else length end' | \
   sort | uniq -c | sort -rn
 ```
@@ -56,7 +56,7 @@ cat ~/.anyclaude/traces/vllm-mlx/*.json | \
 
 - 10-20 seconds slower than necessary
 - Sent on every request
-- No caching at vLLM-MLX level
+- No caching at MLX level
 
 **Fix**: Reduce system prompt to essentials only (see STABILITY_FIX_IMPLEMENTATION.md)
 
@@ -339,12 +339,12 @@ npm run build
 
 ```typescript
 // OLD CODE:
-if (system && providerName === "vllm-mlx") {
+if (system && providerName === "mlx") {
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // NEW CODE:
-if (system && providerName === "vllm-mlx") {
+if (system && providerName === "mlx") {
   // Preserve whitespace structure for model comprehension
   system = system
     .trim() // Only trim edges
@@ -491,7 +491,7 @@ cat ~/.anyclaude/logs/*.log | grep -i "timeout"
 **Solution**:
 
 1. Increase drain timeout from 5000ms to 10000ms
-2. Check if vLLM-MLX is slow to respond
+2. Check if MLX is slow to respond
 3. Try with LMStudio to verify (LMStudio is more stable)
 
 ### Issue: Cache Hit Rate Still Low
@@ -500,7 +500,7 @@ cat ~/.anyclaude/logs/*.log | grep -i "timeout"
 
 ```bash
 # Check cache hashes
-cat ~/.anyclaude/traces/vllm-mlx/*.json | jq '.request.body | {system: (.system | length), tools: .tools | length}' | sort | uniq -c
+cat ~/.anyclaude/traces/mlx/*.json | jq '.request.body | {system: (.system | length), tools: .tools | length}' | sort | uniq -c
 ```
 
 **Solution**:
@@ -509,20 +509,20 @@ cat ~/.anyclaude/traces/vllm-mlx/*.json | jq '.request.body | {system: (.system 
 2. Check if tools are changing between requests
 3. Ensure cache hash includes full system+tools JSON (it should after our earlier fix)
 
-### Issue: vLLM-MLX Still Unstable Compared to LMStudio
+### Issue: MLX Still Unstable Compared to LMStudio
 
 **Diagnosis**:
 
 1. Run benchmark with both backends
 2. Compare latencies and error rates
-3. Check logs for vLLM-MLX specific messages
+3. Check logs for MLX specific messages
 
 **Solution**:
 
 1. Could be model-specific (try different MLX model)
 2. Could be hardware issue (check CPU/GPU utilization)
 3. Try LMStudio as primary backend for comparison
-4. Use vLLM-MLX for secondary work (build, typing code)
+4. Use MLX for secondary work (build, typing code)
 
 ---
 
@@ -536,7 +536,7 @@ cat ~/.anyclaude/traces/vllm-mlx/*.json | jq '.request.body | {system: (.system 
 
 ### Choosing Your Primary Backend
 
-**Use vLLM-MLX if**:
+**Use MLX if**:
 
 - Performance improvements outweigh stability concerns
 - Latency is more important than reliability
@@ -551,7 +551,7 @@ cat ~/.anyclaude/traces/vllm-mlx/*.json | jq '.request.body | {system: (.system 
 **Recommended Strategy**:
 
 - Use both for different purposes
-- vLLM-MLX for quick analysis, building
+- MLX for quick analysis, building
 - LMStudio for critical development work
 - Can switch with `.anyclauderc.json`
 

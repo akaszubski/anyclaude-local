@@ -1,8 +1,8 @@
-# vLLM-MLX Integration Guide
+# MLX Integration Guide
 
 ## Overview
 
-Successfully integrated **vLLM-MLX** - an OpenAI-compatible inference server with prompt caching and tool calling support for MLX models. This gives you the best of both worlds:
+Successfully integrated **MLX** - an OpenAI-compatible inference server with prompt caching and tool calling support for MLX models. This gives you the best of both worlds:
 
 ✅ **Prompt Caching** - Automatic prefix caching for faster follow-up requests
 ✅ **Tool/Function Calling** - Full OpenAI-compatible tool support
@@ -16,7 +16,7 @@ Claude Code (via anyclaude)
     ↓
 anyclaude proxy (translates Anthropic API → OpenAI API)
     ↓
-vLLM-MLX Server (OpenAI-compatible endpoint)
+MLX Server (OpenAI-compatible endpoint)
     ↓
 MLX Model (runs natively on Apple Silicon)
 ```
@@ -25,15 +25,15 @@ MLX Model (runs natively on Apple Silicon)
 
 ### New Files
 
-- `scripts/vllm-mlx-server.py` - Full-featured vLLM-MLX server with MLX integration
-- `scripts/vllm-mlx-server-lite.py` - Lightweight demo version (working proof-of-concept)
+- `scripts/mlx-server.py` - Full-featured MLX server with MLX integration
+- `scripts/mlx-server-lite.py` - Lightweight demo version (working proof-of-concept)
 
 ### Modified Files
 
-- `src/main.ts` - Added vLLM-MLX mode support
-- `src/trace-logger.ts` - Added "vllm-mlx" to AnyclaudeMode type
-- `src/server-launcher.ts` - Added vLLM-MLX server launcher
-- `.anyclauderc.json` - Added vLLM-MLX backend configuration
+- `src/main.ts` - Added MLX mode support
+- `src/trace-logger.ts` - Added "mlx" to AnyclaudeMode type
+- `src/server-launcher.ts` - Added MLX server launcher
+- `.anyclauderc.json` - Added MLX backend configuration
 
 ## Installation & Setup
 
@@ -49,16 +49,16 @@ Edit `.anyclauderc.json`:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/your/mlx-model",
-      "serverScript": "scripts/vllm-mlx-server-lite.py",
-      "description": "vLLM-MLX Server with prompt caching + tool calling"
+      "serverScript": "scripts/mlx-server-lite.py",
+      "description": "MLX Server with prompt caching + tool calling"
     }
   }
 }
@@ -80,15 +80,15 @@ bun run ./dist/main.js
 ANYCLAUDE_DEBUG=1 bun run ./dist/main.js
 
 # Or specify the mode
-bun run ./dist/main.js --mode=vllm-mlx
+bun run ./dist/main.js --mode=mlx
 ```
 
 ## Usage Examples
 
-### Start vLLM-MLX Server Manually
+### Start MLX Server Manually
 
 ```bash
-python3 scripts/vllm-mlx-server-lite.py \
+python3 scripts/mlx-server-lite.py \
   --model /path/to/mlx-model \
   --port 8081 \
   --host 0.0.0.0
@@ -163,7 +163,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 
 ## Two Server Implementations
 
-### 1. Lite Server (`vllm-mlx-server-lite.py`) - ✅ WORKING
+### 1. Lite Server (`mlx-server-lite.py`) - ✅ WORKING
 
 **Features:**
 
@@ -180,7 +180,7 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 
 **Startup:** Instant
 
-### 2. Full Server (`vllm-mlx-server.py`) - IN DEVELOPMENT
+### 2. Full Server (`mlx-server.py`) - IN DEVELOPMENT
 
 **Features:**
 
@@ -205,9 +205,9 @@ Environment variables > config file > defaults:
 
 ```bash
 # Override via environment variables
-VLLM_MLX_URL=http://localhost:8081/v1
-VLLM_MLX_API_KEY=your-key
-VLLM_MLX_MODEL=your-model-path
+MLX_URL=http://localhost:8081/v1
+MLX_API_KEY=your-key
+MLX_MODEL=your-model-path
 
 # Or use .anyclauderc.json
 # Or use defaults (localhost:8081)
@@ -221,7 +221,7 @@ The server is fully OpenAI-compatible:
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="vllm-mlx",
+    api_key="mlx",
     base_url="http://localhost:8081/v1"
 )
 
@@ -237,7 +237,7 @@ response = client.chat.completions.create(
 
 ### ✅ Completed
 
-- vLLM-MLX server interface design
+- MLX server interface design
 - OpenAI-compatible API endpoints
 - Tool calling framework
 - Prompt caching abstraction
@@ -287,8 +287,8 @@ python3 -c "import mlx.core; print('MLX OK')"
 ### Quick test
 
 ```bash
-# Terminal 1: Start vLLM-MLX server
-python3 scripts/vllm-mlx-server-lite.py \
+# Terminal 1: Start MLX server
+python3 scripts/mlx-server-lite.py \
   --model /path/to/mlx-model \
   --port 8081
 
@@ -306,7 +306,7 @@ PROXY_ONLY=true bun run src/main.ts
 bun run ./dist/main.js
 
 # Should output:
-# [anyclaude] Starting vLLM-MLX server...
+# [anyclaude] Starting MLX server...
 # [anyclaude] Mode: VLLM-MLX
 # [anyclaude] Proxy URL: http://localhost:XXXXX
 ```
@@ -338,5 +338,5 @@ For issues or questions:
 
 1. Check the troubleshooting section
 2. Enable debug logging: `ANYCLAUDE_DEBUG=1`
-3. Check server logs in `/tmp/vllm-mlx*.log`
+3. Check server logs in `/tmp/mlx*.log`
 4. Review anyclaude trace files: `~/.anyclaude/traces/`

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-vLLM-MLX Server: OpenAI-compatible inference server with prompt caching and tool support
+MLX Server: OpenAI-compatible inference server with prompt caching and tool support
 Built on MLX for native Apple Silicon optimization
 
 Features:
@@ -72,7 +72,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(name)s] %(levelname)s: %(message)s'
 )
-logger = logging.getLogger("vllm-mlx")
+logger = logging.getLogger("mlx")
 
 # GPU synchronization lock to prevent concurrent GPU operations
 gpu_lock = threading.Lock()
@@ -429,7 +429,7 @@ class MLXKVCacheManager:
 
 
 # ============================================================================
-# vLLM-MLX Server
+# MLX Server
 # ============================================================================
 
 class VLLMMLXServer:
@@ -452,7 +452,7 @@ class VLLMMLXServer:
             logger.info(f"MLX KV cache manager initialized (max {MLX_KV_CACHE_MAX_SIZE} files)")
         # Track tool call IDs to names for Harmony format tool results
         self.tool_call_names = {}
-        self.app = FastAPI(title="vLLM-MLX Server")
+        self.app = FastAPI(title="MLX Server")
         # Thread pool for blocking MLX inference (1 worker to serialize GPU ops)
         # Using single worker prevents concurrent GPU operations that cause Metal assertion errors
         self.executor = ThreadPoolExecutor(max_workers=1)
@@ -1763,7 +1763,7 @@ namespace functions {{
 
     def run(self):
         """Start the server"""
-        logger.info(f"Starting vLLM-MLX Server on {self.host}:{self.port}")
+        logger.info(f"Starting MLX Server on {self.host}:{self.port}")
 
         # Load model before starting server
         asyncio.run(self.load_model())
@@ -1778,7 +1778,7 @@ namespace functions {{
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="vLLM-MLX Server")
+    parser = argparse.ArgumentParser(description="MLX Server")
     parser.add_argument("--model", required=True, help="Path to MLX model directory")
     parser.add_argument("--port", type=int, default=8081, help="Server port")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")

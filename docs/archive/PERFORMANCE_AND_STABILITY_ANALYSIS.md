@@ -1,4 +1,4 @@
-# Performance and Stability Analysis: anyclaude with vLLM-MLX
+# Performance and Stability Analysis: anyclaude with MLX
 
 ## Executive Summary
 
@@ -33,7 +33,7 @@ The system prompt Claude Code generates contains **extensive embedded documentat
 
 - This is sent **on every request**
 - No batching or deduplication
-- vLLM-MLX has to process this on **every single message**
+- MLX has to process this on **every single message**
 - Slows down first-token latency significantly
 
 **Comparison to Anthropic API**:
@@ -44,7 +44,7 @@ The system prompt Claude Code generates contains **extensive embedded documentat
 
 **Your Setup**:
 
-- No prompt caching at vLLM-MLX level
+- No prompt caching at MLX level
 - The `prompt-cache.ts` module tracks hits but doesn't reduce tokens sent
 - Each request still sends full 11,430 character system prompt
 
@@ -54,7 +54,7 @@ With a 30B model on Apple Silicon:
 
 - **First Token Latency**: Increased by 10-20 seconds due to system prompt processing
 - **Total Throughput**: Reduced by processing unnecessary tokens
-- **Memory Pressure**: vLLM-MLX has to load/process massive context on every request
+- **Memory Pressure**: MLX has to load/process massive context on every request
 
 ---
 
@@ -93,14 +93,14 @@ From your trace files:
 - But Claude Code itself has shorter internal timeout (~30 seconds for keepalive)
 - If `message_stop` is delayed, Claude Code thinks request failed
 
-#### D. vLLM-MLX Specific Issues
+#### D. MLX Specific Issues
 
-**Issue**: vLLM-MLX may send unexpected chunk types
+**Issue**: MLX may send unexpected chunk types
 
 From `convert-to-anthropic-stream.ts` lines 442-460:
 
 - Code handles "unknown" chunk types by skipping them
-- But this could mean data loss if vLLM-MLX sends non-standard events
+- But this could mean data loss if MLX sends non-standard events
 - MLX models behave differently than quantized LLMs
 
 ### Stability Problems This Creates
@@ -112,11 +112,11 @@ From `convert-to-anthropic-stream.ts` lines 442-460:
 
 ---
 
-## 3. vLLM-MLX vs LMStudio PERFORMANCE COMPARISON
+## 3. MLX vs LMStudio PERFORMANCE COMPARISON
 
 ### Architecture Differences
 
-**vLLM-MLX**:
+**MLX**:
 
 - Compiled for Apple MLX (metal acceleration)
 - Faster inference on Apple Silicon
@@ -136,7 +136,7 @@ From `convert-to-anthropic-stream.ts` lines 442-460:
 
 With your setup (Qwen3-Coder-30B on M1/M2):
 
-**vLLM-MLX (theoretical)**:
+**MLX (theoretical)**:
 
 - First token latency: 5-10 seconds (with 11KB system prompt)
 - Throughput: 15-20 tokens/second
@@ -150,7 +150,7 @@ With your setup (Qwen3-Coder-30B on M1/M2):
 
 **Actual Performance** (with issues):
 
-- vLLM-MLX: Unreliable, truncation issues
+- MLX: Unreliable, truncation issues
 - LMStudio: Stable but slow
 
 ---
@@ -164,8 +164,8 @@ With your setup (Qwen3-Coder-30B on M1/M2):
 `anthropic-proxy.ts:466-477`:
 
 ```typescript
-// Normalizing system prompt for vLLM-MLX strict JSON validation
-if (system && providerName === "vllm-mlx") {
+// Normalizing system prompt for MLX strict JSON validation
+if (system && providerName === "mlx") {
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 }
 ```
@@ -174,7 +174,7 @@ if (system && providerName === "vllm-mlx") {
 
 - Multi-line examples become single line
 - Indentation-sensitive formatting lost
-- vLLM-MLX tokenizes differently than expected
+- MLX tokenizes differently than expected
 
 #### B. Tool Schema Transformation
 
@@ -207,7 +207,7 @@ if (contextStats.exceedsLimit) {
 
 **Problem**: Truncating old messages can break reasoning
 
-- vLLM-MLX doesn't compress context like real Claude
+- MLX doesn't compress context like real Claude
 - Losing early messages breaks continuity
 - No way to recover once messages are dropped
 
@@ -220,7 +220,7 @@ if (contextStats.exceedsLimit) {
 - **Size**: 11,430 characters (~2,200+ tokens)
 - **Frequency**: Every single request
 - **Impact**: 10-20 second latency hit on first token
-- **Solution**: Reduce or cache system prompt at vLLM-MLX level
+- **Solution**: Reduce or cache system prompt at MLX level
 
 ### Streaming Instability ✅ ROOT CAUSES IDENTIFIED
 
@@ -229,9 +229,9 @@ Multiple interacting issues:
 1. Backpressure handling not robust enough
 2. Message-stop signaling has race conditions
 3. Claude Code timeout expectations not met
-4. vLLM-MLX sends non-standard chunk types
+4. MLX sends non-standard chunk types
 
-### vLLM-MLX Trade-offs ✅ DOCUMENTED
+### MLX Trade-offs ✅ DOCUMENTED
 
 - Faster in theory, less stable in practice
 - Tokenizer differences cause conversion issues
@@ -260,7 +260,7 @@ Current approach is wrong. You have two options:
 **Option A: Use Prompt Caching Properly** (Recommended)
 
 ```typescript
-// NEW: Implement system prompt caching at vLLM-MLX level
+// NEW: Implement system prompt caching at MLX level
 // Only send once, include cache_control headers
 const systemPrompt = {
   type: "text",
@@ -280,7 +280,7 @@ const systemPrompt = {
 
 1. Keep only Claude Code core instructions
 2. Remove all CLAUDE.md content from system prompt
-3. vLLM-MLX doesn't support prompt caching, so focus on reduction
+3. MLX doesn't support prompt caching, so focus on reduction
 
 #### 6.2 Enhance Stream Truncation Handling
 
@@ -333,16 +333,16 @@ controller.enqueue = function (chunk) {
 
 #### 6.4 Disable Aggressive Whitespace Normalization
 
-**Impact**: Improve stability with vLLM-MLX\*\*
+**Impact**: Improve stability with MLX\*\*
 
 ```typescript
 // REMOVE THIS:
-if (system && providerName === "vllm-mlx") {
+if (system && providerName === "mlx") {
   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // REPLACE WITH:
-if (system && providerName === "vllm-mlx") {
+if (system && providerName === "mlx") {
   system = system.trim(); // Only trim edges, preserve structure
 }
 ```
@@ -389,11 +389,11 @@ Track:
 
 **Impact**: Establish stable baseline for debugging\*\*
 
-Instead of debugging vLLM-MLX instability:
+Instead of debugging MLX instability:
 
 1. **First**: Get it working perfectly with LMStudio
 2. **Then**: Compare behavior
-3. **Finally**: Fix vLLM-MLX to match
+3. **Finally**: Fix MLX to match
 
 This gives you a known-good reference point.
 
@@ -404,7 +404,7 @@ This gives you a known-good reference point.
 ```typescript
 // Provider-specific configurations
 const PROVIDER_CONFIG = {
-  'vllm-mlx': {
+  'mlx': {
     maxStreamChunkSize: 1024,
     whitespaceHandling: 'minimal',
     messageStopTimeout: 60000,
@@ -440,7 +440,7 @@ Tests should cover:
 
 **Impact**: Solve the 2,200 token overhead permanently\*\*
 
-Even though vLLM-MLX doesn't support prompt caching, you can:
+Even though MLX doesn't support prompt caching, you can:
 
 ```typescript
 // Cache system+tools locally
@@ -449,7 +449,7 @@ const getCachedPrefix = (system, tools) => {
 
   // If cached, prepend cache prefix to current request
   if (cachedHash === hash) {
-    // Use previous vLLM-MLX processing for system
+    // Use previous MLX processing for system
     // Only append new user message
     return cachedSystemProcessing;
   }
@@ -514,12 +514,12 @@ Priority: **HIGH**
 
 Priority: **MEDIUM**
 
-- [ ] **Switch testing** from vLLM-MLX to LMStudio
+- [ ] **Switch testing** from MLX to LMStudio
 - [ ] **Compare behavior** between providers
-- [ ] **Fix vLLM-MLX specific** issues
+- [ ] **Fix MLX specific** issues
 - [ ] **Benchmark performance** improvements
 
-**Expected Outcome**: vLLM-MLX working as well as or better than LMStudio
+**Expected Outcome**: MLX working as well as or better than LMStudio
 
 ### Phase 4: Polish (Next week - Production Ready)
 
@@ -552,7 +552,7 @@ Priority: **LOW**
 
 ### After Phase 3 (3 Days)
 
-- ✅ Performant: vLLM-MLX can compete with LMStudio
+- ✅ Performant: MLX can compete with LMStudio
 - ✅ Reliable: Handles edge cases
 - ✅ Consistent: Repeatable performance
 
@@ -577,9 +577,9 @@ Why is your system unstable?
    - Backpressure not fully handled
    - Message-stop race condition
    - Claude Code timeout conflicts
-   - vLLM-MLX non-standard chunks
+   - MLX non-standard chunks
 
-3. **vLLM-MLX Less Stable Than LMStudio**
+3. **MLX Less Stable Than LMStudio**
    - Tokenizer differences
    - Experimental behavior
    - Whitespace handling issues
@@ -602,7 +602,7 @@ Why is your system unstable?
 1. **Read** this analysis carefully
 2. **Choose** between system prompt reduction options
 3. **Implement** Phase 1 fixes (use my code templates above)
-4. **Test** extensively with both vLLM-MLX and LMStudio
+4. **Test** extensively with both MLX and LMStudio
 5. **Measure** improvements with metrics
 6. **Share** results - I'll help optimize further
 

@@ -16,7 +16,7 @@ When you see responses cut off mid-sentence like:
 
 This happens because:
 
-1. **AI SDK stream** produces chunks at full speed (from vLLM-MLX)
+1. **AI SDK stream** produces chunks at full speed (from MLX)
 2. **convertToAnthropicStream** transforms chunks to Anthropic SSE format
 3. **WritableStream** (res.write) buffers data to send to client
 4. When buffers fill up, **drain event doesn't properly propagate backwards**

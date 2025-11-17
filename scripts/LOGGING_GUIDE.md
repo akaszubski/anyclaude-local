@@ -25,13 +25,13 @@ debug(1, "Basic debug info", {"key": "value"})
 
 ```bash
 # Basic debug (level 1)
-ANYCLAUDE_DEBUG=1 python3 scripts/vllm-mlx-server.py
+ANYCLAUDE_DEBUG=1 python3 scripts/mlx-server.py
 
 # Verbose debug (level 2) - more detailed output
-ANYCLAUDE_DEBUG=2 python3 scripts/vllm-mlx-server.py
+ANYCLAUDE_DEBUG=2 python3 scripts/mlx-server.py
 
 # Trace debug (level 3) - all details, including full JSON structures
-ANYCLAUDE_DEBUG=3 python3 scripts/vllm-mlx-server.py
+ANYCLAUDE_DEBUG=3 python3 scripts/mlx-server.py
 ```
 
 ## Functions Reference
@@ -145,7 +145,7 @@ if debug_file:
     )
 ```
 
-## Integration with vllm-mlx-server.py
+## Integration with mlx-server.py
 
 Replace the basic logging setup:
 
@@ -156,12 +156,12 @@ logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(name)s] %(levelname)s: %(message)s'
 )
-logger = logging.getLogger("vllm-mlx")
+logger = logging.getLogger("mlx")
 
 # NEW:
 from scripts.utils_logging import setup_logger, display_debug_startup
 
-logger = setup_logger("vllm-mlx")
+logger = setup_logger("mlx")
 display_debug_startup()  # Show debug mode info if enabled
 ```
 

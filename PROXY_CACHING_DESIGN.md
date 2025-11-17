@@ -3,11 +3,13 @@
 ## Problem
 
 Currently, **every request** sends the full system prompt + tools to the MLX server:
+
 - System prompt: ~3,500 tokens
 - Tools: ~15,700 tokens
 - **Total overhead: ~19,000 tokens** sent every single request
 
 Even with MLX's automatic KV caching, this is inefficient because:
+
 1. Network overhead sending 19K tokens each time
 2. MLX still has to tokenize and match the prefix
 3. The proxy is stateless, so it doesn't track what the server already knows
@@ -44,7 +46,7 @@ interface SessionState {
   sessionId: string;
   systemPrompt: string;
   tools: any[];
-  systemHash: string;  // Hash of system+tools for change detection
+  systemHash: string; // Hash of system+tools for change detection
   lastActivity: Date;
 }
 
@@ -53,7 +55,7 @@ class SessionManager {
 
   // Extract or generate session ID from request headers
   getSessionId(headers: Headers): string {
-    return headers.get('x-session-id') || generateSessionId();
+    return headers.get("x-session-id") || generateSessionId();
   }
 
   // Check if system prompt has changed
@@ -72,7 +74,7 @@ class SessionManager {
       systemPrompt: system,
       tools,
       systemHash: hash(system + JSON.stringify(tools)),
-      lastActivity: new Date()
+      lastActivity: new Date(),
     });
   }
 }
@@ -100,7 +102,9 @@ async function handleAnthropicRequest(req: Request) {
   let requestToMLX;
   if (needsSystem) {
     // First request or system changed: send full prompt
-    console.log(`[Proxy Cache] Cache MISS - sending full system (${sessionId})`);
+    console.log(
+      `[Proxy Cache] Cache MISS - sending full system (${sessionId})`
+    );
     requestToMLX = {
       messages: convertAnthropicToOpenAI(body),
       tools: body.tools,
@@ -111,11 +115,13 @@ async function handleAnthropicRequest(req: Request) {
     sessionManager.updateSession(sessionId, body.system, body.tools);
   } else {
     // Subsequent request: omit system prompt
-    console.log(`[Proxy Cache] Cache HIT - reusing cached system (${sessionId})`);
+    console.log(
+      `[Proxy Cache] Cache HIT - reusing cached system (${sessionId})`
+    );
     requestToMLX = {
       messages: convertAnthropicToOpenAI(body, { omitSystem: true }),
       // tools omitted - server uses cached version
-      sessionId,  // Tell server to use cached system
+      sessionId, // Tell server to use cached system
       // ... other params
     };
   }
@@ -169,6 +175,7 @@ async def chat_completions(request: Request):
 ### Performance Gains
 
 **Before** (current):
+
 ```
 Request 1: 19K system+tools + 1K message = 20K tokens
 Request 2: 19K system+tools + 2K messages = 21K tokens
@@ -176,6 +183,7 @@ Request 3: 19K system+tools + 3K messages = 22K tokens
 ```
 
 **After** (with proxy caching):
+
 ```
 Request 1: 19K system+tools + 1K message = 20K tokens  (cache MISS)
 Request 2: 0K system+tools + 2K messages = 2K tokens   (cache HIT - 90% reduction!)
@@ -192,6 +200,7 @@ Request 3: 0K system+tools + 3K messages = 3K tokens   (cache HIT - 86% reductio
 ### Combined with MLX KV Cache
 
 This stacks with MLX's automatic prefix caching:
+
 1. Proxy doesn't send system+tools (saved network/parsing)
 2. MLX reuses cached system prompt KV states (saved computation)
 3. Only processes new user messages
@@ -212,6 +221,7 @@ This stacks with MLX's automatic prefix caching:
 Instead of custom session management, we could:
 
 1. **Implement Anthropic's prompt caching directives**:
+
    ```json
    {
      "system": [
@@ -226,6 +236,7 @@ Instead of custom session management, we could:
    ```
 
 2. **Proxy translates to OpenAI extended format**:
+
    ```json
    {
      "messages": [...],
@@ -240,6 +251,7 @@ This approach is more standards-compliant and future-proof.
 ## Recommendation
 
 **Start with simple session-based approach** because:
+
 - Easier to implement and test
 - Full control over caching behavior
 - Can migrate to Anthropic format later if needed

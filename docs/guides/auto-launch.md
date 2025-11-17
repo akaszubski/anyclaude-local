@@ -1,11 +1,11 @@
 # Automatic Server Launch Guide
 
-The vLLM-MLX server **auto-launches automatically** when you start anyclaude. No manual steps needed.
+The MLX server **auto-launches automatically** when you start anyclaude. No manual steps needed.
 
 ## How It Works
 
 1. **anyclaude reads `.anyclauderc.json`**
-2. **Detects `"backend": "vllm-mlx"`**
+2. **Detects `"backend": "mlx"`**
 3. **Calls `launchBackendServer()` function**
 4. **Starts Python server process**
 5. **Waits for server to be ready**
@@ -22,15 +22,15 @@ Edit `.anyclauderc.json`:
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/your/mlx-model",
-      "serverScript": "scripts/vllm-mlx-server.py"
+      "serverScript": "scripts/mlx-server.py"
     }
   }
 }
@@ -48,13 +48,13 @@ The server starts automatically.
 
 ```
 [anyclaude] Mode: VLLM-MLX
-[anyclaude] Starting vLLM-MLX server...
+[anyclaude] Starting MLX server...
 [anyclaude] Model: your-model-name
 [anyclaude] Port: 8081
 [anyclaude] Waiting ~30 seconds for model to load...
-[anyclaude] vLLM-MLX server started successfully
+[anyclaude] MLX server started successfully
 [anyclaude] Proxy URL: http://localhost:XXXXX
-[anyclaude] vLLM-MLX endpoint: http://localhost:8081/v1
+[anyclaude] MLX endpoint: http://localhost:8081/v1
 ```
 
 Then Claude Code starts automatically using the proxy.
@@ -65,13 +65,13 @@ You can override config via environment variables:
 
 ```bash
 # Use different backend
-ANYCLAUDE_MODE=vllm-mlx bun run ./dist/main.js
+ANYCLAUDE_MODE=mlx bun run ./dist/main.js
 
 # Use different model
-VLLM_MLX_MODEL=/path/to/other/model bun run ./dist/main.js
+MLX_MODEL=/path/to/other/model bun run ./dist/main.js
 
 # Use different port
-export VLLM_MLX_URL=http://localhost:8082/v1
+export MLX_URL=http://localhost:8082/v1
 bun run ./dist/main.js
 ```
 
@@ -85,7 +85,7 @@ Example:
 
 ```bash
 # This will use the env var, not the config file
-VLLM_MLX_MODEL=/custom/model bun run ./dist/main.js
+MLX_MODEL=/custom/model bun run ./dist/main.js
 ```
 
 ## Disabling Auto-Launch
@@ -99,7 +99,7 @@ ANYCLAUDE_NO_AUTO_LAUNCH=true bun run ./dist/main.js
 Then start the server manually:
 
 ```bash
-python3 scripts/vllm-mlx-server.py --model /path/to/model --port 8081
+python3 scripts/mlx-server.py --model /path/to/model --port 8081
 ```
 
 ## Port Already in Use
@@ -117,7 +117,7 @@ kill -9 <PID>
 
 ```json
 {
-  "vllm-mlx": {
+  "mlx": {
     "port": 8082,
     "baseUrl": "http://localhost:8082/v1"
   }
@@ -127,7 +127,7 @@ kill -9 <PID>
 **Option 3: Use environment variable**
 
 ```bash
-VLLM_MLX_URL=http://localhost:8082/v1 bun run ./dist/main.js
+MLX_URL=http://localhost:8082/v1 bun run ./dist/main.js
 ```
 
 ## Check Server Status
@@ -155,7 +155,7 @@ ANYCLAUDE_DEBUG=1 bun run ./dist/main.js
 You'll see:
 
 ```
-[anyclaude] Waiting for vllm-mlx server to be ready...
+[anyclaude] Waiting for mlx server to be ready...
 [server-launcher] Backend server is ready
 ```
 
@@ -192,11 +192,11 @@ export function launchBackendServer(
 ): void {
   // ... reads config ...
 
-  if (mode === "vllm-mlx") {
+  if (mode === "mlx") {
     startVLLMMLXServer({
       backend: mode,
-      port: config.backends?.["vllm-mlx"]?.port,
-      model: config.backends?.["vllm-mlx"]?.model,
+      port: config.backends?.["mlx"]?.port,
+      model: config.backends?.["mlx"]?.model,
     });
   }
 }
@@ -226,7 +226,7 @@ anyclaude/
 │   ├── main.ts                     # Calls launchBackendServer() at line 170
 │   └── server-launcher.ts          # startVLLMMLXServer() implementation
 └── scripts/
-    └── vllm-mlx-server.py          # The server being launched
+    └── mlx-server.py          # The server being launched
 ```
 
 ## Summary

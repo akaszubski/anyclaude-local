@@ -49,7 +49,7 @@ source ~/.venv-mlx/bin/activate
 python3 -m mlx_lm server --port 8081
 ```
 
-### vLLM-MLX (Auto-launch with Prompt Caching & Tool Calling)
+### MLX (Auto-launch with Prompt Caching & Tool Calling)
 
 Best for: Apple Silicon Macs, automatic server startup, advanced features
 
@@ -72,7 +72,7 @@ Installation:
 python3 -m venv ~/.venv-mlx
 source ~/.venv-mlx/bin/activate
 
-# Install vLLM-MLX and dependencies
+# Install MLX and dependencies
 pip install mlx-lm fastapi uvicorn pydantic
 
 # Verify installation
@@ -140,25 +140,25 @@ bun run ./dist/main.js
 
 Create `.anyclauderc.json` in your project root:
 
-**Example: vLLM-MLX (Recommended for Apple Silicon)**
+**Example: MLX (Recommended for Apple Silicon)**
 
 ```json
 {
-  "backend": "vllm-mlx",
+  "backend": "mlx",
   "debug": {
     "level": 0,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "vllm-mlx": {
+    "mlx": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "vllm-mlx",
+      "apiKey": "mlx",
       "model": "/path/to/mlx-model",
-      "serverScript": "scripts/vllm-mlx-server.py",
-      "description": "vLLM-MLX: Auto-launch, prompt caching, tool calling"
+      "serverScript": "scripts/mlx-server.py",
+      "description": "MLX: Auto-launch, prompt caching, tool calling"
     },
     "lmstudio": {
       "enabled": true,
@@ -184,20 +184,20 @@ Create `.anyclauderc.json` in your project root:
 
 **Key settings:**
 
-- `backend`: Which backend to use (`vllm-mlx`, `lmstudio`, `mlx-lm`, or `claude`)
-- `backends[backend].model`: Full path to model (for vLLM-MLX and MLX-LM) or `current-model` for LMStudio
+- `backend`: Which backend to use (`mlx`, `lmstudio`, `mlx-lm`, or `claude`)
+- `backends[backend].model`: Full path to model (for MLX and MLX-LM) or `current-model` for LMStudio
 - `debug.level`: 0=off, 1=basic, 2=verbose, 3=trace
-- For vLLM-MLX: Server auto-launches on startup and auto-cleans up on exit
+- For MLX: Server auto-launches on startup and auto-cleans up on exit
 
 See [CONFIGURATION.md](CONFIGURATION.md) for detailed options.
 
 ### 3. Start Your Backend
 
-**vLLM-MLX (Auto-launch):**
+**MLX (Auto-launch):**
 
 ```bash
 # No manual startup needed! Server launches automatically when you run anyclaude
-# Just make sure your .anyclauderc.json is configured with vllm-mlx backend
+# Just make sure your .anyclauderc.json is configured with mlx backend
 anyclaude
 ```
 
@@ -233,7 +233,7 @@ export ANTHROPIC_API_KEY=sk-ant-xxxxx
 anyclaude
 ```
 
-For vLLM-MLX: Server auto-launches, model loads, then Claude Code starts. That's it!
+For MLX: Server auto-launches, model loads, then Claude Code starts. That's it!
 
 **Advanced usage:**
 
@@ -368,13 +368,13 @@ anyclaude --mode=mlx-lm
 ## Environment Variables Quick Reference
 
 ```bash
-# Mode selection (vllm-mlx|mlx-lm|lmstudio|claude)
-export ANYCLAUDE_MODE=vllm-mlx
+# Mode selection (mlx|mlx-lm|lmstudio|claude)
+export ANYCLAUDE_MODE=mlx
 
-# vLLM-MLX (auto-launches server)
-export VLLM_MLX_URL=http://localhost:8081/v1
-export VLLM_MLX_MODEL=current-model
-export VLLM_MLX_API_KEY=vllm-mlx
+# MLX (auto-launches server)
+export MLX_URL=http://localhost:8081/v1
+export MLX_MODEL=current-model
+export MLX_API_KEY=mlx
 
 # LMStudio
 export LMSTUDIO_URL=http://localhost:1234/v1

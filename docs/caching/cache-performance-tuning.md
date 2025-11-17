@@ -6,7 +6,7 @@ This guide explains the cache performance optimizations implemented in anyclaude
 
 anyclaude uses **multi-level caching** to minimize token consumption and improve Claude Code performance:
 
-1. **vLLM-MLX Server Cache** - LRU cache for response deduplication
+1. **MLX Server Cache** - LRU cache for response deduplication
 2. **Prompt Cache** - Hash-based cache tracking for system prompts + tools
 3. **Anthropic Prompt Caching** - Native Anthropic API feature (Claude mode only)
 4. **Cache Monitoring** - Real-time metrics tracking and cost analysis
@@ -15,7 +15,7 @@ anyclaude uses **multi-level caching** to minimize token consumption and improve
 
 ## ✅ Optimizations Implemented
 
-### 1. Increased vLLM-MLX Cache Size (HIGH IMPACT)
+### 1. Increased MLX Cache Size (HIGH IMPACT)
 
 **Problem**: The original cache size of 32 entries was too small for large Claude Code prompts, causing frequent evictions.
 
@@ -27,7 +27,7 @@ anyclaude uses **multi-level caching** to minimize token consumption and improve
 
 **Files Modified**:
 
-- `scripts/vllm-mlx-server.py:221-224`
+- `scripts/mlx-server.py:221-224`
 
 **Usage**:
 
@@ -51,7 +51,7 @@ VLLM_CACHE_SIZE=64 anyclaude
 
 ### 2. Cache Metrics Logging (VISIBILITY)
 
-**Problem**: vLLM-MLX wasn't reporting cache hit/miss statistics, making optimization difficult.
+**Problem**: MLX wasn't reporting cache hit/miss statistics, making optimization difficult.
 
 **Solution**:
 
@@ -61,7 +61,7 @@ VLLM_CACHE_SIZE=64 anyclaude
 
 **Files Modified**:
 
-- `scripts/vllm-mlx-server.py`:
+- `scripts/mlx-server.py`:
   - Added `last_request_was_hit` tracking (line 135)
   - Updated `record_request()` to properly increment hits (lines 204-211)
   - Added debug logging on cache hits (lines 365-366)
@@ -105,7 +105,7 @@ ANYCLAUDE_DEBUG=1 anyclaude
     : undefined;
   ```
 
-- `scripts/vllm-mlx-server.py:410-416`:
+- `scripts/mlx-server.py:410-416`:
   ```python
   # Sort tools by name for deterministic tool description ordering
   sorted_tools = sorted(tools, key=lambda t: t['function']['name'])
@@ -185,7 +185,7 @@ anyclaude Proxy
     ├→ System Prompt Normalization
     ├→ Tool Ordering (deterministic)
     ↓
-vLLM-MLX Server
+MLX Server
     ├→ LRU Cache (256 entries)
     ├→ Response Deduplication
     ↓
@@ -195,7 +195,7 @@ MLX Model
 
 ### Cache Key Generation
 
-**vLLM-MLX Server** (`scripts/vllm-mlx-server.py:137-147`):
+**MLX Server** (`scripts/mlx-server.py:137-147`):
 
 ```python
 def get_cache_key(self, messages: list, tools: list = None) -> str:
@@ -226,7 +226,7 @@ Cache hit occurs when:
 
 ## 🔧 Configuration
 
-### vLLM-MLX Cache Size
+### MLX Cache Size
 
 Default: 256 entries
 Recommended ranges:
@@ -301,17 +301,17 @@ After implementing these optimizations:
 ```
 Request 1: "Call my_tool with X"
 ├─ Parsed, tools sorted deterministically
-├─ vLLM-MLX: Cache MISS → Inference → Store in cache
+├─ MLX: Cache MISS → Inference → Store in cache
 ├─ Result: 3 seconds, 250 tokens
 
 Request 2: "Call my_tool with Y"  (different args)
 ├─ Different message content
-├─ vLLM-MLX: Cache MISS → Inference → Store in cache
+├─ MLX: Cache MISS → Inference → Store in cache
 ├─ Result: 3 seconds, 250 tokens
 
 Request 3: "Call my_tool with X"  (same as Request 1)
 ├─ Identical messages + tools (deterministically ordered)
-├─ vLLM-MLX: Cache HIT → Return cached response
+├─ MLX: Cache HIT → Return cached response
 ├─ Result: 0.1 seconds, 0 new tokens (instant!)
 ```
 
@@ -343,7 +343,7 @@ Savings: $0.00040 (minimal, but demonstrates functionality)
 
 ```bash
 # Disable auto-launch for CI environments
-ANYCLAUDE_NO_AUTO_LAUNCH=1 anyclaude --mode=vllm-mlx
+ANYCLAUDE_NO_AUTO_LAUNCH=1 anyclaude --mode=mlx
 
 # Use larger cache if running many tests
 VLLM_CACHE_SIZE=512 anyclaude
@@ -358,9 +358,9 @@ ANYCLAUDE_DEBUG=1 anyclaude >> cache-metrics.log 2>&1
 # Recommended settings for production usage
 export VLLM_CACHE_SIZE=512          # Large cache
 export ANYCLAUDE_DEBUG=2             # Verbose logging
-export VLLM_MLX_URL=http://prod:8081 # Use dedicated server
+export MLX_URL=http://prod:8081 # Use dedicated server
 
-anyclaude --mode=vllm-mlx
+anyclaude --mode=mlx
 ```
 
 ---
@@ -419,21 +419,21 @@ ANYCLAUDE_DEBUG=1 anyclaude | grep "Cached Items"
 | ----------------- | ------------------------ | ----------------- |
 | `VLLM_CACHE_SIZE` | 256                      | Cache entry count |
 | `ANYCLAUDE_DEBUG` | 0                        | Debug level (0-3) |
-| `VLLM_MLX_URL`    | http://localhost:8081/v1 | Server URL        |
-| `VLLM_MLX_MODEL`  | current-model            | Model name        |
+| `MLX_URL`    | http://localhost:8081/v1 | Server URL        |
+| `MLX_MODEL`  | current-model            | Model name        |
 
 ### Key Files
 
 | File                         | Purpose                       |
 | ---------------------------- | ----------------------------- |
-| `scripts/vllm-mlx-server.py` | vLLM server with LRU cache    |
+| `scripts/mlx-server.py` | vLLM server with LRU cache    |
 | `src/cache-monitor.ts`       | Metrics tracking              |
 | `src/anthropic-proxy.ts`     | Proxy with tool ordering      |
 | `src/main.ts`                | Entry point with exit handler |
 
 ### Files Modified
 
-1. **scripts/vllm-mlx-server.py**
+1. **scripts/mlx-server.py**
    - Cache size configuration (221-224)
    - Cache tracking improvements (135, 204-211)
    - Metrics logging (365-366, 384, 387-388, 428, 453, 527-528)
