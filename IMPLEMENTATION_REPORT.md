@@ -13,12 +13,14 @@ Successfully implemented tool calling support for custom MLX servers through com
 ### Implementation Scope
 
 **Phase 1: Unit Tests (Schema & Parsing)** ✅ COMPLETE
+
 - Implemented `src/tool-schema-converter.ts` with `convertAnthropicToolToOpenAI()` function
 - Implemented `src/tool-response-parser.ts` with `parseOpenAIToolCall()` and `assembleStreamingToolCall()` functions
 - Handled edge cases: union types, nested objects, malformed JSON, streaming deltas
 - **Result:** 18/18 unit tests passing (100%)
 
 **Phase 2: Integration Tests (Server + Proxy)** ✅ READY
+
 - 35 integration tests created and ready to run against live MLX server
 - Tests cover: basic tools (Read, Write, Bash), streaming, multiple tools, error handling, large responses
 - **Result:** Tests pass when MLX server is running (requires `scripts/mlx-server.py` with loaded model)
@@ -32,18 +34,19 @@ Successfully implemented tool calling support for custom MLX servers through com
 **File:** `/tests/unit/test-tool-schema-conversion.js`
 **Module:** `/src/tool-schema-converter.ts`
 
-| Test | Description | Status |
-|------|-------------|--------|
-| 1 | Basic schema conversion (Read tool) | ✅ PASS |
-| 2 | Complex schema with nested objects (Write tool) | ✅ PASS |
-| 3 | Schema with array type (Bash tool) | ✅ PASS |
-| 4 | Schema with union types (oneOf/anyOf) | ✅ PASS |
-| 5 | Empty schema (tool with no parameters) | ✅ PASS |
-| 6 | Batch conversion (multiple tools) | ✅ PASS |
-| 7 | Invalid schema (missing required fields) | ✅ PASS |
-| 8 | Schema with additional metadata | ✅ PASS |
+| Test | Description                                     | Status  |
+| ---- | ----------------------------------------------- | ------- |
+| 1    | Basic schema conversion (Read tool)             | ✅ PASS |
+| 2    | Complex schema with nested objects (Write tool) | ✅ PASS |
+| 3    | Schema with array type (Bash tool)              | ✅ PASS |
+| 4    | Schema with union types (oneOf/anyOf)           | ✅ PASS |
+| 5    | Empty schema (tool with no parameters)          | ✅ PASS |
+| 6    | Batch conversion (multiple tools)               | ✅ PASS |
+| 7    | Invalid schema (missing required fields)        | ✅ PASS |
+| 8    | Schema with additional metadata                 | ✅ PASS |
 
 **Key Features:**
+
 - Converts Anthropic `input_schema` → OpenAI `parameters` format
 - Preserves all schema properties (type, properties, required, enum, etc.)
 - Validates required fields (name, input_schema)
@@ -54,20 +57,21 @@ Successfully implemented tool calling support for custom MLX servers through com
 **File:** `/tests/unit/test-tool-response-parsing.js`
 **Module:** `/src/tool-response-parser.ts`
 
-| Test | Description | Status |
-|------|-------------|--------|
-| 1 | Parse complete OpenAI tool call | ✅ PASS |
-| 2 | Parse complex tool arguments | ✅ PASS |
-| 3 | Parse multiple tool calls | ✅ PASS |
-| 4 | Handle malformed JSON in arguments | ✅ PASS |
-| 5 | Assemble streaming tool call from deltas | ✅ PASS |
-| 6 | Handle incomplete streaming (qwen3-coder fix) | ✅ PASS |
-| 7 | Handle out-of-order chunks | ✅ PASS |
-| 8 | Parse tool call with empty arguments | ✅ PASS |
-| 9 | Validate tool call ID format | ✅ PASS |
-| 10 | Parameter validation (required fields) | ✅ PASS |
+| Test | Description                                   | Status  |
+| ---- | --------------------------------------------- | ------- |
+| 1    | Parse complete OpenAI tool call               | ✅ PASS |
+| 2    | Parse complex tool arguments                  | ✅ PASS |
+| 3    | Parse multiple tool calls                     | ✅ PASS |
+| 4    | Handle malformed JSON in arguments            | ✅ PASS |
+| 5    | Assemble streaming tool call from deltas      | ✅ PASS |
+| 6    | Handle incomplete streaming (qwen3-coder fix) | ✅ PASS |
+| 7    | Handle out-of-order chunks                    | ✅ PASS |
+| 8    | Parse tool call with empty arguments          | ✅ PASS |
+| 9    | Validate tool call ID format                  | ✅ PASS |
+| 10   | Parameter validation (required fields)        | ✅ PASS |
 
 **Key Features:**
+
 - Converts OpenAI `tool_calls` → Anthropic `tool_use` format
 - Parses JSON arguments with error handling
 - Assembles streaming tool calls from deltas (handles qwen3-coder pattern)
@@ -80,13 +84,13 @@ Successfully implemented tool calling support for custom MLX servers through com
 
 ### Test Files
 
-| File | Tests | Description |
-|------|-------|-------------|
-| `test-mlx-server-basic-tools.js` | 5 | Basic Read, Write, Bash tool calling |
-| `test-mlx-server-streaming-tools.js` | 6 | Streaming tool parameter deltas |
-| `test-mlx-server-multiple-tools.js` | 6 | Multiple tools in one request |
-| `test-mlx-server-tool-errors.js` | 10 | Error handling (invalid params, server errors) |
-| `test-mlx-server-large-responses.js` | 8 | Large file reads (10KB-100KB) |
+| File                                 | Tests | Description                                    |
+| ------------------------------------ | ----- | ---------------------------------------------- |
+| `test-mlx-server-basic-tools.js`     | 5     | Basic Read, Write, Bash tool calling           |
+| `test-mlx-server-streaming-tools.js` | 6     | Streaming tool parameter deltas                |
+| `test-mlx-server-multiple-tools.js`  | 6     | Multiple tools in one request                  |
+| `test-mlx-server-tool-errors.js`     | 10    | Error handling (invalid params, server errors) |
+| `test-mlx-server-large-responses.js` | 8     | Large file reads (10KB-100KB)                  |
 
 ### Basic Tools Tests (5 tests)
 
@@ -99,6 +103,7 @@ Successfully implemented tool calling support for custom MLX servers through com
 5. **testNoToolsNeeded**: Model responds without tools when not needed
 
 **Requirements:**
+
 - MLX server running at `http://localhost:8081` (or `$MLX_SERVER_URL`)
 - Safe command execution (only in `/tmp`, no destructive commands)
 - File I/O operations isolated to test directories
@@ -108,6 +113,7 @@ Successfully implemented tool calling support for custom MLX servers through com
 **File:** `test-mlx-server-streaming-tools.js`
 
 Tests streaming tool parameter assembly:
+
 - Streaming tool name/ID in first chunk
 - Streaming JSON parameters via `input_json_delta` events
 - Complete tool call assembled from deltas
@@ -119,6 +125,7 @@ Tests streaming tool parameter assembly:
 **File:** `test-mlx-server-multiple-tools.js`
 
 Tests multiple tool calls in one request:
+
 - Sequential tool calls (Read → Write)
 - Parallel tool calls (Read + Bash)
 - Tool call ordering preservation
@@ -130,6 +137,7 @@ Tests multiple tool calls in one request:
 **File:** `test-mlx-server-tool-errors.js`
 
 Tests error scenarios:
+
 - Invalid tool parameters (missing required fields)
 - Malformed JSON in tool arguments
 - Server not running / connection errors
@@ -146,6 +154,7 @@ Tests error scenarios:
 **File:** `test-mlx-server-large-responses.js`
 
 Tests handling of large tool responses:
+
 - 10KB file reads
 - 50KB file reads
 - 100KB file reads
@@ -190,6 +199,7 @@ MLX_SERVER_URL=http://localhost:9000 node tests/integration/test-mlx-server-basi
 ```
 
 **Note:** Integration tests require:
+
 - MLX server running with a loaded model
 - Server listening on port 8081 (or custom via `$MLX_SERVER_URL`)
 - At least 8GB RAM for model inference
@@ -204,10 +214,12 @@ MLX_SERVER_URL=http://localhost:9000 node tests/integration/test-mlx-server-basi
 **Purpose:** Convert Anthropic tool definitions to OpenAI function calling format
 
 **Functions:**
+
 - `convertAnthropicToolToOpenAI(tool)`: Convert single tool
 - `convertAnthropicToolsToOpenAI(tools)`: Convert array of tools
 
 **Transformation:**
+
 ```typescript
 // Input: Anthropic format
 {
@@ -240,11 +252,13 @@ MLX_SERVER_URL=http://localhost:9000 node tests/integration/test-mlx-server-basi
 **Purpose:** Convert OpenAI tool_calls responses back to Anthropic tool_use format
 
 **Functions:**
+
 - `parseOpenAIToolCall(toolCall)`: Parse complete tool call
 - `assembleStreamingToolCall(deltas)`: Assemble streaming deltas
 - `parseOpenAIToolCalls(toolCalls)`: Parse array of tool calls
 
 **Transformation:**
+
 ```typescript
 // Input: OpenAI tool_call
 {
@@ -301,6 +315,7 @@ MLX_SERVER_URL=http://localhost:9000 node tests/integration/test-mlx-server-basi
 ## Security Considerations
 
 **Test-Level Security:**
+
 - ✅ File operations restricted to `/tmp` directory
 - ✅ Bash commands sanitized (no destructive commands)
 - ✅ Path traversal prevention tested
@@ -308,6 +323,7 @@ MLX_SERVER_URL=http://localhost:9000 node tests/integration/test-mlx-server-basi
 - ✅ No secrets in test files (safe test data only)
 
 **Production-Level Security:**
+
 - Tool parameter validation (separate from parsing)
 - Command whitelist enforcement (server-side)
 - File path validation (prevent directory traversal)
@@ -317,20 +333,20 @@ MLX_SERVER_URL=http://localhost:9000 node tests/integration/test-mlx-server-basi
 
 ## Test Coverage Summary
 
-| Category | Tests | Passing | Coverage |
-|----------|-------|---------|----------|
-| **Unit Tests** | 18 | 18 | 100% |
-| Schema Conversion | 8 | 8 | 100% |
-| Response Parsing | 10 | 10 | 100% |
-| **Integration Tests** | 35 | Ready* | N/A |
-| Basic Tools | 5 | Ready* | - |
-| Streaming | 6 | Ready* | - |
-| Multiple Tools | 6 | Ready* | - |
-| Error Handling | 10 | Ready* | - |
-| Large Responses | 8 | Ready* | - |
-| **Total** | **53** | **18** | - |
+| Category              | Tests  | Passing | Coverage |
+| --------------------- | ------ | ------- | -------- |
+| **Unit Tests**        | 18     | 18      | 100%     |
+| Schema Conversion     | 8      | 8       | 100%     |
+| Response Parsing      | 10     | 10      | 100%     |
+| **Integration Tests** | 35     | Ready\* | N/A      |
+| Basic Tools           | 5      | Ready\* | -        |
+| Streaming             | 6      | Ready\* | -        |
+| Multiple Tools        | 6      | Ready\* | -        |
+| Error Handling        | 10     | Ready\* | -        |
+| Large Responses       | 8      | Ready\* | -        |
+| **Total**             | **53** | **18**  | -        |
 
-*Integration tests require MLX server running with loaded model
+\*Integration tests require MLX server running with loaded model
 
 ---
 
@@ -364,6 +380,7 @@ MLX_SERVER_URL=http://localhost:9000 node tests/integration/test-mlx-server-basi
 The tool calling feature is production-ready for use with custom MLX servers. The comprehensive test suite ensures reliable schema conversion, response parsing, and error handling across various edge cases and streaming patterns.
 
 **Files Modified:**
+
 - ✅ `src/tool-schema-converter.ts` (new)
 - ✅ `src/tool-response-parser.ts` (new)
 - ✅ `tests/unit/test-tool-schema-conversion.js` (updated to use dist/)
@@ -371,10 +388,12 @@ The tool calling feature is production-ready for use with custom MLX servers. Th
 - ✅ `tests/run_all_tests.js` (added new tests to runner)
 
 **Files Ready (Existing):**
+
 - ✅ `scripts/mlx-server.py` (tool calling already implemented)
 - ✅ `tests/integration/test-mlx-server-*.js` (5 files, 35 tests)
 
 **Test Execution:**
+
 ```bash
 npm run test:unit  # 18/18 unit tests pass ✅
 ```

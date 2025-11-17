@@ -4,12 +4,12 @@ Complete implementation guide for the three production hardening modules: ErrorH
 
 ## Module Overview
 
-| Module | Location | Lines | Classes | Methods | Tests |
-|--------|----------|-------|---------|---------|-------|
-| ErrorHandler | `scripts/lib/error_handler.py` | 381 | 4 | 12 | 44 |
-| MetricsCollector | `scripts/lib/metrics_collector.py` | 373 | 2 | 15 | 52 |
-| ConfigValidator | `scripts/lib/config_validator.py` | 434 | 3 | 8 | 60 |
-| **Total** | | 1188 | 9 | 35 | 156 |
+| Module           | Location                           | Lines | Classes | Methods | Tests |
+| ---------------- | ---------------------------------- | ----- | ------- | ------- | ----- |
+| ErrorHandler     | `scripts/lib/error_handler.py`     | 381   | 4       | 12      | 44    |
+| MetricsCollector | `scripts/lib/metrics_collector.py` | 373   | 2       | 15      | 52    |
+| ConfigValidator  | `scripts/lib/config_validator.py`  | 434   | 3       | 8       | 60    |
+| **Total**        |                                    | 1188  | 9       | 35      | 156   |
 
 ## ErrorHandler Implementation
 
@@ -34,6 +34,7 @@ Error Tracking:
 ### Exception Classes
 
 **CacheError**
+
 ```python
 class CacheError(Exception):
     """Raised when cache operations fail"""
@@ -41,6 +42,7 @@ class CacheError(Exception):
 ```
 
 **OOMError**
+
 ```python
 class OOMError(Exception):
     """Raised when out-of-memory condition detected"""
@@ -48,6 +50,7 @@ class OOMError(Exception):
 ```
 
 **NetworkError**
+
 ```python
 class NetworkError(Exception):
     """Raised when network operations fail"""
@@ -141,7 +144,7 @@ def handle_oom_error(self, error: OOMError) -> Dict[str, Any]:
     """
 ```
 
-**`retry_with_backoff(fn: Callable, *args, **kwargs) -> Any`**
+**`retry_with_backoff(fn: Callable, \*args, **kwargs) -> Any`\*\*
 
 Network retry with exponential backoff:
 
@@ -216,11 +219,13 @@ Other Methods:
 ### Security Implications
 
 **VUL-003: Path Disclosure**
+
 - Solution: `sanitize_error_message()` removes all file paths
 - All error messages passed through sanitizer before logging/returning
 - Tests verify no paths leak in error responses
 
 **VUL-005: Retry Storms**
+
 - Solution: Exponential backoff prevents hammering remote service
 - Max 3 retries with 100ms, 200ms, 400ms delays
 - Configurable to adjust for different network conditions
@@ -291,6 +296,7 @@ self.lock = threading.Lock()     # Protects all shared state
 **Cache Methods:**
 
 **`record_cache_hit() -> None`**
+
 ```python
 def record_cache_hit(self) -> None:
     """Record a cache hit (thread-safe)"""
@@ -299,6 +305,7 @@ def record_cache_hit(self) -> None:
 ```
 
 **`record_cache_miss() -> None`**
+
 ```python
 def record_cache_miss(self) -> None:
     """Record a cache miss (thread-safe)"""
@@ -307,6 +314,7 @@ def record_cache_miss(self) -> None:
 ```
 
 **`get_cache_stats() -> Dict[str, Any]`**
+
 ```python
 def get_cache_stats(self) -> Dict[str, Any]:
     """
@@ -322,6 +330,7 @@ def get_cache_stats(self) -> Dict[str, Any]:
 ```
 
 Calculation:
+
 ```
 hit_rate = hits / (hits + misses)
 # Returns 0.0 if no requests yet (avoids division by zero)
@@ -330,6 +339,7 @@ hit_rate = hits / (hits + misses)
 **Latency Methods:**
 
 **`record_latency(latency_ms: float) -> None`**
+
 ```python
 def record_latency(self, latency_ms: float) -> None:
     """
@@ -344,6 +354,7 @@ def record_latency(self, latency_ms: float) -> None:
 ```
 
 **`get_latency_stats() -> Dict[str, Any]`**
+
 ```python
 def get_latency_stats(self) -> Dict[str, Any]:
     """
@@ -360,6 +371,7 @@ def get_latency_stats(self) -> Dict[str, Any]:
 ```
 
 Percentile Calculation:
+
 ```python
 def _percentile(self, sorted_values: List[float], percentile: int) -> float:
     """
@@ -379,6 +391,7 @@ def _percentile(self, sorted_values: List[float], percentile: int) -> float:
 **Memory Methods:**
 
 **`record_memory_usage() -> None`**
+
 ```python
 def record_memory_usage(self) -> None:
     """
@@ -392,6 +405,7 @@ def record_memory_usage(self) -> None:
 ```
 
 **`get_memory_stats() -> Dict[str, Any]`**
+
 ```python
 def get_memory_stats() -> Dict[str, Any]:
     """
@@ -410,6 +424,7 @@ def get_memory_stats() -> Dict[str, Any]:
 **Throughput Methods:**
 
 **`record_throughput() -> None`**
+
 ```python
 def record_throughput(self) -> None:
     """Record a request for throughput calculation"""
@@ -419,6 +434,7 @@ def record_throughput(self) -> None:
 ```
 
 **`get_throughput_stats() -> Dict[str, Any]`**
+
 ```python
 def get_throughput_stats() -> Dict[str, Any]:
     """
@@ -434,6 +450,7 @@ def get_throughput_stats() -> Dict[str, Any]:
 ```
 
 Calculation:
+
 ```
 # Use 5-minute rolling window
 window_start = time.time() - 300
@@ -444,6 +461,7 @@ rps = requests_in_window / 300
 **Export Methods:**
 
 **`export_metrics_json() -> Dict[str, Any]`**
+
 ```python
 def export_metrics_json(self) -> Dict[str, Any]:
     """
@@ -462,6 +480,7 @@ def export_metrics_json(self) -> Dict[str, Any]:
 ```
 
 **`export_metrics_prometheus() -> str`**
+
 ```python
 def export_metrics_prometheus(self) -> str:
     """
@@ -521,6 +540,7 @@ def validate_all_config(self) -> Dict[str, Any]:
 ### Exception Classes
 
 **ValidationError**
+
 ```python
 class ValidationError(Exception):
     """Raised when configuration validation fails (non-fatal)"""
@@ -528,6 +548,7 @@ class ValidationError(Exception):
 ```
 
 **DependencyError**
+
 ```python
 class DependencyError(Exception):
     """Raised when required dependency is missing (fatal)"""
@@ -539,6 +560,7 @@ class DependencyError(Exception):
 **Port Validation:**
 
 **`validate_port(port: Any) -> Dict[str, Any]`**
+
 ```python
 def validate_port(self, port: Any) -> Dict[str, Any]:
     """
@@ -565,6 +587,7 @@ def validate_port(self, port: Any) -> Dict[str, Any]:
 ```
 
 Range Checking:
+
 ```
 Port < 1: Invalid
 Port > 65535: Invalid
@@ -613,6 +636,7 @@ def validate_env_var(
 ```
 
 Type Conversion:
+
 ```python
 'str' → Use as-is
 'int' → int(value), validate min/max
@@ -623,6 +647,7 @@ Type Conversion:
 **Model Path Validation:**
 
 **`validate_model_path(model_path: str) -> Dict[str, Any]`**
+
 ```python
 def validate_model_path(self, model_path: str) -> Dict[str, Any]:
     """
@@ -655,6 +680,7 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
 **Dependency Validation:**
 
 **`validate_dependency(module_name: str, min_version: Optional[str] = None) -> Dict[str, Any]`**
+
 ```python
 def validate_dependency(
     self,
@@ -682,6 +708,7 @@ def validate_dependency(
 ```
 
 Version Comparison:
+
 ```
 Compares semantic versions: X.Y.Z
 '2.1.0' >= '2.0.0' → True
@@ -789,12 +816,14 @@ async def metrics(format: str = 'json'):
 Each module has comprehensive unit tests:
 
 **ErrorHandler (44 tests)**
+
 - Cache error handling and thresholds
 - OOM error handling and memory recovery
 - Network retry with exponential backoff
 - Error message sanitization
 
 **MetricsCollector (52 tests)**
+
 - Cache hit/miss tracking
 - Latency percentile calculation
 - Memory tracking and peak detection
@@ -802,6 +831,7 @@ Each module has comprehensive unit tests:
 - JSON and Prometheus export formats
 
 **ConfigValidator (60 tests)**
+
 - Port validation (range, privileges)
 - Environment variable validation (type, range)
 - Model path validation
@@ -811,6 +841,7 @@ Each module has comprehensive unit tests:
 ### Integration Tests
 
 **Metrics Endpoint (18 tests)**
+
 - JSON format response structure
 - Prometheus format output
 - Real-time metric updates
@@ -819,6 +850,7 @@ Each module has comprehensive unit tests:
 ### Regression Tests
 
 **Error Recovery (11 tests)**
+
 - Graceful degradation behavior
 - Cache re-enablement after recovery
 - Fallback mode correctness
@@ -827,6 +859,7 @@ Each module has comprehensive unit tests:
 ### Stress Tests
 
 **Stability Testing (100-request suite)**
+
 - Error recovery under sustained load
 - Metric accuracy during high throughput
 - Memory growth monitoring
@@ -837,17 +870,20 @@ Each module has comprehensive unit tests:
 ### Overhead Analysis
 
 **ErrorHandler**
+
 - Per-request overhead: < 1μs (lock acquire/release only)
 - Memory: ~500 bytes fixed + counters
 - Negligible impact on latency
 
 **MetricsCollector**
+
 - Per-metric overhead: < 1μs (append to list, update counter)
 - Memory: ~1KB + samples (configurable retention)
 - Percentile calculation: O(n log n) sorting, ~10ms for 1000 samples
 - Export JSON: ~5ms, Export Prometheus: ~10ms
 
 **ConfigValidator**
+
 - Runs once at startup: ~100ms
 - No per-request overhead
 - Zero impact on throughput
@@ -855,6 +891,7 @@ Each module has comprehensive unit tests:
 ### Thread Safety
 
 All three modules use:
+
 - `threading.Lock()` for protecting shared state
 - Minimal critical sections to reduce contention
 - Copy-on-export pattern (readers don't block writers)
@@ -864,6 +901,7 @@ All three modules use:
 ### VUL-003: Path Disclosure Prevention
 
 ErrorHandler sanitizes all error messages:
+
 - Regex removes file paths: `/[a-zA-Z0-9/_.-]+`
 - Removes line numbers: `:[0-9]+:`
 - Removes sensitive keywords: password, key, secret, token, api
@@ -872,6 +910,7 @@ ErrorHandler sanitizes all error messages:
 ### VUL-004: Unbounded Memory Growth
 
 MetricsCollector prevents memory issues:
+
 - Latency samples: Configurable limit (default: unlimited, audit log if > 10000)
 - Memory tracking: Current + peak (no accumulated history)
 - Throughput: Rolling 5-minute window (bounded to 300 timestamps)
@@ -879,6 +918,7 @@ MetricsCollector prevents memory issues:
 ### VUL-005: Network Retry Storms
 
 ErrorHandler prevents retry storms:
+
 - Exponential backoff: 100ms → 200ms → 400ms
 - Max 3 retries (configurable)
 - Circuit breaker: Disable cache after threshold reached

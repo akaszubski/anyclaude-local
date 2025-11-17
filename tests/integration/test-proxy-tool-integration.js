@@ -16,8 +16,13 @@ const assert = require("assert");
 const http = require("http");
 
 // Import the converter modules from dist
-const { convertAnthropicToolsToOpenAI } = require("../../dist/tool-schema-converter.js");
-const { parseOpenAIToolCall, assembleStreamingToolCall } = require("../../dist/tool-response-parser.js");
+const {
+  convertAnthropicToolsToOpenAI,
+} = require("../../dist/tool-schema-converter.js");
+const {
+  parseOpenAIToolCall,
+  assembleStreamingToolCall,
+} = require("../../dist/tool-response-parser.js");
 
 let passed = 0;
 let failed = 0;
@@ -70,7 +75,10 @@ function testSchemaConversion() {
     assert.strictEqual(openAITools.length, 2);
     assert.strictEqual(openAITools[0].type, "function");
     assert.strictEqual(openAITools[0].function.name, "Read");
-    assert.strictEqual(openAITools[0].function.description, "Read contents of a file");
+    assert.strictEqual(
+      openAITools[0].function.description,
+      "Read contents of a file"
+    );
     assert.deepStrictEqual(
       openAITools[0].function.parameters,
       anthropicTools[0].input_schema
@@ -130,7 +138,11 @@ function testStreamingAssembly() {
       { type: "tool_call_start", id: "call_xyz789", name: "Write" },
       { type: "tool_call_delta", id: "call_xyz789", delta: '{"file' },
       { type: "tool_call_delta", id: "call_xyz789", delta: '_path":"/output' },
-      { type: "tool_call_delta", id: "call_xyz789", delta: '.txt","content":"Hello"}' },
+      {
+        type: "tool_call_delta",
+        id: "call_xyz789",
+        delta: '.txt","content":"Hello"}',
+      },
       { type: "tool_call_end", id: "call_xyz789" },
     ];
 
@@ -328,8 +340,12 @@ function runTests() {
   } else {
     console.log("\n✅ INTEGRATION TEST PASSED");
     console.log("\nThese modules are actively integrated into the proxy:");
-    console.log("  • tool-schema-converter.ts → anthropic-proxy.ts (line 17, 521)");
-    console.log("  • tool-response-parser.ts → convert-to-anthropic-stream.ts (line 14, 408)");
+    console.log(
+      "  • tool-schema-converter.ts → anthropic-proxy.ts (line 17, 521)"
+    );
+    console.log(
+      "  • tool-response-parser.ts → convert-to-anthropic-stream.ts (line 14, 408)"
+    );
     console.log("\nFull request/response flow:");
     console.log("  1. Claude Code sends Anthropic tools");
     console.log("  2. Proxy logs OpenAI conversion (tool-schema-converter)");

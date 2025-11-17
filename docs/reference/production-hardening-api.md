@@ -23,9 +23,9 @@ GET /v1/metrics?format=prometheus
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `format` | string | `json` | Response format: `json` or `prometheus` |
+| Parameter | Type   | Default | Description                             |
+| --------- | ------ | ------- | --------------------------------------- |
+| `format`  | string | `json`  | Response format: `json` or `prometheus` |
 
 ### Response (JSON Format)
 
@@ -60,24 +60,24 @@ GET /v1/metrics?format=prometheus
 
 **Response Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `timestamp` | float | Unix timestamp of metric collection |
-| `uptime_seconds` | float | Time since server startup |
-| `cache.hits` | int | Total cache hits |
-| `cache.misses` | int | Total cache misses |
-| `cache.hit_rate` | float | Hit rate as percentage (0.0-1.0) |
-| `latency.p50_ms` | float | Median latency (50th percentile) |
-| `latency.p95_ms` | float | 95th percentile latency |
-| `latency.p99_ms` | float | 99th percentile latency |
-| `latency.samples` | int | Number of latency samples collected |
-| `memory.current_mb` | float | Current memory usage in MB |
-| `memory.peak_mb` | float | Peak memory usage since startup |
-| `memory.initial_mb` | float | Memory usage at startup |
-| `memory.growth_mb` | float | Total memory growth since startup |
-| `throughput.requests_per_second` | float | Requests per second (rolling window) |
-| `throughput.total_requests` | int | Total requests since startup |
-| `throughput.window_seconds` | int | Time window for throughput calculation |
+| Field                            | Type  | Description                            |
+| -------------------------------- | ----- | -------------------------------------- |
+| `timestamp`                      | float | Unix timestamp of metric collection    |
+| `uptime_seconds`                 | float | Time since server startup              |
+| `cache.hits`                     | int   | Total cache hits                       |
+| `cache.misses`                   | int   | Total cache misses                     |
+| `cache.hit_rate`                 | float | Hit rate as percentage (0.0-1.0)       |
+| `latency.p50_ms`                 | float | Median latency (50th percentile)       |
+| `latency.p95_ms`                 | float | 95th percentile latency                |
+| `latency.p99_ms`                 | float | 99th percentile latency                |
+| `latency.samples`                | int   | Number of latency samples collected    |
+| `memory.current_mb`              | float | Current memory usage in MB             |
+| `memory.peak_mb`                 | float | Peak memory usage since startup        |
+| `memory.initial_mb`              | float | Memory usage at startup                |
+| `memory.growth_mb`               | float | Total memory growth since startup      |
+| `throughput.requests_per_second` | float | Requests per second (rolling window)   |
+| `throughput.total_requests`      | int   | Total requests since startup           |
+| `throughput.window_seconds`      | int   | Time window for throughput calculation |
 
 ### Response (Prometheus Format)
 
@@ -276,7 +276,7 @@ Returns:
 }
 ```
 
-**`retry_with_backoff(fn: Callable, *args, **kwargs) -> Any`**
+**`retry_with_backoff(fn: Callable, \*args, **kwargs) -> Any`\*\*
 
 Retry operation with exponential backoff.
 

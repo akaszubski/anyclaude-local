@@ -37,7 +37,7 @@ async function sendRequest(messages, tools, stream = false) {
       tools,
       stream,
       temperature: 0.1,
-      max_tokens: 4000
+      max_tokens: 4000,
     });
 
     const chunks = [];
@@ -49,9 +49,9 @@ async function sendRequest(messages, tools, stream = false) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(data)
+          "Content-Length": Buffer.byteLength(data),
         },
-        timeout: TEST_TIMEOUT
+        timeout: TEST_TIMEOUT,
       },
       (res) => {
         let body = "";
@@ -85,7 +85,11 @@ async function sendRequest(messages, tools, stream = false) {
               }
             }
           } else {
-            reject(new Error(`Server error ${res.statusCode}: ${body.substring(0, 200)}`));
+            reject(
+              new Error(
+                `Server error ${res.statusCode}: ${body.substring(0, 200)}`
+              )
+            );
           }
         });
       }
@@ -114,8 +118,8 @@ async function testMediumFileContent() {
   const messages = [
     {
       role: "user",
-      content: `Write 10KB of 'a' characters to ${testFile}`
-    }
+      content: `Write 10KB of 'a' characters to ${testFile}`,
+    },
   ];
 
   const tools = [
@@ -128,12 +132,12 @@ async function testMediumFileContent() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
+            content: { type: "string" },
           },
-          required: ["file_path", "content"]
-        }
-      }
-    }
+          required: ["file_path", "content"],
+        },
+      },
+    },
   ];
 
   try {
@@ -167,8 +171,8 @@ async function testLargeFileContent() {
   const messages = [
     {
       role: "user",
-      content: `Write 100KB of repeated text to ${testFile}`
-    }
+      content: `Write 100KB of repeated text to ${testFile}`,
+    },
   ];
 
   const tools = [
@@ -180,11 +184,11 @@ async function testLargeFileContent() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
-          }
-        }
-      }
-    }
+            content: { type: "string" },
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -223,8 +227,9 @@ async function testDeepNestedJSON() {
   const messages = [
     {
       role: "user",
-      content: "Write a deeply nested JSON config file with multiple levels of objects"
-    }
+      content:
+        "Write a deeply nested JSON config file with multiple levels of objects",
+    },
   ];
 
   const tools = [
@@ -236,11 +241,11 @@ async function testDeepNestedJSON() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
-          }
-        }
-      }
-    }
+            content: { type: "string" },
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -254,7 +259,10 @@ async function testDeepNestedJSON() {
         // Try to parse the nested JSON
         try {
           const nestedData = JSON.parse(args.content);
-          assert.ok(typeof nestedData === "object", "Should be valid JSON object");
+          assert.ok(
+            typeof nestedData === "object",
+            "Should be valid JSON object"
+          );
 
           console.log("   ✅ PASS: Nested JSON handled");
           console.log(`   Content length: ${args.content.length} chars`);
@@ -286,8 +294,8 @@ async function testLongCommandOutput() {
   const messages = [
     {
       role: "user",
-      content: "Run 'ls -la /' to list all files in root directory"
-    }
+      content: "Run 'ls -la /' to list all files in root directory",
+    },
   ];
 
   const tools = [
@@ -297,10 +305,10 @@ async function testLongCommandOutput() {
         name: "Bash",
         parameters: {
           type: "object",
-          properties: { command: { type: "string" } }
-        }
-      }
-    }
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -332,8 +340,9 @@ async function testStreamingLargeParameters() {
   const messages = [
     {
       role: "user",
-      content: "Write a long Python script with multiple functions to /tmp/script.py"
-    }
+      content:
+        "Write a long Python script with multiple functions to /tmp/script.py",
+    },
   ];
 
   const tools = [
@@ -345,11 +354,11 @@ async function testStreamingLargeParameters() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
-          }
-        }
-      }
-    }
+            content: { type: "string" },
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -375,7 +384,9 @@ async function testStreamingLargeParameters() {
     assert.ok(argumentsBuffer.length > 0, "Should have arguments");
 
     console.log("   ✅ PASS: Large parameters streamed successfully");
-    console.log(`   Chunks: ${chunks.length}, Arguments length: ${argumentsBuffer.length}`);
+    console.log(
+      `   Chunks: ${chunks.length}, Arguments length: ${argumentsBuffer.length}`
+    );
     passed++;
   } catch (err) {
     console.log(`   ❌ FAIL: ${err.message}`);
@@ -395,8 +406,8 @@ async function testMultipleLargeToolCalls() {
   const messages = [
     {
       role: "user",
-      content: `Write 5KB of content to both ${file1} and ${file2}`
-    }
+      content: `Write 5KB of content to both ${file1} and ${file2}`,
+    },
   ];
 
   const tools = [
@@ -408,11 +419,11 @@ async function testMultipleLargeToolCalls() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
-          }
-        }
-      }
-    }
+            content: { type: "string" },
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -452,8 +463,8 @@ async function testArrayParameters() {
   const messages = [
     {
       role: "user",
-      content: "Run multiple commands: pwd, date, whoami, hostname, uname -a"
-    }
+      content: "Run multiple commands: pwd, date, whoami, hostname, uname -a",
+    },
   ];
 
   const tools = [
@@ -467,12 +478,12 @@ async function testArrayParameters() {
             commands: {
               type: "array",
               items: { type: "string" },
-              description: "List of commands to run"
-            }
-          }
-        }
-      }
-    }
+              description: "List of commands to run",
+            },
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -511,8 +522,8 @@ async function testUnicodeInLargeContent() {
   const messages = [
     {
       role: "user",
-      content: "Write a file with Unicode text: Hello 世界 🌍 Привет"
-    }
+      content: "Write a file with Unicode text: Hello 世界 🌍 Привет",
+    },
   ];
 
   const tools = [
@@ -524,11 +535,11 @@ async function testUnicodeInLargeContent() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
-          }
-        }
-      }
-    }
+            content: { type: "string" },
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -554,10 +565,14 @@ async function testUnicodeInLargeContent() {
 }
 
 async function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("INTEGRATION TEST: Large Tool Call Responses");
   console.log("Phase 1.2 - TDD Red Phase");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   console.log(`\nTesting server at: ${MLX_SERVER_URL}`);
   console.log("Timeout: 60 seconds for large content\n");
@@ -571,9 +586,13 @@ async function runTests() {
   await testArrayParameters();
   await testUnicodeInLargeContent();
 
-  console.log("\n================================================================================");
+  console.log(
+    "\n================================================================================"
+  );
   console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   if (failed > 0) {
     console.log("\n⚠️  Some tests failed - expected in TDD red phase!");

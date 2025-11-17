@@ -25,17 +25,20 @@ TOTAL: 60+ test methods ready for implementation
 ## Test Files Created
 
 ### 1. `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/unit/test_ram_cache.py`
+
 **23 KB | 36 Tests | 6 Test Classes**
 
 #### Test Classes and Coverage
 
 **TestInMemoryKVCacheManagerBasics** (11 tests)
+
 - Basic operations: set, get, delete, clear
 - Error handling: empty keys, None values
 - Key overwriting and multiple operations
 - Cache hit/miss tracking and LRU updates
 
 **TestInMemoryKVCacheManagerMetadata** (6 tests)
+
 - Timestamp tracking on cache entries
 - Size calculation in MB
 - Access count incrementation
@@ -43,12 +46,14 @@ TOTAL: 60+ test methods ready for implementation
 - Statistics aggregation (hits, misses, total entries, memory)
 
 **TestInMemoryKVCacheManagerMemoryLimits** (4 tests)
+
 - Memory limit enforcement (max_memory_mb)
 - LRU eviction on memory pressure
 - Correct eviction order (least recently used first)
 - Eviction statistics tracking
 
 **TestInMemoryKVCacheManagerThreadSafety** (6 tests)
+
 - Concurrent set/get: 10 threads x 200 ops = 2,000 total
 - Concurrent set/get: 20 threads x 200 ops = 4,000 total
 - Concurrent reads: 15 threads x 100 reads = 1,500 total (read-heavy)
@@ -56,11 +61,13 @@ TOTAL: 60+ test methods ready for implementation
 - Statistics consistency under concurrent load
 
 **TestInMemoryKVCacheManagerPerformance** (3 tests)
+
 - GET latency: Average < 10ms (100 operations)
 - SET latency: Average < 50ms (50 operations, 1MB values)
 - Metadata retrieval: Average < 5ms (100 operations)
 
 **TestInMemoryKVCacheManagerEdgeCases** (6 tests)
+
 - Very large values: 50MB+ handling
 - Special characters in keys (colons, pipes, slashes, tabs, newlines, UTF-8)
 - Very long keys: 10KB+ strings
@@ -70,11 +77,13 @@ TOTAL: 60+ test methods ready for implementation
 ---
 
 ### 2. `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/integration/test_ram_cache_e2e.py`
+
 **17 KB | 17 Tests | 5 Test Classes**
 
 #### Test Classes and Coverage
 
 **TestRAMCacheE2EBasics** (5 tests)
+
 - Cache persistence across multiple requests
 - Multiple data types: JSON, token IDs, embeddings, model weights
 - Prefix token metadata usage
@@ -82,16 +91,19 @@ TOTAL: 60+ test methods ready for implementation
 - Multi-request session workflows (system prompt + context)
 
 **TestRAMCacheE2EConcurrency** (3 tests)
+
 - Multiple concurrent clients: 5 clients x 20 requests = 100 total
 - Concurrent cache miss handling (10 threads, 50 misses each)
 - Concurrent eviction safety during access (5 threads, 20 ops each)
 
 **TestRAMCacheE2EMemoryManagement** (3 tests)
+
 - Memory stays within limit under load: 100 x 10MB chunks < 550MB limit
 - Eviction prevents OOM: 20 x 50MB chunks without MemoryError
 - Progressive memory growth: Stabilizes near 500MB limit
 
 **TestRAMCacheE2EPerformance** (3 tests)
+
 - Cache hit latency in realistic scenario (100 pre-cached items)
   - Avg latency < 10ms
   - Max latency < 100ms
@@ -100,6 +112,7 @@ TOTAL: 60+ test methods ready for implementation
 - Follow-up request performance: avg latency < 5ms (KEY SCENARIO)
 
 **TestRAMCacheE2EStatistics** (3 tests)
+
 - Statistics accuracy with simple operations (2 entries)
 - Statistics accuracy through full operation set (10 sets, 5 hits, 2 deletes)
 - Hit rate calculation: 4 hits / 5 total = 80%
@@ -107,6 +120,7 @@ TOTAL: 60+ test methods ready for implementation
 ---
 
 ### 3. `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/benchmark_ram_cache.py`
+
 **14 KB | 7 Benchmark Suites**
 
 #### Benchmark Operations
@@ -149,6 +163,7 @@ TOTAL: 60+ test methods ready for implementation
 ## API Surface Defined by Tests
 
 ### Constructor
+
 ```python
 cache = InMemoryKVCacheManager(
     max_memory_mb: int,      # Maximum memory (300000 for M3 Ultra)
@@ -159,25 +174,31 @@ cache = InMemoryKVCacheManager(
 ### Core Methods
 
 #### `set(key: str, value: bytes, prefix_tokens: Optional[int] = None) -> None`
+
 - Stores value with optional metadata
 - Triggers LRU eviction if memory exceeded
 - Updates access time for LRU tracking
 
 #### `get(key: str) -> Optional[bytes]`
+
 - Retrieves value (None if not found)
 - Updates access count and LRU timestamp
 - Increments hit/miss counters
 
 #### `delete(key: str) -> None`
+
 - Removes entry from cache
 - Cleans up metadata and LRU tracking
 
 #### `clear() -> None`
+
 - Removes all entries
 - Resets statistics
 
 #### `get_metadata(key: str) -> Optional[Dict[str, Any]]`
+
 Returns:
+
 ```python
 {
     'timestamp': float,           # When set/last accessed
@@ -188,7 +209,9 @@ Returns:
 ```
 
 #### `get_stats() -> Dict[str, Any]`
+
 Returns:
+
 ```python
 {
     'total_entries': int,         # Number of cached items
@@ -253,37 +276,41 @@ The cache manager must be imported from mlx_server.py
 
 ## Test Coverage Matrix
 
-| Area | Unit | Integration | Benchmark |
-|------|------|-------------|-----------|
-| Basic Operations | ✅ 11 | ✅ 5 | - |
-| Metadata Tracking | ✅ 6 | - | - |
-| Memory Limits | ✅ 4 | ✅ 3 | - |
-| Thread Safety | ✅ 6 | ✅ 3 | - |
-| Performance | ✅ 3 | ✅ 3 | ✅ 7 |
-| Edge Cases | ✅ 6 | - | - |
-| **Total** | **36** | **17** | **7** |
+| Area              | Unit   | Integration | Benchmark |
+| ----------------- | ------ | ----------- | --------- |
+| Basic Operations  | ✅ 11  | ✅ 5        | -         |
+| Metadata Tracking | ✅ 6   | -           | -         |
+| Memory Limits     | ✅ 4   | ✅ 3        | -         |
+| Thread Safety     | ✅ 6   | ✅ 3        | -         |
+| Performance       | ✅ 3   | ✅ 3        | ✅ 7      |
+| Edge Cases        | ✅ 6   | -           | -         |
+| **Total**         | **36** | **17**      | **7**     |
 
 ---
 
 ## Performance Targets Validated by Tests
 
 ### Latency Targets
+
 - **GET latency**: < 10ms average (100 ops)
 - **SET latency**: < 50ms average (50 ops, 1MB values)
 - **Metadata retrieval**: < 5ms average (100 ops)
 - **Follow-up requests**: < 5ms average (key scenario)
 
 ### Throughput Targets
+
 - **Concurrent throughput**: > 10,000 ops/sec (10 threads)
 - **Mixed workload**: 80% reads / 20% writes sustainable
 - **Large values**: 50MB values handled without timeouts
 
 ### Memory Targets
+
 - **Memory limit**: Stays within max_memory_mb (300GB on M3 Ultra)
 - **LRU eviction**: Triggered at memory limit
 - **No OOM**: Eviction prevents out-of-memory errors
 
 ### Speedup Targets
+
 - **vs disk cache**: 50-200x faster retrieval
 - **vs current implementation**: 3-30x faster follow-up requests
 - **Current disk**: 500-2000ms retrieval
@@ -294,21 +321,25 @@ The cache manager must be imported from mlx_server.py
 ## TDD Red Phase Checklist
 
 ✅ **Tests written BEFORE implementation**
+
 - All 60+ test methods imported non-existent InMemoryKVCacheManager
 - Fallback placeholder raises NotImplementedError
 
 ✅ **Tests define complete API**
+
 - Constructor: max_memory_mb, eviction_policy
 - Core methods: set, get, delete, clear
 - Metadata methods: get_metadata, get_stats
 
 ✅ **Tests validate requirements**
+
 - Performance: < 10ms GET latency
 - Scalability: > 10k ops/sec throughput
 - Reliability: Thread-safe concurrent access
 - Correctness: LRU eviction, statistics accuracy
 
 ✅ **Tests will guide implementation**
+
 - Clear pass/fail criteria
 - Performance assertions
 - Edge case handling
@@ -318,13 +349,13 @@ The cache manager must be imported from mlx_server.py
 
 ## Files Created
 
-| File | Size | Tests | Purpose |
-|------|------|-------|---------|
-| `tests/unit/test_ram_cache.py` | 23 KB | 36 | Unit tests for isolated functionality |
-| `tests/integration/test_ram_cache_e2e.py` | 17 KB | 17 | E2E integration tests |
-| `scripts/benchmark_ram_cache.py` | 14 KB | 7 | Performance benchmarks |
-| `tests/TEST-ARTIFACTS-PHASE-2.1-RAM-CACHE.md` | Detailed | - | Test documentation |
-| `TEST-MASTER-REPORT-PHASE-2.1.md` | This | - | Summary report |
+| File                                          | Size     | Tests | Purpose                               |
+| --------------------------------------------- | -------- | ----- | ------------------------------------- |
+| `tests/unit/test_ram_cache.py`                | 23 KB    | 36    | Unit tests for isolated functionality |
+| `tests/integration/test_ram_cache_e2e.py`     | 17 KB    | 17    | E2E integration tests                 |
+| `scripts/benchmark_ram_cache.py`              | 14 KB    | 7     | Performance benchmarks                |
+| `tests/TEST-ARTIFACTS-PHASE-2.1-RAM-CACHE.md` | Detailed | -     | Test documentation                    |
+| `TEST-MASTER-REPORT-PHASE-2.1.md`             | This     | -     | Summary report                        |
 
 **Total**: 60+ test methods, 54 KB of test code
 
@@ -333,6 +364,7 @@ The cache manager must be imported from mlx_server.py
 ## Next Steps for Implementation
 
 ### Phase 1: Implement Core Class
+
 1. Add `InMemoryKVCacheManager` class to `scripts/mlx-server.py`
 2. Implement thread-safe dict with `threading.Lock`
 3. Implement basic set/get/delete/clear methods
@@ -340,6 +372,7 @@ The cache manager must be imported from mlx_server.py
 **Verify**: Run unit tests - should see failures for specific method bugs
 
 ### Phase 2: Implement Memory Management
+
 1. Add memory size calculation in MB
 2. Implement LRU eviction logic
 3. Track access times with OrderedDict or similar
@@ -347,6 +380,7 @@ The cache manager must be imported from mlx_server.py
 **Verify**: Run memory limit tests - should pass
 
 ### Phase 3: Implement Statistics & Metadata
+
 1. Track hits/misses in get()
 2. Store metadata dict per key
 3. Calculate hit rate and total memory
@@ -354,6 +388,7 @@ The cache manager must be imported from mlx_server.py
 **Verify**: Run metadata tests - should pass
 
 ### Phase 4: Validate Performance
+
 1. Ensure GET latency < 10ms
 2. Ensure throughput > 10k ops/sec
 3. Run benchmarks to verify speedup
@@ -361,6 +396,7 @@ The cache manager must be imported from mlx_server.py
 **Verify**: Run benchmark script - should show <10ms GET latency
 
 ### Phase 5: Thread Safety Testing
+
 1. Run concurrent tests with multiple threads
 2. Verify no data races or crashes
 3. Verify statistics consistency

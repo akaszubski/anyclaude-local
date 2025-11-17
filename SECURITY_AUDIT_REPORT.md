@@ -1,4 +1,5 @@
 # SECURITY AUDIT REPORT
+
 ## anyclaude Implementation Review
 
 **Date**: 2025-11-17  
@@ -26,24 +27,27 @@ The codebase demonstrates **strong security fundamentals** with proper secret ma
 ### 1. Secrets Management: PASS
 
 **Findings**:
+
 - ✅ Example config uses placeholder values only (`sk-or-v1-YOUR_API_KEY_HERE`)
 - ✅ `.env` is in `.gitignore` with explicit rules
 - ✅ Active `.env` file exists locally with real keys but is NOT committed
-- ✅ No secrets found in source code files (*.py, *.ts, *.js, *.json)
+- ✅ No secrets found in source code files (_.py, _.ts, _.js, _.json)
 - ✅ Git history search confirms no API keys committed
 - ✅ All API keys accessed via environment variables
 
 **Files Verified**:
+
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/.anyclauderc.example.json` - Uses placeholder
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/.gitignore` - Properly configured
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/.env` - Local only, gitignored
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/mlx-server.py` - No hardcoded keys
 
 **Configuration Examples**:
+
 ```json
 {
   "openrouter": {
-    "apiKey": "sk-or-v1-YOUR_API_KEY_HERE"  // Correct: placeholder only
+    "apiKey": "sk-or-v1-YOUR_API_KEY_HERE" // Correct: placeholder only
   },
   "claude": {
     "description": "Real Anthropic Claude API (requires ANTHROPIC_API_KEY env var)"
@@ -54,6 +58,7 @@ The codebase demonstrates **strong security fundamentals** with proper secret ma
 ### 2. Input Validation: PASS
 
 **Findings**:
+
 - ✅ Model path validated before loading (line 1798-1800)
 - ✅ Request parameters have sensible defaults
 - ✅ No unsafe string interpolation in command execution
@@ -61,6 +66,7 @@ The codebase demonstrates **strong security fundamentals** with proper secret ma
 - ✅ Temperature and max_tokens accept safe defaults
 
 **Code Review**:
+
 ```python
 # Line 1798-1800: Safe path validation
 if not Path(args.model).exists():
@@ -69,6 +75,7 @@ if not Path(args.model).exists():
 ```
 
 **Parameter Handling** (Line 1089-1090):
+
 ```python
 temperature = request_body.get("temperature", 0.7)  # Default provided
 max_tokens = request_body.get("max_tokens", 1024)   # Default provided
@@ -78,12 +85,14 @@ messages = request_body.get("messages", [])         # Default provided
 ### 3. Path Traversal Prevention: PASS
 
 **Findings**:
+
 - ✅ Cache paths use hashed filenames (not user input)
 - ✅ Model path validated at startup (before server runs)
 - ✅ No user-controlled paths in file operations
 - ✅ KV cache directory explicitly configured
 
 **Cache Path Implementation** (Line 252-254):
+
 ```python
 def _get_cache_path(self, prompt_hash: str) -> str:
     """Get cache file path for a given prompt hash"""
@@ -94,6 +103,7 @@ def _get_cache_path(self, prompt_hash: str) -> str:
 ### 4. SQL Injection Risk: N/A
 
 **Findings**:
+
 - ✅ No SQL queries or database operations
 - ✅ No ORM interactions
 - ✅ Application uses in-memory caching only
@@ -101,6 +111,7 @@ def _get_cache_path(self, prompt_hash: str) -> str:
 ### 5. XSS Prevention: N/A
 
 **Findings**:
+
 - ✅ Server-side only application (no HTML templates)
 - ✅ JSON responses only (no unescaped HTML)
 - ✅ No templating engines used
@@ -108,12 +119,14 @@ def _get_cache_path(self, prompt_hash: str) -> str:
 ### 6. Dependency Security: PASS
 
 **Findings**:
+
 - ✅ Uses standard Python packages (mlx-lm, fastapi, uvicorn)
 - ✅ No deprecated or known-vulnerable versions pinned
 - ✅ Uses async/await patterns (no blocking operations on critical path)
 - ✅ Thread safety via GPU lock (prevents concurrent GPU operations)
 
 **Verified Packages**:
+
 - `fastapi` - Well-maintained, no known critical vulnerabilities
 - `uvicorn` - Standard ASGI server, actively maintained
 - `mlx-lm` - Production MLX model loading library
@@ -122,6 +135,7 @@ def _get_cache_path(self, prompt_hash: str) -> str:
 ### 7. Authentication/Authorization: N/A
 
 **Findings**:
+
 - ✅ Local server (no remote authentication needed)
 - ✅ Listens on localhost by default (line 436: `host: str = "0.0.0.0"`)
 - ✅ No API key validation (expected for local models)
@@ -130,12 +144,14 @@ def _get_cache_path(self, prompt_hash: str) -> str:
 ### 8. Error Handling: PASS
 
 **Findings**:
+
 - ✅ Graceful error messages without sensitive data exposure
 - ✅ GPU errors caught and logged safely (line 1081-1083)
 - ✅ Model loading failures handled with fallback to demo mode
 - ✅ Request errors return JSON with safe messages (line 1026-1032)
 
 **Error Handling Example** (Line 1026-1032):
+
 ```python
 except Exception as e:
     logger.error(f"Chat completion error: {e}")
@@ -153,6 +169,7 @@ except Exception as e:
 ### 9. Logging Security: PASS
 
 **Findings**:
+
 - ✅ Sensitive request content logged only at debug level
 - ✅ Cache keys logged without revealing model output
 - ✅ GPU errors logged safely
@@ -160,18 +177,18 @@ except Exception as e:
 
 ### 10. OWASP Top 10 Compliance: PASS
 
-| OWASP Risk | Status | Notes |
-|-----------|--------|-------|
-| A01:2021 - Broken Access Control | PASS | Local server, no auth needed |
-| A02:2021 - Cryptographic Failures | PASS | Uses environment variables for secrets |
-| A03:2021 - Injection | PASS | No database queries, safe parameter handling |
-| A04:2021 - Insecure Design | PASS | Proper defaults, safe fallbacks |
-| A05:2021 - Security Misconfiguration | CAUTION | Listens on 0.0.0.0 by default |
-| A06:2021 - Vulnerable Components | PASS | Standard maintained packages |
-| A07:2021 - Identification Issues | N/A | No user identification |
-| A08:2021 - Software/Data Integrity | PASS | Cache validation via versioning |
-| A09:2021 - Logging Issues | PASS | Appropriate logging levels |
-| A10:2021 - SSRF | PASS | No external API calls |
+| OWASP Risk                           | Status  | Notes                                        |
+| ------------------------------------ | ------- | -------------------------------------------- |
+| A01:2021 - Broken Access Control     | PASS    | Local server, no auth needed                 |
+| A02:2021 - Cryptographic Failures    | PASS    | Uses environment variables for secrets       |
+| A03:2021 - Injection                 | PASS    | No database queries, safe parameter handling |
+| A04:2021 - Insecure Design           | PASS    | Proper defaults, safe fallbacks              |
+| A05:2021 - Security Misconfiguration | CAUTION | Listens on 0.0.0.0 by default                |
+| A06:2021 - Vulnerable Components     | PASS    | Standard maintained packages                 |
+| A07:2021 - Identification Issues     | N/A     | No user identification                       |
+| A08:2021 - Software/Data Integrity   | PASS    | Cache validation via versioning              |
+| A09:2021 - Logging Issues            | PASS    | Appropriate logging levels                   |
+| A10:2021 - SSRF                      | PASS    | No external API calls                        |
 
 ---
 
@@ -183,7 +200,7 @@ except Exception as e:
 ✅ No SQL injection risks  
 ✅ No XSS vulnerabilities  
 ✅ No path traversal issues  
-✅ No authentication bypasses  
+✅ No authentication bypasses
 
 ---
 
@@ -196,12 +213,14 @@ except Exception as e:
 **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/mlx-server.py:436`
 
 **Current Code**:
+
 ```python
 def __init__(self, model_path: str, port: int = 8081, host: str = "0.0.0.0"):
     self.host = host  # Default: 0.0.0.0 (all interfaces)
 ```
 
 **Recommendation**:
+
 ```python
 def __init__(self, model_path: str, port: int = 8081, host: str = "127.0.0.1"):
     self.host = host  # Default: 127.0.0.1 (localhost only)
@@ -220,11 +239,13 @@ def __init__(self, model_path: str, port: int = 8081, host: str = "127.0.0.1"):
 **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/mlx-server.py:1090`
 
 **Current Code**:
+
 ```python
 max_tokens = request_body.get("max_tokens", 1024)
 ```
 
 **Recommendation**:
+
 ```python
 max_tokens = request_body.get("max_tokens", 1024)
 # Clamp to safe range
@@ -242,6 +263,7 @@ max_tokens = min(max(max_tokens, 1), 262144)  # 1 to 262K tokens max
 **Issue**: Large request bodies could potentially cause memory exhaustion.
 
 **Recommendation**: Add FastAPI middleware to validate request size:
+
 ```python
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
@@ -264,6 +286,7 @@ async def validate_content_length(request: Request, call_next):
 **Issue**: No explicit documentation of security assumptions and threat model.
 
 **Recommendation**: Add to CLAUDE.md or new SECURITY.md:
+
 ```markdown
 ## Security Model
 
@@ -272,11 +295,13 @@ This application is designed for **local development use only**.
 ### Threat Model
 
 **In Scope (Mitigated)**:
+
 - Local code execution via malicious model output
 - GPU resource exhaustion
 - Accidental exposure of local files to the model
 
 **Out of Scope (Assume Safe)**:
+
 - Network-based attacks (local only)
 - Malicious users with shell access (already compromised)
 - API key theft (users responsible for env var security)
@@ -314,7 +339,7 @@ This application is designed for **local development use only**.
 - ✅ Cache versioning prevents stale responses
 
 **Lines of Code**: 1,803  
-**Security Issues**: 0 Critical, 2 Medium (recommendations)  
+**Security Issues**: 0 Critical, 2 Medium (recommendations)
 
 ---
 
@@ -364,6 +389,7 @@ This application is designed for **local development use only**.
 **Secrets Found in Git History**: None
 
 **Verified**:
+
 ```bash
 git log --all -S "sk-" --oneline
 # Results: Only legitimate commits mentioning "sk-or-v1" placeholder
@@ -396,7 +422,7 @@ git fsck --lost-found
 
 ✅ All environment files properly excluded  
 ✅ Example files explicitly allowed  
-✅ No exceptions for secret files  
+✅ No exceptions for secret files
 
 ---
 
@@ -436,7 +462,7 @@ anyclaude demonstrates **strong security practices** with proper secret manageme
 ✅ **Secrets Management**: Best practices followed  
 ✅ **Input Validation**: Proper with defaults  
 ✅ **Error Handling**: Safe and non-disclosive  
-✅ **Dependency Management**: Standard, maintained packages  
+✅ **Dependency Management**: Standard, maintained packages
 
 ---
 

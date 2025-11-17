@@ -13,6 +13,7 @@
 ```
 
 This document will be updated with actual test results after:
+
 1. Implementation of tool schema conversion
 2. Implementation of tool response parsing
 3. Server tool calling support verification
@@ -171,11 +172,13 @@ RESULTS: 8 passed, 0 failed
 **Total Tests Written**: 51
 
 **By Category**:
+
 - Unit Tests: 18 tests (35%)
 - Integration Tests: 35 tests (69%)
 - Manual Tests: 1 script
 
 **By Focus Area**:
+
 - Schema conversion: 8 tests
 - Response parsing: 10 tests
 - Basic tools: 5 tests
@@ -189,15 +192,18 @@ RESULTS: 8 passed, 0 failed
 ## Performance Metrics (To Be Measured)
 
 ### Unit Tests
+
 - **Expected runtime**: < 1 second
 - **No server required**: Can run offline
 
 ### Integration Tests
+
 - **Expected runtime**: 5-10 minutes (with model inference)
 - **Server required**: MLX server with model loaded
 - **Timeout**: 30-60 seconds per test
 
 ### Resource Usage
+
 - **Memory**: Monitor for large responses (100KB tests)
 - **CPU**: Track model inference time
 - **Network**: Local HTTP requests only
@@ -242,12 +248,14 @@ RESULTS: 8 passed, 0 failed
 ### Immediate (RED → GREEN)
 
 1. **Implement schema converter**:
+
    ```bash
    # Create src/tool-schema-converter.ts
    # Implement convertAnthropicToolToOpenAI()
    ```
 
 2. **Implement response parser**:
+
    ```bash
    # Create src/tool-response-parser.ts
    # Implement parseOpenAIToolCall()
@@ -255,12 +263,14 @@ RESULTS: 8 passed, 0 failed
    ```
 
 3. **Verify server**:
+
    ```bash
    # Test scripts/mlx-server.py with tool calling
    # Confirm model supports tools
    ```
 
 4. **Run tests**:
+
    ```bash
    # Unit tests first
    node tests/unit/test-tool-schema-conversion.js
@@ -292,18 +302,21 @@ RESULTS: 8 passed, 0 failed
 ## Metrics to Track
 
 ### Test Quality
+
 - [ ] Pass rate: Target 80%+
 - [ ] Coverage: Target 80%+
 - [ ] False positives: < 5%
 - [ ] False negatives: 0%
 
 ### Performance
+
 - [ ] Unit test runtime: < 1s
 - [ ] Integration test runtime: < 10 min
 - [ ] Server startup time: < 60s
 - [ ] Model inference time: < 30s per request
 
 ### Reliability
+
 - [ ] Flaky tests: 0
 - [ ] Tests timeout: < 5%
 - [ ] Server crashes: 0
@@ -312,11 +325,13 @@ RESULTS: 8 passed, 0 failed
 ## Test Execution Log
 
 ### Run 1: Initial (RED Phase)
+
 **Date**: 2025-11-17
 **Status**: Not yet executed
 **Reason**: Implementation not created yet
 
 **Expected output**:
+
 ```
 ❌ FAIL: convertAnthropicToolToOpenAI not implemented
 ❌ FAIL: parseOpenAIToolCall not implemented
@@ -324,11 +339,13 @@ RESULTS: 8 passed, 0 failed
 ```
 
 ### Run 2: Post-Implementation (GREEN Phase)
+
 **Date**: TBD
 **Status**: Pending
 **Expected**: 80%+ pass rate
 
 ### Run 3: Final Validation
+
 **Date**: TBD
 **Status**: Pending
 **Expected**: 100% pass rate

@@ -11,15 +11,18 @@ The tool calling modules (`tool-schema-converter.ts` and `tool-response-parser.t
 **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/src/anthropic-proxy.ts`
 
 **Changes**:
+
 - **Line 17**: Added import of `convertAnthropicToolsToOpenAI`
 - **Lines 519-530**: Added OpenAI tool conversion logging for verification
 
 **Purpose**:
+
 - Validates that Anthropic tools can be converted to OpenAI format
 - Logs the conversion for debugging and verification
 - Provides visibility into the tool schema transformation
 
 **Code snippet**:
+
 ```typescript
 // Log OpenAI conversion for verification (using integrated tool-schema-converter)
 try {
@@ -40,15 +43,18 @@ try {
 **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/src/convert-to-anthropic-stream.ts`
 
 **Changes**:
+
 - **Line 14**: Added import of `parseOpenAIToolCall` and `assembleStreamingToolCall`
 - **Lines 395-417**: Added tool call validation using the parser
 
 **Purpose**:
+
 - Validates that OpenAI tool_calls can be parsed to Anthropic format
 - Verifies the conversion logic during streaming responses
 - Provides debugging information for tool calling issues
 
 **Code snippet**:
+
 ```typescript
 // Validate using integrated tool-response-parser
 try {
@@ -150,6 +156,7 @@ The **AI SDK** (`ai` package from Vercel) handles the actual OpenAI format conve
 - ✅ `tests/integration/test-proxy-tool-integration.js` - End-to-end integration
 
 **Integration test coverage**:
+
 1. Schema conversion (Anthropic → OpenAI)
 2. Response parsing (OpenAI → Anthropic)
 3. Streaming tool call assembly

@@ -15,6 +15,7 @@
 Tests for the `ErrorHandler` class that provides production-grade error handling.
 
 **Test Categories**:
+
 - **TestErrorHandlerBasics** (5 tests)
   - Initialization
   - Cache error handling → graceful degradation
@@ -50,6 +51,7 @@ Tests for the `ErrorHandler` class that provides production-grade error handling
   - OOM detection when psutil unavailable
 
 **Expected Behavior**:
+
 - All tests FAIL until `scripts/lib/error_handler.py` is implemented
 - Import error: `NotImplementedError: ErrorHandler not yet implemented`
 
@@ -60,6 +62,7 @@ Tests for the `ErrorHandler` class that provides production-grade error handling
 Tests for the `MetricsCollector` class that tracks performance metrics.
 
 **Test Categories**:
+
 - **TestMetricsCollectorBasics** (5 tests)
   - Initialization
   - Record cache hits/misses
@@ -106,6 +109,7 @@ Tests for the `MetricsCollector` class that tracks performance metrics.
   - Handle psutil unavailable
 
 **Expected Behavior**:
+
 - All tests FAIL until `scripts/lib/metrics_collector.py` is implemented
 - Import error: `NotImplementedError: MetricsCollector not yet implemented`
 
@@ -116,6 +120,7 @@ Tests for the `MetricsCollector` class that tracks performance metrics.
 Tests for the `ConfigValidator` class that validates configuration.
 
 **Test Categories**:
+
 - **TestConfigValidatorBasics** (3 tests)
   - Initialization
   - Valid port numbers (8080, 8000, 3000)
@@ -166,6 +171,7 @@ Tests for the `ConfigValidator` class that validates configuration.
   - Invalid string port → ValidationError
 
 **Expected Behavior**:
+
 - All tests FAIL until `scripts/lib/config_validator.py` is implemented
 - Import error: `NotImplementedError: ConfigValidator not yet implemented`
 
@@ -178,6 +184,7 @@ Tests for the `ConfigValidator` class that validates configuration.
 Tests cache corruption recovery in realistic scenarios.
 
 **Test Categories**:
+
 - **TestCacheCorruptionDetection** (4 tests)
   - Detect truncated JSON
   - Detect invalid JSON syntax
@@ -212,6 +219,7 @@ Tests cache corruption recovery in realistic scenarios.
   - Corruption during active request
 
 **Expected Behavior**:
+
 - All tests FAIL until `scripts/lib/error_handler.py` is implemented
 - Import error: `NotImplementedError: ErrorHandler not yet implemented`
 
@@ -222,6 +230,7 @@ Tests cache corruption recovery in realistic scenarios.
 Tests server stability under stress conditions.
 
 **Test Categories**:
+
 - **TestSequentialStress** (3 tests)
   - 100 sequential requests complete (>90% success rate)
   - Latency remains stable (P95 < 2x P50)
@@ -247,6 +256,7 @@ Tests server stability under stress conditions.
   - Varying response sizes (100KB to 1MB)
 
 **Expected Behavior**:
+
 - All tests FAIL until `scripts/lib/metrics_collector.py` and `scripts/lib/error_handler.py` are implemented
 - Import error: `NotImplementedError: MetricsCollector not yet implemented`
 
@@ -257,6 +267,7 @@ Tests server stability under stress conditions.
 Tests the `/v1/metrics` endpoint.
 
 **Test Categories**:
+
 - **TestMetricsEndpointBasics** (6 tests)
   - Returns valid JSON (200 OK, application/json)
   - Includes all categories (cache, latency, memory, throughput)
@@ -290,6 +301,7 @@ Tests the `/v1/metrics` endpoint.
   - Filter multiple categories (`?category=cache,latency`)
 
 **Expected Behavior**:
+
 - All tests FAIL until `scripts/lib/metrics_collector.py` is implemented
 - Import error: `NotImplementedError: MetricsCollector not yet implemented`
 
@@ -302,6 +314,7 @@ Tests the `/v1/metrics` endpoint.
 JavaScript regression tests for error recovery.
 
 **Test Categories**:
+
 - Cache corruption doesn't crash server
 - OOM condition doesn't crash server
 - Network timeouts retry with exponential backoff
@@ -312,6 +325,7 @@ JavaScript regression tests for error recovery.
 - Server starts with corrupted cache
 
 **Expected Behavior**:
+
 - All tests FAIL until `scripts/lib/error_handler.py` is implemented
 - Error: `ErrorHandler not yet implemented - ...`
 
@@ -319,12 +333,12 @@ JavaScript regression tests for error recovery.
 
 ## Test Summary
 
-| Category | File Count | Test Count | Status |
-|----------|-----------|-----------|--------|
-| **Unit Tests** | 3 | 88 | FAIL (RED) |
-| **Integration Tests** | 3 | 55 | FAIL (RED) |
-| **Regression Tests** | 1 | 8 | FAIL (RED) |
-| **TOTAL** | **7** | **151** | **FAIL (RED)** |
+| Category              | File Count | Test Count | Status         |
+| --------------------- | ---------- | ---------- | -------------- |
+| **Unit Tests**        | 3          | 88         | FAIL (RED)     |
+| **Integration Tests** | 3          | 55         | FAIL (RED)     |
+| **Regression Tests**  | 1          | 8          | FAIL (RED)     |
+| **TOTAL**             | **7**      | **151**    | **FAIL (RED)** |
 
 ---
 
@@ -379,12 +393,14 @@ node tests/regression/test_error_recovery_regression.js
 **Module**: `scripts/lib/error_handler.py`
 
 **Classes**:
+
 - [ ] `ErrorHandler` - Main error handling class
 - [ ] `CacheError` - Exception for cache errors
 - [ ] `OOMError` - Exception for OOM conditions
 - [ ] `NetworkError` - Exception for network errors
 
 **Methods**:
+
 - [ ] `handle_cache_error()` - Graceful degradation on cache errors
 - [ ] `handle_oom_error()` - Cache clearing on OOM
 - [ ] `handle_network_error()` - Retry with exponential backoff
@@ -407,10 +423,12 @@ node tests/regression/test_error_recovery_regression.js
 **Module**: `scripts/lib/metrics_collector.py`
 
 **Classes**:
+
 - [ ] `MetricsCollector` - Main metrics collection class
 - [ ] `MetricType` - Enum for metric types
 
 **Methods**:
+
 - [ ] `record_cache_hit()` - Increment cache hit counter
 - [ ] `record_cache_miss()` - Increment cache miss counter
 - [ ] `get_cache_stats()` - Get cache hit/miss/rate
@@ -427,6 +445,7 @@ node tests/regression/test_error_recovery_regression.js
 - [ ] `reset_all_metrics()` - Reset all metrics
 
 **Server Integration**:
+
 - [ ] Add `/v1/metrics` endpoint to `scripts/mlx-server.py`
 - [ ] Support `?format=json` (default)
 - [ ] Support `?format=prometheus`
@@ -441,11 +460,13 @@ node tests/regression/test_error_recovery_regression.js
 **Module**: `scripts/lib/config_validator.py`
 
 **Classes**:
+
 - [ ] `ConfigValidator` - Main validation class
 - [ ] `ValidationError` - Exception for validation errors
 - [ ] `DependencyError` - Exception for dependency errors
 
 **Methods**:
+
 - [ ] `validate_port()` - Validate port number (1024-65535)
 - [ ] `validate_env_var()` - Validate environment variable
 - [ ] `validate_model_path()` - Validate model directory
@@ -456,6 +477,7 @@ node tests/regression/test_error_recovery_regression.js
 - [ ] `validate_complete_config()` - Validate entire config
 
 **Dependencies to Check**:
+
 - [ ] `psutil` - For memory tracking
 - [ ] `mlx` - For MLX models
 - [ ] `mlx_lm` - For MLX language models
@@ -468,9 +490,11 @@ node tests/regression/test_error_recovery_regression.js
 ### Phase 3.4: Stability Testing (Issue #8.4)
 
 **Test Files**:
+
 - [x] `tests/integration/test_mlx_server_stress.py` (14 tests written)
 
 **Stress Tests**:
+
 - [ ] 100 sequential requests (>90% success rate)
 - [ ] Latency stability (P95 < 2x P50)
 - [ ] Memory growth < 20% over 100 requests
@@ -480,6 +504,7 @@ node tests/regression/test_error_recovery_regression.js
 - [ ] OOM prevention (cleanup at 90%+ memory)
 
 **Long-Running Tests** (manual):
+
 - [ ] 2-hour session stability (~240 requests, <5% failure)
 - [ ] 4-hour session memory leak check (< 20% growth)
 
@@ -533,12 +558,12 @@ node tests/regression/test_error_recovery_regression.js
 
 ## Test Coverage Goals
 
-| Module | Target Coverage | Unit Tests | Integration Tests |
-|--------|----------------|-----------|------------------|
-| `error_handler.py` | 80%+ | 22 | 21 |
-| `metrics_collector.py` | 80%+ | 30 | 20 |
-| `config_validator.py` | 80%+ | 36 | 0 |
-| **Total** | **80%+** | **88** | **41** |
+| Module                 | Target Coverage | Unit Tests | Integration Tests |
+| ---------------------- | --------------- | ---------- | ----------------- |
+| `error_handler.py`     | 80%+            | 22         | 21                |
+| `metrics_collector.py` | 80%+            | 30         | 20                |
+| `config_validator.py`  | 80%+            | 36         | 0                 |
+| **Total**              | **80%+**        | **88**     | **41**            |
 
 ---
 
@@ -568,16 +593,16 @@ All tests include security validation:
 
 Based on implementation plan (Issue #8):
 
-| Metric | Target | Test |
-|--------|--------|------|
-| Sequential requests | 100 complete, >90% success | `test_mlx_server_stress.py::test_100_sequential_requests_complete` |
-| Latency stability | P95 < 2x P50 | `test_mlx_server_stress.py::test_sequential_stress_latency_stability` |
-| Memory growth | < 20% over 100 requests | `test_mlx_server_stress.py::test_sequential_stress_no_memory_leak` |
+| Metric              | Target                        | Test                                                                  |
+| ------------------- | ----------------------------- | --------------------------------------------------------------------- |
+| Sequential requests | 100 complete, >90% success    | `test_mlx_server_stress.py::test_100_sequential_requests_complete`    |
+| Latency stability   | P95 < 2x P50                  | `test_mlx_server_stress.py::test_sequential_stress_latency_stability` |
+| Memory growth       | < 20% over 100 requests       | `test_mlx_server_stress.py::test_sequential_stress_no_memory_leak`    |
 | Concurrent requests | 10 simultaneous, all complete | `test_mlx_server_stress.py::test_10_concurrent_requests_all_complete` |
-| Cache hit rate | Tracked and exported | `test_metrics_endpoint.py::test_metrics_endpoint_cache_stats` |
-| Latency percentiles | P50/P95/P99 tracked | `test_metrics_endpoint.py::test_metrics_endpoint_latency_percentiles` |
-| Memory usage | Current/peak tracked | `test_metrics_endpoint.py::test_metrics_endpoint_memory_stats` |
-| Throughput | Requests/second tracked | `test_metrics_endpoint.py::test_metrics_endpoint_throughput_stats` |
+| Cache hit rate      | Tracked and exported          | `test_metrics_endpoint.py::test_metrics_endpoint_cache_stats`         |
+| Latency percentiles | P50/P95/P99 tracked           | `test_metrics_endpoint.py::test_metrics_endpoint_latency_percentiles` |
+| Memory usage        | Current/peak tracked          | `test_metrics_endpoint.py::test_metrics_endpoint_memory_stats`        |
+| Throughput          | Requests/second tracked       | `test_metrics_endpoint.py::test_metrics_endpoint_throughput_stats`    |
 
 ---
 
@@ -588,6 +613,7 @@ Based on implementation plan (Issue #8):
 **Next Step**: Implement the modules to turn tests GREEN.
 
 **Test Files**:
+
 1. `/tests/unit/test_error_handler.py` (22 tests)
 2. `/tests/unit/test_metrics_collector.py` (30 tests)
 3. `/tests/unit/test_config_validator.py` (36 tests)

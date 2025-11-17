@@ -19,13 +19,15 @@ Current status: **RED PHASE COMPLETE** - All tests written and ready for impleme
 ## Test Scope
 
 ### What We Test
+
 - Cache marker extraction from Anthropic messages
 - SHA256 hash generation for cache keys
 - Token estimation for cache metrics
-- HTTP header generation (X-Cache-*)
+- HTTP header generation (X-Cache-\*)
 - End-to-end cache flow through proxy
 
 ### What We Don't Test (Out of Scope)
+
 - Actual cache backend operations
 - Network latency impacts
 - Database performance
@@ -54,9 +56,11 @@ Current status: **RED PHASE COMPLETE** - All tests written and ready for impleme
 ### Unit Tests (3 files, 61 tests)
 
 #### File 1: test-cache-hash-consistency.js (17 tests)
+
 **Purpose**: Validate SHA256 hash generation
 
 Test Suites:
+
 1. Hash Generation Basics (4 tests)
    - Generate valid SHA256 hash
    - Deterministic hashing
@@ -89,9 +93,11 @@ Test Suites:
 **Run**: `node tests/unit/test-cache-hash-consistency.js`
 
 #### File 2: test-cache-marker-extraction.js (14 tests)
+
 **Purpose**: Validate cache marker extraction
 
 Test Suites:
+
 1. Extract System Markers (3 tests)
    - Extract markers from system
    - Identify non-cacheable system
@@ -123,9 +129,11 @@ Test Suites:
 **Run**: `node tests/unit/test-cache-marker-extraction.js`
 
 #### File 3: test-token-estimation.js (30 tests)
+
 **Purpose**: Validate token count estimation
 
 Test Suites:
+
 1. Basic Estimation (5 tests)
    - 4 chars = 1 token
    - 5 chars = 2 tokens
@@ -179,9 +187,11 @@ Test Suites:
 ### Integration Tests (2 files, 23 tests)
 
 #### File 4: test-cache-headers.js (23 tests)
+
 **Purpose**: Validate HTTP header generation
 
 Test Suites:
+
 1. Header Generation (3 tests)
    - X-Cache-Hash (SHA256)
    - X-Cache-Tokens (numeric)
@@ -224,9 +234,11 @@ Test Suites:
 **Run**: `node tests/integration/test-cache-headers.js`
 
 #### File 5: test-cache-e2e.js (Structure Complete)
+
 **Purpose**: End-to-end cache flow validation
 
 Test Suites:
+
 1. Request Acceptance (2 tests)
    - Accept request with cache markers
    - Return valid Anthropic format
@@ -268,6 +280,7 @@ Test Suites:
 ## Test Execution
 
 ### Quick Run (Unit Tests Only)
+
 ```bash
 node tests/unit/test-cache-hash-consistency.js
 node tests/unit/test-cache-marker-extraction.js
@@ -277,6 +290,7 @@ node tests/unit/test-token-estimation.js
 **Expected Result**: 61 tests, 61 passed
 
 ### Integration Tests
+
 ```bash
 node tests/integration/test-cache-headers.js
 ```
@@ -284,6 +298,7 @@ node tests/integration/test-cache-headers.js
 **Expected Result**: 23 tests, 23 passed
 
 ### Full Test Suite (E2E requires backend)
+
 ```bash
 # Terminal 1: Start proxy
 PROXY_ONLY=true bun run src/main.ts
@@ -293,6 +308,7 @@ node tests/integration/test-cache-e2e.js
 ```
 
 ### Batch Execution
+
 ```bash
 #!/bin/bash
 echo "Running cache header tests..."
@@ -306,6 +322,7 @@ echo "All tests passed!"
 ## Test Data
 
 ### Sample Request (with cache_control)
+
 ```json
 {
   "model": "claude-3-5-sonnet-20241022",
@@ -333,6 +350,7 @@ echo "All tests passed!"
 ```
 
 ### Sample Headers (to be generated)
+
 ```http
 X-Cache-Hash: a3f5d2e1c9b8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3
 X-Cache-Tokens: 12
@@ -340,14 +358,13 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 ```
 
 ### Sample Response (with cache metrics)
+
 ```json
 {
   "id": "msg_1234567890abcdef",
   "type": "message",
   "role": "assistant",
-  "content": [
-    { "type": "text", "text": "Hello! How can I help you today?" }
-  ],
+  "content": [{ "type": "text", "text": "Hello! How can I help you today?" }],
   "model": "claude-3-5-sonnet-20241022",
   "stop_reason": "end_turn",
   "usage": {
@@ -362,6 +379,7 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 ## Success Criteria
 
 ### Pass Criteria
+
 - [x] All 84 tests compile without errors
 - [x] All 84 tests execute successfully
 - [x] All 84 tests currently pass (pre-implementation)
@@ -370,6 +388,7 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 - [x] Tests use mock implementations
 
 ### Implementation Success
+
 - [ ] All unit tests pass without modification
 - [ ] All integration tests pass without modification
 - [ ] No additional tests needed
@@ -379,12 +398,14 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 ## Known Limitations
 
 ### Pre-Implementation
+
 - Tests use mock functions (real module doesn't exist yet)
 - E2E tests require running proxy + backend
 - No actual network testing
 - No performance benchmarking
 
 ### By Design
+
 - Tests don't validate cache database
 - Tests don't test model-specific behavior
 - Tests don't validate authentication
@@ -393,6 +414,7 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 ## Next Phase: Implementation
 
 ### Phase Breakdown
+
 1. **Phase 1**: Implement cache-control-extractor module
    - generateCacheHash() function
    - extractMarkers() function
@@ -416,6 +438,7 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 ## Test Maintenance
 
 ### Adding New Tests
+
 1. Create test in appropriate file
 2. Follow Arrange-Act-Assert pattern
 3. Add clear test name
@@ -423,12 +446,14 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 5. Run all tests to verify
 
 ### Updating Tests
+
 1. Only update if requirements change
 2. Update test name if testing different thing
 3. Don't change test logic without reason
 4. Verify all tests still pass
 
 ### Test Cleanup
+
 - Remove tests only if feature removed
 - Archive old tests rather than delete
 - Document reason for removal
@@ -444,6 +469,7 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 ## Contact & Questions
 
 For questions about these tests:
+
 1. Review TEST-ARTIFACTS-PHASE-2.2-CACHE-HEADERS.md
 2. Check individual test file comments
 3. Run tests with ANYCLAUDE_DEBUG=2 for verbose output

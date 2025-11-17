@@ -25,9 +25,11 @@ This test plan validates that the custom MLX server (`scripts/mlx-server.py`) ca
 Fast tests that validate conversion logic without needing a running server.
 
 #### 1.1 Tool Schema Conversion
+
 **File**: `tests/unit/test-tool-schema-conversion.js`
 
 **Tests**:
+
 - ✓ Basic schema conversion (Read tool)
 - ✓ Complex schema with nested objects (Write tool)
 - ✓ Schema with array types (Bash with arguments)
@@ -38,15 +40,18 @@ Fast tests that validate conversion logic without needing a running server.
 - ✓ Additional metadata handling
 
 **Success Criteria**:
+
 - All Anthropic `input_schema` correctly converted to OpenAI `parameters`
 - Type preservation (string, number, object, array)
 - Required fields maintained
 - Invalid schemas rejected with clear errors
 
 #### 1.2 Tool Response Parsing
+
 **File**: `tests/unit/test-tool-response-parsing.js`
 
 **Tests**:
+
 - ✓ Parse complete tool call (non-streaming)
 - ✓ Parse complex arguments (nested objects)
 - ✓ Parse multiple tool calls
@@ -59,6 +64,7 @@ Fast tests that validate conversion logic without needing a running server.
 - ✓ Parameter validation
 
 **Success Criteria**:
+
 - OpenAI `tool_calls` correctly converted to Anthropic `tool_use`
 - Streaming deltas assembled into complete JSON
 - Malformed JSON rejected gracefully
@@ -69,9 +75,11 @@ Fast tests that validate conversion logic without needing a running server.
 Tests that validate end-to-end tool calling with the actual MLX server.
 
 #### 2.1 Basic Tool Calls
+
 **File**: `tests/integration/test-mlx-server-basic-tools.js`
 
 **Tests**:
+
 - ✓ Read tool - request to read a file
 - ✓ Write tool - request to write content
 - ✓ Bash tool - safe command execution
@@ -79,19 +87,23 @@ Tests that validate end-to-end tool calling with the actual MLX server.
 - ✓ No tools needed - simple question without tool use
 
 **Success Criteria**:
+
 - Model calls Read, Write, Bash tools correctly
 - Tool parameters match request intent
 - Model selects appropriate tool from available options
 - Model responds without tools when not needed
 
 **Prerequisites**:
+
 - MLX server running on port 8081
 - Model loaded with tool calling support
 
 #### 2.2 Streaming Tool Calls
+
 **File**: `tests/integration/test-mlx-server-streaming-tools.js`
 
 **Tests**:
+
 - ✓ Basic streaming tool call
 - ✓ Streaming with complex JSON
 - ✓ Large parameter streaming (multiple chunks)
@@ -100,15 +112,18 @@ Tests that validate end-to-end tool calling with the actual MLX server.
 - ✓ Stream error handling
 
 **Success Criteria**:
+
 - Tool parameters assembled correctly from streaming chunks
 - Events arrive in correct order
 - Large parameters streamed without truncation
 - Incomplete streaming handled gracefully
 
 #### 2.3 Multiple Tool Calls
+
 **File**: `tests/integration/test-mlx-server-multiple-tools.js`
 
 **Tests**:
+
 - ✓ Parallel tool calls (multiple tools in one response)
 - ✓ Sequential tool calls (multi-turn conversation)
 - ✓ Mixed tool types (different tools in same request)
@@ -117,15 +132,18 @@ Tests that validate end-to-end tool calling with the actual MLX server.
 - ✓ Tool call limit (prevent infinite loops)
 
 **Success Criteria**:
+
 - Model can call multiple tools in parallel
 - Multi-turn conversations maintain context
 - Tool results correctly incorporated in follow-up
 - Turn limit prevents runaway loops
 
 #### 2.4 Error Handling
+
 **File**: `tests/integration/test-mlx-server-tool-errors.js`
 
 **Tests**:
+
 - ✓ Invalid tool name (non-existent tool)
 - ✓ Missing required parameters
 - ✓ Malformed tool schema
@@ -138,15 +156,18 @@ Tests that validate end-to-end tool calling with the actual MLX server.
 - ✓ Server not running (connection refused)
 
 **Success Criteria**:
+
 - Invalid requests rejected with clear errors
 - Server handles edge cases gracefully
 - Connection errors handled without crashes
 - Rapid requests don't overload server
 
 #### 2.5 Large Responses
+
 **File**: `tests/integration/test-mlx-server-large-responses.js`
 
 **Tests**:
+
 - ✓ Medium file content (10KB)
 - ✓ Large file content (100KB)
 - ✓ Deep nested JSON structure
@@ -157,6 +178,7 @@ Tests that validate end-to-end tool calling with the actual MLX server.
 - ✓ Unicode and special characters
 
 **Success Criteria**:
+
 - Large content (up to 100KB) handled without truncation
 - Nested JSON structures parsed correctly
 - Streaming doesn't break with large content
@@ -165,9 +187,11 @@ Tests that validate end-to-end tool calling with the actual MLX server.
 ### 3. Manual Testing
 
 #### 3.1 Interactive Test Script
+
 **File**: `tests/manual/test-mlx-server-interactive.sh`
 
 **Features**:
+
 - Menu-driven interface
 - Start/stop server
 - Test individual tools (Read, Write, Bash)
@@ -176,6 +200,7 @@ Tests that validate end-to-end tool calling with the actual MLX server.
 - Check server health
 
 **Usage**:
+
 ```bash
 export MLX_MODEL_PATH=/path/to/your/mlx/model
 ./tests/manual/test-mlx-server-interactive.sh
@@ -186,6 +211,7 @@ export MLX_MODEL_PATH=/path/to/your/mlx/model
 ### Prerequisites
 
 1. **Install dependencies**:
+
    ```bash
    npm install
    ```
@@ -196,12 +222,14 @@ export MLX_MODEL_PATH=/path/to/your/mlx/model
    ```
 
 ### Run Unit Tests Only
+
 ```bash
 node tests/unit/test-tool-schema-conversion.js
 node tests/unit/test-tool-response-parsing.js
 ```
 
 ### Run Integration Tests
+
 ```bash
 # Ensure server is running first!
 export MLX_SERVER_URL=http://localhost:8081
@@ -214,11 +242,13 @@ node tests/integration/test-mlx-server-large-responses.js
 ```
 
 ### Run All Tests
+
 ```bash
 npm run test:phase1.2
 ```
 
 ### Manual Testing
+
 ```bash
 export MLX_MODEL_PATH=/path/to/model
 chmod +x tests/manual/test-mlx-server-interactive.sh
@@ -228,6 +258,7 @@ chmod +x tests/manual/test-mlx-server-interactive.sh
 ## Expected Results (TDD Red Phase)
 
 ### Unit Tests
+
 - ❌ **FAIL**: `convertAnthropicToolToOpenAI` not implemented
 - ❌ **FAIL**: `parseOpenAIToolCall` not implemented
 - ❌ **FAIL**: `assembleStreamingToolCall` not implemented
@@ -235,6 +266,7 @@ chmod +x tests/manual/test-mlx-server-interactive.sh
 **Expected**: All unit tests fail with "not implemented" errors
 
 ### Integration Tests
+
 - ⚠️ **SKIP**: Server not running (if not started)
 - ❌ **FAIL**: Tool calling not working (if server doesn't support tools yet)
 - ❌ **FAIL**: Streaming tool calls incomplete

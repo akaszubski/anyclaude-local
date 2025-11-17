@@ -149,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Schema conversion**: Convert Anthropic `input_schema` ↔ OpenAI `parameters` (src/tool-schema-converter.ts:50-104)
   - **Response parsing**: Parse OpenAI `tool_calls` → Anthropic `tool_use`, handle streaming deltas (src/tool-response-parser.ts:55-267)
   - **Unit tests**: 18 tests for schema conversion and response parsing (tests/unit/test-tool-schema-conversion.js, tests/unit/test-tool-response-parsing.js)
-  - **Integration tests**: 35 tests for basic tools, streaming, multiple tools, error handling, large responses (tests/integration/test-mlx-server-*.js)
+  - **Integration tests**: 35 tests for basic tools, streaming, multiple tools, error handling, large responses (tests/integration/test-mlx-server-\*.js)
   - **Test plan**: Complete Phase 1.2 test plan with 80%+ coverage target (tests/TEST-PLAN-PHASE-1.2.md)
   - **Manual testing**: Interactive test script for quick verification (tests/manual/test-mlx-server-interactive.sh)
   - **Status**: RED phase (TDD) - tests written, implementation pending

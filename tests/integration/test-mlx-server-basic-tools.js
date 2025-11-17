@@ -35,7 +35,7 @@ async function checkServerRunning() {
         port: url.port,
         path: url.pathname,
         method: "GET",
-        timeout: 5000
+        timeout: 5000,
       },
       (res) => {
         resolve(res.statusCode === 200);
@@ -61,7 +61,7 @@ async function sendToolCallRequest(messages, tools) {
       messages,
       tools,
       temperature: 0.1,
-      max_tokens: 1000
+      max_tokens: 1000,
     });
 
     const req = http.request(
@@ -72,9 +72,9 @@ async function sendToolCallRequest(messages, tools) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(data)
+          "Content-Length": Buffer.byteLength(data),
         },
-        timeout: TEST_TIMEOUT
+        timeout: TEST_TIMEOUT,
       },
       (res) => {
         let body = "";
@@ -117,8 +117,8 @@ async function testReadTool() {
   const messages = [
     {
       role: "user",
-      content: `Please read the file at ${testFile}`
-    }
+      content: `Please read the file at ${testFile}`,
+    },
   ];
 
   const tools = [
@@ -132,13 +132,13 @@ async function testReadTool() {
           properties: {
             file_path: {
               type: "string",
-              description: "Path to the file to read"
-            }
+              description: "Path to the file to read",
+            },
           },
-          required: ["file_path"]
-        }
-      }
-    }
+          required: ["file_path"],
+        },
+      },
+    },
   ];
 
   try {
@@ -150,10 +150,18 @@ async function testReadTool() {
 
     const message = response.choices[0].message;
     assert.ok(message.tool_calls, "Message should contain tool_calls");
-    assert.strictEqual(message.tool_calls.length, 1, "Should have one tool call");
+    assert.strictEqual(
+      message.tool_calls.length,
+      1,
+      "Should have one tool call"
+    );
 
     const toolCall = message.tool_calls[0];
-    assert.strictEqual(toolCall.function.name, "Read", "Tool name should be 'Read'");
+    assert.strictEqual(
+      toolCall.function.name,
+      "Read",
+      "Tool name should be 'Read'"
+    );
 
     const args = JSON.parse(toolCall.function.arguments);
     assert.ok(args.file_path, "Should have file_path argument");
@@ -186,8 +194,8 @@ async function testWriteTool() {
   const messages = [
     {
       role: "user",
-      content: `Please write "Hello World" to ${testFile}`
-    }
+      content: `Please write "Hello World" to ${testFile}`,
+    },
   ];
 
   const tools = [
@@ -200,12 +208,12 @@ async function testWriteTool() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
+            content: { type: "string" },
           },
-          required: ["file_path", "content"]
-        }
-      }
-    }
+          required: ["file_path", "content"],
+        },
+      },
+    },
   ];
 
   try {
@@ -240,8 +248,8 @@ async function testBashTool() {
   const messages = [
     {
       role: "user",
-      content: "Please run the command: echo 'Hello from bash'"
-    }
+      content: "Please run the command: echo 'Hello from bash'",
+    },
   ];
 
   const tools = [
@@ -253,12 +261,12 @@ async function testBashTool() {
         parameters: {
           type: "object",
           properties: {
-            command: { type: "string" }
+            command: { type: "string" },
           },
-          required: ["command"]
-        }
-      }
-    }
+          required: ["command"],
+        },
+      },
+    },
   ];
 
   try {
@@ -269,10 +277,7 @@ async function testBashTool() {
 
     const args = JSON.parse(toolCall.function.arguments);
     assert.ok(args.command, "Should have command");
-    assert.ok(
-      args.command.includes("echo"),
-      "Command should include 'echo'"
-    );
+    assert.ok(args.command.includes("echo"), "Command should include 'echo'");
 
     console.log("   ✅ PASS: Bash tool called correctly");
     console.log(`   Command: ${args.command}`);
@@ -292,8 +297,9 @@ async function testToolSelection() {
   const messages = [
     {
       role: "user",
-      content: "What is the current date? Use the pwd command to check the directory."
-    }
+      content:
+        "What is the current date? Use the pwd command to check the directory.",
+    },
   ];
 
   const tools = [
@@ -302,17 +308,23 @@ async function testToolSelection() {
       function: {
         name: "Read",
         description: "Read a file",
-        parameters: { type: "object", properties: { file_path: { type: "string" } } }
-      }
+        parameters: {
+          type: "object",
+          properties: { file_path: { type: "string" } },
+        },
+      },
     },
     {
       type: "function",
       function: {
         name: "Bash",
         description: "Execute bash command",
-        parameters: { type: "object", properties: { command: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -350,8 +362,8 @@ async function testNoToolsNeeded() {
   const messages = [
     {
       role: "user",
-      content: "What is 2 + 2?"
-    }
+      content: "What is 2 + 2?",
+    },
   ];
 
   const tools = [
@@ -360,9 +372,12 @@ async function testNoToolsNeeded() {
       function: {
         name: "Bash",
         description: "Execute bash command",
-        parameters: { type: "object", properties: { command: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -371,7 +386,9 @@ async function testNoToolsNeeded() {
 
     // Should NOT use tools for simple math
     if (message.tool_calls && message.tool_calls.length > 0) {
-      console.log("   ⚠️  WARNING: Model used tool for simple question (acceptable)");
+      console.log(
+        "   ⚠️  WARNING: Model used tool for simple question (acceptable)"
+      );
     } else {
       assert.ok(message.content, "Should have text response");
       console.log("   ✅ PASS: No tool call for simple question");
@@ -385,10 +402,14 @@ async function testNoToolsNeeded() {
 }
 
 async function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("INTEGRATION TEST: Basic Tool Calling with MLX Server");
   console.log("Phase 1.2 - TDD Red Phase");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   // Check server status
   console.log(`\nChecking MLX server at ${MLX_SERVER_URL}...`);
@@ -397,8 +418,12 @@ async function runTests() {
   if (!serverRunning) {
     console.log("❌ MLX server not running!");
     console.log("\nTo start the server:");
-    console.log("  python3 scripts/mlx-server.py --model /path/to/model --port 8081");
-    console.log("\nOr set MLX_SERVER_URL environment variable to point to running server.");
+    console.log(
+      "  python3 scripts/mlx-server.py --model /path/to/model --port 8081"
+    );
+    console.log(
+      "\nOr set MLX_SERVER_URL environment variable to point to running server."
+    );
     return 1;
   }
 
@@ -411,9 +436,13 @@ async function runTests() {
   await testToolSelection();
   await testNoToolsNeeded();
 
-  console.log("\n================================================================================");
+  console.log(
+    "\n================================================================================"
+  );
   console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   if (failed > 0) {
     console.log("\n⚠️  Some tests failed - this is expected in TDD red phase!");

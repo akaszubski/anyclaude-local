@@ -84,9 +84,13 @@ test("should extract cache markers from system with cache_control", () => {
     };
 
     if (request.system) {
-      const systemArray = Array.isArray(request.system) ? request.system : [{ type: "text", text: request.system }];
+      const systemArray = Array.isArray(request.system)
+        ? request.system
+        : [{ type: "text", text: request.system }];
       markers.systemBlocks = systemArray.length;
-      markers.systemCacheable = systemArray.some(block => block.cache_control?.type === "ephemeral");
+      markers.systemCacheable = systemArray.some(
+        (block) => block.cache_control?.type === "ephemeral"
+      );
     }
 
     return markers;
@@ -94,9 +98,13 @@ test("should extract cache markers from system with cache_control", () => {
 
   const request = {
     system: [
-      { type: "text", text: "You are Claude.", cache_control: { type: "ephemeral" } }
+      {
+        type: "text",
+        text: "You are Claude.",
+        cache_control: { type: "ephemeral" },
+      },
     ],
-    messages: []
+    messages: [],
   };
 
   const markers = extractMarkers(request);
@@ -115,9 +123,13 @@ test("should identify when system is not cacheable", () => {
     };
 
     if (request.system) {
-      const systemArray = Array.isArray(request.system) ? request.system : [{ type: "text", text: request.system }];
+      const systemArray = Array.isArray(request.system)
+        ? request.system
+        : [{ type: "text", text: request.system }];
       markers.systemBlocks = systemArray.length;
-      markers.systemCacheable = systemArray.some(block => block.cache_control?.type === "ephemeral");
+      markers.systemCacheable = systemArray.some(
+        (block) => block.cache_control?.type === "ephemeral"
+      );
     }
 
     return markers;
@@ -125,9 +137,9 @@ test("should identify when system is not cacheable", () => {
 
   const request = {
     system: [
-      { type: "text", text: "You are Claude." }  // No cache_control
+      { type: "text", text: "You are Claude." }, // No cache_control
     ],
-    messages: []
+    messages: [],
   };
 
   const markers = extractMarkers(request);
@@ -146,9 +158,13 @@ test("should handle system as string", () => {
     };
 
     if (request.system) {
-      const systemArray = Array.isArray(request.system) ? request.system : [{ type: "text", text: request.system }];
+      const systemArray = Array.isArray(request.system)
+        ? request.system
+        : [{ type: "text", text: request.system }];
       markers.systemBlocks = systemArray.length;
-      markers.systemCacheable = systemArray.some(block => block.cache_control?.type === "ephemeral");
+      markers.systemCacheable = systemArray.some(
+        (block) => block.cache_control?.type === "ephemeral"
+      );
     }
 
     return markers;
@@ -156,7 +172,7 @@ test("should handle system as string", () => {
 
   const request = {
     system: "You are Claude.",
-    messages: []
+    messages: [],
   };
 
   const markers = extractMarkers(request);
@@ -185,9 +201,9 @@ test("should count user message blocks with cache_control", () => {
       role: "user",
       content: [
         { type: "text", text: "Hello", cache_control: { type: "ephemeral" } },
-        { type: "text", text: "World" }
-      ]
-    }
+        { type: "text", text: "World" },
+      ],
+    },
   ];
 
   const count = countCacheableUserBlocks(messages);
@@ -215,9 +231,9 @@ test("should count multiple cacheable user blocks", () => {
       content: [
         { type: "text", text: "Block 1", cache_control: { type: "ephemeral" } },
         { type: "text", text: "Block 2", cache_control: { type: "ephemeral" } },
-        { type: "text", text: "Block 3" }
-      ]
-    }
+        { type: "text", text: "Block 3" },
+      ],
+    },
   ];
 
   const count = countCacheableUserBlocks(messages);
@@ -244,9 +260,9 @@ test("should return 0 when no user blocks are cacheable", () => {
       role: "user",
       content: [
         { type: "text", text: "Block 1" },
-        { type: "text", text: "Block 2" }
-      ]
-    }
+        { type: "text", text: "Block 2" },
+      ],
+    },
   ];
 
   const count = countCacheableUserBlocks(messages);
@@ -263,13 +279,15 @@ test("should return object with all required fields", () => {
       cacheableUserBlocks: 0,
       estimatedCacheTokens: 0,
       totalCacheableContent: "",
-      cacheKey: null
+      cacheKey: null,
     };
   };
 
   const request = {
-    system: [{ type: "text", text: "System", cache_control: { type: "ephemeral" } }],
-    messages: []
+    system: [
+      { type: "text", text: "System", cache_control: { type: "ephemeral" } },
+    ],
+    messages: [],
   };
 
   const markers = extractMarkers(request);
@@ -280,7 +298,7 @@ test("should return object with all required fields", () => {
     cacheableUserBlocks: 0,
     estimatedCacheTokens: 0,
     totalCacheableContent: "",
-    cacheKey: null
+    cacheKey: null,
   });
 });
 
@@ -290,7 +308,9 @@ test("should populate systemCacheText when system is cacheable", () => {
     let hasSystemCache = false;
 
     if (request.system) {
-      const systemArray = Array.isArray(request.system) ? request.system : [{ type: "text", text: request.system }];
+      const systemArray = Array.isArray(request.system)
+        ? request.system
+        : [{ type: "text", text: request.system }];
       for (const block of systemArray) {
         if (block.cache_control?.type === "ephemeral") {
           hasSystemCache = true;
@@ -305,15 +325,19 @@ test("should populate systemCacheText when system is cacheable", () => {
       cacheableUserBlocks: 0,
       estimatedCacheTokens: Math.ceil(systemCacheText.length / 4),
       totalCacheableContent: systemCacheText,
-      cacheKey: hasSystemCache ? "cache-exists" : null
+      cacheKey: hasSystemCache ? "cache-exists" : null,
     };
   };
 
   const request = {
     system: [
-      { type: "text", text: "You are helpful.", cache_control: { type: "ephemeral" } }
+      {
+        type: "text",
+        text: "You are helpful.",
+        cache_control: { type: "ephemeral" },
+      },
     ],
-    messages: []
+    messages: [],
   };
 
   const markers = extractMarkers(request);
@@ -332,7 +356,9 @@ test("should handle system with multiple blocks (some cacheable, some not)", () 
     let totalSystemText = "";
 
     if (request.system) {
-      const systemArray = Array.isArray(request.system) ? request.system : [{ type: "text", text: request.system }];
+      const systemArray = Array.isArray(request.system)
+        ? request.system
+        : [{ type: "text", text: request.system }];
       for (const block of systemArray) {
         totalSystemText += block.text;
         if (block.cache_control?.type === "ephemeral") {
@@ -351,10 +377,14 @@ test("should handle system with multiple blocks (some cacheable, some not)", () 
 
   const request = {
     system: [
-      { type: "text", text: "Cacheable part.", cache_control: { type: "ephemeral" } },
-      { type: "text", text: " Non-cacheable part." }
+      {
+        type: "text",
+        text: "Cacheable part.",
+        cache_control: { type: "ephemeral" },
+      },
+      { type: "text", text: " Non-cacheable part." },
     ],
-    messages: []
+    messages: [],
   };
 
   const markers = extractMarkers(request);
@@ -372,10 +402,13 @@ test("should handle empty request", () => {
       cacheableUserBlocks: 0,
       estimatedCacheTokens: 0,
       totalCacheableContent: "",
-      cacheKey: null
+      cacheKey: null,
     };
 
-    if (!request.system && (!request.messages || request.messages.length === 0)) {
+    if (
+      !request.system &&
+      (!request.messages || request.messages.length === 0)
+    ) {
       return markers;
     }
 
@@ -383,7 +416,7 @@ test("should handle empty request", () => {
   };
 
   const request = {
-    messages: []
+    messages: [],
   };
 
   const markers = extractMarkers(request);
@@ -400,8 +433,12 @@ test("should identify cache markers in both system and user messages", () => {
     let userCacheableCount = 0;
 
     if (request.system) {
-      const systemArray = Array.isArray(request.system) ? request.system : [{ type: "text", text: request.system }];
-      systemCacheable = systemArray.some(b => b.cache_control?.type === "ephemeral");
+      const systemArray = Array.isArray(request.system)
+        ? request.system
+        : [{ type: "text", text: request.system }];
+      systemCacheable = systemArray.some(
+        (b) => b.cache_control?.type === "ephemeral"
+      );
     }
 
     if (request.messages) {
@@ -419,20 +456,26 @@ test("should identify cache markers in both system and user messages", () => {
     return {
       systemCacheable,
       userCacheableCount,
-      hasCacheMarkers: systemCacheable || userCacheableCount > 0
+      hasCacheMarkers: systemCacheable || userCacheableCount > 0,
     };
   };
 
   const request = {
-    system: [{ type: "text", text: "System", cache_control: { type: "ephemeral" } }],
+    system: [
+      { type: "text", text: "System", cache_control: { type: "ephemeral" } },
+    ],
     messages: [
       {
         role: "user",
         content: [
-          { type: "text", text: "User msg", cache_control: { type: "ephemeral" } }
-        ]
-      }
-    ]
+          {
+            type: "text",
+            text: "User msg",
+            cache_control: { type: "ephemeral" },
+          },
+        ],
+      },
+    ],
   };
 
   const markers = extractMarkers(request);
@@ -448,8 +491,12 @@ test("should return false when no cache markers present", () => {
     let userCacheableCount = 0;
 
     if (request.system) {
-      const systemArray = Array.isArray(request.system) ? request.system : [{ type: "text", text: request.system }];
-      systemCacheable = systemArray.some(b => b.cache_control?.type === "ephemeral");
+      const systemArray = Array.isArray(request.system)
+        ? request.system
+        : [{ type: "text", text: request.system }];
+      systemCacheable = systemArray.some(
+        (b) => b.cache_control?.type === "ephemeral"
+      );
     }
 
     if (request.messages) {
@@ -467,7 +514,7 @@ test("should return false when no cache markers present", () => {
     return {
       systemCacheable,
       userCacheableCount,
-      hasCacheMarkers: systemCacheable || userCacheableCount > 0
+      hasCacheMarkers: systemCacheable || userCacheableCount > 0,
     };
   };
 
@@ -476,11 +523,9 @@ test("should return false when no cache markers present", () => {
     messages: [
       {
         role: "user",
-        content: [
-          { type: "text", text: "User msg" }
-        ]
-      }
-    ]
+        content: [{ type: "text", text: "User msg" }],
+      },
+    ],
   };
 
   const markers = extractMarkers(request);
@@ -511,7 +556,7 @@ test("should ignore assistant messages (only system and user are cacheable)", ()
 
     return {
       userCacheableCount,
-      ignoresAssistantMessages: true
+      ignoresAssistantMessages: true,
     };
   };
 
@@ -520,16 +565,24 @@ test("should ignore assistant messages (only system and user are cacheable)", ()
       {
         role: "assistant",
         content: [
-          { type: "text", text: "Assistant msg", cache_control: { type: "ephemeral" } }
-        ]
+          {
+            type: "text",
+            text: "Assistant msg",
+            cache_control: { type: "ephemeral" },
+          },
+        ],
       },
       {
         role: "user",
         content: [
-          { type: "text", text: "User msg", cache_control: { type: "ephemeral" } }
-        ]
-      }
-    ]
+          {
+            type: "text",
+            text: "User msg",
+            cache_control: { type: "ephemeral" },
+          },
+        ],
+      },
+    ],
   };
 
   const markers = extractMarkers(request);
@@ -545,9 +598,21 @@ test("should only recognize cache_control with type='ephemeral'", () => {
     return block.cache_control?.type === "ephemeral";
   };
 
-  const block1 = { type: "text", text: "Text", cache_control: { type: "ephemeral" } };
-  const block2 = { type: "text", text: "Text", cache_control: { type: "permanent" } };
-  const block3 = { type: "text", text: "Text", cache_control: { type: "other" } };
+  const block1 = {
+    type: "text",
+    text: "Text",
+    cache_control: { type: "ephemeral" },
+  };
+  const block2 = {
+    type: "text",
+    text: "Text",
+    cache_control: { type: "permanent" },
+  };
+  const block3 = {
+    type: "text",
+    text: "Text",
+    cache_control: { type: "other" },
+  };
   const block4 = { type: "text", text: "Text" };
 
   expect(isCacheable(block1)).toBeTruthy();
@@ -559,8 +624,12 @@ test("should only recognize cache_control with type='ephemeral'", () => {
 // Summary
 console.log(`\n╔══════════════════════════════════════════════════════════╗`);
 console.log(`║   TEST SUMMARY                                           ║`);
-console.log(`║   Passed: ${passed}                                              ║`);
-console.log(`║   Failed: ${failed}                                              ║`);
+console.log(
+  `║   Passed: ${passed}                                              ║`
+);
+console.log(
+  `║   Failed: ${failed}                                              ║`
+);
 console.log(`╚══════════════════════════════════════════════════════════╝\n`);
 
 if (failed > 0) {

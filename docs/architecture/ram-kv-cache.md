@@ -5,6 +5,7 @@
 The `InMemoryKVCacheManager` provides ultra-low-latency key-value caching for M3 Ultra by storing all data in RAM. This achieves 100-200x performance improvement over disk-based caching.
 
 **Key Numbers**:
+
 - GET latency: <1ms (vs 500-2000ms disk cache)
 - SET latency: <50ms
 - Throughput: 3.7M operations/sec
@@ -335,6 +336,7 @@ Metadata retrieval: 5.2M ops/sec
 ### When to Optimize
 
 Only optimize if profiling shows:
+
 - Lock contention (>100 threads competing)
 - Memory overhead unacceptable (>50% of total cache memory)
 - CPU usage dominated by cache operations

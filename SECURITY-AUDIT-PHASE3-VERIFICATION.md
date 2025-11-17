@@ -14,7 +14,7 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
 **Overall Status**: PASS (4.5/5 fixes complete, 1 minor inconsistency)
 
 - VUL-006 (CRITICAL): Authentication on /v1/metrics - **FIXED** ✓
-- VUL-007 (CRITICAL): Unbounded memory growth - **FIXED** ✓  
+- VUL-007 (CRITICAL): Unbounded memory growth - **FIXED** ✓
 - VUL-008 (HIGH): Model path logging - **FIXED** ✓
 - VUL-009 (HIGH): Model path in errors - **FIXED** ✓
 - VUL-010 (MEDIUM): Raw latencies exposed - **NEARLY FIXED** ⚠ (minor inconsistency)
@@ -23,13 +23,13 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
 
 ## VULNERABILITY VERIFICATION MATRIX
 
-| ID | Severity | Issue | Fix Type | Status | Evidence |
-|:---|:---------|:------|:---------|:-------|:---------|
-| VUL-006 | CRITICAL | Unauthenticated /v1/metrics | Authentication | FIXED | HTTPBearer, METRICS_API_KEY env var, 403 on failure |
-| VUL-007 | CRITICAL | Unbounded memory growth | Resource bounds | FIXED | Circular buffers: max_latency_samples=10000, max_request_timestamps=10000 |
-| VUL-008 | HIGH | Model path logged | Information disclosure | FIXED | Path().name used in all 4 logging locations |
-| VUL-009 | HIGH | Model path in errors | Information disclosure | FIXED | Generic error messages, no path interpolation |
-| VUL-010 | MEDIUM | Raw latencies exposed | Information disclosure | NEARLY FIXED | Aggregates only in main case, inconsistency in empty case |
+| ID      | Severity | Issue                       | Fix Type               | Status       | Evidence                                                                  |
+| :------ | :------- | :-------------------------- | :--------------------- | :----------- | :------------------------------------------------------------------------ |
+| VUL-006 | CRITICAL | Unauthenticated /v1/metrics | Authentication         | FIXED        | HTTPBearer, METRICS_API_KEY env var, 403 on failure                       |
+| VUL-007 | CRITICAL | Unbounded memory growth     | Resource bounds        | FIXED        | Circular buffers: max_latency_samples=10000, max_request_timestamps=10000 |
+| VUL-008 | HIGH     | Model path logged           | Information disclosure | FIXED        | Path().name used in all 4 logging locations                               |
+| VUL-009 | HIGH     | Model path in errors        | Information disclosure | FIXED        | Generic error messages, no path interpolation                             |
+| VUL-010 | MEDIUM   | Raw latencies exposed       | Information disclosure | NEARLY FIXED | Aggregates only in main case, inconsistency in empty case                 |
 
 ---
 
@@ -46,11 +46,13 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
 **Fix Verification**:
 
 1. **Line 50**: HTTPBearer imported
+
    ```python
    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
    ```
 
 2. **Line 741-742**: Security initialized with METRICS_API_KEY
+
    ```python
    self.security = HTTPBearer()
    self.metrics_api_key = os.getenv("METRICS_API_KEY", "")
@@ -70,6 +72,7 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
    ```
 
 **Attack Prevention**:
+
 - **Before**: Any unauthenticated client could call `/v1/metrics` and obtain:
   - Cache hit/miss statistics
   - All latency data
@@ -82,6 +85,7 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
   - Credentials must be provided in Authorization header: `Bearer <METRICS_API_KEY>`
 
 **Verification Evidence**:
+
 - ✓ HTTPBearer security module imported
 - ✓ METRICS_API_KEY environment variable configured
 - ✓ Depends(self.security) enforces token requirement in endpoint signature
@@ -106,12 +110,14 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
 **Fix Verification**:
 
 1. **Lines 50-51**: Bounded latencies array
+
    ```python
    self.latencies: List[float] = []
    self.max_latency_samples = 10000  # VUL-007 fix: Prevent unbounded growth
    ```
 
 2. **Lines 127-132**: Circular buffer implementation for latencies
+
    ```python
    with self.lock:
        self.latencies.append(latency_ms)
@@ -121,6 +127,7 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
    ```
 
 3. **Lines 55-56**: Bounded request timestamps array
+
    ```python
    self.request_timestamps: List[float] = []
    self.max_request_timestamps = 10000  # VUL-007 fix: Prevent unbounded growth
@@ -137,6 +144,7 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
    ```
 
 **Memory Analysis**:
+
 - **Before**: Unbounded growth
   - 1000 requests/day = 730,000 samples/year
   - At 8 bytes per float = 5.85 MB/year (latencies only)
@@ -150,6 +158,7 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
   - Circular buffer keeps most recent 10,000 samples
 
 **Verification Evidence**:
+
 - ✓ max_latency_samples = 10000 hard limit enforced
 - ✓ max_request_timestamps = 10000 hard limit enforced
 - ✓ Circular buffer pattern: keeps newest 10,000 samples only
@@ -176,16 +185,19 @@ Phase 3 Production Hardening has been substantially implemented with fixes for a
 All occurrences use `Path(self.model_path).name` to extract only filename:
 
 1. **Line 1350**: Chat completion response
+
    ```python
    "model": Path(self.model_path).name if self.model else None,
    ```
 
 2. **Line 1363**: Health check endpoint
+
    ```python
    "model": Path(self.model_path).name if self.model else None,
    ```
 
 3. **Line 1390**: Model loading log
+
    ```python
    logger.info(f"Loading MLX model: {Path(self.model_path).name}")
    ```
@@ -196,10 +208,13 @@ All occurrences use `Path(self.model_path).name` to extract only filename:
    ```
 
 **Information Disclosure Prevention**:
-- **Before**: 
+
+- **Before**:
+
   ```
   [INFO] Loading MLX model: /Users/andrew/.anyclaude/models/Qwen3-Coder-30B-MLX-4bit
   ```
+
   Reveals:
   - Username: andrew
   - Directory structure: .anyclaude/models/
@@ -212,6 +227,7 @@ All occurrences use `Path(self.model_path).name` to extract only filename:
   Only shows model name, nothing about directory structure
 
 **Verification Evidence**:
+
 - ✓ All 4 logging locations use Path().name extraction
 - ✓ Full paths never logged directly
 - ✓ User home directory not exposed
@@ -238,18 +254,21 @@ All occurrences use `Path(self.model_path).name` to extract only filename:
 All error messages are generic with no path interpolation (Lines 155-181):
 
 1. **Line 160**: Path existence check
+
    ```python
    if not os.path.exists(model_path):
        raise ValidationError("Model path validation failed: path does not exist")
    ```
 
 2. **Line 164**: Directory check
+
    ```python
    if not os.path.isdir(model_path):
        raise ValidationError("Model path validation failed: not a directory")
    ```
 
 3. **Line 168**: Permissions check
+
    ```python
    if not os.access(model_path, os.R_OK):
        raise ValidationError("Model path validation failed: not readable")
@@ -262,6 +281,7 @@ All error messages are generic with no path interpolation (Lines 155-181):
    ```
 
 **Error Message Analysis**:
+
 - ✓ No f-string interpolation with model_path
 - ✓ No string concatenation with variables
 - ✓ No path information in any message
@@ -269,6 +289,7 @@ All error messages are generic with no path interpolation (Lines 155-181):
 - ✓ Users can diagnose issues without revealing paths
 
 **Verification Evidence**:
+
 - ✓ All 4 error messages are generic (no path variables)
 - ✓ No f-string usage with model_path
 - ✓ No string concatenation with path
@@ -293,6 +314,7 @@ All error messages are generic with no path interpolation (Lines 155-181):
 **Fix Verification**:
 
 **Main Case** (Lines 145-155) - **CORRECTLY FIXED**:
+
 ```python
 # Calculate percentiles
 sorted_latencies = sorted(self.latencies)
@@ -310,11 +332,13 @@ return {
 ```
 
 Returns: `{'p50': 14.1, 'p95': 19.2, 'p99': 22.5, 'count': 150}`
+
 - ✓ No raw latencies array
 - ✓ Only percentile aggregates
 - ✓ Count for trend analysis
 
 **Empty Case** (Lines 137-142) - **MINOR INCONSISTENCY**:
+
 ```python
 if not self.latencies:
     return {
@@ -326,11 +350,14 @@ if not self.latencies:
 ```
 
 Returns: `{'latencies': [], 'p50': 0.0, 'p95': 0.0, 'p99': 0.0}`
+
 - ⚠ Returns `'latencies': []` field not present in main case
 - API contract inconsistency (but empty array itself doesn't leak information)
 
 **Information Disclosure Prevention**:
+
 - **Before**: Exposed all raw latencies
+
   ```json
   {
     "latencies": [12.5, 15.3, 14.1, 16.2, 13.8, ...],  // ALL samples exposed!
@@ -339,6 +366,7 @@ Returns: `{'latencies': [], 'p50': 0.0, 'p95': 0.0, 'p99': 0.0}`
     "p99": 22.5
   }
   ```
+
   Allows adversary to:
   - Infer exact request patterns
   - Detect traffic spikes
@@ -357,6 +385,7 @@ Returns: `{'latencies': [], 'p50': 0.0, 'p95': 0.0, 'p99': 0.0}`
   Prevents individual request inference
 
 **Verification Evidence**:
+
 - ✓ Main case: Only aggregated stats returned (p50, p95, p99, count)
 - ✓ No raw latencies array in happy path
 - ⚠ Empty case: Inconsistent field presence (not a security issue, just consistency)
@@ -378,6 +407,7 @@ if not self.latencies:
 ```
 
 **Risk Assessment**:
+
 - Security impact: MINIMAL (empty array itself doesn't leak information)
 - Consistency impact: LOW (minor API contract difference)
 - Priority: LOW (fix if time permits, not blocking)
@@ -388,12 +418,12 @@ if not self.latencies:
 
 ## OWASP TOP 10 ALIGNMENT
 
-| OWASP | Category | Before | After | Status |
-|-------|----------|--------|-------|--------|
-| A01 | Broken Access Control | FAIL | PASS | ✓ Fixed VUL-006 |
-| A04 | Insecure Design | FAIL | PASS | ✓ Fixed VUL-007 |
-| A05 | Security Misconfiguration | FAIL | PASS | ✓ Fixed VUL-008,009 |
-| A09 | Security Logging & Monitoring | FAIL | PASS | ✓ Fixed VUL-008,009 |
+| OWASP | Category                      | Before | After | Status              |
+| ----- | ----------------------------- | ------ | ----- | ------------------- |
+| A01   | Broken Access Control         | FAIL   | PASS  | ✓ Fixed VUL-006     |
+| A04   | Insecure Design               | FAIL   | PASS  | ✓ Fixed VUL-007     |
+| A05   | Security Misconfiguration     | FAIL   | PASS  | ✓ Fixed VUL-008,009 |
+| A09   | Security Logging & Monitoring | FAIL   | PASS  | ✓ Fixed VUL-008,009 |
 
 ---
 
@@ -402,13 +432,14 @@ if not self.latencies:
 **Unit Tests**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/unit/test_metrics_collector.py`
 
 - ✓ Latency tracking respects max_latency_samples limit
-- ✓ Request tracking respects max_request_timestamps limit  
+- ✓ Request tracking respects max_request_timestamps limit
 - ✓ No raw latencies exposed in tests (line 108, 406, 427, 436)
 - ✓ Thread-safe concurrent access verified
 - ✓ Circular buffer behavior tested
 - ✓ Memory tracking tested (with psutil mocking)
 
 **Test Results** (Pass Rate):
+
 - ✓ TestMetricsCollectorBasics: 5/5 tests
 - ✓ TestMetricsCollectorLatency: 4/4 tests
 - ✓ TestMetricsCollectorMemory: 3/3 tests (psutil available)
@@ -419,6 +450,7 @@ if not self.latencies:
 - ✓ TestMetricsCollectorEdgeCases: 5/5 tests
 
 **Integration Testing Recommendations**:
+
 1. Test /v1/metrics without Bearer token → HTTP 403
 2. Test /v1/metrics with wrong token → HTTP 403
 3. Test /v1/metrics with valid METRICS_API_KEY → HTTP 200
@@ -429,19 +461,19 @@ if not self.latencies:
 
 ## PRODUCTION READINESS CHECKLIST
 
-| Item | Status | Notes |
-|------|--------|-------|
-| Critical vulnerabilities fixed | ✓ PASS | VUL-006, VUL-007 |
-| High vulnerabilities fixed | ✓ PASS | VUL-008, VUL-009 |
-| Medium vulnerabilities fixed | ⚠ NEARLY PASS | VUL-010 (needs empty case consistency) |
-| Error handling | ✓ PASS | ErrorHandler, ConfigValidator in place |
-| Metrics bounded | ✓ PASS | Circular buffers with 10k limit |
-| Logging sanitized | ✓ PASS | Path().name in all locations |
-| Authentication | ✓ PASS | HTTPBearer on /v1/metrics |
-| Thread safety | ✓ PASS | Locks on all shared state |
-| Unit tests | ✓ PASS | Comprehensive metrics tests |
-| Integration tests | ⚠ NEEDS WORK | No auth endpoint tests yet |
-| Documentation | ⚠ INCOMPLETE | METRICS_API_KEY not documented |
+| Item                           | Status         | Notes                                  |
+| ------------------------------ | -------------- | -------------------------------------- |
+| Critical vulnerabilities fixed | ✓ PASS         | VUL-006, VUL-007                       |
+| High vulnerabilities fixed     | ✓ PASS         | VUL-008, VUL-009                       |
+| Medium vulnerabilities fixed   | ⚠ NEARLY PASS | VUL-010 (needs empty case consistency) |
+| Error handling                 | ✓ PASS         | ErrorHandler, ConfigValidator in place |
+| Metrics bounded                | ✓ PASS         | Circular buffers with 10k limit        |
+| Logging sanitized              | ✓ PASS         | Path().name in all locations           |
+| Authentication                 | ✓ PASS         | HTTPBearer on /v1/metrics              |
+| Thread safety                  | ✓ PASS         | Locks on all shared state              |
+| Unit tests                     | ✓ PASS         | Comprehensive metrics tests            |
+| Integration tests              | ⚠ NEEDS WORK  | No auth endpoint tests yet             |
+| Documentation                  | ⚠ INCOMPLETE  | METRICS_API_KEY not documented         |
 
 **Verdict**: PRODUCTION-READY with one minor fix recommended
 
@@ -452,6 +484,7 @@ if not self.latencies:
 ### CRITICAL (Must Fix)
 
 **1. Fix VUL-010 Empty Case Inconsistency**
+
 - **File**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/lib/metrics_collector.py`
 - **Line**: 141
 - **Change**: Remove `'latencies': [],` from empty case return
@@ -461,6 +494,7 @@ if not self.latencies:
 ### HIGH (Strongly Recommended)
 
 **1. Add Integration Test for /v1/metrics Authentication**
+
 - **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/integration/test_metrics_auth.py`
 - **Tests**:
   - Request without Bearer token → 403
@@ -471,6 +505,7 @@ if not self.latencies:
 - **Impact**: Security validation
 
 **2. Document METRICS_API_KEY Configuration**
+
 - **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/docs/security/metrics-auth.md`
 - **Content**:
   - METRICS_API_KEY environment variable requirement
@@ -482,14 +517,17 @@ if not self.latencies:
 ### MEDIUM (Nice to Have)
 
 **1. Add Rate Limiting to /v1/metrics**
+
 - Prevent metrics endpoint DoS scanning
 - Use FastAPI middleware
 
 **2. Consider Localhost-Only Metrics**
+
 - Optional configuration for metrics restriction
 - Prevent network exposure
 
 **3. Document Circular Buffer Design**
+
 - Explain 10,000 sample limit choice
 - Memory implications
 - Retention period calculations
@@ -507,6 +545,7 @@ Phase 3 Production Hardening successfully implements fixes for all identified vu
 ✓ **VUL-010** (MEDIUM): Aggregated stats only (minor empty case inconsistency)
 
 **Implementation Quality**:
+
 - Strong security practices throughout
 - Proper use of FastAPI security modules
 - Thread-safe implementation with locks
@@ -528,4 +567,3 @@ Phase 3 Production Hardening successfully implements fixes for all identified vu
 **Overall Assessment**: Phase 3 Production Hardening implementation meets security requirements with excellent engineering practices. Ready for production deployment with one minor consistency fix recommended.
 
 **Recommendation**: Deploy to production with VUL-010 empty case fix applied.
-

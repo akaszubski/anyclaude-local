@@ -125,6 +125,7 @@ curl http://localhost:8080/v1/metrics?format=prometheus
 ```
 
 **Test Coverage**: 151 tests across 3 modules + integration tests
+
 - ErrorHandler: 44 unit tests (cache degradation, OOM recovery, network retry, error sanitization)
 - MetricsCollector: 52 unit tests (cache tracking, latency calculation, memory monitoring, throughput)
 - ConfigValidator: 60 unit tests (port validation, env vars, model paths, dependencies)
@@ -542,12 +543,14 @@ This will show you real measurements like:
 For systems with large RAM (M3 Ultra: 512GB), anyclaude includes an optional RAM-based KV cache that dramatically improves response times for repeated requests.
 
 **Performance**:
+
 - GET latency: <1ms (100-200x faster than disk cache)
 - SET latency: <50ms
 - Throughput: 3.7M operations/sec (vs 10K target - 370x better)
 - Follow-up requests: 0.3-1s total (vs 0.5-10s with disk cache)
 
 **Features**:
+
 - Thread-safe concurrent access with minimal lock contention
 - LRU eviction with configurable memory limit (default 300GB for M3 Ultra)
 - Security: 10KB max key length (prevents DoS), input validation, memory limit enforcement
@@ -588,6 +591,7 @@ python3 scripts/benchmark_ram_cache.py
 ```
 
 **Security Considerations**:
+
 - Maximum key length: 10KB (prevents memory DoS attacks)
 - Memory limit with LRU eviction (prevents out-of-memory)
 - Input validation: rejects None values, empty keys, non-bytes values

@@ -1,5 +1,9 @@
 // Proxy wrapper to run Claude Code with LMStudio local models or real Anthropic API
 
+// Load environment variables from .env file
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import * as fs from "fs";
 import * as path from "path";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -424,6 +428,12 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
 
         // Keep tool calling enabled for vLLM-MLX
         // vLLM-MLX supports tools parameter
+
+        // DEBUG: Log tools being sent to vLLM-MLX
+        if (body.tools && isDebugEnabled()) {
+          debug(1, `[vLLM-MLX → Request] Sending ${body.tools.length || Object.keys(body.tools).length} tools to server`);
+          debug(2, `[vLLM-MLX → Tools]`, body.tools);
+        }
 
         init.body = JSON.stringify(body);
       }

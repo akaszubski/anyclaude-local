@@ -13,9 +13,11 @@
 ## Documents
 
 ### 1. Executive Summary (5 min read)
+
 **File**: `docs/security-audit-ram-cache-summary.md`
 
 Quick overview for decision makers:
+
 - What's good and bad
 - Risk assessment
 - Fix priorities
@@ -26,9 +28,11 @@ Quick overview for decision makers:
 ---
 
 ### 2. Full Audit Report (20 min read)
+
 **File**: `docs/security-audit-ram-cache-issue5.md`
 
 Comprehensive security analysis:
+
 - Detailed vulnerability descriptions with proof of concept
 - Line-by-line code analysis
 - OWASP Top 10 assessment
@@ -40,9 +44,11 @@ Comprehensive security analysis:
 ---
 
 ### 3. Implementation Fixes (30 min read + 3-4 hours implementation)
+
 **File**: `docs/security-audit-fixes.md`
 
 Exact code to fix all vulnerabilities:
+
 - Before/after code examples
 - Line numbers and locations
 - Unit tests to add
@@ -56,6 +62,7 @@ Exact code to fix all vulnerabilities:
 ## Critical Vulnerabilities
 
 ### 1. Unbounded Key Memory Allocation (HIGH)
+
 - Keys not tracked in memory limit
 - Attacker can exhaust RAM despite configured limit
 - Proof: 1000 x 100KB keys = 97MB untracked memory
@@ -63,17 +70,20 @@ Exact code to fix all vulnerabilities:
 - Fix time: 2-3 hours
 
 ### 2. Float Precision in Memory Limit (HIGH)
+
 - Size calculations use floats which could allow exceeding limit
 - Edge case but real vulnerability
 - Location: `scripts/ram_cache.py:78, 93`
 - Fix time: 1-2 hours
 
 ### 3. Silent Failure on Empty Keys (MEDIUM)
+
 - Empty keys silently ignored instead of raising error
 - Location: `scripts/ram_cache.py:74-75`
 - Fix time: 15 minutes
 
 ### 4. No Key Size Limit (MEDIUM)
+
 - Keys can be arbitrarily large
 - Location: `scripts/ram_cache.py:60-70`
 - Fix time: 15 minutes
@@ -92,16 +102,16 @@ Exact code to fix all vulnerabilities:
 
 ## Audit Details
 
-| Aspect | Status | Details |
-|--------|--------|---------|
-| Input Validation | CONCERNS | Key size not validated |
-| Memory Safety | CONCERNS | Keys not tracked in limit |
-| Thread Safety | PASS | All critical sections protected |
-| DoS Prevention | CONCERNS | Key exhaustion attack possible |
-| Data Integrity | PASS | Metadata properly isolated |
-| OWASP A01-A10 | 8/10 | A04 (Insecure Design) has concerns |
-| Secrets Exposure | PASS | No hardcoded credentials |
-| Git History | PASS | No secrets in commits |
+| Aspect           | Status   | Details                            |
+| ---------------- | -------- | ---------------------------------- |
+| Input Validation | CONCERNS | Key size not validated             |
+| Memory Safety    | CONCERNS | Keys not tracked in limit          |
+| Thread Safety    | PASS     | All critical sections protected    |
+| DoS Prevention   | CONCERNS | Key exhaustion attack possible     |
+| Data Integrity   | PASS     | Metadata properly isolated         |
+| OWASP A01-A10    | 8/10     | A04 (Insecure Design) has concerns |
+| Secrets Exposure | PASS     | No hardcoded credentials           |
+| Git History      | PASS     | No secrets in commits              |
 
 ---
 
@@ -123,11 +133,13 @@ Exact code to fix all vulnerabilities:
 ## Next Steps
 
 ### For Decision Makers
+
 1. Read: `docs/security-audit-ram-cache-summary.md`
 2. Decide: Fix now vs. fix later vs. document as known limitation
 3. If fixing: Allocate 4-5 hours developer time
 
 ### For Developers
+
 1. Read: `docs/security-audit-fixes.md`
 2. Implement: Follow step-by-step fixes
 3. Test: Run all 37 original tests + new security tests
@@ -135,6 +147,7 @@ Exact code to fix all vulnerabilities:
 5. Merge: After all tests pass
 
 ### For Security Team
+
 1. Read: `docs/security-audit-ram-cache-issue5.md` (full report)
 2. Review: Vulnerability assessment and OWASP mapping
 3. Approve: After fixes are merged
@@ -162,12 +175,14 @@ Exact code to fix all vulnerabilities:
 ## Testing Summary
 
 ### Current (Pre-Fix)
+
 - Unit tests: 37/37 PASS
 - Thread safety: PASS (20 concurrent threads)
 - Performance: PASS (sub-10ms GET, sub-50ms SET)
 - Security: FAIL (vulnerabilities found)
 
 ### After Fixes
+
 - Expected: All tests pass + new security tests pass
 - Time to implement: 3.5-4.5 hours
 - Time to test: 30 minutes
@@ -179,6 +194,7 @@ Exact code to fix all vulnerabilities:
 **Current**: NOT APPROVED FOR PRODUCTION
 
 **Conditional Approval** possible if:
+
 - Used ONLY with trusted internal code
 - Keys are always small (hash-based IDs)
 - No untrusted input controls keys
@@ -221,4 +237,3 @@ Exact code to fix all vulnerabilities:
 **Status**: COMPLETE
 **Documents**: 3 detailed reports generated
 **Next Action**: Read summary and decide on fix timeline
-

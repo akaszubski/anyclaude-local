@@ -35,7 +35,7 @@ async function sendRequest(messages, tools) {
       messages,
       tools,
       temperature: 0.1,
-      max_tokens: 2000
+      max_tokens: 2000,
     });
 
     const req = http.request(
@@ -46,9 +46,9 @@ async function sendRequest(messages, tools) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(data)
+          "Content-Length": Buffer.byteLength(data),
         },
-        timeout: TEST_TIMEOUT
+        timeout: TEST_TIMEOUT,
       },
       (res) => {
         let body = "";
@@ -93,8 +93,8 @@ async function testParallelToolCalls() {
   const messages = [
     {
       role: "user",
-      content: `Read both ${file1} and ${file2}`
-    }
+      content: `Read both ${file1} and ${file2}`,
+    },
   ];
 
   const tools = [
@@ -106,10 +106,10 @@ async function testParallelToolCalls() {
         parameters: {
           type: "object",
           properties: { file_path: { type: "string" } },
-          required: ["file_path"]
-        }
-      }
-    }
+          required: ["file_path"],
+        },
+      },
+    },
   ];
 
   try {
@@ -119,18 +119,22 @@ async function testParallelToolCalls() {
     // Model should call Read twice (parallel)
     if (toolCalls && toolCalls.length >= 2) {
       assert.ok(
-        toolCalls.every(tc => tc.function.name === "Read"),
+        toolCalls.every((tc) => tc.function.name === "Read"),
         "All calls should be Read"
       );
 
-      const paths = toolCalls.map(tc => JSON.parse(tc.function.arguments).file_path);
+      const paths = toolCalls.map(
+        (tc) => JSON.parse(tc.function.arguments).file_path
+      );
       assert.ok(paths.length === 2, "Should have 2 file paths");
 
       console.log("   ✅ PASS: Parallel tool calls work");
       console.log(`   Tool calls: ${toolCalls.length}`);
       passed++;
     } else {
-      console.log("   ⚠️  Model called tools sequentially (acceptable behavior)");
+      console.log(
+        "   ⚠️  Model called tools sequentially (acceptable behavior)"
+      );
       console.log(`   Tool calls: ${toolCalls?.length || 0}`);
       passed++;
     }
@@ -162,9 +166,9 @@ async function testSequentialToolCalls() {
         description: "Read a file",
         parameters: {
           type: "object",
-          properties: { file_path: { type: "string" } }
-        }
-      }
+          properties: { file_path: { type: "string" } },
+        },
+      },
     },
     {
       type: "function",
@@ -175,11 +179,11 @@ async function testSequentialToolCalls() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
-          }
-        }
-      }
-    }
+            content: { type: "string" },
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -187,8 +191,8 @@ async function testSequentialToolCalls() {
     let messages = [
       {
         role: "user",
-        content: `Read ${sourceFile}`
-      }
+        content: `Read ${sourceFile}`,
+      },
     ];
 
     const response1 = await sendRequest(messages, tools);
@@ -200,16 +204,16 @@ async function testSequentialToolCalls() {
     // Turn 2: Provide tool result and ask to write
     messages.push({
       role: "assistant",
-      tool_calls: [toolCall1]
+      tool_calls: [toolCall1],
     });
     messages.push({
       role: "tool",
       tool_call_id: toolCall1.id,
-      content: "Original content"
+      content: "Original content",
     });
     messages.push({
       role: "user",
-      content: `Now write that content to ${destFile}`
+      content: `Now write that content to ${destFile}`,
     });
 
     const response2 = await sendRequest(messages, tools);
@@ -246,8 +250,8 @@ async function testMixedToolTypes() {
   const messages = [
     {
       role: "user",
-      content: `Read ${testFile} and also run 'echo hello'`
-    }
+      content: `Read ${testFile} and also run 'echo hello'`,
+    },
   ];
 
   const tools = [
@@ -257,9 +261,9 @@ async function testMixedToolTypes() {
         name: "Read",
         parameters: {
           type: "object",
-          properties: { file_path: { type: "string" } }
-        }
-      }
+          properties: { file_path: { type: "string" } },
+        },
+      },
     },
     {
       type: "function",
@@ -267,10 +271,10 @@ async function testMixedToolTypes() {
         name: "Bash",
         parameters: {
           type: "object",
-          properties: { command: { type: "string" } }
-        }
-      }
-    }
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -278,7 +282,7 @@ async function testMixedToolTypes() {
     const toolCalls = response.choices[0].message.tool_calls;
 
     if (toolCalls && toolCalls.length > 0) {
-      const toolNames = toolCalls.map(tc => tc.function.name);
+      const toolNames = toolCalls.map((tc) => tc.function.name);
       console.log(`   Tool calls: ${toolNames.join(", ")}`);
 
       // Should use at least one tool
@@ -312,8 +316,11 @@ async function testToolChaining() {
       type: "function",
       function: {
         name: "Bash",
-        parameters: { type: "object", properties: { command: { type: "string" } } }
-      }
+        parameters: {
+          type: "object",
+          properties: { command: { type: "string" } },
+        },
+      },
     },
     {
       type: "function",
@@ -323,18 +330,16 @@ async function testToolChaining() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
-          }
-        }
-      }
-    }
+            content: { type: "string" },
+          },
+        },
+      },
+    },
   ];
 
   try {
     // Turn 1: Run pwd
-    let messages = [
-      { role: "user", content: "Run the 'pwd' command" }
-    ];
+    let messages = [{ role: "user", content: "Run the 'pwd' command" }];
 
     const response1 = await sendRequest(messages, tools);
     const bashCall = response1.choices[0].message.tool_calls?.[0];
@@ -345,16 +350,16 @@ async function testToolChaining() {
     // Turn 2: Write the result
     messages.push({
       role: "assistant",
-      tool_calls: [bashCall]
+      tool_calls: [bashCall],
     });
     messages.push({
       role: "tool",
       tool_call_id: bashCall.id,
-      content: "/Users/test/directory"
+      content: "/Users/test/directory",
     });
     messages.push({
       role: "user",
-      content: `Write the directory path to ${outputFile}`
+      content: `Write the directory path to ${outputFile}`,
     });
 
     const response2 = await sendRequest(messages, tools);
@@ -388,9 +393,12 @@ async function testMultipleToolResults() {
       type: "function",
       function: {
         name: "Bash",
-        parameters: { type: "object", properties: { command: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -398,8 +406,8 @@ async function testMultipleToolResults() {
     let messages = [
       {
         role: "user",
-        content: "Run 'pwd' and 'date' commands"
-      }
+        content: "Run 'pwd' and 'date' commands",
+      },
     ];
 
     const response = await sendRequest(messages, tools);
@@ -409,20 +417,20 @@ async function testMultipleToolResults() {
       // Provide results for both
       messages.push({
         role: "assistant",
-        tool_calls: toolCalls
+        tool_calls: toolCalls,
       });
 
       for (const tc of toolCalls) {
         messages.push({
           role: "tool",
           tool_call_id: tc.id,
-          content: `Result for ${tc.id}`
+          content: `Result for ${tc.id}`,
         });
       }
 
       messages.push({
         role: "user",
-        content: "What were the results?"
+        content: "What were the results?",
       });
 
       const response2 = await sendRequest(messages, tools);
@@ -451,15 +459,16 @@ async function testToolCallLimit() {
       type: "function",
       function: {
         name: "Bash",
-        parameters: { type: "object", properties: { command: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
-    const messages = [
-      { role: "user", content: "Run pwd" }
-    ];
+    const messages = [{ role: "user", content: "Run pwd" }];
 
     let turnCount = 0;
     const MAX_TURNS = 5;
@@ -490,10 +499,14 @@ async function testToolCallLimit() {
 }
 
 async function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("INTEGRATION TEST: Multiple Tool Calls (Sequential & Parallel)");
   console.log("Phase 1.2 - TDD Red Phase");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   console.log(`\nTesting server at: ${MLX_SERVER_URL}\n`);
 
@@ -504,9 +517,13 @@ async function runTests() {
   await testMultipleToolResults();
   await testToolCallLimit();
 
-  console.log("\n================================================================================");
+  console.log(
+    "\n================================================================================"
+  );
   console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   return failed === 0 ? 0 : 1;
 }

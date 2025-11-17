@@ -35,6 +35,7 @@ Claude Code (displays results)
 **Purpose**: Convert Anthropic tool definitions to OpenAI function calling format
 
 **Input (Anthropic format)**:
+
 ```typescript
 {
   name: "Read",
@@ -50,6 +51,7 @@ Claude Code (displays results)
 ```
 
 **Output (OpenAI format)**:
+
 ```typescript
 {
   type: "function",
@@ -97,6 +99,7 @@ Claude Code (displays results)
 **Purpose**: Parse OpenAI tool call responses back to Anthropic format, handling both streaming and complete responses
 
 **Input (OpenAI tool_calls)**:
+
 ```typescript
 {
   id: "call_abc123",
@@ -109,6 +112,7 @@ Claude Code (displays results)
 ```
 
 **Output (Anthropic tool_use)**:
+
 ```typescript
 {
   type: "tool_use",
@@ -144,6 +148,7 @@ Claude Code (displays results)
 **Streaming Patterns**:
 
 1. **Normal streaming** (AI SDK):
+
    ```
    { type: "tool_call_start", id: "call_123", name: "Read" }
    { type: "tool_call_delta", id: "call_123", delta: '{"path":"' }
@@ -240,6 +245,7 @@ Tests with running MLX server:
 **File**: `tests/manual/test-mlx-server-interactive.sh`
 
 Interactive menu-driven testing:
+
 - Start/stop MLX server
 - Run basic tool tests
 - Check streaming output
@@ -270,6 +276,7 @@ Interactive menu-driven testing:
 - Malformed JSON (context in error message)
 
 All errors include:
+
 - Clear description of what went wrong
 - Context (tool name, ID, field name)
 - Expected vs actual values

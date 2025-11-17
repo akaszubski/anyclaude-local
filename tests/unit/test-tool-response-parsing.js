@@ -19,7 +19,9 @@ try {
   parseOpenAIToolCall = parser.parseOpenAIToolCall;
   assembleStreamingToolCall = parser.assembleStreamingToolCall;
 } catch (err) {
-  console.log("⚠️  tool-response-parser.js not found (expected in TDD red phase)");
+  console.log(
+    "⚠️  tool-response-parser.js not found (expected in TDD red phase)"
+  );
   console.log(`   Error: ${err.message}`);
   parseOpenAIToolCall = null;
   assembleStreamingToolCall = null;
@@ -50,23 +52,25 @@ function testParseCompleteToolCall() {
               type: "function",
               function: {
                 name: "Read",
-                arguments: '{"file_path":"/Users/test/file.txt"}'
-              }
-            }
-          ]
-        }
-      }
-    ]
+                arguments: '{"file_path":"/Users/test/file.txt"}',
+              },
+            },
+          ],
+        },
+      },
+    ],
   };
 
-  const anthropicFormat = parseOpenAIToolCall(openaiResponse.choices[0].message.tool_calls[0]);
+  const anthropicFormat = parseOpenAIToolCall(
+    openaiResponse.choices[0].message.tool_calls[0]
+  );
 
   // Anthropic format: { type: "tool_use", id, name, input }
   assert.strictEqual(anthropicFormat.type, "tool_use");
   assert.strictEqual(anthropicFormat.id, "call_abc123");
   assert.strictEqual(anthropicFormat.name, "Read");
   assert.deepStrictEqual(anthropicFormat.input, {
-    file_path: "/Users/test/file.txt"
+    file_path: "/Users/test/file.txt",
   });
 
   console.log("   ✅ PASS: Complete tool call parsed correctly");
@@ -96,16 +100,19 @@ function testParseComplexArguments() {
         mode: "overwrite",
         metadata: {
           timestamp: "2024-01-15T10:30:00Z",
-          author: "test"
-        }
-      })
-    }
+          author: "test",
+        },
+      }),
+    },
   };
 
   const anthropicFormat = parseOpenAIToolCall(openaiToolCall);
 
   assert.strictEqual(anthropicFormat.name, "Write");
-  assert.ok(anthropicFormat.input.metadata, "Nested objects should be preserved");
+  assert.ok(
+    anthropicFormat.input.metadata,
+    "Nested objects should be preserved"
+  );
   assert.strictEqual(anthropicFormat.input.metadata.author, "test");
 
   console.log("   ✅ PASS: Complex arguments parsed correctly");
@@ -128,13 +135,13 @@ function testParseMultipleToolCalls() {
     {
       id: "call_1",
       type: "function",
-      function: { name: "Read", arguments: '{"file_path":"a.txt"}' }
+      function: { name: "Read", arguments: '{"file_path":"a.txt"}' },
     },
     {
       id: "call_2",
       type: "function",
-      function: { name: "Read", arguments: '{"file_path":"b.txt"}' }
-    }
+      function: { name: "Read", arguments: '{"file_path":"b.txt"}' },
+    },
   ];
 
   const anthropicFormats = openaiToolCalls.map(parseOpenAIToolCall);
@@ -165,8 +172,8 @@ function testHandleMalformedJSON() {
     type: "function",
     function: {
       name: "Bash",
-      arguments: '{"command":"ls","invalid json'  // Truncated/malformed
-    }
+      arguments: '{"command":"ls","invalid json', // Truncated/malformed
+    },
   };
 
   try {
@@ -201,7 +208,7 @@ function testAssembleStreamingToolCall() {
     { type: "tool_call_delta", id: "call_stream", delta: '{"file' },
     { type: "tool_call_delta", id: "call_stream", delta: '_path":' },
     { type: "tool_call_delta", id: "call_stream", delta: '"/test.txt"}' },
-    { type: "tool_call_end", id: "call_stream" }
+    { type: "tool_call_end", id: "call_stream" },
   ];
 
   const assembledToolCall = assembleStreamingToolCall(deltas);
@@ -236,8 +243,8 @@ function testIncompleteStreaming() {
       type: "tool_call_complete",
       id: "call_incomplete",
       name: "Write",
-      arguments: '{"file_path":"test.txt","content":"hello"}'
-    }
+      arguments: '{"file_path":"test.txt","content":"hello"}',
+    },
   ];
 
   const assembledToolCall = assembleStreamingToolCall(deltas);
@@ -245,7 +252,7 @@ function testIncompleteStreaming() {
   assert.strictEqual(assembledToolCall.name, "Write");
   assert.deepStrictEqual(assembledToolCall.input, {
     file_path: "test.txt",
-    content: "hello"
+    content: "hello",
   });
 
   console.log("   ✅ PASS: Incomplete streaming handled correctly");
@@ -269,12 +276,15 @@ function testOutOfOrderChunks() {
     { type: "tool_call_delta", id: "call_ooo", delta: '{"command":' },
     { type: "tool_call_start", id: "call_ooo", name: "Bash" },
     { type: "tool_call_delta", id: "call_ooo", delta: '"ls"}' },
-    { type: "tool_call_end", id: "call_ooo" }
+    { type: "tool_call_end", id: "call_ooo" },
   ];
 
   try {
     const assembledToolCall = assembleStreamingToolCall(deltas);
-    assert.ok(assembledToolCall, "Should handle out-of-order chunks gracefully");
+    assert.ok(
+      assembledToolCall,
+      "Should handle out-of-order chunks gracefully"
+    );
     console.log("   ✅ PASS: Out-of-order chunks handled");
     passed++;
   } catch (err) {
@@ -301,8 +311,8 @@ function testEmptyArguments() {
     type: "function",
     function: {
       name: "GetCurrentTime",
-      arguments: "{}"
-    }
+      arguments: "{}",
+    },
   };
 
   const anthropicFormat = parseOpenAIToolCall(openaiToolCall);
@@ -327,12 +337,12 @@ function testToolCallIDValidation() {
   }
 
   const openaiToolCall = {
-    id: "",  // Empty ID
+    id: "", // Empty ID
     type: "function",
     function: {
       name: "Read",
-      arguments: '{"file_path":"test.txt"}'
-    }
+      arguments: '{"file_path":"test.txt"}',
+    },
   };
 
   try {
@@ -364,8 +374,8 @@ function testParameterValidation() {
     function: {
       name: "Read",
       // Missing 'file_path' (should be validated against schema elsewhere)
-      arguments: '{}'
-    }
+      arguments: "{}",
+    },
   };
 
   // Parser should not validate schema (that's schema validator's job)
@@ -373,15 +383,21 @@ function testParameterValidation() {
   const anthropicFormat = parseOpenAIToolCall(openaiToolCall);
   assert.deepStrictEqual(anthropicFormat.input, {});
 
-  console.log("   ✅ PASS: Parser doesn't enforce schema (correct separation of concerns)");
+  console.log(
+    "   ✅ PASS: Parser doesn't enforce schema (correct separation of concerns)"
+  );
   passed++;
 }
 
 function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("UNIT TESTS: Tool Response Parsing (OpenAI → Anthropic)");
   console.log("Phase 1.2 - TDD Red Phase");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   testParseCompleteToolCall();
   testParseComplexArguments();
@@ -394,12 +410,18 @@ function runTests() {
   testToolCallIDValidation();
   testParameterValidation();
 
-  console.log("\n================================================================================");
+  console.log(
+    "\n================================================================================"
+  );
   console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   if (!parseOpenAIToolCall || !assembleStreamingToolCall) {
-    console.log("\n⚠️  EXPECTED FAILURE: tool-response-parser.ts not implemented yet");
+    console.log(
+      "\n⚠️  EXPECTED FAILURE: tool-response-parser.ts not implemented yet"
+    );
     console.log("This is the TDD RED phase - implementation comes next!");
   }
 

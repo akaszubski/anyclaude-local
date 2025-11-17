@@ -7,7 +7,7 @@
  * Used by anthropic-proxy.ts to forward cache headers to MLX backend.
  */
 
-import * as crypto from 'crypto';
+import * as crypto from "crypto";
 
 export interface CacheMarkers {
   hasSystemCache: boolean;
@@ -26,20 +26,21 @@ export interface CacheMarkers {
  */
 export function generateCacheHash(content: any): string {
   if (!content) {
-    return '';
+    return "";
   }
 
   // If content is not a string, stringify it
-  const textContent = typeof content === 'string' ? content : JSON.stringify(content);
+  const textContent =
+    typeof content === "string" ? content : JSON.stringify(content);
 
   if (textContent.length === 0) {
-    return '';
+    return "";
   }
 
   return crypto
-    .createHash('sha256')
-    .update(textContent, 'utf8')
-    .digest('hex')
+    .createHash("sha256")
+    .update(textContent, "utf8")
+    .digest("hex")
     .toLowerCase();
 }
 
@@ -75,11 +76,11 @@ export function extractMarkers(request: {
 }): CacheMarkers {
   const markers: CacheMarkers = {
     hasSystemCache: false,
-    systemCacheText: '',
+    systemCacheText: "",
     cacheableUserBlocks: 0,
     estimatedCacheTokens: 0,
-    totalCacheableContent: '',
-    cacheKey: null
+    totalCacheableContent: "",
+    cacheKey: null,
   };
 
   // Extract system cache markers
@@ -87,18 +88,18 @@ export function extractMarkers(request: {
     // System can be a string or array of blocks
     const systemBlocks = Array.isArray(request.system)
       ? request.system
-      : [{ type: 'text', text: request.system }];
+      : [{ type: "text", text: request.system }];
 
     // Find blocks with cache_control
     const cacheableBlocks = systemBlocks.filter(
-      (block: any) => block.cache_control?.type === 'ephemeral'
+      (block: any) => block.cache_control?.type === "ephemeral"
     );
 
     if (cacheableBlocks.length > 0) {
       markers.hasSystemCache = true;
       markers.systemCacheText = cacheableBlocks
-        .map((b: any) => b.text || '')
-        .join('\n');
+        .map((b: any) => b.text || "")
+        .join("\n");
     }
   }
 
@@ -107,7 +108,7 @@ export function extractMarkers(request: {
     request.messages.forEach((msg: any) => {
       if (msg.content && Array.isArray(msg.content)) {
         msg.content.forEach((block: any) => {
-          if (block.cache_control?.type === 'ephemeral') {
+          if (block.cache_control?.type === "ephemeral") {
             markers.cacheableUserBlocks++;
           }
         });
@@ -120,7 +121,9 @@ export function extractMarkers(request: {
 
   // Estimate tokens and generate cache key
   if (markers.totalCacheableContent.length > 0) {
-    markers.estimatedCacheTokens = estimateTokens(markers.totalCacheableContent);
+    markers.estimatedCacheTokens = estimateTokens(
+      markers.totalCacheableContent
+    );
     markers.cacheKey = generateCacheHash(markers.totalCacheableContent);
   }
 

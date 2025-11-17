@@ -21,12 +21,14 @@ Fixed 5 security vulnerabilities in the cache warmup implementation (`scripts/ml
 **Issue**: No path validation allowed reading arbitrary files via `WARMUP_SYSTEM_FILE`
 
 **Attack vector**:
+
 ```bash
 WARMUP_SYSTEM_FILE=/etc/passwd python3 scripts/mlx-server.py
 WARMUP_SYSTEM_FILE=~/.ssh/id_rsa python3 scripts/mlx-server.py
 ```
 
 **Fix implemented**:
+
 1. Canonical path resolution via `Path.resolve()` (prevents symlink attacks)
 2. Whitelist validation using `Path.relative_to(ALLOWED_SYSTEM_PROMPT_DIR)`
 3. Only files in `~/.anyclaude/system-prompts/` are allowed
@@ -43,12 +45,14 @@ WARMUP_SYSTEM_FILE=~/.ssh/id_rsa python3 scripts/mlx-server.py
 **Issue**: No bounds checking on `WARMUP_TIMEOUT_SEC` allowed DoS attacks
 
 **Attack vector**:
+
 ```bash
 WARMUP_TIMEOUT_SEC=999999999 python3 scripts/mlx-server.py
 WARMUP_TIMEOUT_SEC=inf python3 scripts/mlx-server.py
 ```
 
 **Fix implemented**:
+
 ```python
 # Validate timeout range (1-300 seconds) - VUL-002 fix
 try:
@@ -72,12 +76,14 @@ except (ValueError, TypeError):
 **Issue**: No file size limit could exhaust memory with large files
 
 **Attack vector**:
+
 ```bash
 dd if=/dev/zero of=~/.anyclaude/system-prompts/huge.txt bs=1G count=1
 WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/huge.txt python3 scripts/mlx-server.py
 ```
 
 **Fix implemented**:
+
 1. Check file size before reading: `file_size = canonical.stat().st_size`
 2. Reject files > 1MB: `if file_size > MAX_SYSTEM_PROMPT_SIZE`
 3. Bounded read: `f.read(MAX_SYSTEM_PROMPT_SIZE)` (hard limit even if check bypassed)
@@ -95,12 +101,14 @@ WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/huge.txt python3 scripts/mlx-serv
 **Issue**: Full file paths in log messages leak system information
 
 **Original code**:
+
 ```python
 logger.info(f"[Cache Warmup] Loaded system prompt from: {warmup_file}")
 logger.warning(f"[Cache Warmup] Failed to read {warmup_file}: {e}")
 ```
 
 **Fix implemented**:
+
 ```python
 # VUL-004 fix: sanitized log (no file path)
 logger.info("[Cache Warmup] Loaded system prompt from custom file")
@@ -118,6 +126,7 @@ logger.warning(f"[Cache Warmup] Failed to read file: {type(e).__name__}")
 **Issue**: Combined with VUL-001 (path traversal)
 
 **Fix**: Implemented whitelist-based validation (same as VUL-001)
+
 - Only `~/.anyclaude/system-prompts/` directory allowed
 - Canonical path resolution prevents bypasses
 - Input rejection with early return (no error details)
@@ -188,6 +197,7 @@ ALLOWED_SYSTEM_PROMPT_DIR.mkdir(parents=True, exist_ok=True)
 **File**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/test/test-security-simple.py`
 
 **Tests**:
+
 1. **Timeout validation** (VUL-002)
    - ✓ inf → 60.0
    - ✓ negative → 60.0
@@ -212,7 +222,7 @@ ALLOWED_SYSTEM_PROMPT_DIR.mkdir(parents=True, exist_ok=True)
 4. **Code implementation verification**
    - ✓ All security constants present
    - ✓ All security checks present
-   - ✓ All VUL-* comments present
+   - ✓ All VUL-\* comments present
 
 ### Running Tests
 
@@ -234,6 +244,7 @@ python3 scripts/test/test-security-simple.py
 ### 1. Reading Sensitive Files
 
 **Attack**:
+
 ```bash
 WARMUP_SYSTEM_FILE=/etc/passwd python3 scripts/mlx-server.py
 ```
@@ -245,6 +256,7 @@ WARMUP_SYSTEM_FILE=/etc/passwd python3 scripts/mlx-server.py
 ### 2. Symlink Escape
 
 **Attack**:
+
 ```bash
 ln -s /etc ~/.anyclaude/system-prompts/escape
 WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/escape/passwd python3 scripts/mlx-server.py
@@ -257,6 +269,7 @@ WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/escape/passwd python3 scripts/mlx
 ### 3. Relative Path Traversal
 
 **Attack**:
+
 ```bash
 WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/../../../etc/passwd python3 scripts/mlx-server.py
 ```
@@ -268,6 +281,7 @@ WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/../../../etc/passwd python3 scrip
 ### 4. Memory Exhaustion
 
 **Attack**:
+
 ```bash
 dd if=/dev/zero of=~/.anyclaude/system-prompts/huge.txt bs=1G count=10
 WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/huge.txt python3 scripts/mlx-server.py
@@ -280,6 +294,7 @@ WARMUP_SYSTEM_FILE=~/.anyclaude/system-prompts/huge.txt python3 scripts/mlx-serv
 ### 5. Timeout DoS
 
 **Attack**:
+
 ```bash
 WARMUP_TIMEOUT_SEC=999999999 python3 scripts/mlx-server.py
 ```
@@ -315,7 +330,7 @@ ALLOWED_SYSTEM_PROMPT_DIR = Path.home() / ".anyclaude" / "system-prompts"
 
 - Comprehensive docstring for `get_standard_system_prompt()`
 - Security section documenting all protections
-- VUL-* comments marking each fix in code
+- VUL-\* comments marking each fix in code
 
 ---
 

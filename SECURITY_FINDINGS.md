@@ -33,18 +33,21 @@ No high-severity security vulnerabilities found.
 The server defaults to binding on all network interfaces (0.0.0.0:8081) instead of localhost only (127.0.0.1:8081). This could potentially expose the local MLX inference service to network access on untrusted networks.
 
 **Current Code**:
+
 ```python
 def __init__(self, model_path: str, port: int = 8081, host: str = "0.0.0.0"):
     self.host = host
 ```
 
 **Recommended Fix**:
+
 ```python
 def __init__(self, model_path: str, port: int = 8081, host: str = "127.0.0.1"):
     self.host = host
 ```
 
 **Impact**: Low to Medium
+
 - Local development environment: LOW RISK (assumed trusted)
 - Shared network: MEDIUM RISK (could expose service to network peers)
 
@@ -65,12 +68,14 @@ def __init__(self, model_path: str, port: int = 8081, host: str = "127.0.0.1"):
 The `max_tokens` parameter accepts any integer value without bounds validation. A malicious or buggy client could request an extremely large token count (e.g., 2^31-1), causing GPU memory exhaustion or long-running requests.
 
 **Current Code**:
+
 ```python
 max_tokens = request_body.get("max_tokens", 1024)
 # No validation, passed directly to mlx_lm.generate()
 ```
 
 **Recommended Fix**:
+
 ```python
 max_tokens = request_body.get("max_tokens", 1024)
 # Validate and clamp to safe range
@@ -81,11 +86,13 @@ if max_tokens > 262144:
 ```
 
 **Impact**: Medium
+
 - Potential for Denial of Service via resource exhaustion
 - Could freeze the server on unbounded requests
 - Affects availability of the local service
 
 **Attack Vector**:
+
 ```python
 # Malicious request
 POST /v1/chat/completions
@@ -112,6 +119,7 @@ POST /v1/chat/completions
 While FastAPI/Uvicorn have default limits, there is no explicit Content-Length validation middleware. Large request bodies could theoretically cause memory exhaustion.
 
 **Recommendation**:
+
 ```python
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -132,6 +140,7 @@ async def validate_content_length(request: Request, call_next):
 ```
 
 **Impact**: Low
+
 - Framework has built-in protection
 - Additional validation improves robustness
 - Prevents potential edge-case resource issues
@@ -148,6 +157,7 @@ async def validate_content_length(request: Request, call_next):
 
 **Description**:
 There is no explicit SECURITY.md file documenting:
+
 - Security model and threat assumptions
 - Which attacks are in/out of scope
 - Security recommendations for users
@@ -166,11 +176,13 @@ This application is designed for **local development use only**.
 ### Threat Model
 
 **In Scope (Mitigated)**:
+
 - Local code execution via model output
 - GPU resource exhaustion
 - Accidental file exposure to model
 
 **Out of Scope**:
+
 - Network-based attacks (local only)
 - Malicious users with shell access (system compromised)
 - API key theft (user's responsibility)
@@ -197,6 +209,7 @@ Do not open public GitHub issues for security concerns.
 ```
 
 **Impact**: Low
+
 - Informational/documentation
 - Helps users understand security assumptions
 - Establishes responsible disclosure process
@@ -205,12 +218,12 @@ Do not open public GitHub issues for security concerns.
 
 ## Summary Table
 
-| # | Issue | Severity | Type | File | Line |
-|---|-------|----------|------|------|------|
-| 1 | Default 0.0.0.0 binding | Medium | Misc-config | mlx-server.py | 436 |
-| 2 | Unbounded max_tokens | Medium | Resource | mlx-server.py | 1090 |
-| 3 | No Content-Length validation | Low | Resource | mlx-server.py | N/A |
-| 4 | Missing SECURITY.md | Low | Docs | Project root | N/A |
+| #   | Issue                        | Severity | Type        | File          | Line |
+| --- | ---------------------------- | -------- | ----------- | ------------- | ---- |
+| 1   | Default 0.0.0.0 binding      | Medium   | Misc-config | mlx-server.py | 436  |
+| 2   | Unbounded max_tokens         | Medium   | Resource    | mlx-server.py | 1090 |
+| 3   | No Content-Length validation | Low      | Resource    | mlx-server.py | N/A  |
+| 4   | Missing SECURITY.md          | Low      | Docs        | Project root  | N/A  |
 
 ---
 
@@ -228,6 +241,7 @@ Do not open public GitHub issues for security concerns.
   - `git fsck --lost-found`
 
 **Evidence**:
+
 ```
 .anyclauderc.example.json:44: "apiKey": "sk-or-v1-YOUR_API_KEY_HERE"
 .gitignore: .env (properly excluded)
@@ -269,6 +283,7 @@ git history: No real API keys in any commit
 ### OWASP Compliance: PASS
 
 All 10 OWASP Top 2021 risks reviewed:
+
 - A01: PASS (no access control needed)
 - A02: PASS (env vars used correctly)
 - A03: PASS (no injection)
@@ -302,6 +317,7 @@ All 10 OWASP Top 2021 risks reviewed:
 ## Audit Details
 
 **Audit Methodology**:
+
 - Manual code review (security patterns)
 - Git history forensics (secret detection)
 - Configuration analysis
@@ -310,6 +326,7 @@ All 10 OWASP Top 2021 risks reviewed:
 - Input validation testing
 
 **Tools Used**:
+
 - grep (pattern matching)
 - git (history analysis)
 - Manual code inspection
@@ -317,6 +334,7 @@ All 10 OWASP Top 2021 risks reviewed:
 **Time Invested**: ~2 hours
 
 **Confidence Level**: HIGH
+
 - All critical paths reviewed
 - All entry points validated
 - Configuration verified

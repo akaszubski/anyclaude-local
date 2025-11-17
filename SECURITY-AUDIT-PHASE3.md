@@ -26,6 +26,7 @@ Phase 3 implements production hardening with error handling, metrics collection,
 **Vulnerability**: `/v1/metrics` endpoint is publicly accessible with no authentication required.
 
 **Code**:
+
 ```python
 @self.app.get("/v1/metrics")
 async def metrics(format: str = 'json'):
@@ -37,6 +38,7 @@ async def metrics(format: str = 'json'):
 ```
 
 **Attack Vector**: Any unauthenticated client can:
+
 - Obtain cache hit/miss statistics
 - Extract latency data for all requests
 - Monitor memory usage patterns
@@ -45,6 +47,7 @@ async def metrics(format: str = 'json'):
 - Infer operational capacity and load patterns
 
 **Exposed Data** (`/v1/metrics?format=json`):
+
 ```json
 {
   "timestamp": 1700177000.123,
@@ -74,7 +77,8 @@ async def metrics(format: str = 'json'):
 
 **Severity**: **CRITICAL**
 
-**Recommendation**: 
+**Recommendation**:
+
 - Add API key authentication to `/v1/metrics` endpoint
 - Implement bearer token validation before returning metrics
 - Consider restricting metrics to localhost-only access
@@ -108,6 +112,7 @@ async def metrics(
 **Vulnerability**: Both `self.latencies` and `self.request_timestamps` lists grow indefinitely without bounds.
 
 **Code**:
+
 ```python
 # Line 59: Initialization
 self.latencies: List[float] = []
@@ -125,18 +130,21 @@ return {
 ```
 
 **Attack Vector**: Memory exhaustion via continuous metrics polling:
+
 - Each request appends to unbounded lists
 - Long-running server (days/weeks) accumulates millions of entries
 - Each `/v1/metrics` call copies entire lists
 - Potential OOM crash after 1-2 weeks of operation
 
 **Example**: 100 requests/second × 86400 seconds/day × 7 days = **60.48 million entries**
+
 - At 8 bytes per float: ~480 MB in `latencies` list alone
 - Memory grows continuously until server crashes
 
 **Severity**: **HIGH**
 
 **Recommendation**:
+
 - Implement circular buffer/ring buffer (fixed max size)
 - Add max_size parameter to MetricsCollector:
 
@@ -144,13 +152,13 @@ return {
 def __init__(self, enable_latency_tracking=True, max_latencies=10000):
     self.latencies: List[float] = []
     self.max_latencies = max_latencies
-    
+
 def record_latency(self, latency_ms: float):
     if latency_ms < 0:
         raise ValueError("Latency cannot be negative")
     if not self.enable_latency_tracking:
         return
-    
+
     with self.lock:
         self.latencies.append(latency_ms)
         # Keep only last N latencies
@@ -178,18 +186,21 @@ def record_request(self):
 **Vulnerability**: Full model path is logged and visible in server output/logs.
 
 **Code**:
+
 ```python
 logger.info(f"Loading MLX model from: {self.model_path}")
 # Example output: "Loading MLX model from: /Users/andrew/.cache/huggingface/models/Qwen3-Coder-30B-MLX-4bit"
 ```
 
 **Attack Vector**: Information disclosure via:
+
 - Server logs accessible via CloudWatch, ELK, Splunk, etc.
 - Container logs accessible in Kubernetes/Docker deployments
 - Monitoring dashboards that display logs
 - Error messages if model loading fails
 
 **Exposed Information**:
+
 - Full filesystem paths reveal user home directory structure
 - Model names/versions reveal capabilities to attackers
 - Cache location reveals storage strategy
@@ -198,6 +209,7 @@ logger.info(f"Loading MLX model from: {self.model_path}")
 **Severity**: **HIGH**
 
 **Recommendation**:
+
 - Use sanitized log messages (filename only):
 
 ```python
@@ -220,6 +232,7 @@ except Exception as e:
 **Vulnerability**: Raw latencies list returned in metrics export allows analysis of individual request patterns.
 
 **Code**:
+
 ```python
 return {
     'latencies': self.latencies.copy(),  # Full list exposed
@@ -230,6 +243,7 @@ return {
 ```
 
 **Impact**:
+
 - **Pattern Analysis**: Attackers can identify request timing patterns
 - **User Fingerprinting**: Latencies correlate with specific user requests
 - **Data Inference**: Timing patterns reveal model behavior, cached vs. non-cached requests
@@ -239,6 +253,7 @@ return {
 **Severity**: **MEDIUM**
 
 **Recommendation**:
+
 - Remove raw latencies from export
 - Export only aggregated statistics:
 
@@ -248,9 +263,9 @@ def export_metrics_json(self) -> Dict[str, Any]:
     latency_stats = self.get_latency_stats()
     memory_stats = self.get_memory_stats()
     throughput_stats = self.get_throughput_stats()
-    
+
     uptime_seconds = time.time() - self.start_time
-    
+
     return {
         'timestamp': time.time(),
         'uptime_seconds': uptime_seconds,
@@ -275,6 +290,7 @@ def export_metrics_json(self) -> Dict[str, Any]:
 **Vulnerability**: Full model path exposed in validation error messages.
 
 **Code**:
+
 ```python
 def validate_model_path(self, model_path: str) -> Dict[str, Any]:
     # Check existence
@@ -285,7 +301,7 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
     if not os.path.isdir(model_path):
         raise ValidationError(f"Model path is not a directory: {model_path}")
         # ^ Full path in exception
-    
+
     if not (has_config and has_tokenizer and has_weights):
         raise ValidationError(
             f"Model path missing required files (...): {model_path}"
@@ -298,6 +314,7 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
 **Severity**: **MEDIUM**
 
 **Recommendation**:
+
 - Sanitize error messages:
 
 ```python
@@ -306,13 +323,13 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
         # Check existence
         if not os.path.exists(model_path):
             raise ValidationError("Model path does not exist")
-        
+
         # Check if directory
         if not os.path.isdir(model_path):
             raise ValidationError("Model path is not a directory")
-        
+
         # ... rest of validation
-        
+
         if not (has_config and has_tokenizer and has_weights):
             raise ValidationError("Model is missing required files")
     except ValidationError:
@@ -324,6 +341,7 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
 ## SECURITY CHECKS COMPLETED
 
 ### Path Traversal (VUL-003)
+
 - [x] **PASS**: `get_standard_system_prompt()` properly validates paths
   - Uses `Path.resolve()` for symlink canonicalization
   - Validates against whitelist with `relative_to()` check
@@ -336,12 +354,14 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
   - Proper exception handling
 
 ### Secrets in Code
+
 - [x] **PASS**: No hardcoded API keys, tokens, or secrets found
 - [x] **PASS**: `.env` properly gitignored
 - [x] **PASS**: Git history clean (no secrets committed)
 - [x] **PASS**: No secrets in configuration files
 
 ### Input Validation
+
 - [x] **PASS**: Port validation
   - Numeric conversion with error handling
   - Range checking (1-65535)
@@ -360,6 +380,7 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
   - BUT: Full paths logged/exposed in errors
 
 ### Thread Safety
+
 - [x] **PASS**: Threading locks properly used
   - `ErrorHandler`: Uses single `threading.Lock()`
   - `MetricsCollector`: Uses single `threading.Lock()`
@@ -367,16 +388,19 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
   - No race conditions detected
 
 ### Authentication/Authorization
+
 - [x] **FAIL**: `/v1/metrics` endpoint has NO authentication
 - [x] **FAIL**: `/health` endpoint has NO authentication
 - [x] **PASS**: `/v1/chat/completions` properly integrated with FastAPI
 
 ### Resource Exhaustion
+
 - [x] **FAIL**: Unbounded latencies list causes memory leak
 - [x] **FAIL**: Unbounded request_timestamps list causes memory leak
 - [x] **PARTIAL**: OOM detection exists but no prevention
 
 ### Information Disclosure
+
 - [x] **FAIL**: Full model paths logged at startup
 - [x] **FAIL**: Full latencies list exposed in metrics
 - [x] **PASS**: Cache keys are hashed (not raw prompts)
@@ -386,18 +410,18 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
 
 ## SUMMARY BY OWASP TOP 10
 
-| OWASP Risk | Issue | Status |
-|-----------|-------|--------|
-| A01: Broken Access Control | No auth on `/v1/metrics` | **FAIL** |
-| A02: Cryptographic Failures | N/A | PASS |
-| A03: Injection | N/A (input validation present) | PASS |
-| A04: Insecure Design | Unbounded memory growth | **FAIL** |
-| A05: Security Misconfiguration | Model path logging | **FAIL** |
-| A06: Vulnerable Components | Dependencies ok | PASS |
-| A07: Authentication | Metrics endpoint unprotected | **FAIL** |
-| A08: Integrity Issues | Data validation present | PASS |
-| A09: Logging Disclosure | Paths logged | **FAIL** |
-| A10: SSRF | N/A | PASS |
+| OWASP Risk                     | Issue                          | Status   |
+| ------------------------------ | ------------------------------ | -------- |
+| A01: Broken Access Control     | No auth on `/v1/metrics`       | **FAIL** |
+| A02: Cryptographic Failures    | N/A                            | PASS     |
+| A03: Injection                 | N/A (input validation present) | PASS     |
+| A04: Insecure Design           | Unbounded memory growth        | **FAIL** |
+| A05: Security Misconfiguration | Model path logging             | **FAIL** |
+| A06: Vulnerable Components     | Dependencies ok                | PASS     |
+| A07: Authentication            | Metrics endpoint unprotected   | **FAIL** |
+| A08: Integrity Issues          | Data validation present        | PASS     |
+| A09: Logging Disclosure        | Paths logged                   | **FAIL** |
+| A10: SSRF                      | N/A                            | PASS     |
 
 ---
 
@@ -406,17 +430,21 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
 **Current Status**: **PRODUCTION DEPLOYMENT NOT RECOMMENDED**
 
 **Critical Issues**: 2
+
 - Unauthenticated metrics endpoint
 - Unbounded memory growth
 
 **High Issues**: 2
+
 - Information disclosure (model paths)
 - Memory resource exhaustion risk
 
 **Medium Issues**: 1
+
 - Latencies list exposure
 
 **Estimated Time to Fix**: 4-6 hours
+
 1. Add authentication to metrics endpoint (1-2 hours)
 2. Implement bounded metrics collections (1-2 hours)
 3. Sanitize all logging (1-2 hours)
@@ -479,12 +507,14 @@ def validate_model_path(self, model_path: str) -> Dict[str, Any]:
 **Overall Security Status**: **FAIL**
 
 Phase 3 implementation shows good security practices in:
+
 - Path traversal prevention (VUL-001 through VUL-005)
 - Thread safety (proper locking)
 - Input validation
 - Secrets management
 
 However, critical vulnerabilities prevent production deployment:
+
 1. Unauthenticated metrics endpoint exposes operational details
 2. Unbounded memory growth causes resource exhaustion
 3. Sensitive information logged in plaintext
@@ -492,6 +522,7 @@ However, critical vulnerabilities prevent production deployment:
 **Recommendation**: Address P0 and P1 issues before any production deployment. Estimated fix time: 4-6 hours.
 
 **Test After Fixes**:
+
 - Verify `/v1/metrics` returns 403 without valid API key
 - Monitor memory growth under load (24-hour test)
 - Verify no paths appear in logs

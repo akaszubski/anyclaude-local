@@ -19,6 +19,25 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   "qwen2.5-coder-32b": 32768,
   "qwen3-coder-30b": 262144, // Qwen3 Coder 30B - 262K context
   "mistral-7b": 32768,
+  "hermes-3": 131072, // Hermes-3-Llama-3.1 - 128K context
+
+  // OpenRouter model IDs (provider/model-name format)
+  "qwen/qwen3-coder": 262144, // Qwen3 Coder 480B - 262K context (35B active via MoE)
+  "deepseek/deepseek-chat-v3.1": 163840, // DeepSeek V3.1 - 160K context
+  "openai/gpt-4o": 128000, // GPT-4o - 128K context
+  "openai/gpt-4o-mini": 128000, // GPT-4o mini - 128K context
+  "google/gemini-2.0-flash-exp:free": 1048576, // Gemini 2.0 Flash - 1M context
+  "google/gemini-2.5-flash": 1048576, // Gemini 2.5 Flash - 1M context
+  "google/gemini-2.5-flash-lite": 1048576, // Gemini 2.5 Flash Lite - 1M context (FASTEST!)
+  "z-ai/glm-4.6": 204800, // GLM-4.6 - 200K context
+  "meta-llama/llama-3.3-70b-instruct": 131072, // Llama 3.3 70B - 128K context
+  "anthropic/claude-3.5-sonnet": 200000, // Claude 3.5 Sonnet via OpenRouter - 200K context
+
+  // Claude model names (what Claude Code sends, but gets replaced with OpenRouter model)
+  // These match the actual Claude context limits for accurate warning display
+  "claude-sonnet-4-5-20250929": 200000, // Claude Sonnet 4.5 - 200K context
+  "claude-haiku-4-5-20251001": 200000, // Claude Haiku 4.5 - 200K context
+  "claude-3-5-sonnet-20241022": 200000, // Claude 3.5 Sonnet - 200K context
 
   // Add more as needed
 };
@@ -268,13 +287,15 @@ export function truncateMessages(
 /**
  * Log context warning if approaching limit
  */
-export function logContextWarning(stats: ContextStats): void {
+export function logContextWarning(stats: ContextStats, mode?: "claude" | "lmstudio" | "vllm-mlx" | "openrouter"): void {
+  // Skip warnings for cloud models with large context windows
+  if (mode === "claude" || mode === "openrouter") {
+    return;
+  }
+
   if (stats.percentUsed > 90) {
-    console.error(
-      `\n⚠️  WARNING: Context usage at ${stats.percentUsed.toFixed(1)}%\n` +
-        `   Total: ${stats.totalTokens} / ${stats.contextLimit} tokens\n` +
-        `   \n` +
-        `   ⚠️  LOCAL MODEL LIMITATION:\n` +
+    const warningMessage = true
+      ? `   ⚠️  LOCAL MODEL LIMITATION:\n` +
         `   Unlike Claude Sonnet 4.5 which auto-compresses context,\n` +
         `   local models will truncate older messages when limit is exceeded.\n` +
         `   \n` +
@@ -282,6 +303,15 @@ export function logContextWarning(stats: ContextStats): void {
         `   1. Save your work and start a new Claude Code conversation\n` +
         `   2. Or: Use a model with larger context (32K+ recommended)\n` +
         `   3. Or: Set LMSTUDIO_CONTEXT_LENGTH higher if your model supports it\n`
+      : `   ⚠️  CONTEXT APPROACHING LIMIT:\n` +
+        `   Consider starting a new Claude Code conversation soon to avoid\n` +
+        `   running out of context space.\n`;
+
+    console.error(
+      `\n⚠️  WARNING: Context usage at ${stats.percentUsed.toFixed(1)}%\n` +
+        `   Total: ${stats.totalTokens} / ${stats.contextLimit} tokens\n` +
+        `   \n` +
+        warningMessage
     );
   } else if (stats.percentUsed > 75) {
     debug(

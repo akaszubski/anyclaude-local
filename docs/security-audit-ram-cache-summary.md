@@ -17,6 +17,7 @@
 **What it is**: Cache tracks value sizes in the memory limit but completely ignores key sizes. An attacker can bypass the memory limit by storing many large keys with small values.
 
 **Attack Example**:
+
 ```python
 cache = InMemoryKVCacheManager(max_memory_mb=100)
 for i in range(1000):
@@ -26,6 +27,7 @@ for i in range(1000):
 ```
 
 **Impact**:
+
 - Memory limit is meaningless - can be bypassed
 - Denial of service through memory exhaustion
 - Silent failure - no warning given
@@ -33,6 +35,7 @@ for i in range(1000):
 **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/ram_cache.py:40-47, 78-79, 87-92`
 
 **Fix Required**:
+
 ```python
 # Track key size in addition to value size
 key_size_bytes = sys.getsizeof(key)
@@ -55,12 +58,14 @@ if len(key) > 10000:  # 10KB max key
 **What it is**: Memory sizes are calculated as floats, which could allow slightly exceeding the configured limit due to floating-point rounding.
 
 **Technical Issue**:
+
 ```python
 size_mb = len(value) / (1024 * 1024)  # Float - could have precision issues
 # Checking: used + needed >= max with floats could fail at boundaries
 ```
 
 **Impact**:
+
 - Memory limit not strictly enforced in edge cases
 - Could allow exceeding configured limit by small amounts
 - Unlikely in practice but possible
@@ -68,6 +73,7 @@ size_mb = len(value) / (1024 * 1024)  # Float - could have precision issues
 **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/ram_cache.py:78, 93`
 
 **Fix Required**: Use integer-based tracking
+
 ```python
 # Keep sizes in bytes, not MB, for exact comparisons
 size_bytes = len(value)
@@ -117,18 +123,21 @@ if len(key) > MAX_KEY_SIZE_BYTES:
 ## What's Good
 
 **Thread Safety**: EXCELLENT
+
 - All critical sections protected by lock
 - All 37 tests pass, including 20-thread concurrency tests
 - No race conditions detected
 - No deadlock risk
 
 **Value Size Enforcement**: GOOD
+
 - Values are properly tracked
 - Memory limit is enforced for values
 - LRU eviction works correctly
 - Values exceeding limit are rejected
 
 **Functional Testing**: COMPREHENSIVE
+
 - 37 unit tests all passing
 - 17 integration tests
 - Good performance (sub-10ms GETs, sub-50ms SETs)
@@ -143,6 +152,7 @@ if len(key) > MAX_KEY_SIZE_BYTES:
 **NO** - Not without fixes.
 
 **Conditional**: If used ONLY with trusted internal code where:
+
 - Keys are always small (hash-based IDs, not user input)
 - No untrusted input controls keys
 - Memory usage is monitored externally
@@ -156,16 +166,19 @@ Then it could be acceptable WITH DOCUMENTED LIMITATION.
 ## Fix Priority
 
 ### Must Do (Blocks Production)
+
 1. Track key size in memory limit
 2. Add max key length validation
 3. Test the fixes with security test cases
 
 ### Should Do (Quality)
+
 1. Fix silent failure on empty keys
 2. Review float precision issues
 3. Add security-focused unit tests
 
 ### Nice To Have
+
 1. Add rate limiting
 2. Document security assumptions
 3. Regular security audits
@@ -175,12 +188,15 @@ Then it could be acceptable WITH DOCUMENTED LIMITATION.
 ## File Locations
 
 ### Implementation
+
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/ram_cache.py` (251 lines)
 
 ### Tests
+
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/unit/test_ram_cache.py` (37 tests)
 
 ### Integration
+
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/mlx-server.py` (uses cache for model responses)
 
 ---
@@ -203,16 +219,19 @@ Then it could be acceptable WITH DOCUMENTED LIMITATION.
 ## Recommendations
 
 ### Immediate (This Sprint)
+
 1. Implement key size tracking (2-3 hours)
 2. Add key size limit (30 min)
 3. Update tests (1 hour)
 
 ### Short-term (Next Sprint)
+
 1. Fix silent failures
 2. Review float precision
 3. Add security test suite
 
 ### Long-term
+
 1. Document security assumptions
 2. Regular security audits
 3. Monitor for abuse patterns
@@ -236,4 +255,3 @@ Then it could be acceptable WITH DOCUMENTED LIMITATION.
 **Status**: COMPLETE - See full report in `/Users/andrewkaszubski/Documents/GitHub/anyclaude/docs/security-audit-ram-cache-issue5.md`
 
 **Recommendation**: Fix vulnerabilities before merging to main branch.
-

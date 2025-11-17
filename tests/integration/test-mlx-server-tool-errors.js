@@ -34,7 +34,7 @@ async function sendRequest(messages, tools, expectError = false) {
       messages,
       tools,
       temperature: 0.1,
-      max_tokens: 1000
+      max_tokens: 1000,
     });
 
     const req = http.request(
@@ -45,9 +45,9 @@ async function sendRequest(messages, tools, expectError = false) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(data)
+          "Content-Length": Buffer.byteLength(data),
         },
-        timeout: TEST_TIMEOUT
+        timeout: TEST_TIMEOUT,
       },
       (res) => {
         let body = "";
@@ -98,7 +98,7 @@ async function testInvalidToolName() {
   console.log("\n✓ Test 1: Invalid tool name (non-existent tool)");
 
   const messages = [
-    { role: "user", content: "Use the InvalidTool to do something" }
+    { role: "user", content: "Use the InvalidTool to do something" },
   ];
 
   const tools = [
@@ -106,9 +106,12 @@ async function testInvalidToolName() {
       type: "function",
       function: {
         name: "Read",
-        parameters: { type: "object", properties: { file_path: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { file_path: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -117,7 +120,7 @@ async function testInvalidToolName() {
 
     if (toolCalls && toolCalls.length > 0) {
       // Model should only call available tools
-      const validTools = toolCalls.every(tc => tc.function.name === "Read");
+      const validTools = toolCalls.every((tc) => tc.function.name === "Read");
       assert.ok(validTools, "Should only call available tools");
 
       console.log("   ✅ PASS: Model stayed within available tools");
@@ -142,7 +145,7 @@ async function testMissingRequiredParameters() {
   // Note: Some models may still omit required params (model-level issue)
 
   const messages = [
-    { role: "user", content: "Read a file" } // Intentionally vague
+    { role: "user", content: "Read a file" }, // Intentionally vague
   ];
 
   const tools = [
@@ -154,12 +157,15 @@ async function testMissingRequiredParameters() {
         parameters: {
           type: "object",
           properties: {
-            file_path: { type: "string", description: "Required: path to file" }
+            file_path: {
+              type: "string",
+              description: "Required: path to file",
+            },
           },
-          required: ["file_path"]
-        }
-      }
-    }
+          required: ["file_path"],
+        },
+      },
+    },
   ];
 
   try {
@@ -170,7 +176,9 @@ async function testMissingRequiredParameters() {
       const args = JSON.parse(toolCall.function.arguments);
 
       if (!args.file_path) {
-        console.log("   ⚠️  Model omitted required parameter (model behavior issue)");
+        console.log(
+          "   ⚠️  Model omitted required parameter (model behavior issue)"
+        );
         console.log("   This is a model training issue, not a server issue");
       } else {
         console.log("   ✅ PASS: Model provided required parameter");
@@ -192,9 +200,7 @@ async function testMissingRequiredParameters() {
 async function testMalformedToolSchema() {
   console.log("\n✓ Test 3: Malformed tool schema");
 
-  const messages = [
-    { role: "user", content: "Read a file" }
-  ];
+  const messages = [{ role: "user", content: "Read a file" }];
 
   const tools = [
     {
@@ -202,9 +208,9 @@ async function testMalformedToolSchema() {
       function: {
         name: "Read",
         // Missing 'parameters' field
-        description: "Read file"
-      }
-    }
+        description: "Read file",
+      },
+    },
   ];
 
   try {
@@ -235,18 +241,19 @@ async function testServerTimeout() {
   console.log("\n✓ Test 4: Server timeout handling");
 
   // Request with very low max_tokens to ensure fast response
-  const messages = [
-    { role: "user", content: "Read /tmp/test.txt" }
-  ];
+  const messages = [{ role: "user", content: "Read /tmp/test.txt" }];
 
   const tools = [
     {
       type: "function",
       function: {
         name: "Read",
-        parameters: { type: "object", properties: { file_path: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { file_path: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -274,9 +281,7 @@ async function testServerTimeout() {
 async function testEmptyToolArray() {
   console.log("\n✓ Test 5: Empty tool array");
 
-  const messages = [
-    { role: "user", content: "Read a file" }
-  ];
+  const messages = [{ role: "user", content: "Read a file" }];
 
   const tools = []; // No tools available
 
@@ -302,9 +307,7 @@ async function testEmptyToolArray() {
 async function testNullParameters() {
   console.log("\n✓ Test 6: Null/undefined in tool parameters");
 
-  const messages = [
-    { role: "user", content: "Read /tmp/test.txt" }
-  ];
+  const messages = [{ role: "user", content: "Read /tmp/test.txt" }];
 
   const tools = [
     {
@@ -315,11 +318,11 @@ async function testNullParameters() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            encoding: { type: "string", default: null } // Null default
-          }
-        }
-      }
-    }
+            encoding: { type: "string", default: null }, // Null default
+          },
+        },
+      },
+    },
   ];
 
   try {
@@ -354,8 +357,8 @@ async function testLargeErrorMessages() {
   const messages = [
     {
       role: "user",
-      content: "x".repeat(10000) // Very long message
-    }
+      content: "x".repeat(10000), // Very long message
+    },
   ];
 
   const tools = [
@@ -363,9 +366,12 @@ async function testLargeErrorMessages() {
       type: "function",
       function: {
         name: "Read",
-        parameters: { type: "object", properties: { file_path: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { file_path: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -373,7 +379,9 @@ async function testLargeErrorMessages() {
 
     // Server should handle gracefully (either process or reject cleanly)
     if (response.statusCode) {
-      console.log(`   ✅ PASS: Server responded (status ${response.statusCode})`);
+      console.log(
+        `   ✅ PASS: Server responded (status ${response.statusCode})`
+      );
     } else if (response.choices) {
       console.log("   ✅ PASS: Server processed large input");
     } else {
@@ -395,18 +403,19 @@ async function testInvalidJSONArguments() {
   // This tests the server's robustness when model produces invalid JSON
   // We can't force the model to produce invalid JSON, but we can test parsing
 
-  const messages = [
-    { role: "user", content: "Read /tmp/test.txt" }
-  ];
+  const messages = [{ role: "user", content: "Read /tmp/test.txt" }];
 
   const tools = [
     {
       type: "function",
       function: {
         name: "Read",
-        parameters: { type: "object", properties: { file_path: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { file_path: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -440,18 +449,19 @@ async function testInvalidJSONArguments() {
 async function testRapidRequests() {
   console.log("\n✓ Test 9: Rapid successive requests");
 
-  const messages = [
-    { role: "user", content: "Run pwd" }
-  ];
+  const messages = [{ role: "user", content: "Run pwd" }];
 
   const tools = [
     {
       type: "function",
       function: {
         name: "Bash",
-        parameters: { type: "object", properties: { command: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -466,7 +476,7 @@ async function testRapidRequests() {
 
     assert.strictEqual(responses.length, count, "All requests should complete");
     assert.ok(
-      responses.every(r => r.choices),
+      responses.every((r) => r.choices),
       "All responses should be valid"
     );
 
@@ -496,7 +506,7 @@ async function testServerNotRunning() {
         port: url.port,
         path: url.pathname,
         method: "POST",
-        timeout: 2000
+        timeout: 2000,
       },
       () => {
         console.log("   ❌ FAIL: Should not connect to fake server");
@@ -506,7 +516,10 @@ async function testServerNotRunning() {
     );
 
     req.on("error", (err) => {
-      if (err.message.includes("ECONNREFUSED") || err.message.includes("ENOTFOUND")) {
+      if (
+        err.message.includes("ECONNREFUSED") ||
+        err.message.includes("ENOTFOUND")
+      ) {
         console.log("   ✅ PASS: Connection error handled gracefully");
         console.log(`   Error: ${err.message}`);
         passed++;
@@ -530,10 +543,14 @@ async function testServerNotRunning() {
 }
 
 async function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("INTEGRATION TEST: Tool Calling Error Handling");
   console.log("Phase 1.2 - TDD Red Phase");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   console.log(`\nTesting server at: ${MLX_SERVER_URL}\n`);
 
@@ -548,9 +565,13 @@ async function runTests() {
   await testRapidRequests();
   await testServerNotRunning();
 
-  console.log("\n================================================================================");
+  console.log(
+    "\n================================================================================"
+  );
   console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   if (failed > 0) {
     console.log("\n⚠️  Some tests failed - expected in TDD red phase!");

@@ -18,7 +18,9 @@ try {
   const converter = require("../../dist/tool-schema-converter.js");
   convertAnthropicToolToOpenAI = converter.convertAnthropicToolToOpenAI;
 } catch (err) {
-  console.log("⚠️  tool-schema-converter.js not found (expected in TDD red phase)");
+  console.log(
+    "⚠️  tool-schema-converter.js not found (expected in TDD red phase)"
+  );
   console.log(`   Error: ${err.message}`);
   convertAnthropicToolToOpenAI = null;
 }
@@ -46,18 +48,26 @@ function testBasicSchemaConversion() {
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the file to read"
-        }
+          description: "Path to the file to read",
+        },
       },
-      required: ["file_path"]
-    }
+      required: ["file_path"],
+    },
   };
 
   const openaiTool = convertAnthropicToolToOpenAI(anthropicTool);
 
   // OpenAI format: { type: "function", function: { name, description, parameters } }
-  assert.strictEqual(openaiTool.type, "function", "Tool type should be 'function'");
-  assert.strictEqual(openaiTool.function.name, "Read", "Name should be preserved");
+  assert.strictEqual(
+    openaiTool.type,
+    "function",
+    "Tool type should be 'function'"
+  );
+  assert.strictEqual(
+    openaiTool.function.name,
+    "Read",
+    "Name should be preserved"
+  );
   assert.strictEqual(
     openaiTool.function.description,
     "Read contents of a file",
@@ -98,11 +108,11 @@ function testComplexSchemaConversion() {
         mode: {
           type: "string",
           enum: ["overwrite", "append"],
-          default: "overwrite"
-        }
+          default: "overwrite",
+        },
       },
-      required: ["file_path", "content"]
-    }
+      required: ["file_path", "content"],
+    },
   };
 
   const openaiTool = convertAnthropicToolToOpenAI(anthropicTool);
@@ -144,16 +154,19 @@ function testSchemaWithArrays() {
         args: {
           type: "array",
           items: { type: "string" },
-          description: "Command arguments"
-        }
+          description: "Command arguments",
+        },
       },
-      required: ["command"]
-    }
+      required: ["command"],
+    },
   };
 
   const openaiTool = convertAnthropicToolToOpenAI(anthropicTool);
 
-  assert.strictEqual(openaiTool.function.parameters.properties.args.type, "array");
+  assert.strictEqual(
+    openaiTool.function.parameters.properties.args.type,
+    "array"
+  );
   assert.ok(openaiTool.function.parameters.properties.args.items);
 
   console.log("   ✅ PASS: Array schema converted correctly");
@@ -164,7 +177,9 @@ function testSchemaWithArrays() {
  * Test 4: Schema with union types (should handle gracefully)
  */
 function testSchemaWithUnionTypes() {
-  console.log("\n✓ Test 4: Schema with union types (known issue with some models)");
+  console.log(
+    "\n✓ Test 4: Schema with union types (known issue with some models)"
+  );
 
   if (!convertAnthropicToolToOpenAI) {
     console.log("   ❌ FAIL: convertAnthropicToolToOpenAI not implemented");
@@ -181,12 +196,12 @@ function testSchemaWithUnionTypes() {
         query: {
           oneOf: [
             { type: "string" },
-            { type: "object", properties: { pattern: { type: "string" } } }
-          ]
-        }
+            { type: "object", properties: { pattern: { type: "string" } } },
+          ],
+        },
       },
-      required: ["query"]
-    }
+      required: ["query"],
+    },
   };
 
   const openaiTool = convertAnthropicToolToOpenAI(anthropicTool);
@@ -219,8 +234,8 @@ function testEmptySchema() {
     input_schema: {
       type: "object",
       properties: {},
-      required: []
-    }
+      required: [],
+    },
   };
 
   const openaiTool = convertAnthropicToolToOpenAI(anthropicTool);
@@ -247,14 +262,14 @@ function testBatchConversion() {
   const anthropicTools = [
     { name: "Read", input_schema: { type: "object", properties: {} } },
     { name: "Write", input_schema: { type: "object", properties: {} } },
-    { name: "Bash", input_schema: { type: "object", properties: {} } }
+    { name: "Bash", input_schema: { type: "object", properties: {} } },
   ];
 
   const openaiTools = anthropicTools.map(convertAnthropicToolToOpenAI);
 
   assert.strictEqual(openaiTools.length, 3, "All tools should be converted");
   assert.ok(
-    openaiTools.every(t => t.type === "function"),
+    openaiTools.every((t) => t.type === "function"),
     "All tools should have type 'function'"
   );
 
@@ -277,7 +292,7 @@ function testInvalidSchema() {
   const invalidTool = {
     // Missing 'name' field
     description: "Invalid tool",
-    input_schema: { type: "object" }
+    input_schema: { type: "object" },
   };
 
   try {
@@ -285,7 +300,10 @@ function testInvalidSchema() {
     console.log("   ❌ FAIL: Should throw error for invalid schema");
     failed++;
   } catch (err) {
-    assert.ok(err.message.includes("name"), "Error should mention missing 'name'");
+    assert.ok(
+      err.message.includes("name"),
+      "Error should mention missing 'name'"
+    );
     console.log("   ✅ PASS: Invalid schema rejected correctly");
     passed++;
   }
@@ -309,12 +327,12 @@ function testSchemaWithMetadata() {
     input_schema: {
       type: "object",
       properties: {
-        file_path: { type: "string" }
+        file_path: { type: "string" },
       },
       // Additional metadata
       additionalProperties: false,
-      $schema: "http://json-schema.org/draft-07/schema#"
-    }
+      $schema: "http://json-schema.org/draft-07/schema#",
+    },
   };
 
   const openaiTool = convertAnthropicToolToOpenAI(anthropicTool);
@@ -327,10 +345,14 @@ function testSchemaWithMetadata() {
 }
 
 function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("UNIT TESTS: Tool Schema Conversion (Anthropic → OpenAI)");
   console.log("Phase 1.2 - TDD Red Phase");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   testBasicSchemaConversion();
   testComplexSchemaConversion();
@@ -341,12 +363,18 @@ function runTests() {
   testInvalidSchema();
   testSchemaWithMetadata();
 
-  console.log("\n================================================================================");
+  console.log(
+    "\n================================================================================"
+  );
   console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   if (!convertAnthropicToolToOpenAI) {
-    console.log("\n⚠️  EXPECTED FAILURE: tool-schema-converter.ts not implemented yet");
+    console.log(
+      "\n⚠️  EXPECTED FAILURE: tool-schema-converter.ts not implemented yet"
+    );
     console.log("This is the TDD RED phase - implementation comes next!");
   }
 

@@ -1,5 +1,5 @@
 {
-  "backend": "lmstudio",
+  "backend": "vllm-mlx",
   "debug": {
     "level": 3,
     "enableTraces": true,
@@ -11,11 +11,11 @@
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "vllm-mlx",
-      "model": "hermes-3-llama-3.1-8b",
-      "modelPath": "/Users/andrewkaszubski/Models/mlx-community/Hermes-3-Llama-3.1-8B-4bit",
+      "model": "gpt-oss-20b-5bit",
+      "modelPath": "/Users/andrewkaszubski/Models/NexVeridian/gpt-oss-20b-5bit",
       "maxTokens": 131072,
-      "serverScript": "scripts/mlx-textgen-server.sh",
-      "description": "MLX-Textgen - Hermes-3 8B (UNUSABLE: tool calling fails, only basic Q&A works)"
+      "serverScript": "scripts/mlx-server.py",
+      "description": "OpenAI GPT OSS 20B (5-bit) - Slower but tool calling works"
     },
     "lmstudio": {
       "enabled": true,
@@ -30,11 +30,11 @@
       "description": "Real Anthropic API"
     },
     "openrouter": {
-      "enabled": false,
+      "enabled": true,
       "baseUrl": "https://openrouter.ai/api/v1",
       "apiKey": "",
-      "model": "z-ai/glm-4.6",
-      "description": "OpenRouter - 400+ models at fraction of Claude cost (GLM-4.6: $0.60/$2 per 1M tokens)"
+      "model": "qwen/qwen3-coder",
+      "description": "OpenRouter - Qwen3 Coder 480B (3s, $0.22/$0.95, 262K) - Reliable tool calling, precise"
     }
   }
 }

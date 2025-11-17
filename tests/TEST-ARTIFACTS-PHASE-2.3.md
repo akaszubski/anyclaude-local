@@ -27,6 +27,7 @@ All tests FAIL initially because the warmup feature doesn't exist yet. Implement
 **23 Unit Tests** - Test individual warmup components in isolation
 
 #### TestGetStandardSystemPrompt (6 tests)
+
 Tests for `get_standard_system_prompt(warmup_file: Optional[str])` function:
 
 1. `test_loads_from_file` - Loads prompt from specified file
@@ -37,6 +38,7 @@ Tests for `get_standard_system_prompt(warmup_file: Optional[str])` function:
 6. `test_handles_unicode_content` - Handles unicode characters correctly
 
 #### TestWarmupKVCacheFunction (10 tests)
+
 Tests for `warmup_kv_cache(model, tokenizer, cache_manager, timeout_sec, enabled)` async function:
 
 1. `test_warmup_returns_bool` - Returns boolean (True/False)
@@ -51,6 +53,7 @@ Tests for `warmup_kv_cache(model, tokenizer, cache_manager, timeout_sec, enabled
 10. (Already covered by error handling tests below)
 
 #### TestWarmupTimeout (3 tests)
+
 Tests for timeout handling:
 
 1. `test_warmup_timeout_default_is_60_seconds` - Default timeout is 60s
@@ -58,6 +61,7 @@ Tests for timeout handling:
 3. `test_timeout_environment_variable_overrides_default` - WARMUP_TIMEOUT_SEC env var controls timeout
 
 #### TestWarmupErrorHandling (5 tests)
+
 Tests for error handling and graceful fallback:
 
 1. `test_warmup_handles_missing_cache_manager` - Handles None cache_manager
@@ -67,6 +71,7 @@ Tests for error handling and graceful fallback:
 5. `test_warmup_handles_cache_write_error` - Handles cache write failures
 
 **Key Assertions**:
+
 - Functions return correct types (str, bool)
 - Configuration via environment variables works
 - Error handling is graceful (no exceptions, returns False)
@@ -79,6 +84,7 @@ Tests for error handling and graceful fallback:
 **19 Integration Tests** - Test cache warmup in realistic server scenarios
 
 #### TestCacheWarmupServerStartup (3 tests)
+
 Tests server startup with warmup:
 
 1. `test_server_warmup_disabled_skips_warmup` - KV_CACHE_WARMUP=0 skips warmup
@@ -87,6 +93,7 @@ Tests server startup with warmup:
 4. `test_warmup_runs_between_model_load_and_server_start` - Warmup sequence is correct
 
 #### TestFirstRequestCacheHit (3 tests)
+
 Tests cache hits on first request after warmup:
 
 1. `test_cache_populated_after_warmup` - Cache has entries after warmup
@@ -94,6 +101,7 @@ Tests cache hits on first request after warmup:
 3. `test_cache_statistics_show_entries_after_warmup` - Cache stats show populated entries
 
 #### TestWarmupTimeout (3 tests)
+
 Tests timeout behavior in realistic scenarios:
 
 1. `test_warmup_timeout_is_respected` - Warmup completes within timeout
@@ -101,6 +109,7 @@ Tests timeout behavior in realistic scenarios:
 3. `test_server_continues_if_warmup_times_out` - Server doesn't block on timeout
 
 #### TestWarmupConfiguration (3 tests)
+
 Tests environment variable configuration:
 
 1. `test_kv_cache_warmup_enabled_default` - KV_CACHE_WARMUP=1 by default
@@ -109,6 +118,7 @@ Tests environment variable configuration:
 4. `test_warmup_timeout_sec_env_var` - WARMUP_TIMEOUT_SEC env var respected
 
 #### TestWarmupWithDifferentPrompts (3 tests)
+
 Tests warmup with various prompt formats:
 
 1. `test_warmup_with_short_prompt` - Works with short prompts
@@ -116,12 +126,14 @@ Tests warmup with various prompt formats:
 3. `test_warmup_with_structured_prompt` - Works with JSON/YAML-like prompts
 
 #### TestWarmupCacheKeyConsistency (2 tests)
+
 Tests cache key generation:
 
 1. `test_same_prompt_generates_same_cache_key` - Consistent keys for identical inputs
 2. `test_different_prompts_generate_different_cache_keys` - Different keys for different inputs
 
 **Key Assertions**:
+
 - Server starts even if warmup fails (graceful fallback)
 - Cache has entries after successful warmup
 - Environment variable configuration works
@@ -135,6 +147,7 @@ Tests cache key generation:
 **13 Performance Tests** - Benchmark cache warmup performance
 
 #### TestWarmupCompletionTime (3 tests)
+
 Tests warmup duration:
 
 1. `test_warmup_completes_within_60_seconds` - Warmup < 60s (timeout protection)
@@ -142,40 +155,47 @@ Tests warmup duration:
 3. `test_warmup_overhead_is_measured` - Logs warmup timing for monitoring
 
 #### TestFirstRequestLatency (2 tests)
+
 Tests request latency with warmed cache:
 
 1. `test_first_request_hits_cache_within_1_second` - Cache hit < 1 second
 2. `test_cache_operations_are_sub_millisecond` - GET/SET < 1ms, <5ms respectively
 
 #### TestCacheHitRate (2 tests)
+
 Tests cache effectiveness:
 
 1. `test_cache_hit_rate_after_warmup` - Cache hit rate is reasonable after warmup
 2. `test_cache_statistics_after_warmup` - Cache stats track hits/misses
 
 #### TestWarmupCacheSizeImpact (2 tests)
+
 Tests memory efficiency:
 
 1. `test_warmup_memory_usage_is_reasonable` - Memory usage doesn't balloon
 2. `test_cache_stays_within_memory_limit` - Respects configured memory limit
 
 #### TestWarmupConcurrency (1 test)
+
 Tests concurrent access:
 
 1. `test_concurrent_cache_accesses_after_warmup` - Multiple threads access cache safely
 2. `test_warmup_thread_safety` - Thread-safe cache operations
 
 #### TestWarmupLatencyDistribution (1 test)
+
 Tests latency percentiles:
 
 1. `test_cache_operation_latency_percentiles` - p50 <1ms, p95 <5ms, p99 <10ms
 
 #### TestWarmupComparisonWithoutCache (1 test)
+
 Tests cache speedup:
 
 1. `test_warmed_cache_is_faster_than_cold` - Cache 100x+ faster than cold requests
 
 **Performance Targets Validated**:
+
 - Warmup completion: < 60 seconds
 - Cache hit latency: < 1 second (target <100ms)
 - Cache operation latency: <1ms GET, <5ms SET
@@ -187,17 +207,20 @@ Tests cache speedup:
 ## Environment Variables Tested
 
 ### KV_CACHE_WARMUP
+
 - **Purpose**: Enable/disable cache warmup
 - **Values**: `1` (enabled, default), `0` (disabled)
 - **Tests**: 8 tests validate this configuration
 
 ### WARMUP_TIMEOUT_SEC
+
 - **Purpose**: Timeout for warmup operation
 - **Default**: 60 seconds
 - **Tests**: 5 tests validate timeout handling
 - **Assertions**: Server continues even if timeout occurs
 
 ### WARMUP_SYSTEM_FILE
+
 - **Purpose**: Custom system prompt file for warmup
 - **Default**: Built-in fallback prompt
 - **Tests**: 3 tests validate custom files
@@ -247,6 +270,7 @@ Performance Tests:   13
 4. **No environment variable handling** for warmup configuration
 
 **Example failures**:
+
 ```
 ERROR: test_loads_from_file (test_cache_warmup.TestGetStandardSystemPrompt)
   NotImplementedError: get_standard_system_prompt not yet implemented
@@ -292,11 +316,11 @@ To make tests PASS, implementer must:
 
 ### Functions Tested
 
-| Function | Unit Tests | Integration Tests | Performance Tests | Total |
-|----------|-----------|------------------|------------------|-------|
-| `get_standard_system_prompt()` | 6 | 3 | 0 | 9 |
-| `warmup_kv_cache()` | 10 | 16 | 13 | 39 |
-| **Total** | **16** | **19** | **13** | **48** |
+| Function                       | Unit Tests | Integration Tests | Performance Tests | Total  |
+| ------------------------------ | ---------- | ----------------- | ----------------- | ------ |
+| `get_standard_system_prompt()` | 6          | 3                 | 0                 | 9      |
+| `warmup_kv_cache()`            | 10         | 16                | 13                | 39     |
+| **Total**                      | **16**     | **19**            | **13**            | **48** |
 
 ### Error Scenarios Covered
 
@@ -336,6 +360,7 @@ To make tests PASS, implementer must:
    - Integrate into `VLLMMLXServer.run()` between load_model() and uvicorn.run()
 
 2. **Run Tests**:
+
    ```bash
    # Unit tests
    python3 -m unittest discover -s tests/unit -p "test_cache_warmup.py" -v
@@ -374,6 +399,7 @@ To make tests PASS, implementer must:
 ### Why Async Tests?
 
 `warmup_kv_cache()` is async because:
+
 - Model generation is CPU-bound, can block event loop
 - Better integration with FastAPI/uvicorn async server
 - Allows timeout protection via `asyncio.wait_for()`
@@ -381,6 +407,7 @@ To make tests PASS, implementer must:
 ### Why Graceful Fallback?
 
 Server must start even if warmup fails because:
+
 - Warmup is optimization, not requirement
 - Network glitches, file errors shouldn't block server
 - First request will be slower but functional
@@ -391,6 +418,7 @@ Server must start even if warmup fails because:
 ## Test Artifacts
 
 **Created Files**:
+
 1. `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/unit/test_cache_warmup.py` (540 lines, 23 tests)
 2. `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/integration/test_cache_warmup_e2e.py` (580 lines, 19 tests)
 3. `/Users/andrewkaszubski/Documents/GitHub/anyclaude/tests/integration/test_cache_warmup_performance.py` (620 lines, 13 tests)

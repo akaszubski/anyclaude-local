@@ -13,6 +13,7 @@ This feature implements Phase 2.2 of the cache optimization roadmap.
 **Size**: 128 lines of code
 
 **Exports**:
+
 - `CacheMarkers` interface - Data structure for extracted cache metadata
 - `generateCacheHash(content)` - SHA256 hash generation for cache keys
 - `estimateTokens(text)` - Token count estimation (~4 chars/token)
@@ -31,19 +32,20 @@ Cacheable Content → SHA256 Hash → 64-character hex string
 ```typescript
 export function generateCacheHash(content: any): string {
   if (!content) {
-    return '';
+    return "";
   }
 
-  const textContent = typeof content === 'string' ? content : JSON.stringify(content);
+  const textContent =
+    typeof content === "string" ? content : JSON.stringify(content);
 
   if (textContent.length === 0) {
-    return '';
+    return "";
   }
 
   return crypto
-    .createHash('sha256')
-    .update(textContent, 'utf8')
-    .digest('hex')
+    .createHash("sha256")
+    .update(textContent, "utf8")
+    .digest("hex")
     .toLowerCase();
 }
 ```
@@ -58,7 +60,8 @@ export function generateCacheHash(content: any): string {
 ### Example
 
 ```typescript
-const content = "You are Claude Code, an AI assistant for software development...";
+const content =
+  "You are Claude Code, an AI assistant for software development...";
 const hash = generateCacheHash(content);
 // "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2"
 ```
@@ -104,12 +107,12 @@ export function estimateTokens(text: string | null | undefined): number {
 
 ```typescript
 interface CacheMarkers {
-  hasSystemCache: boolean;        // Whether system prompt has cache_control
-  systemCacheText: string;        // Extracted system prompt text
-  cacheableUserBlocks: number;    // Count of user message blocks with cache_control
-  estimatedCacheTokens: number;   // Token count for cacheable content
-  totalCacheableContent: string;  // Combined text of all cacheable blocks
-  cacheKey: string | null;        // SHA256 hash for cache lookup
+  hasSystemCache: boolean; // Whether system prompt has cache_control
+  systemCacheText: string; // Extracted system prompt text
+  cacheableUserBlocks: number; // Count of user message blocks with cache_control
+  estimatedCacheTokens: number; // Token count for cacheable content
+  totalCacheableContent: string; // Combined text of all cacheable blocks
+  cacheKey: string | null; // SHA256 hash for cache lookup
 }
 ```
 
@@ -154,6 +157,7 @@ import { extractMarkers } from "./cache-control-extractor";
 ### Future Integration Points
 
 The extracted markers can be used for:
+
 - Cache header generation (X-Cache-Hash, X-Cache-Tokens, X-Cache-System)
 - Cache statistics tracking
 - Performance optimization hints
@@ -161,12 +165,12 @@ The extracted markers can be used for:
 
 ## Performance Characteristics
 
-| Operation | Complexity | Typical Time | Notes |
-|-----------|------------|--------------|-------|
-| Hash generation | O(n) | <1ms | Where n = content length |
-| Token estimation | O(1) | <1μs | Pure arithmetic |
-| Marker extraction | O(n*m) | <1ms | Where n = messages, m = blocks/msg |
-| **Total overhead** | O(n) | <1-2ms | Negligible for typical requests |
+| Operation          | Complexity | Typical Time | Notes                              |
+| ------------------ | ---------- | ------------ | ---------------------------------- |
+| Hash generation    | O(n)       | <1ms         | Where n = content length           |
+| Token estimation   | O(1)       | <1μs         | Pure arithmetic                    |
+| Marker extraction  | O(n\*m)    | <1ms         | Where n = messages, m = blocks/msg |
+| **Total overhead** | O(n)       | <1-2ms       | Negligible for typical requests    |
 
 ### Scalability
 
@@ -216,6 +220,7 @@ The extracted markers can be used for:
 ### Unit Tests (61 tests)
 
 **test-cache-hash-consistency.js** (17 tests):
+
 - Hash determinism and consistency
 - Format validation (64 lowercase hex)
 - Unicode and special character handling
@@ -223,6 +228,7 @@ The extracted markers can be used for:
 - Order sensitivity
 
 **test-cache-marker-extraction.js** (14 tests):
+
 - System cache marker detection
 - User message block counting
 - Multiple block handling
@@ -230,6 +236,7 @@ The extracted markers can be used for:
 - Edge cases
 
 **test-cache-monitoring.js** (30 tests):
+
 - Token count accuracy
 - Edge cases (empty, null, large text)
 - Rounding validation (Math.ceil)
@@ -238,6 +245,7 @@ The extracted markers can be used for:
 ### Integration Tests (23 tests)
 
 **test-cache-headers.js** (23 tests):
+
 - Header generation and formatting
 - Base64 encoding validation
 - Multi-block scenarios
@@ -246,21 +254,21 @@ The extracted markers can be used for:
 
 ### Test Coverage
 
-| Feature | Coverage |
-|---------|----------|
-| Hash generation | 100% (17 unit tests) |
-| Marker extraction | 100% (14 unit tests) |
-| Token estimation | 100% (30 unit tests) |
-| Header formatting | 100% (23 integration tests) |
-| Edge cases | 100% (null, empty, large text, Unicode) |
-| **Total** | 84 tests, 100% pass rate |
+| Feature           | Coverage                                |
+| ----------------- | --------------------------------------- |
+| Hash generation   | 100% (17 unit tests)                    |
+| Marker extraction | 100% (14 unit tests)                    |
+| Token estimation  | 100% (30 unit tests)                    |
+| Header formatting | 100% (23 integration tests)             |
+| Edge cases        | 100% (null, empty, large text, Unicode) |
+| **Total**         | 84 tests, 100% pass rate                |
 
 ## Usage Examples
 
 ### Basic Hash Generation
 
 ```typescript
-import { generateCacheHash } from './cache-control-extractor';
+import { generateCacheHash } from "./cache-control-extractor";
 
 const systemPrompt = "You are Claude Code...";
 const hash = generateCacheHash(systemPrompt);
@@ -270,7 +278,7 @@ const hash = generateCacheHash(systemPrompt);
 ### Token Estimation
 
 ```typescript
-import { estimateTokens } from './cache-control-extractor';
+import { estimateTokens } from "./cache-control-extractor";
 
 const text = "Your long text here...";
 const tokens = estimateTokens(text);
@@ -280,15 +288,15 @@ const tokens = estimateTokens(text);
 ### Cache Marker Extraction
 
 ```typescript
-import { extractMarkers } from './cache-control-extractor';
+import { extractMarkers } from "./cache-control-extractor";
 
 const request = {
   system: [
     {
       type: "text",
       text: "You are Claude Code...",
-      cache_control: { type: "ephemeral" }
-    }
+      cache_control: { type: "ephemeral" },
+    },
   ],
   messages: [
     {
@@ -297,11 +305,11 @@ const request = {
         {
           type: "text",
           text: "Help me debug this code",
-          cache_control: { type: "ephemeral" }
-        }
-      ]
-    }
-  ]
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+    },
+  ],
 };
 
 const markers = extractMarkers(request);

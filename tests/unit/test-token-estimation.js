@@ -106,13 +106,13 @@ test("should estimate 25 tokens for 100 characters", () => {
 });
 
 test("should round up to nearest integer", () => {
-  const tokens1 = estimateTokens("abc");  // 3/4 = 0.75, rounds up to 1
+  const tokens1 = estimateTokens("abc"); // 3/4 = 0.75, rounds up to 1
   expect(tokens1).toBe(1);
 
-  const tokens2 = estimateTokens("abcd");  // 4/4 = 1
+  const tokens2 = estimateTokens("abcd"); // 4/4 = 1
   expect(tokens2).toBe(1);
 
-  const tokens3 = estimateTokens("abcde");  // 5/4 = 1.25, rounds up to 2
+  const tokens3 = estimateTokens("abcde"); // 5/4 = 1.25, rounds up to 2
   expect(tokens3).toBe(2);
 });
 
@@ -161,7 +161,8 @@ test("should handle three characters", () => {
 console.log("\nTEST SUITE 3: Common Text Patterns\n");
 
 test("should estimate tokens for typical system prompt", () => {
-  const systemPrompt = "You are Claude, an AI assistant created by Anthropic. You are helpful, harmless, and honest.";
+  const systemPrompt =
+    "You are Claude, an AI assistant created by Anthropic. You are helpful, harmless, and honest.";
   const tokens = estimateTokens(systemPrompt);
 
   // 92 characters / 4 = 23, rounds up to 23 (Math.ceil)
@@ -179,7 +180,8 @@ test("should estimate tokens for sentence", () => {
 });
 
 test("should estimate tokens for paragraph", () => {
-  const paragraph = "The fundamental principle underlying anyclaude is the translation of Anthropic API requests to OpenAI-compatible formats. This allows local models to be used with Claude Code.";
+  const paragraph =
+    "The fundamental principle underlying anyclaude is the translation of Anthropic API requests to OpenAI-compatible formats. This allows local models to be used with Claude Code.";
   const tokens = estimateTokens(paragraph);
 
   // 175 characters / 4 = 43.75, rounds up to 44 (Math.ceil)
@@ -188,7 +190,8 @@ test("should estimate tokens for paragraph", () => {
 });
 
 test("should estimate tokens for JSON-like text", () => {
-  const json = '{"type":"text","text":"Hello","cache_control":{"type":"ephemeral"}}';
+  const json =
+    '{"type":"text","text":"Hello","cache_control":{"type":"ephemeral"}}';
   const tokens = estimateTokens(json);
 
   // 67 characters / 4 = 16.75, rounds up to 17 (Math.ceil)
@@ -237,7 +240,7 @@ test("should estimate within 15% for typical short text", () => {
     "Hello",
     "This is a test",
     "The quick brown fox",
-    "Machine learning models are trained on large datasets."
+    "Machine learning models are trained on large datasets.",
   ];
 
   for (const text of texts) {
@@ -282,8 +285,8 @@ test("should produce same estimate for same text", () => {
 });
 
 test("should combine tokens from multiple blocks correctly", () => {
-  const block1 = "Hello";  // 5 chars = 2 tokens
-  const block2 = "World";  // 5 chars = 2 tokens
+  const block1 = "Hello"; // 5 chars = 2 tokens
+  const block2 = "World"; // 5 chars = 2 tokens
 
   const tokens1 = estimateTokens(block1);
   const tokens2 = estimateTokens(block2);
@@ -355,7 +358,7 @@ test("should estimate total cache tokens across system blocks", () => {
   const systemBlocks = [
     "You are Claude.",
     "Be helpful and honest.",
-    "Follow the user's instructions."
+    "Follow the user's instructions.",
   ];
 
   const totalText = systemBlocks.join(" ");
@@ -383,8 +386,12 @@ test("should estimate cache tokens for combined system and user cache", () => {
 // Summary
 console.log(`\n╔══════════════════════════════════════════════════════════╗`);
 console.log(`║   TEST SUMMARY                                           ║`);
-console.log(`║   Passed: ${passed}                                              ║`);
-console.log(`║   Failed: ${failed}                                              ║`);
+console.log(
+  `║   Passed: ${passed}                                              ║`
+);
+console.log(
+  `║   Failed: ${failed}                                              ║`
+);
 console.log(`╚══════════════════════════════════════════════════════════╝\n`);
 
 if (failed > 0) {

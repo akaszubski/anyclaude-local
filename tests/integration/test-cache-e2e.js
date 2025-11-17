@@ -95,7 +95,7 @@ const makeProxyRequest = (body) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.ANTHROPIC_API_KEY || "test-key"}`,
+        Authorization: `Bearer ${process.env.ANTHROPIC_API_KEY || "test-key"}`,
       },
     };
 
@@ -110,7 +110,9 @@ const makeProxyRequest = (body) => {
             body: JSON.parse(data),
           });
         } catch (e) {
-          reject(new Error(`Failed to parse response: ${data.substring(0, 200)}`));
+          reject(
+            new Error(`Failed to parse response: ${data.substring(0, 200)}`)
+          );
         }
       });
     });
@@ -134,13 +136,13 @@ const createCachingRequest = (userMessage = "Hello") => ({
     {
       type: "text",
       text: "You are Claude, an AI assistant created by Anthropic.",
-      cache_control: { type: "ephemeral" }
+      cache_control: { type: "ephemeral" },
     },
     {
       type: "text",
       text: "Be helpful, harmless, and honest.",
-      cache_control: { type: "ephemeral" }
-    }
+      cache_control: { type: "ephemeral" },
+    },
   ],
   messages: [
     {
@@ -149,29 +151,29 @@ const createCachingRequest = (userMessage = "Hello") => ({
         {
           type: "text",
           text: userMessage,
-          cache_control: { type: "ephemeral" }
-        }
-      ]
-    }
-  ]
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+    },
+  ],
 });
 
 const createNonCachingRequest = (userMessage = "Hello") => ({
   model: "claude-3-5-sonnet-20241022",
   max_tokens: 100,
-  system: "You are Claude.",  // No cache_control
+  system: "You are Claude.", // No cache_control
   messages: [
     {
       role: "user",
       content: [
         {
           type: "text",
-          text: userMessage
+          text: userMessage,
           // No cache_control
-        }
-      ]
-    }
-  ]
+        },
+      ],
+    },
+  ],
 });
 
 console.log("TEST SUITE 1: Basic Cache Request Acceptance\n");
@@ -186,7 +188,9 @@ test("should accept request with cache_control markers", async () => {
     expect(response.body).toHaveProperty("usage");
   } catch (e) {
     if (e.message.includes("ECONNREFUSED")) {
-      throw new Error("Proxy not running. Start with: PROXY_ONLY=true bun run src/main.ts");
+      throw new Error(
+        "Proxy not running. Start with: PROXY_ONLY=true bun run src/main.ts"
+      );
     }
     throw e;
   }
@@ -232,10 +236,7 @@ test("should differentiate between cache creation and cache hits", async () => {
     usage1.cache_creation_input_tokens > 0 ||
     (usage1.cache_read_input_tokens === 0 && usage1.input_tokens > 0);
 
-  assert.ok(
-    hasCreationTokens,
-    "First request should indicate cache creation"
-  );
+  assert.ok(hasCreationTokens, "First request should indicate cache creation");
 });
 
 console.log("\nTEST SUITE 3: Cache Header Generation\n");
@@ -294,20 +295,20 @@ test("should handle system as array with cache_control", async () => {
       {
         type: "text",
         text: "System 1",
-        cache_control: { type: "ephemeral" }
+        cache_control: { type: "ephemeral" },
       },
       {
         type: "text",
         text: "System 2",
-        cache_control: { type: "ephemeral" }
-      }
+        cache_control: { type: "ephemeral" },
+      },
     ],
     messages: [
       {
         role: "user",
-        content: [{ type: "text", text: "Hello" }]
-      }
-    ]
+        content: [{ type: "text", text: "Hello" }],
+      },
+    ],
   };
 
   const response = await makeProxyRequest(body);
@@ -322,12 +323,12 @@ test("should handle mixed cacheable and non-cacheable blocks", async () => {
       {
         type: "text",
         text: "Cacheable system",
-        cache_control: { type: "ephemeral" }
+        cache_control: { type: "ephemeral" },
       },
       {
         type: "text",
-        text: "Non-cacheable system"
-      }
+        text: "Non-cacheable system",
+      },
     ],
     messages: [
       {
@@ -336,15 +337,15 @@ test("should handle mixed cacheable and non-cacheable blocks", async () => {
           {
             type: "text",
             text: "Cacheable user",
-            cache_control: { type: "ephemeral" }
+            cache_control: { type: "ephemeral" },
           },
           {
             type: "text",
-            text: "Non-cacheable user"
-          }
-        ]
-      }
-    ]
+            text: "Non-cacheable user",
+          },
+        ],
+      },
+    ],
   };
 
   const response = await makeProxyRequest(body);
@@ -497,8 +498,12 @@ async function runAll() {
 setTimeout(() => {
   console.log(`\n╔══════════════════════════════════════════════════════════╗`);
   console.log(`║   TEST SUMMARY                                           ║`);
-  console.log(`║   Passed: ${passed}                                              ║`);
-  console.log(`║   Failed: ${failed}                                              ║`);
+  console.log(
+    `║   Passed: ${passed}                                              ║`
+  );
+  console.log(
+    `║   Failed: ${failed}                                              ║`
+  );
   console.log(`╚══════════════════════════════════════════════════════════╝\n`);
 
   if (failed > 0) {

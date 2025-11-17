@@ -10,6 +10,8 @@ alias anyclaude-test='cd /Users/akaszubski/Documents/GitHub/anyclaude && npm tes
 # Mode switching
 alias anyclaude-lm='anyclaude'                              # LMStudio mode (default)
 alias anyclaude-claude='ANYCLAUDE_MODE=claude anyclaude'    # Claude mode
+alias anyclaude-openrouter='anyclaude --mode=openrouter'    # OpenRouter mode
+alias anyclaude-select-model='./scripts/select-openrouter-model.sh'  # Interactive model selector
 
 # Debug levels
 alias anyclaude-debug='ANYCLAUDE_DEBUG=1 anyclaude'         # Basic debug
@@ -45,6 +47,8 @@ Quick Start:
   anyclaude-build         → Rebuild project
   anyclaude-dev           → Run local version (LMStudio)
   anyclaude-claude        → Run in Claude mode
+  anyclaude-openrouter    → Run with OpenRouter
+  anyclaude-select-model  → Change OpenRouter model (interactive)
   anyclaude-trace-claude  → Capture Claude API traces
 
 Debug Levels:

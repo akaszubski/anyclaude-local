@@ -11,7 +11,10 @@ import {
   isTraceDebugEnabled,
 } from "./debug";
 import { safeStringify } from "./safe-stringify";
-import { parseOpenAIToolCall, assembleStreamingToolCall } from "./tool-response-parser";
+import {
+  parseOpenAIToolCall,
+  assembleStreamingToolCall,
+} from "./tool-response-parser";
 
 export function convertToAnthropicStream(
   stream: ReadableStream<TextStreamPart<Record<string, Tool>>>,
@@ -411,9 +414,13 @@ export function convertToAnthropicStream(
                 parsed: parsedToolUse,
               });
             } catch (err) {
-              debug(3, `[Tool Call] Validation failed (this is expected for AI SDK format):`, {
-                error: err instanceof Error ? err.message : String(err),
-              });
+              debug(
+                3,
+                `[Tool Call] Validation failed (this is expected for AI SDK format):`,
+                {
+                  error: err instanceof Error ? err.message : String(err),
+                }
+              );
             }
           }
 
@@ -540,6 +547,10 @@ export function convertToAnthropicStream(
       }
     },
   });
+
+  // Track if we've sent an error to avoid duplicates
+  let errorSent = false;
+
   stream.pipeTo(transform.writable).catch((error) => {
     // Log ALL pipeline errors, even empty ones - they indicate problems
     const hasErrorContent =
@@ -554,11 +565,32 @@ export function convertToAnthropicStream(
         `[Stream Conversion] ⚠️  Pipeline aborted with empty error - stream may have been cancelled or sent invalid data`
       );
       debug(1, `[Stream Conversion] Last processed chunk count: ${chunkCount}`);
+      debug(1, `[Stream Conversion] ❌ Server likely crashed mid-stream`);
     }
 
-    // Note: We swallow the error here because streaming errors should be
-    // sent as error chunks in the stream itself. However, empty errors indicate
-    // a problem with the stream format or connection.
+    // FIX: Send error to Claude Code instead of swallowing it
+    // We need to abort the readable side with the error so the consumer sees it
+    if (!errorSent) {
+      errorSent = true;
+
+      const errorMessage = hasErrorContent
+        ? (error.message || String(error))
+        : "Server connection lost - backend may have crashed";
+
+      debug(1, `[Stream Conversion] ⚠️  Aborting stream with error: ${errorMessage}`);
+
+      // Abort the transform readable stream to propagate error to consumer
+      // Only cancel if the stream is not already locked (being consumed)
+      try {
+        if (!transform.readable.locked) {
+          transform.readable.cancel(new Error(errorMessage));
+        } else {
+          debug(1, `[Stream Conversion] Stream already locked, skipping cancel`);
+        }
+      } catch (e) {
+        debug(1, `[Stream Conversion] Failed to cancel readable:`, e);
+      }
+    }
   });
   return transform.readable;
 }

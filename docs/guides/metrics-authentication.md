@@ -51,6 +51,7 @@ http http://localhost:8080/v1/metrics \
 **Default:** `""`
 
 **Behavior:**
+
 - **If set:** Only requests with matching Bearer token can access metrics
 - **If not set:** All requests return 403 Forbidden
 
@@ -78,6 +79,7 @@ curl -H "Authorization: Bearer $METRICS_API_KEY" \
 ```
 
 Response:
+
 ```json
 {
   "timestamp": 1700000000.123,
@@ -113,6 +115,7 @@ curl -H "Authorization: Bearer $METRICS_API_KEY" \
 ```
 
 Response:
+
 ```prometheus
 # HELP cache_hit_total Total number of cache hits
 # TYPE cache_hit_total counter
@@ -143,6 +146,7 @@ curl http://localhost:8080/v1/metrics
 ```
 
 Response:
+
 ```json
 {
   "detail": "Forbidden"
@@ -240,13 +244,13 @@ curl -s -H "Authorization: Bearer $METRICS_API_KEY" \
 
 ```yaml
 scrape_configs:
-  - job_name: 'mlx-server'
-    metrics_path: '/v1/metrics'
+  - job_name: "mlx-server"
+    metrics_path: "/v1/metrics"
     params:
-      format: ['prometheus']
+      format: ["prometheus"]
     static_configs:
-      - targets: ['localhost:8080']
-    bearer_token: 'your-secret-key-here'
+      - targets: ["localhost:8080"]
+    bearer_token: "your-secret-key-here"
 ```
 
 ### Grafana
@@ -278,6 +282,7 @@ curl -X POST http://grafana:3000/api/datasources \
 **Symptoms:** All requests return 403
 
 **Causes:**
+
 1. `METRICS_API_KEY` not set on server
 2. Wrong key in Authorization header
 3. Missing `Bearer` prefix
@@ -324,11 +329,13 @@ curl -H "Authorization: Bearer $METRICS_API_KEY" \
 If you were using the metrics endpoint before Phase 3:
 
 **Before (no auth):**
+
 ```bash
 curl http://localhost:8080/v1/metrics
 ```
 
 **After (with auth):**
+
 ```bash
 # 1. Set API key
 export METRICS_API_KEY=$(openssl rand -hex 32)

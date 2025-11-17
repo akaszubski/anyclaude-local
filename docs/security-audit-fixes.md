@@ -13,9 +13,11 @@ This document provides exact code fixes for the vulnerabilities discovered in th
 ## Fix #1: Unbounded Key Memory Allocation (HIGH)
 
 ### Problem
+
 Keys are stored in memory but not tracked in the memory limit. An attacker can exhaust RAM by storing large keys.
 
 ### Current Code (VULNERABLE)
+
 File: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/ram_cache.py`
 
 ```python
@@ -38,10 +40,10 @@ import sys
 
 class InMemoryKVCacheManager:
     # ... existing code ...
-    
+
     # Add constant for max key size
     MAX_KEY_SIZE_BYTES = 10000  # 10KB max key
-    
+
     def set(self, key: str, value: bytes, prefix_tokens: Optional[int] = None) -> None:
         """
         Store value in RAM cache with metadata
@@ -58,7 +60,7 @@ class InMemoryKVCacheManager:
         # Validate inputs
         if not key:
             raise ValueError("Cache key cannot be empty")  # FIX #3: Was silent failure
-        
+
         # FIX #1: Validate key size
         if len(key) > self.MAX_KEY_SIZE_BYTES:
             raise ValueError(
@@ -161,13 +163,14 @@ class InMemoryKVCacheManager:
 ```
 
 ### Testing
+
 Add to test suite:
 
 ```python
 def test_key_memory_tracked(self):
     """Test that key memory is tracked in the limit"""
     cache = InMemoryKVCacheManager(max_memory_mb=1)
-    
+
     # Try to store large key - should be rejected or tracked
     large_key = "k" * 100000
     try:
@@ -182,12 +185,12 @@ def test_key_memory_tracked(self):
 def test_key_size_limit(self):
     """Test that key size is limited"""
     cache = InMemoryKVCacheManager(max_memory_mb=100)
-    
+
     # Try to store key larger than limit
     oversized_key = "k" * (InMemoryKVCacheManager.MAX_KEY_SIZE_BYTES + 1)
     with self.assertRaises(ValueError) as context:
         cache.set(oversized_key, b"value")
-    
+
     self.assertIn("exceeds maximum", str(context.exception))
 ```
 
@@ -196,9 +199,11 @@ def test_key_size_limit(self):
 ## Fix #2: Silent Failure on Empty Keys (MEDIUM)
 
 ### Problem
+
 Empty keys are silently ignored instead of raising an error, making bugs hard to detect.
 
 ### Current Code (VULNERABLE)
+
 ```python
 def set(self, key: str, value: bytes, prefix_tokens: Optional[int] = None) -> None:
     # Validate inputs
@@ -207,6 +212,7 @@ def set(self, key: str, value: bytes, prefix_tokens: Optional[int] = None) -> No
 ```
 
 ### Fixed Code
+
 ```python
 def set(self, key: str, value: bytes, prefix_tokens: Optional[int] = None) -> None:
     # Validate inputs
@@ -220,28 +226,29 @@ Also fix `get()` and `get_metadata()`:
 def get(self, key: str) -> Optional[bytes]:
     if not key:
         raise ValueError("Cache key cannot be empty")  # Changed from: return None
-    
+
     with self.lock:
         # ... rest of method ...
 
 def get_metadata(self, key: str) -> Optional[dict[str, Any]]:
     if not key:
         raise ValueError("Cache key cannot be empty")  # Changed from: return None
-    
+
     with self.lock:
         # ... rest of method ...
 ```
 
 ### Testing
+
 ```python
 def test_empty_key_raises_error(self):
     """Test that empty keys raise ValueError"""
     cache = InMemoryKVCacheManager()
-    
+
     with self.assertRaises(ValueError) as context:
         cache.set("", b"value")
     self.assertIn("empty", str(context.exception).lower())
-    
+
     with self.assertRaises(ValueError) as context:
         cache.get("")
     self.assertIn("empty", str(context.exception).lower())
@@ -252,9 +259,11 @@ def test_empty_key_raises_error(self):
 ## Fix #3: Float Precision in Memory Limit (HIGH)
 
 ### Problem
+
 Float arithmetic in size calculations could allow exceeding memory limit due to precision issues.
 
 ### Current Code (VULNERABLE)
+
 ```python
 # Line 78-79
 size_mb = len(value) / (1024 * 1024)  # Float division
@@ -272,7 +281,7 @@ import math
 
 class InMemoryKVCacheManager:
     # Track memory in bytes internally, convert to MB only for reporting
-    
+
     def __init__(self, max_memory_mb: int = 300000, eviction_policy: str = 'lru'):
         """
         Initialize RAM-based cache manager
@@ -357,26 +366,27 @@ class InMemoryKVCacheManager:
 ```
 
 ### Testing
+
 ```python
 def test_float_precision_boundary(self):
     """Test that memory limit is strictly enforced with byte accuracy"""
     # Test with small cache size for precision testing
     cache = InMemoryKVCacheManager(max_memory_mb=1)
-    
+
     # Store exactly 1MB (1024*1024 bytes)
     value_1mb = b"x" * (1024 * 1024)
     cache.set("key1", value_1mb)
-    
+
     stats = cache.get_stats()
     memory_bytes = stats.get('memory_used_bytes', int(stats['memory_used_mb'] * 1024 * 1024))
-    
+
     # Try to add 1 more byte - should trigger eviction or fail
     try:
         cache.set("key2", b"y")
         # If successful, verify no overage
         stats2 = cache.get_stats()
         memory_bytes2 = stats2.get('memory_used_bytes', int(stats2['memory_used_mb'] * 1024 * 1024))
-        
+
         # Should not exceed limit significantly
         self.assertLess(memory_bytes2, self.max_memory_bytes + 1000)  # Small tolerance
     except ValueError:
@@ -391,6 +401,7 @@ def test_float_precision_boundary(self):
 ### Already Fixed in Fix #1
 
 See lines above where we added:
+
 ```python
 MAX_KEY_SIZE_BYTES = 10000  # 10KB max key
 
@@ -405,9 +416,11 @@ if len(key) > self.MAX_KEY_SIZE_BYTES:
 ## Summary of Changes
 
 ### Files to Modify
+
 - `/Users/andrewkaszubski/Documents/GitHub/anyclaude/scripts/ram_cache.py`
 
 ### Key Changes
+
 1. Add `import sys` at top
 2. Add `MAX_KEY_SIZE_BYTES = 10000` constant
 3. Track internal memory in bytes, not floats
@@ -418,11 +431,13 @@ if len(key) > self.MAX_KEY_SIZE_BYTES:
 8. Update tests with security-focused test cases
 
 ### Backwards Compatibility
+
 - Public API remains the same (same method signatures)
 - Existing code will work but may hit the new key size limit if keys exceed 10KB
 - Statistics dictionary has new fields but old fields still present
 
 ### Testing Added
+
 - Key memory tracking verification
 - Key size limit validation
 - Float precision boundary testing
@@ -454,6 +469,7 @@ After applying fixes:
 5. Finally: Run full test suite
 
 Estimated time per step:
+
 1. 30-45 minutes
 2. 30-45 minutes
 3. 15 minutes
@@ -461,4 +477,3 @@ Estimated time per step:
 5. 15 minutes
 
 **Total: 3.5-4.5 hours**
-

@@ -42,8 +42,11 @@ function expect(value) {
       assert.deepStrictEqual(value, expected);
     },
     toContain: (substring) => {
-      if (typeof value === 'string') {
-        assert.ok(value.includes(substring), `"${value}" does not contain "${substring}"`);
+      if (typeof value === "string") {
+        assert.ok(
+          value.includes(substring),
+          `"${value}" does not contain "${substring}"`
+        );
       } else {
         assert.ok(value.includes(substring));
       }
@@ -99,7 +102,13 @@ test("should generate a 64-character hex SHA256 hash", () => {
     };
   }
 
-  const system = [{ type: "text", text: "You are helpful.", cache_control: { type: "ephemeral" } }];
+  const system = [
+    {
+      type: "text",
+      text: "You are helpful.",
+      cache_control: { type: "ephemeral" },
+    },
+  ];
   const hash = hashGenerateFunction(system);
 
   expect(hash).toMatch(/^[a-f0-9]{64}$/);
@@ -113,8 +122,12 @@ test("should generate consistent hash for same input (deterministic)", () => {
   };
 
   const system = [
-    { type: "text", text: "You are Claude.", cache_control: { type: "ephemeral" } },
-    { type: "text", text: "Be helpful.", cache_control: { type: "ephemeral" } }
+    {
+      type: "text",
+      text: "You are Claude.",
+      cache_control: { type: "ephemeral" },
+    },
+    { type: "text", text: "Be helpful.", cache_control: { type: "ephemeral" } },
   ];
 
   const hash1 = hashFn(system);
@@ -132,8 +145,20 @@ test("should generate different hashes for different system content", () => {
     return crypto.createHash("sha256").update(content).digest("hex");
   };
 
-  const system1 = [{ type: "text", text: "You are helpful.", cache_control: { type: "ephemeral" } }];
-  const system2 = [{ type: "text", text: "You are not helpful.", cache_control: { type: "ephemeral" } }];
+  const system1 = [
+    {
+      type: "text",
+      text: "You are helpful.",
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  const system2 = [
+    {
+      type: "text",
+      text: "You are not helpful.",
+      cache_control: { type: "ephemeral" },
+    },
+  ];
 
   const hash1 = hashFn(system1);
   const hash2 = hashFn(system2);
@@ -150,12 +175,12 @@ test("should generate different hashes for different order of blocks", () => {
 
   const system1 = [
     { type: "text", text: "Block A", cache_control: { type: "ephemeral" } },
-    { type: "text", text: "Block B", cache_control: { type: "ephemeral" } }
+    { type: "text", text: "Block B", cache_control: { type: "ephemeral" } },
   ];
 
   const system2 = [
     { type: "text", text: "Block B", cache_control: { type: "ephemeral" } },
-    { type: "text", text: "Block A", cache_control: { type: "ephemeral" } }
+    { type: "text", text: "Block A", cache_control: { type: "ephemeral" } },
   ];
 
   const hash1 = hashFn(system1);
@@ -173,7 +198,9 @@ test("should be 64 hex characters (SHA256)", () => {
     return crypto.createHash("sha256").update(content).digest("hex");
   };
 
-  const system = [{ type: "text", text: "Test", cache_control: { type: "ephemeral" } }];
+  const system = [
+    { type: "text", text: "Test", cache_control: { type: "ephemeral" } },
+  ];
   const hash = hashFn(system);
 
   expect(hash).toHaveLength(64);
@@ -186,7 +213,9 @@ test("should only contain lowercase hex characters", () => {
     return crypto.createHash("sha256").update(content).digest("hex");
   };
 
-  const system = [{ type: "text", text: "Test", cache_control: { type: "ephemeral" } }];
+  const system = [
+    { type: "text", text: "Test", cache_control: { type: "ephemeral" } },
+  ];
   const hash = hashFn(system);
 
   expect(hash).toMatch(/^[a-f0-9]{64}$/);
@@ -203,7 +232,11 @@ test("should handle system as array of text blocks", () => {
 
   const system = [
     { type: "text", text: "First block", cache_control: { type: "ephemeral" } },
-    { type: "text", text: "Second block", cache_control: { type: "ephemeral" } }
+    {
+      type: "text",
+      text: "Second block",
+      cache_control: { type: "ephemeral" },
+    },
   ];
 
   const hash = hashFn(system);
@@ -214,9 +247,8 @@ test("should handle system as string (convert to consistent format)", () => {
   const crypto = require("crypto");
   // When system is a string, it should be converted to array format for hashing
   const hashFn = (system) => {
-    const normalizedSystem = typeof system === 'string'
-      ? [{ type: "text", text: system }]
-      : system;
+    const normalizedSystem =
+      typeof system === "string" ? [{ type: "text", text: system }] : system;
     const content = JSON.stringify(normalizedSystem);
     return crypto.createHash("sha256").update(content).digest("hex");
   };
@@ -247,7 +279,9 @@ test("should handle empty string text blocks", () => {
     return crypto.createHash("sha256").update(content).digest("hex");
   };
 
-  const system = [{ type: "text", text: "", cache_control: { type: "ephemeral" } }];
+  const system = [
+    { type: "text", text: "", cache_control: { type: "ephemeral" } },
+  ];
   const hash = hashFn(system);
 
   expect(hash).toMatch(/^[a-f0-9]{64}$/);
@@ -263,7 +297,11 @@ test("should handle Unicode characters without breaking", () => {
   };
 
   const system = [
-    { type: "text", text: "Unicode: 你好世界 مرحبا بالعالم", cache_control: { type: "ephemeral" } }
+    {
+      type: "text",
+      text: "Unicode: 你好世界 مرحبا بالعالم",
+      cache_control: { type: "ephemeral" },
+    },
   ];
 
   const hash = hashFn(system);
@@ -280,9 +318,9 @@ test("should handle special characters (quotes, newlines, etc.)", () => {
   const system = [
     {
       type: "text",
-      text: 'Special chars: "quotes" \'apostrophes\' \nnewlines\t tabs',
-      cache_control: { type: "ephemeral" }
-    }
+      text: "Special chars: \"quotes\" 'apostrophes' \nnewlines\t tabs",
+      cache_control: { type: "ephemeral" },
+    },
   ];
 
   const hash = hashFn(system);
@@ -297,8 +335,12 @@ test("should produce consistent hash despite Unicode normalization", () => {
   };
 
   // Same text, same hash (JSON stringification handles Unicode consistently)
-  const system1 = [{ type: "text", text: "café", cache_control: { type: "ephemeral" } }];
-  const system2 = [{ type: "text", text: "café", cache_control: { type: "ephemeral" } }];
+  const system1 = [
+    { type: "text", text: "café", cache_control: { type: "ephemeral" } },
+  ];
+  const system2 = [
+    { type: "text", text: "café", cache_control: { type: "ephemeral" } },
+  ];
 
   const hash1 = hashFn(system1);
   const hash2 = hashFn(system2);
@@ -315,8 +357,20 @@ test("should detect single character difference", () => {
     return crypto.createHash("sha256").update(content).digest("hex");
   };
 
-  const system1 = [{ type: "text", text: "You are helpful", cache_control: { type: "ephemeral" } }];
-  const system2 = [{ type: "text", text: "You are helpfui", cache_control: { type: "ephemeral" } }];
+  const system1 = [
+    {
+      type: "text",
+      text: "You are helpful",
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  const system2 = [
+    {
+      type: "text",
+      text: "You are helpfui",
+      cache_control: { type: "ephemeral" },
+    },
+  ];
 
   const hash1 = hashFn(system1);
   const hash2 = hashFn(system2);
@@ -331,8 +385,20 @@ test("should detect whitespace difference", () => {
     return crypto.createHash("sha256").update(content).digest("hex");
   };
 
-  const system1 = [{ type: "text", text: "You are helpful.", cache_control: { type: "ephemeral" } }];
-  const system2 = [{ type: "text", text: "You are helpful. ", cache_control: { type: "ephemeral" } }];
+  const system1 = [
+    {
+      type: "text",
+      text: "You are helpful.",
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  const system2 = [
+    {
+      type: "text",
+      text: "You are helpful. ",
+      cache_control: { type: "ephemeral" },
+    },
+  ];
 
   const hash1 = hashFn(system1);
   const hash2 = hashFn(system2);
@@ -350,7 +416,11 @@ test("should generate same hash for identical system with cache_control markers"
   };
 
   const system = [
-    { type: "text", text: "System prompt", cache_control: { type: "ephemeral" } }
+    {
+      type: "text",
+      text: "System prompt",
+      cache_control: { type: "ephemeral" },
+    },
   ];
 
   const hash1 = hashFn(system);
@@ -367,11 +437,15 @@ test("should include cache_control in hash (different hash if cache_control diff
   };
 
   const system1 = [
-    { type: "text", text: "System prompt", cache_control: { type: "ephemeral" } }
+    {
+      type: "text",
+      text: "System prompt",
+      cache_control: { type: "ephemeral" },
+    },
   ];
 
   const system2 = [
-    { type: "text", text: "System prompt" }  // No cache_control
+    { type: "text", text: "System prompt" }, // No cache_control
   ];
 
   const hash1 = hashFn(system1);
@@ -383,8 +457,12 @@ test("should include cache_control in hash (different hash if cache_control diff
 // Summary
 console.log(`\n╔══════════════════════════════════════════════════════════╗`);
 console.log(`║   TEST SUMMARY                                           ║`);
-console.log(`║   Passed: ${passed}                                              ║`);
-console.log(`║   Failed: ${failed}                                              ║`);
+console.log(
+  `║   Passed: ${passed}                                              ║`
+);
+console.log(
+  `║   Failed: ${failed}                                              ║`
+);
 console.log(`╚══════════════════════════════════════════════════════════╝\n`);
 
 if (failed > 0) {

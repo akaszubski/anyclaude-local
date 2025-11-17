@@ -13,6 +13,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 **Purpose**: Validate SHA256 hash generation for cache keys
 
 **Test Categories**:
+
 - **Determinism**: Same input always produces same output (3 tests)
 - **Format Validation**: 64 lowercase hex characters (3 tests)
 - **Content Sensitivity**: Different content produces different hashes (2 tests)
@@ -21,6 +22,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 - **Cache Control Markers**: Includes cache_control in hash (2 tests)
 
 **Key Tests**:
+
 ```
 ✓ should generate consistent hash for same input (deterministic)
 ✓ should generate different hashes for different content
@@ -38,6 +40,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 **Purpose**: Validate extraction of cache_control markers from Anthropic requests
 
 **Test Categories**:
+
 - **System Prompts**: Extract system cache markers (3 tests)
 - **User Messages**: Count cacheable message blocks (3 tests)
 - **Format Validation**: Correct marker structure (2 tests)
@@ -46,6 +49,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 - **Message Role Filtering**: Only cache user prompts, not assistant (1 test)
 
 **Key Tests**:
+
 ```
 ✓ should extract system cache markers with cache_control
 ✓ should count cacheable user message blocks
@@ -64,12 +68,14 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 **Purpose**: Validate token count estimation and integration
 
 **Test Categories**:
+
 - **Token Estimation**: Basic ~4 chars/token formula (10 tests)
 - **Rounding**: Math.ceil behavior (5 tests)
 - **Edge Cases**: Empty, null, large text (10 tests)
 - **Accuracy**: Within expected range (5 tests)
 
 **Key Tests**:
+
 ```
 ✓ should estimate ~4 characters per token
 ✓ should use Math.ceil for rounding
@@ -90,6 +96,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 **Purpose**: Validate HTTP cache header generation and formatting
 
 **Test Categories**:
+
 - **Header Presence**: Headers generated when cache_control present (4 tests)
 - **Header Absence**: No headers when cache_control absent (2 tests)
 - **Header Values**: Correct format and content (8 tests)
@@ -97,6 +104,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 - **Real-world Examples**: Complete request/response cycles (5 tests)
 
 **Key Tests**:
+
 ```
 ✓ should generate X-Cache-Hash header (64 hex chars)
 ✓ should generate X-Cache-Tokens header (numeric string)
@@ -115,6 +123,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 **Purpose**: End-to-end testing through proxy
 
 **Test Categories**:
+
 - **Proxy Flow**: Request acceptance and response (3 tests)
 - **Format Validation**: Anthropic response format (2 tests)
 - **Cache Metrics**: Usage field with cache data (3 tests)
@@ -124,6 +133,7 @@ Phase 2.2 includes a comprehensive test suite for cache_control header detection
 **Note**: Requires running proxy for full validation
 
 **Run**:
+
 ```bash
 # Terminal 1
 PROXY_ONLY=true bun run src/main.ts
@@ -248,13 +258,13 @@ X-Cache-System: WW91IGFyZSBDbGF1ZGUsIGFuIEFJIGFzc2lzdGFudC4=
 
 ### Coverage
 
-| Category | Tests | Coverage |
-|----------|-------|----------|
-| Hash Generation | 17 | 100% |
-| Marker Extraction | 14 | 100% |
-| Token Estimation | 30 | 100% |
-| Header Formatting | 23 | 100% |
-| **Total** | **84** | **100%** |
+| Category          | Tests  | Coverage |
+| ----------------- | ------ | -------- |
+| Hash Generation   | 17     | 100%     |
+| Marker Extraction | 14     | 100%     |
+| Token Estimation  | 30     | 100%     |
+| Header Formatting | 23     | 100%     |
+| **Total**         | **84** | **100%** |
 
 ### Test Patterns
 
@@ -277,6 +287,7 @@ assert.strictEqual(markers.cacheKey.length, 64);
 Clear, descriptive names following pattern: `should [expected behavior] [when condition]`
 
 Examples:
+
 - "should generate consistent hash for same input (deterministic)"
 - "should handle Unicode characters without breaking"
 - "should generate different hashes for different system content"
@@ -290,6 +301,7 @@ File: `tests/regression/test_cache_hash_regression.js`
 **Purpose**: Ensure hash generation doesn't change between versions
 
 **Tests**:
+
 - Known hash values remain constant
 - Hash algorithm doesn't change unexpectedly
 - Backwards compatibility with cached hashes
@@ -300,16 +312,17 @@ File: `tests/regression/test_cache_hash_regression.js`
 
 ### Expected Performance
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Hash generation | <1ms | For typical 1-50KB system prompts |
-| Token estimation | <1μs | Pure arithmetic, no I/O |
-| Marker extraction | <1ms | For typical request sizes |
-| Header generation | <1ms | Formatting and encoding |
+| Operation         | Time | Notes                             |
+| ----------------- | ---- | --------------------------------- |
+| Hash generation   | <1ms | For typical 1-50KB system prompts |
+| Token estimation  | <1μs | Pure arithmetic, no I/O           |
+| Marker extraction | <1ms | For typical request sizes         |
+| Header generation | <1ms | Formatting and encoding           |
 
 ### Test Validation
 
 All tests validate performance implicitly:
+
 - No timeout exceptions
 - Response within expected time
 - Completes without memory issues
@@ -360,6 +373,7 @@ Full test suite runs before push:
 ### Updating Tests
 
 When requirements change:
+
 1. Update test expectations
 2. Document the change
 3. Ensure all tests still pass
@@ -377,6 +391,7 @@ For test failures or questions:
 ## Summary
 
 The cache_control test suite provides comprehensive validation of:
+
 - SHA256 hash generation (determinism, format, security)
 - Cache marker extraction (system prompts, user messages)
 - Token estimation (accuracy, rounding, edge cases)

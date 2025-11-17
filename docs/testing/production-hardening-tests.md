@@ -6,14 +6,14 @@ Complete testing documentation for ErrorHandler, MetricsCollector, and ConfigVal
 
 **151 total tests across 3 modules**
 
-| Module | Test File | Lines | Tests | Focus |
-|--------|-----------|-------|-------|-------|
-| ErrorHandler | `tests/unit/test_error_handler.py` | 343 | 44 | Cache degradation, OOM recovery, network retry |
-| MetricsCollector | `tests/unit/test_metrics_collector.py` | 447 | 52 | Cache tracking, latency percentiles, memory, throughput |
-| ConfigValidator | `tests/unit/test_config_validator.py` | 484 | 60 | Port validation, env vars, model paths, dependencies |
-| Metrics Endpoint | `tests/integration/test_metrics_endpoint.py` | 457 | 18 | JSON/Prometheus formats, real-time updates |
-| Error Recovery | `tests/regression/test_error_recovery_regression.js` | - | 11 | Graceful degradation, cache re-enable |
-| Error Handling (JS) | `tests/unit/test-*-errors.js` | - | 9 | Network, config, proxy, message, schema errors |
+| Module              | Test File                                            | Lines | Tests | Focus                                                   |
+| ------------------- | ---------------------------------------------------- | ----- | ----- | ------------------------------------------------------- |
+| ErrorHandler        | `tests/unit/test_error_handler.py`                   | 343   | 44    | Cache degradation, OOM recovery, network retry          |
+| MetricsCollector    | `tests/unit/test_metrics_collector.py`               | 447   | 52    | Cache tracking, latency percentiles, memory, throughput |
+| ConfigValidator     | `tests/unit/test_config_validator.py`                | 484   | 60    | Port validation, env vars, model paths, dependencies    |
+| Metrics Endpoint    | `tests/integration/test_metrics_endpoint.py`         | 457   | 18    | JSON/Prometheus formats, real-time updates              |
+| Error Recovery      | `tests/regression/test_error_recovery_regression.js` | -     | 11    | Graceful degradation, cache re-enable                   |
+| Error Handling (JS) | `tests/unit/test-*-errors.js`                        | -     | 9     | Network, config, proxy, message, schema errors          |
 
 ## ErrorHandler Tests (44 tests)
 
@@ -839,25 +839,25 @@ class TestMetricsEndpointJSON(unittest.TestCase):
 File: `tests/regression/test_error_recovery_regression.js`
 
 ```javascript
-describe('Error Recovery Regression', () => {
-    it('should disable cache on persistent errors', async () => {
-        // Simulate 5 cache errors
-        // Verify cache_enabled = false
-    });
+describe("Error Recovery Regression", () => {
+  it("should disable cache on persistent errors", async () => {
+    // Simulate 5 cache errors
+    // Verify cache_enabled = false
+  });
 
-    it('should re-enable cache after recovery', async () => {
-        // Cause cache to be disabled
-        // Then record 10 successful requests
-        // Verify cache_enabled = true
-    });
+  it("should re-enable cache after recovery", async () => {
+    // Cause cache to be disabled
+    // Then record 10 successful requests
+    // Verify cache_enabled = true
+  });
 
-    it('should handle OOM and continue processing', async () => {
-        // Simulate OOM error
-        // Verify fallback mode activated
-        // Verify request still succeeds
-    });
+  it("should handle OOM and continue processing", async () => {
+    // Simulate OOM error
+    // Verify fallback mode activated
+    // Verify request still succeeds
+  });
 
-    // ... 8 more tests
+  // ... 8 more tests
 });
 ```
 

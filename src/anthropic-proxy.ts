@@ -80,6 +80,11 @@ export const createAnthropicProxy = ({
   // Request ID counter for tracking
   let requestCounter = 0;
 
+  // Tools cache for Anthropic cache_control support
+  // When Claude Code uses cache_control on tools, it doesn't re-send them
+  // We cache them here and restore on subsequent requests
+  let cachedTools: any[] | null = null;
+
   const proxy = http
     .createServer((req, res) => {
       if (!req.url) {
@@ -466,16 +471,12 @@ export const createAnthropicProxy = ({
         // Extract cache_control markers for backend caching
         const cacheMarkers = extractMarkers(body);
         if (cacheMarkers.hasSystemCache && isVerboseDebugEnabled()) {
-          debug(
-            2,
-            `[Cache Control] Detected cacheable content:`,
-            {
-              systemCache: cacheMarkers.hasSystemCache,
-              userBlocks: cacheMarkers.cacheableUserBlocks,
-              estimatedTokens: cacheMarkers.estimatedCacheTokens,
-              cacheKey: cacheMarkers.cacheKey?.substring(0, 16) + '...',
-            }
-          );
+          debug(2, `[Cache Control] Detected cacheable content:`, {
+            systemCache: cacheMarkers.hasSystemCache,
+            userBlocks: cacheMarkers.cacheableUserBlocks,
+            estimatedTokens: cacheMarkers.estimatedCacheTokens,
+            cacheKey: cacheMarkers.cacheKey?.substring(0, 16) + "...",
+          });
         }
 
         const provider = providers[providerName];
@@ -483,7 +484,7 @@ export const createAnthropicProxy = ({
           throw new Error(`Provider not configured: ${providerName}`);
         }
 
-        // Check prompt cache to avoid re-sending 9000 tokens every request
+        // Check prompt cache for metrics tracking only (don't modify request)
         const cachedPrompt = getCachedPrompt(
           body.system || [],
           body.tools || []
@@ -534,7 +535,9 @@ export const createAnthropicProxy = ({
 
           // Log OpenAI conversion for verification (using integrated tool-schema-converter)
           try {
-            const openAITools = convertAnthropicToolsToOpenAI(body.tools as any);
+            const openAITools = convertAnthropicToolsToOpenAI(
+              body.tools as any
+            );
             debug(3, `[Tools] OpenAI format conversion:`, {
               count: openAITools.length,
               sample: openAITools[0], // Show first tool as example
@@ -546,10 +549,26 @@ export const createAnthropicProxy = ({
           }
         }
 
+        // Handle Anthropic cache_control: Claude Code may not re-send tools if cached
+        // If no tools provided but we have cached tools, restore them
+        let toolsToUse = body.tools;
+        if (!toolsToUse && cachedTools) {
+          if (isDebugEnabled()) {
+            debug(1, `[Cache Control] Restoring ${cachedTools.length} cached tools`);
+          }
+          toolsToUse = cachedTools;
+        } else if (toolsToUse && toolsToUse.length > 0) {
+          // Cache tools for future requests
+          cachedTools = toolsToUse;
+          if (isDebugEnabled()) {
+            debug(1, `[Cache Control] Caching ${toolsToUse.length} tools for future requests`);
+          }
+        }
+
         // Sort tools by name for deterministic cache keys
         // This ensures the same tools in different orders still produce cache hits
-        const sortedTools = body.tools
-          ? [...body.tools].sort((a, b) => a.name.localeCompare(b.name))
+        const sortedTools = toolsToUse
+          ? [...toolsToUse].sort((a, b) => a.name.localeCompare(b.name))
           : undefined;
 
         const tools = sortedTools?.reduce(
@@ -650,8 +669,8 @@ export const createAnthropicProxy = ({
         }
 
         // Check context window and truncate if needed
-        // Use detected model name if available, otherwise fall back to configured model
-        const modelNameForContext = cachedModelName || model;
+        // Priority: Claude Code's requested model (body.model) > detected model (cachedModelName) > config model
+        const modelNameForContext = body.model || cachedModelName || model;
         const contextStats = calculateContextStats(
           body.messages,
           body.system,
@@ -661,7 +680,7 @@ export const createAnthropicProxy = ({
         );
 
         // Log warning if approaching limit
-        logContextWarning(contextStats);
+        logContextWarning(contextStats, mode);
 
         // Truncate messages if exceeding limit
         let messagesToSend = body.messages;
@@ -676,6 +695,19 @@ export const createAnthropicProxy = ({
           messagesToSend = result.messages;
 
           if (result.truncated) {
+            const isCloudModel = (mode as string) === "claude" || mode === "openrouter";
+            const limitationWarning = !isCloudModel
+              ? `⚠️  IMPORTANT - LOCAL MODEL LIMITATION:\n` +
+                `  Claude Sonnet 4.5 auto-compresses context while preserving\n` +
+                `  key information. Local models cannot do this - old messages\n` +
+                `  are simply discarded, which may affect response quality.\n` +
+                `\n` +
+                `RECOMMENDED: Start a new Claude Code conversation to avoid\n` +
+                `           losing important context from earlier in the session.\n`
+              : `⚠️  IMPORTANT:\n` +
+                `  Older messages have been removed to fit within the model's context limit.\n` +
+                `  Consider starting a new conversation to preserve full context.\n`;
+
             console.error(
               `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚠️  CONTEXT LIMIT EXCEEDED - MESSAGES TRUNCATED\n` +
@@ -687,13 +719,7 @@ export const createAnthropicProxy = ({
                 `  After:  ${messagesToSend.length} messages\n` +
                 `  Limit:  ${contextStats.contextLimit} tokens (80% of ${modelNameForContext})\n` +
                 `\n` +
-                `⚠️  IMPORTANT - LOCAL MODEL LIMITATION:\n` +
-                `  Claude Sonnet 4.5 auto-compresses context while preserving\n` +
-                `  key information. Local models cannot do this - old messages\n` +
-                `  are simply discarded, which may affect response quality.\n` +
-                `\n` +
-                `RECOMMENDED: Start a new Claude Code conversation to avoid\n` +
-                `           losing important context from earlier in the session.\n` +
+                limitationWarning +
                 `\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
             );
@@ -797,13 +823,13 @@ export const createAnthropicProxy = ({
           }, timeoutConfig.timeout); // Configurable timeout for request completion
 
           try {
-            // Use .chat() for OpenAI providers (lmstudio, vllm-mlx) and .languageModel() for Anthropic
+            // Use .chat() for OpenAI providers (lmstudio, vllm-mlx, openrouter) and .languageModel() for Anthropic
             const languageModel =
-              providerName === "lmstudio" || providerName === "vllm-mlx"
+              providerName === "lmstudio" || providerName === "vllm-mlx" || providerName === "openrouter"
                 ? (provider as any).chat(model)
                 : provider.languageModel(model);
 
-            // No tool parser needed - vllm-mlx and lmstudio handle tool calling natively
+            // No tool parser needed - OpenAI-compatible providers (vllm-mlx, lmstudio, openrouter) handle tool calling natively
 
             debug(
               1,
@@ -1241,7 +1267,14 @@ export const createAnthropicProxy = ({
           // Handle stream errors
           nodeReadable.on("error", (error: any) => {
             debug(1, `[Stream Error] Source stream error:`, error);
+
+            // Clear keepalive on error
+            if (keepaliveInterval) {
+              clearInterval(keepaliveInterval);
+            }
+
             if (!res.headersSent) {
+              // Haven't started streaming yet - send error as JSON
               res.writeHead(503, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
@@ -1253,12 +1286,43 @@ export const createAnthropicProxy = ({
                 })
               );
             } else {
-              nodeWritable.destroy(error);
+              // Already streaming - send error as SSE event and close stream properly
+              const errorMessage = error?.message || "Backend server connection lost";
+              debug(1, `[Stream Error] ⚠️  Sending error event to Claude Code: ${errorMessage}`);
+
+              try {
+                // Send error event
+                res.write(
+                  `event: error\ndata: ${JSON.stringify({
+                    type: "error",
+                    error: {
+                      type: "overloaded_error",
+                      message: errorMessage,
+                    },
+                  })}\n\n`
+                );
+                // Send message_stop to properly close the stream
+                res.write(
+                  `event: message_stop\ndata: ${JSON.stringify({
+                    type: "message_stop",
+                  })}\n\n`
+                );
+                res.end();
+              } catch (writeError) {
+                debug(1, `[Stream Error] Failed to write error event:`, writeError);
+                nodeWritable.destroy(error);
+              }
             }
           });
 
           nodeWritable.on("error", (error: any) => {
             debug(1, `[Write Error] Writable stream error:`, error);
+
+            // Clear keepalive on error
+            if (keepaliveInterval) {
+              clearInterval(keepaliveInterval);
+            }
+
             if (!res.headersSent) {
               res.writeHead(503, { "Content-Type": "application/json" });
               res.end(
@@ -1270,6 +1334,30 @@ export const createAnthropicProxy = ({
                   },
                 })
               );
+            } else {
+              // Already streaming - try to send error event
+              debug(1, `[Write Error] ⚠️  Sending error event to Claude Code`);
+              try {
+                // Send error event
+                res.write(
+                  `event: error\ndata: ${JSON.stringify({
+                    type: "error",
+                    error: {
+                      type: "overloaded_error",
+                      message: "Failed to write response data",
+                    },
+                  })}\n\n`
+                );
+                // Send message_stop to properly close the stream
+                res.write(
+                  `event: message_stop\ndata: ${JSON.stringify({
+                    type: "message_stop",
+                  })}\n\n`
+                );
+                res.end();
+              } catch (writeError) {
+                debug(1, `[Write Error] Failed to write error event:`, writeError);
+              }
             }
           });
 

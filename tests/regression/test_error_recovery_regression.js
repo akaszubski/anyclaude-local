@@ -11,9 +11,9 @@
  * Expected to FAIL until ErrorHandler implementation is complete (TDD Red Phase)
  */
 
-const assert = require('assert');
-const { spawn } = require('child_process');
-const path = require('path');
+const assert = require("assert");
+const { spawn } = require("child_process");
+const path = require("path");
 
 /**
  * Test Suite: Error Recovery Regression Tests
@@ -29,7 +29,7 @@ class ErrorRecoveryRegressionTests {
    * Run all regression tests
    */
   async runAll() {
-    console.log('=== Error Recovery Regression Tests ===\n');
+    console.log("=== Error Recovery Regression Tests ===\n");
 
     await this.testCacheCorruptionDoesNotCrashServer();
     await this.testOOMDoesNotCrashServer();
@@ -48,7 +48,7 @@ class ErrorRecoveryRegressionTests {
    * Test: Cache corruption doesn't crash server
    */
   async testCacheCorruptionDoesNotCrashServer() {
-    const testName = 'Cache corruption does not crash server';
+    const testName = "Cache corruption does not crash server";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
@@ -57,7 +57,7 @@ class ErrorRecoveryRegressionTests {
 
       // Server should continue running
       assert.strictEqual(result.serverRunning, true);
-      assert.strictEqual(result.mode, 'degraded');
+      assert.strictEqual(result.mode, "degraded");
       assert.strictEqual(result.cacheEnabled, false);
 
       this.pass(testName);
@@ -70,7 +70,7 @@ class ErrorRecoveryRegressionTests {
    * Test: OOM condition doesn't crash server
    */
   async testOOMDoesNotCrashServer() {
-    const testName = 'OOM condition does not crash server';
+    const testName = "OOM condition does not crash server";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
@@ -92,7 +92,7 @@ class ErrorRecoveryRegressionTests {
    * Test: Network timeouts retry with exponential backoff
    */
   async testNetworkTimeoutRetriesWithBackoff() {
-    const testName = 'Network timeouts retry with exponential backoff';
+    const testName = "Network timeouts retry with exponential backoff";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
@@ -115,14 +115,14 @@ class ErrorRecoveryRegressionTests {
    * Test: Graceful degradation continues serving requests
    */
   async testGracefulDegradationContinuesServing() {
-    const testName = 'Graceful degradation continues serving requests';
+    const testName = "Graceful degradation continues serving requests";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
       // Trigger degradation (5 cache errors)
       const result = await this.triggerGracefulDegradation();
 
-      assert.strictEqual(result.mode, 'degraded');
+      assert.strictEqual(result.mode, "degraded");
       assert.strictEqual(result.cacheEnabled, false);
 
       // Should still handle requests
@@ -140,7 +140,7 @@ class ErrorRecoveryRegressionTests {
    * Test: Recovery from degraded mode
    */
   async testRecoveryFromDegradedMode() {
-    const testName = 'Recovery from degraded mode';
+    const testName = "Recovery from degraded mode";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
@@ -153,7 +153,7 @@ class ErrorRecoveryRegressionTests {
       }
 
       const result = await this.checkServerStatus();
-      assert.strictEqual(result.mode, 'normal');
+      assert.strictEqual(result.mode, "normal");
       assert.strictEqual(result.cacheEnabled, true);
 
       this.pass(testName);
@@ -166,7 +166,7 @@ class ErrorRecoveryRegressionTests {
    * Test: Concurrent errors don't cause race conditions
    */
   async testConcurrentErrorsDontCauseRaceConditions() {
-    const testName = 'Concurrent errors do not cause race conditions';
+    const testName = "Concurrent errors do not cause race conditions";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
@@ -179,7 +179,7 @@ class ErrorRecoveryRegressionTests {
       const results = await Promise.all(promises);
 
       // All should succeed without race conditions
-      results.forEach(result => {
+      results.forEach((result) => {
         assert.strictEqual(result.serverRunning, true);
       });
 
@@ -193,16 +193,16 @@ class ErrorRecoveryRegressionTests {
    * Test: Error logs are sanitized (no file paths - VUL-003)
    */
   async testErrorLogsAreSanitized() {
-    const testName = 'Error logs are sanitized (VUL-003)';
+    const testName = "Error logs are sanitized (VUL-003)";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
       const result = await this.simulateCacheCorruption();
 
       // Error message should not contain file paths
-      assert(!result.errorMessage.includes('/Users/'));
-      assert(!result.errorMessage.includes('.anyclaude'));
-      assert(result.errorMessage.toLowerCase().includes('cache'));
+      assert(!result.errorMessage.includes("/Users/"));
+      assert(!result.errorMessage.includes(".anyclaude"));
+      assert(result.errorMessage.toLowerCase().includes("cache"));
 
       this.pass(testName);
     } catch (error) {
@@ -214,7 +214,7 @@ class ErrorRecoveryRegressionTests {
    * Test: Server starts even with corrupted cache
    */
   async testServerStartsWithCorruptedCache() {
-    const testName = 'Server starts with corrupted cache';
+    const testName = "Server starts with corrupted cache";
 
     try {
       // TODO: This will fail until ErrorHandler is implemented
@@ -225,7 +225,7 @@ class ErrorRecoveryRegressionTests {
 
       // Server should start successfully
       assert.strictEqual(result.started, true);
-      assert.strictEqual(result.mode, 'degraded');
+      assert.strictEqual(result.mode, "degraded");
 
       this.pass(testName);
     } catch (error) {
@@ -240,7 +240,9 @@ class ErrorRecoveryRegressionTests {
    */
   async simulateCacheCorruption() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - simulate cache corruption');
+    throw new Error(
+      "ErrorHandler not yet implemented - simulate cache corruption"
+    );
   }
 
   /**
@@ -248,7 +250,9 @@ class ErrorRecoveryRegressionTests {
    */
   async simulateOOMCondition() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - simulate OOM condition');
+    throw new Error(
+      "ErrorHandler not yet implemented - simulate OOM condition"
+    );
   }
 
   /**
@@ -256,7 +260,9 @@ class ErrorRecoveryRegressionTests {
    */
   async simulateNetworkTimeout() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - simulate network timeout');
+    throw new Error(
+      "ErrorHandler not yet implemented - simulate network timeout"
+    );
   }
 
   /**
@@ -264,7 +270,7 @@ class ErrorRecoveryRegressionTests {
    */
   async triggerGracefulDegradation() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - trigger degradation');
+    throw new Error("ErrorHandler not yet implemented - trigger degradation");
   }
 
   /**
@@ -272,7 +278,7 @@ class ErrorRecoveryRegressionTests {
    */
   async sendTestRequest() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - send test request');
+    throw new Error("ErrorHandler not yet implemented - send test request");
   }
 
   /**
@@ -280,7 +286,7 @@ class ErrorRecoveryRegressionTests {
    */
   async checkServerStatus() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - check server status');
+    throw new Error("ErrorHandler not yet implemented - check server status");
   }
 
   /**
@@ -288,7 +294,9 @@ class ErrorRecoveryRegressionTests {
    */
   async createCorruptedCacheFile() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - create corrupted cache');
+    throw new Error(
+      "ErrorHandler not yet implemented - create corrupted cache"
+    );
   }
 
   /**
@@ -296,7 +304,7 @@ class ErrorRecoveryRegressionTests {
    */
   async startServer() {
     // This is a placeholder that will fail until implementation
-    throw new Error('ErrorHandler not yet implemented - start server');
+    throw new Error("ErrorHandler not yet implemented - start server");
   }
 
   // ===== Test Framework Methods =====
@@ -314,13 +322,13 @@ class ErrorRecoveryRegressionTests {
   }
 
   printSummary() {
-    console.log('\n=== Test Summary ===');
+    console.log("\n=== Test Summary ===");
     console.log(`Passed: ${this.testsPassed}`);
     console.log(`Failed: ${this.testsFailed}`);
     console.log(`Total:  ${this.testsPassed + this.testsFailed}`);
 
     if (this.testsFailed > 0) {
-      console.log('\nFailed Tests:');
+      console.log("\nFailed Tests:");
       this.errors.forEach(({ test, error }) => {
         console.log(`  - ${test}`);
         console.log(`    ${error}`);
@@ -331,7 +339,7 @@ class ErrorRecoveryRegressionTests {
 
 // Run tests
 const tests = new ErrorRecoveryRegressionTests();
-tests.runAll().catch(error => {
-  console.error('Fatal error running tests:', error);
+tests.runAll().catch((error) => {
+  console.error("Fatal error running tests:", error);
   process.exit(1);
 });

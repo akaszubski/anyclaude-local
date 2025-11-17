@@ -88,11 +88,14 @@ console.log("TEST SUITE 1: Header Generation\n");
 test("should generate X-Cache-Hash header with valid SHA256 hash", () => {
   // Simulate header generation
   const generateCacheHash = (content) => {
-    return crypto.createHash("sha256").update(JSON.stringify(content)).digest("hex");
+    return crypto
+      .createHash("sha256")
+      .update(JSON.stringify(content))
+      .digest("hex");
   };
 
   const system = [
-    { type: "text", text: "System", cache_control: { type: "ephemeral" } }
+    { type: "text", text: "System", cache_control: { type: "ephemeral" } },
   ];
 
   const hash = generateCacheHash(system);
@@ -130,7 +133,7 @@ test("X-Cache-Hash must be exactly 64 hex characters", () => {
   const validHashes = [
     "a".repeat(64),
     "0123456789abcdef".repeat(4),
-    crypto.createHash("sha256").update("test").digest("hex")
+    crypto.createHash("sha256").update("test").digest("hex"),
   ];
 
   for (const hash of validHashes) {
@@ -141,10 +144,10 @@ test("X-Cache-Hash must be exactly 64 hex characters", () => {
 
 test("X-Cache-Hash should reject invalid formats", () => {
   const invalidHashes = [
-    "a".repeat(63),  // Too short
-    "a".repeat(65),  // Too long
-    "z".repeat(64),  // Invalid character
-    "A".repeat(64),  // Uppercase (should be lowercase)
+    "a".repeat(63), // Too short
+    "a".repeat(65), // Too long
+    "z".repeat(64), // Invalid character
+    "A".repeat(64), // Uppercase (should be lowercase)
   ];
 
   for (const hash of invalidHashes) {
@@ -169,7 +172,7 @@ test("X-Cache-System should be valid base64", () => {
     "Hello",
     "You are Claude.",
     "System with special chars: !@#$%",
-    "Unicode: 你好世界"
+    "Unicode: 你好世界",
   ];
 
   for (const str of testStrings) {
@@ -218,9 +221,9 @@ test("should generate cache headers when system has cache_control", () => {
       {
         type: "text",
         text: "System",
-        cache_control: { type: "ephemeral" }
-      }
-    ]
+        cache_control: { type: "ephemeral" },
+      },
+    ],
   };
 
   const headers = extractHeaders(request);
@@ -255,9 +258,9 @@ test("should not generate cache headers when system lacks cache_control", () => 
     system: [
       {
         type: "text",
-        text: "System without cache_control"
-      }
-    ]
+        text: "System without cache_control",
+      },
+    ],
   };
 
   const headers = extractHeaders(request);
@@ -273,18 +276,18 @@ test("should generate headers only for ephemeral cache type", () => {
   const ephemeralBlock = {
     type: "text",
     text: "Text",
-    cache_control: { type: "ephemeral" }
+    cache_control: { type: "ephemeral" },
   };
 
   const permanentBlock = {
     type: "text",
     text: "Text",
-    cache_control: { type: "permanent" }
+    cache_control: { type: "permanent" },
   };
 
   const noCacheBlock = {
     type: "text",
-    text: "Text"
+    text: "Text",
   };
 
   expect(isCacheableBlock(ephemeralBlock)).toBeTruthy();
@@ -305,16 +308,13 @@ test("should combine multiple cacheable system blocks into single hash", () => {
   const system = [
     { type: "text", text: "Block 1", cache_control: { type: "ephemeral" } },
     { type: "text", text: "Block 2", cache_control: { type: "ephemeral" } },
-    { type: "text", text: "Non-cacheable" }
+    { type: "text", text: "Non-cacheable" },
   ];
 
   const content = extractCacheContent(system);
   expect(content).toBe("Block 1Block 2");
 
-  const hash = crypto
-    .createHash("sha256")
-    .update(content)
-    .digest("hex");
+  const hash = crypto.createHash("sha256").update(content).digest("hex");
 
   expect(hash).toMatch(/^[a-f0-9]{64}$/);
 });
@@ -340,10 +340,14 @@ test("should include cacheable user message blocks in cache", () => {
     {
       role: "user",
       content: [
-        { type: "text", text: "Cacheable", cache_control: { type: "ephemeral" } },
-        { type: "text", text: "Non-cacheable" }
-      ]
-    }
+        {
+          type: "text",
+          text: "Cacheable",
+          cache_control: { type: "ephemeral" },
+        },
+        { type: "text", text: "Non-cacheable" },
+      ],
+    },
   ];
 
   const content = extractUserCacheContent(messages);
@@ -388,8 +392,8 @@ test("should generate hash including both system and user cache", () => {
       {
         type: "text",
         text: "System",
-        cache_control: { type: "ephemeral" }
-      }
+        cache_control: { type: "ephemeral" },
+      },
     ],
     messages: [
       {
@@ -398,20 +402,17 @@ test("should generate hash including both system and user cache", () => {
           {
             type: "text",
             text: "User",
-            cache_control: { type: "ephemeral" }
-          }
-        ]
-      }
-    ]
+            cache_control: { type: "ephemeral" },
+          },
+        ],
+      },
+    ],
   };
 
   const content = extractAllCacheContent(request);
   expect(content).toBe("SystemUser");
 
-  const hash = crypto
-    .createHash("sha256")
-    .update(content)
-    .digest("hex");
+  const hash = crypto.createHash("sha256").update(content).digest("hex");
 
   expect(hash).toMatch(/^[a-f0-9]{64}$/);
 });
@@ -460,7 +461,7 @@ test("should generate same token count for same text", () => {
 console.log("\nTEST SUITE 6: Header Encoding Safety\n");
 
 test("should safely encode special characters in X-Cache-System", () => {
-  const specialText = 'Text with "quotes" and \'apostrophes\' and \n newlines';
+  const specialText = "Text with \"quotes\" and 'apostrophes' and \n newlines";
   const encoded = Buffer.from(specialText).toString("base64");
   const decoded = Buffer.from(encoded, "base64").toString("utf-8");
 
@@ -481,10 +482,7 @@ test("should handle very long cache content in headers", () => {
 
   expect(encoded).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
 
-  const hash = crypto
-    .createHash("sha256")
-    .update(longText)
-    .digest("hex");
+  const hash = crypto.createHash("sha256").update(longText).digest("hex");
 
   expect(hash).toHaveLength(64);
 
@@ -502,10 +500,7 @@ test("should generate valid headers for typical Claude Code system prompt", () =
     "Use the available tools to help the user accomplish their goals.";
 
   const encoded = Buffer.from(systemPrompt).toString("base64");
-  const hash = crypto
-    .createHash("sha256")
-    .update(systemPrompt)
-    .digest("hex");
+  const hash = crypto.createHash("sha256").update(systemPrompt).digest("hex");
   const tokens = String(Math.ceil(systemPrompt.length / 4));
 
   expect(encoded).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
@@ -522,7 +517,7 @@ test("should generate consistent headers across multiple systems", () => {
     "You are helpful.",
     "Be honest and accurate.",
     "Follow instructions.",
-    "Use tools when needed."
+    "Use tools when needed.",
   ];
 
   const hashes = systems.map((s) =>
@@ -542,9 +537,9 @@ test("should omit cache headers when no cache_control present", () => {
     messages: [
       {
         role: "user",
-        content: [{ type: "text", text: "User message" }]
-      }
-    ]
+        content: [{ type: "text", text: "User message" }],
+      },
+    ],
   };
 
   const extractHeaders = (req) => {
@@ -584,8 +579,12 @@ test("should omit cache headers for empty request", () => {
 // Summary
 console.log(`\n╔══════════════════════════════════════════════════════════╗`);
 console.log(`║   TEST SUMMARY                                           ║`);
-console.log(`║   Passed: ${passed}                                              ║`);
-console.log(`║   Failed: ${failed}                                              ║`);
+console.log(
+  `║   Passed: ${passed}                                              ║`
+);
+console.log(
+  `║   Failed: ${failed}                                              ║`
+);
 console.log(`╚══════════════════════════════════════════════════════════╝\n`);
 
 if (failed > 0) {

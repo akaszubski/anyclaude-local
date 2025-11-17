@@ -11,17 +11,20 @@ Phase 1.2 implements a comprehensive test-driven development (TDD) infrastructur
 ## Documentation Files Updated
 
 ### 1. CHANGELOG.md
+
 - **Updated**: Added comprehensive Phase 1.2 entry under Unreleased section
 - **Content**: Describes new modules, test coverage, and status
 - **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/CHANGELOG.md:12-21`
 
 ### 2. README.md
+
 - **Updated**: Added "Tool Calling Testing Infrastructure (Phase 1.2)" section
 - **Content**: Brief overview with links to test documentation
 - **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/README.md:146-153`
 - **Status**: Line count increased to 1641 (was 1630) - still reasonable for comprehensive project
 
 ### 3. NEW: docs/architecture/tool-calling-implementation.md
+
 - **Created**: Complete API documentation for tool calling modules
 - **Content**:
   - Architecture overview with flow diagrams
@@ -39,6 +42,7 @@ Phase 1.2 implements a comprehensive test-driven development (TDD) infrastructur
 ### New Modules - Complete JSDoc Comments
 
 #### src/tool-schema-converter.ts (113 lines)
+
 - **Module docstring**: Clear description of purpose and format examples
 - **Function 1**: `convertAnthropicToolToOpenAI()` - JSDoc with parameters, return type, throws
 - **Function 2**: `convertAnthropicToolsToOpenAI()` - JSDoc for batch conversion
@@ -46,6 +50,7 @@ Phase 1.2 implements a comprehensive test-driven development (TDD) infrastructur
 - **Location**: `/Users/andrewkaszubski/Documents/GitHub/anyclaude/src/tool-schema-converter.ts`
 
 #### src/tool-response-parser.ts (267 lines)
+
 - **Module docstring**: Clear description with format examples
 - **Function 1**: `parseOpenAIToolCall()` - JSDoc with parameters, return type, throws
 - **Function 2**: `assembleStreamingToolCall()` - JSDoc with streaming pattern explanation
@@ -56,6 +61,7 @@ Phase 1.2 implements a comprehensive test-driven development (TDD) infrastructur
 ## Test Documentation
 
 ### Unit Tests
+
 - **File**: `tests/unit/test-tool-schema-conversion.js` (360 lines)
   - Purpose statement: Clear TDD phase status
   - 8 test cases with descriptive names
@@ -67,6 +73,7 @@ Phase 1.2 implements a comprehensive test-driven development (TDD) infrastructur
   - Edge case coverage documented
 
 ### Integration Tests
+
 - **Files**: `tests/integration/test-mlx-server-*.js` (5 files)
   - `test-mlx-server-basic-tools.js` - Basic Read, Write, Bash
   - `test-mlx-server-streaming-tools.js` - Streaming parameter assembly
@@ -77,6 +84,7 @@ Phase 1.2 implements a comprehensive test-driven development (TDD) infrastructur
   - Total: 35 integration tests
 
 ### Manual Testing
+
 - **File**: `tests/manual/test-mlx-server-interactive.sh`
   - Purpose: Interactive menu-driven testing
   - Clear function documentation
@@ -84,6 +92,7 @@ Phase 1.2 implements a comprehensive test-driven development (TDD) infrastructur
   - Status: Ready for manual validation
 
 ### Test Plan & Artifacts
+
 - **File**: `tests/TEST-PLAN-PHASE-1.2.md`
   - Complete test coverage roadmap
   - Target: 80%+ coverage of tool calling functionality
@@ -122,6 +131,7 @@ All documentation files properly reference each other:
 ## Documentation Standards Compliance
 
 ### JSDoc Comments
+
 - ✅ All exported functions have JSDoc comments
 - ✅ Parameters documented with types
 - ✅ Return values documented
@@ -129,6 +139,7 @@ All documentation files properly reference each other:
 - ✅ Example format conversions included in module docstrings
 
 ### Test Documentation
+
 - ✅ All test files have purpose statements
 - ✅ Test descriptions clearly indicate what is being tested
 - ✅ Status (RED phase) clearly marked
@@ -136,6 +147,7 @@ All documentation files properly reference each other:
 - ✅ Manual testing script provided
 
 ### API Documentation
+
 - ✅ Complete implementation guide created
 - ✅ Format conversion examples provided
 - ✅ Architecture diagrams included
@@ -143,6 +155,7 @@ All documentation files properly reference each other:
 - ✅ Error handling specified
 
 ### Inline Comments
+
 - ✅ Complex logic explained
 - ✅ Streaming patterns documented
 - ✅ Validation rules clear
@@ -150,19 +163,19 @@ All documentation files properly reference each other:
 
 ## Files Summary
 
-| File | Type | Lines | Status | Purpose |
-|------|------|-------|--------|---------|
-| src/tool-schema-converter.ts | Source | 113 | Complete | Convert Anthropic → OpenAI tool schemas |
-| src/tool-response-parser.ts | Source | 267 | Complete | Parse OpenAI → Anthropic tool responses |
-| tests/unit/test-tool-schema-conversion.js | Test | 360 | Complete | Unit tests for schema conversion (8 tests) |
-| tests/unit/test-tool-response-parsing.js | Test | 413 | Complete | Unit tests for response parsing (10 tests) |
-| tests/integration/test-mlx-server-*.js | Test | 11K+ | Complete | 35 integration tests (5 files) |
-| tests/manual/test-mlx-server-interactive.sh | Test | 244 | Complete | Interactive manual testing |
-| tests/TEST-PLAN-PHASE-1.2.md | Doc | 296 | Complete | Test plan with coverage target |
-| tests/TEST-ARTIFACTS-PHASE-1.2.md | Doc | 300+ | Complete | Test execution tracking |
-| docs/architecture/tool-calling-implementation.md | Doc | 350+ | NEW | Complete implementation guide |
-| CHANGELOG.md | Doc | Updated | Complete | Added Phase 1.2 entry |
-| README.md | Doc | Updated | Complete | Added Phase 1.2 section |
+| File                                             | Type   | Lines   | Status   | Purpose                                    |
+| ------------------------------------------------ | ------ | ------- | -------- | ------------------------------------------ |
+| src/tool-schema-converter.ts                     | Source | 113     | Complete | Convert Anthropic → OpenAI tool schemas    |
+| src/tool-response-parser.ts                      | Source | 267     | Complete | Parse OpenAI → Anthropic tool responses    |
+| tests/unit/test-tool-schema-conversion.js        | Test   | 360     | Complete | Unit tests for schema conversion (8 tests) |
+| tests/unit/test-tool-response-parsing.js         | Test   | 413     | Complete | Unit tests for response parsing (10 tests) |
+| tests/integration/test-mlx-server-\*.js          | Test   | 11K+    | Complete | 35 integration tests (5 files)             |
+| tests/manual/test-mlx-server-interactive.sh      | Test   | 244     | Complete | Interactive manual testing                 |
+| tests/TEST-PLAN-PHASE-1.2.md                     | Doc    | 296     | Complete | Test plan with coverage target             |
+| tests/TEST-ARTIFACTS-PHASE-1.2.md                | Doc    | 300+    | Complete | Test execution tracking                    |
+| docs/architecture/tool-calling-implementation.md | Doc    | 350+    | NEW      | Complete implementation guide              |
+| CHANGELOG.md                                     | Doc    | Updated | Complete | Added Phase 1.2 entry                      |
+| README.md                                        | Doc    | Updated | Complete | Added Phase 1.2 section                    |
 
 ## Implementation Status
 

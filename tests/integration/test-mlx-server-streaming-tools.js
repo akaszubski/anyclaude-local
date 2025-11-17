@@ -33,7 +33,7 @@ async function sendStreamingToolCallRequest(messages, tools) {
       tools,
       stream: true,
       temperature: 0.1,
-      max_tokens: 1000
+      max_tokens: 1000,
     });
 
     const chunks = [];
@@ -45,9 +45,9 @@ async function sendStreamingToolCallRequest(messages, tools) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(data)
+          "Content-Length": Buffer.byteLength(data),
         },
-        timeout: TEST_TIMEOUT
+        timeout: TEST_TIMEOUT,
       },
       (res) => {
         let buffer = "";
@@ -104,8 +104,8 @@ function assembleToolCallFromChunks(chunks) {
             type: tc.type || "function",
             function: {
               name: tc.function?.name || "",
-              arguments: ""
-            }
+              arguments: "",
+            },
           };
         }
 
@@ -129,9 +129,7 @@ function assembleToolCallFromChunks(chunks) {
 async function testBasicStreamingToolCall() {
   console.log("\n✓ Test 1: Basic streaming tool call (Read file)");
 
-  const messages = [
-    { role: "user", content: "Read the file /tmp/test.txt" }
-  ];
+  const messages = [{ role: "user", content: "Read the file /tmp/test.txt" }];
 
   const tools = [
     {
@@ -142,10 +140,10 @@ async function testBasicStreamingToolCall() {
         parameters: {
           type: "object",
           properties: { file_path: { type: "string" } },
-          required: ["file_path"]
-        }
-      }
-    }
+          required: ["file_path"],
+        },
+      },
+    },
   ];
 
   try {
@@ -179,8 +177,9 @@ async function testStreamingComplexJSON() {
   const messages = [
     {
       role: "user",
-      content: 'Write a JSON config file to /tmp/config.json with settings for port 8080 and host localhost'
-    }
+      content:
+        "Write a JSON config file to /tmp/config.json with settings for port 8080 and host localhost",
+    },
   ];
 
   const tools = [
@@ -193,12 +192,12 @@ async function testStreamingComplexJSON() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
+            content: { type: "string" },
           },
-          required: ["file_path", "content"]
-        }
-      }
-    }
+          required: ["file_path", "content"],
+        },
+      },
+    },
   ];
 
   try {
@@ -229,8 +228,9 @@ async function testLargeParameterStreaming() {
   const messages = [
     {
       role: "user",
-      content: "Write a long JavaScript function to /tmp/test.js that includes multiple helper functions"
-    }
+      content:
+        "Write a long JavaScript function to /tmp/test.js that includes multiple helper functions",
+    },
   ];
 
   const tools = [
@@ -243,19 +243,22 @@ async function testLargeParameterStreaming() {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string" }
+            content: { type: "string" },
           },
-          required: ["file_path", "content"]
-        }
-      }
-    }
+          required: ["file_path", "content"],
+        },
+      },
+    },
   ];
 
   try {
     const chunks = await sendStreamingToolCallRequest(messages, tools);
 
     // Should have multiple chunks for large content
-    assert.ok(chunks.length >= 5, "Should have multiple chunks for large content");
+    assert.ok(
+      chunks.length >= 5,
+      "Should have multiple chunks for large content"
+    );
 
     const toolCall = assembleToolCallFromChunks(chunks);
     const args = JSON.parse(toolCall.function.arguments);
@@ -278,9 +281,7 @@ async function testLargeParameterStreaming() {
 async function testStreamEventOrdering() {
   console.log("\n✓ Test 4: Stream event ordering");
 
-  const messages = [
-    { role: "user", content: "Read /tmp/example.txt" }
-  ];
+  const messages = [{ role: "user", content: "Read /tmp/example.txt" }];
 
   const tools = [
     {
@@ -289,10 +290,10 @@ async function testStreamEventOrdering() {
         name: "Read",
         parameters: {
           type: "object",
-          properties: { file_path: { type: "string" } }
-        }
-      }
-    }
+          properties: { file_path: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -326,7 +327,9 @@ async function testStreamEventOrdering() {
     assert.ok(hasFinish, "Should have finish event");
 
     console.log("   ✅ PASS: Stream events in correct order");
-    console.log(`   Events: start=${hasStart}, delta=${hasDelta}, finish=${hasFinish}`);
+    console.log(
+      `   Events: start=${hasStart}, delta=${hasDelta}, finish=${hasFinish}`
+    );
     passed++;
   } catch (err) {
     console.log(`   ❌ FAIL: ${err.message}`);
@@ -340,9 +343,7 @@ async function testStreamEventOrdering() {
 async function testIncompleteStreaming() {
   console.log("\n✓ Test 5: Handle incomplete streaming (no deltas)");
 
-  const messages = [
-    { role: "user", content: "Run the command: pwd" }
-  ];
+  const messages = [{ role: "user", content: "Run the command: pwd" }];
 
   const tools = [
     {
@@ -351,10 +352,10 @@ async function testIncompleteStreaming() {
         name: "Bash",
         parameters: {
           type: "object",
-          properties: { command: { type: "string" } }
-        }
-      }
-    }
+          properties: { command: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -381,18 +382,19 @@ async function testStreamErrorHandling() {
   // This test validates that our chunk parser handles errors gracefully
   // Even if server sends malformed chunks, we shouldn't crash
 
-  const messages = [
-    { role: "user", content: "Read /tmp/test.txt" }
-  ];
+  const messages = [{ role: "user", content: "Read /tmp/test.txt" }];
 
   const tools = [
     {
       type: "function",
       function: {
         name: "Read",
-        parameters: { type: "object", properties: { file_path: { type: "string" } } }
-      }
-    }
+        parameters: {
+          type: "object",
+          properties: { file_path: { type: "string" } },
+        },
+      },
+    },
   ];
 
   try {
@@ -405,7 +407,10 @@ async function testStreamErrorHandling() {
     passed++;
   } catch (err) {
     // Network errors are acceptable in this test
-    if (err.message.includes("timeout") || err.message.includes("ECONNREFUSED")) {
+    if (
+      err.message.includes("timeout") ||
+      err.message.includes("ECONNREFUSED")
+    ) {
       console.log("   ⚠️  SKIP: Server not available");
       passed++;
     } else {
@@ -416,10 +421,14 @@ async function testStreamErrorHandling() {
 }
 
 async function runTests() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
   console.log("INTEGRATION TEST: Streaming Tool Calls with MLX Server");
   console.log("Phase 1.2 - TDD Red Phase");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   console.log(`\nTesting server at: ${MLX_SERVER_URL}`);
   console.log("Stream format: OpenAI SSE chunks\n");
@@ -431,9 +440,13 @@ async function runTests() {
   await testIncompleteStreaming();
   await testStreamErrorHandling();
 
-  console.log("\n================================================================================");
+  console.log(
+    "\n================================================================================"
+  );
   console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-  console.log("================================================================================");
+  console.log(
+    "================================================================================"
+  );
 
   if (failed > 0) {
     console.log("\n⚠️  Some tests failed - expected in TDD red phase!");
