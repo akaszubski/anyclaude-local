@@ -8,11 +8,11 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in anyclaude-lmstudio, please report it by:
+If you discover a security vulnerability in anyclaude-local, please report it by:
 
 ### Preferred Method
 
-- **Email**: Create an issue at https://github.com/akaszubski/anyclaude-lmstudio/issues with the label `security`
+- **Email**: Create an issue at https://github.com/akaszubski/anyclaude-local/issues with the label `security`
 - Please **DO NOT** disclose security vulnerabilities publicly until they have been addressed
 
 ### What to Include
@@ -33,7 +33,7 @@ If you discover a security vulnerability in anyclaude-lmstudio, please report it
 
 ### This Project
 
-- **Local-only**: anyclaude-lmstudio runs entirely on your local machine
+- **Local-only**: anyclaude-local runs entirely on your local machine (or via secure OpenRouter API)
 - **No cloud communication**: No data is sent to external servers (except LMStudio on localhost)
 - **Open source**: All code is transparent and auditable
 
@@ -64,4 +64,4 @@ We follow responsible disclosure practices:
 4. **Release** → We release the fix
 5. **Disclosure** → We publicly disclose the vulnerability (giving you credit)
 
-Thank you for helping keep anyclaude-lmstudio secure! 🔒
+Thank you for helping keep anyclaude-local secure!

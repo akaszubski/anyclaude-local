@@ -78,8 +78,8 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 - **[Tool Call Debug](debugging/tool-call-debug.md)** - Debugging tool execution
 - **[Trace Analysis](debugging/trace-analysis.md)** - Using trace files
 - **[Capture Tool Calls](debugging/capture-tool-calls.md)** - Recording tool events
-- **[MLX Crash Analysis](debugging/mlx-crash-analysis.md)** - Server crash debugging
-- **[MLX Integration Findings](debugging/mlx-integration-findings.md)** - MLX-specific insights
+- **[vLLM-MLX Crash Analysis](debugging/vllm-mlx-crash-analysis.md)** - Server crash debugging (archived)
+- **[MLX-Textgen Migration Postmortem](debugging/mlx-textgen-migration-postmortem.md)** - Migration insights
 - **[Stream Truncation Fix](debugging/stream-truncation-fix.md)** - SSE stream issues
 
 ---

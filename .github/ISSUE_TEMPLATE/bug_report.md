@@ -31,7 +31,7 @@ What actually happened instead.
 - **OS**: [e.g. macOS 14.0, Ubuntu 22.04, Windows 11]
 - **Node.js version**: [run `node --version`]
 - **Bun version**: [run `bun --version`]
-- **anyclaude-lmstudio version**: [run `git log -1 --oneline` in the repo]
+- **anyclaude-local version**: [run `git log -1 --oneline` in the repo]
 - **LMStudio version**: [e.g. 0.2.9]
 - **Model**: [e.g. Mistral 7B, Llama 3 8B]
 - **Claude Code version**: [run `claude --version`]

@@ -11,7 +11,7 @@
 1. **Unlinked old version**:
 
    ```bash
-   npm unlink -g anyclaude-lmstudio
+   npm unlink -g anyclaude-local
    ```
 
 2. **Linked local version**:

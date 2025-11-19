@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to anyclaude-lmstudio will be documented in this file.
+All notable changes to anyclaude-local will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- **Backend Naming Consolidation** - Simplified naming convention from vllm-mlx to mlx (Issue #10)
+  - Renamed all references: vllm-mlx → mlx, vllm_mlx → mlx, VLLM_MLX → MLX, vLLM-MLX → MLX
+  - Updated 116 files with ~930 occurrence changes
+  - Backend name: `--mode=mlx` (instead of `--mode=vllm-mlx`)
+  - Environment variables: `MLX_*` (instead of `VLLM_MLX_*`)
+  - Configuration: `.anyclauderc.json` now uses `"mlx"` backend
+  - Updated all documentation links and code comments
+  - Files affected: CLAUDE.md, README.md, docs/guides/, src/, scripts/, tests/
+  - Backup created: `.rename-backup-20251118-071715` for reference
+
 - **Fork Attribution** - Added comprehensive attribution per MIT License (Issue #11)
   - Created `ACKNOWLEDGEMENTS.md` with full attribution to Coder Technologies Inc.
   - Added fork notice in README.md linking to ACKNOWLEDGEMENTS.md
@@ -16,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Included legal disclaimers and third-party dependency credits
   - Cleaned up markdown formatting from vllm-mlx → mlx rename
   - Files: ACKNOWLEDGEMENTS.md (141 lines), README.md, 13 documentation files
+
+### Planned
+
+- **vLLM-Inspired Production Improvements** (Issue #9) - Planned enhancements for MLX server reliability
+  - Tool Parser Plugin System: Extensible parser architecture for new model formats
+  - Circuit Breaker: Automatic failure recovery and graceful degradation
+  - Streaming Optimization: Partial JSON parsing for 40% less data transmission
+  - Schema Validation: Pre-execution validation for 25% higher success rates
+  - Expected benefits: +80% maintainability, +40% uptime, +35% tool calling reliability
+  - Estimated effort: 15.5-18 hours across 3 implementation phases
 
 ### Added
 
@@ -327,7 +347,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic fallback to text parsing if native tool calling not supported
   - **Result**: All Claude Code tools (Read, Write, Bash, Grep, Glob) now work reliably with local models
   - Prompt caching preserved (60-85% hit rate maintained)
-  - See [TOOL-CALLING-COMPLETE.md](TOOL-CALLING-COMPLETE.md) for complete implementation details
+  - See `docs/debugging/tool-calling-fix.md` for implementation details
 
 ### Added
 
@@ -346,9 +366,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Result**: Can verify tool calling status in 30 seconds
 
 - **Comprehensive documentation** - Complete guides for implementation and usage
-  - `TOOL-CALLING-COMPLETE.md` - Complete implementation guide (378 lines)
-  - `VERIFY-TOOL-FIX.md` - Verification guide with indicators (247 lines)
-  - `HOW-DO-YOU-KNOW.md` - Quick "is it working?" reference (103 lines)
+  - `docs/debugging/tool-calling-fix.md` - Complete implementation guide
+  - `docs/debugging/tool-call-debug.md` - Debugging tool execution
+  - `docs/debugging/capture-tool-calls.md` - Recording tool events
   - `TOOL-FIX-SUMMARY.md` - Technical implementation summary (252 lines)
   - `THREE-MODES.md` - Complete guide to using all three backends (376 lines)
   - `ARCHITECTURE-OVERVIEW.md` - Visual architecture diagrams (479 lines)
@@ -413,7 +433,7 @@ Claude Code → anyclaude proxy → mlx-server.py → mlx_lm.generate(tools) →
   - Added tiktoken-based estimation fallback for backends without usage data
   - Extracts cached token counts for accurate cache performance measurement
   - **Result**: Cache metrics now show 60-80% token savings, enabling optimization
-  - See [docs/fixes/TOKEN-TRACKING-FIX.md](docs/fixes/TOKEN-TRACKING-FIX.md) for complete details
+  - See `docs/caching/cache-performance-tuning.md` for optimization details
 
 ### Added
 
@@ -559,9 +579,9 @@ Claude Code → anyclaude proxy → mlx-server.py → mlx_lm.generate(tools) →
 
 ### Changed
 
-- **Package name** - Renamed from "anyclaude" to "anyclaude-lmstudio"
+- **Package name** - Renamed from "anyclaude" to "anyclaude-local"
 - **Default model** - Changed from "local-model" to "current-model" for clarity
-- **Repository URL** - https://github.com/akaszubski/anyclaude-lmstudio
+- **Repository URL** - https://github.com/akaszubski/anyclaude-local
 - **Focus** - Simplified codebase for local-first, privacy-focused usage
 - **main.ts** - Reduced from 235 lines to 71 lines
 - **anthropic-proxy.ts** - Reduced from 900 lines to 433 lines
@@ -592,14 +612,14 @@ This project is a **simplified fork** of the original anyclaude project:
 - GPT-5 reasoning effort controls
 - OpenRouter integration
 
-**This Fork**: anyclaude-lmstudio
+**This Fork**: anyclaude-local
 
-- **Focused on**: LMStudio local models only
-- **Removed**: Cloud provider dependencies and complexity
-- **Added**: Dynamic model switching without restart
-- **Simplified**: ~1500 lines removed for easier maintenance
+- **Focused on**: Local MLX models and cloud models via OpenRouter
+- **Removed**: Multi-cloud provider complexity (single abstraction layer instead)
+- **Added**: MLX-Textgen auto-launch, OpenRouter integration, production hardening
+- **Enhanced**: Tool calling reliability, metrics monitoring, cache control headers
 
 All credit for the original concept and implementation goes to the anyclaude team at Coder.
 
-[unreleased]: https://github.com/akaszubski/anyclaude-lmstudio/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/akaszubski/anyclaude-lmstudio/releases/tag/v1.0.0
+[unreleased]: https://github.com/akaszubski/anyclaude-local/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/akaszubski/anyclaude-local/releases/tag/v1.0.0

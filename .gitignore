@@ -109,6 +109,9 @@ anyclaude-*
 /test-trace.json
 /1
 
+# Backup directories (created during migrations/renames)
+.rename-backup-*
+
 # Large files and datasets
 *.mlx
 *.gguf

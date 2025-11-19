@@ -6,10 +6,10 @@
 
 ```bash
 # This installs to global node_modules
-npm install -g anyclaude-lmstudio
+npm install -g anyclaude-local
 
 # The command points here:
-/opt/homebrew/bin/anyclaude -> ../lib/node_modules/anyclaude-lmstudio/dist/main.js
+/opt/homebrew/bin/anyclaude -> ../lib/node_modules/anyclaude-local/dist/main.js
 
 # NOT your local development version:
 /Users/akaszubski/Documents/GitHub/anyclaude/dist/main.js
@@ -42,7 +42,7 @@ ls -la /opt/homebrew/bin/anyclaude
 **Unlink when done**:
 
 ```bash
-npm unlink -g anyclaude-lmstudio
+npm unlink -g anyclaude-local
 ```
 
 ## Solution 2: Use Scripts Directly (Always Works)
@@ -231,7 +231,7 @@ chmod +x dist/main.js
 
 ```bash
 # Force unlink first
-npm unlink -g anyclaude-lmstudio
+npm unlink -g anyclaude-local
 
 # Remove old symlink
 rm /opt/homebrew/bin/anyclaude
@@ -293,7 +293,7 @@ npm link
 | **Claude mode**   | `ANYCLAUDE_MODE=claude anyclaude`  |
 | **Trace mode**    | `ANYCLAUDE_DEBUG=3 anyclaude`      |
 | **Check version** | `ls -la $(which anyclaude)`        |
-| **Unlink**        | `npm unlink -g anyclaude-lmstudio` |
+| **Unlink**        | `npm unlink -g anyclaude-local` |
 
 ## Summary
 

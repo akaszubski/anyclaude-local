@@ -134,17 +134,17 @@ dist/                            # Generated, never commit
 When linking between docs, use **relative paths**:
 
 ```markdown
-<!-- From docs/guides/authentication.md → PROJECT.md -->
+<!-- From docs/guides/mode-switching.md → PROJECT.md -->
 
 See [PROJECT.md](../../PROJECT.md) for architecture
 
-<!-- From README.md → docs/guides/authentication.md -->
+<!-- From README.md → docs/guides/mode-switching.md -->
 
-See [Authentication Guide](docs/guides/authentication.md)
+See [Mode Switching Guide](docs/guides/mode-switching.md)
 
-<!-- From docs/debugging/tool-calling-fix.md → docs/architecture/model-adapters.md -->
+<!-- From docs/debugging/tool-calling-fix.md → docs/architecture/tool-calling-implementation.md -->
 
-See [Model Adapters](../architecture/model-adapters.md)
+See [Tool Calling Implementation](../architecture/tool-calling-implementation.md)
 ```
 
 ## 🔄 Keeping It Clean

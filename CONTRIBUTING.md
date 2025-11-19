@@ -1,20 +1,20 @@
-# Contributing to anyclaude-lmstudio
+# Contributing to anyclaude-local
 
-Thank you for considering contributing to anyclaude-lmstudio!
+Thank you for considering contributing to anyclaude-local!
 
 ## Fork Relationship
 
-This is a **simplified fork** of [anyclaude](https://github.com/coder/anyclaude) by Coder Technologies Inc.
+This is a **comprehensive fork** of [anyclaude](https://github.com/coder/anyclaude) by Coder Technologies Inc.
 
 **Upstream**: https://github.com/coder/anyclaude
-**This Fork**: https://github.com/akaszubski/anyclaude-lmstudio
+**This Fork**: https://github.com/akaszubski/anyclaude-local
 
 ### Fork Philosophy
 
-- **Local-first**: Focus on LMStudio and local models only
-- **Simplicity**: Prefer removing features over adding complexity
-- **Maintainability**: Keep codebase small and easy to understand
-- **Attribution**: Always credit original anyclaude project
+- **Local ML & Cloud Models**: MLX-Textgen for local privacy OR OpenRouter for cost efficiency (84% savings)
+- **Production Quality**: Comprehensive testing, error recovery, security hardening
+- **Tool Calling Reliability**: 3-tier fallback strategy for open models
+- **Attribution**: Always credit original anyclaude project (see ACKNOWLEDGEMENTS.md)
 
 ## Getting Started
 
@@ -29,8 +29,8 @@ This is a **simplified fork** of [anyclaude](https://github.com/coder/anyclaude)
 ```bash
 # 1. Fork the repository on GitHub
 # 2. Clone your fork
-git clone https://github.com/YOUR_USERNAME/anyclaude-lmstudio.git
-cd anyclaude-lmstudio
+git clone https://github.com/YOUR_USERNAME/anyclaude-local.git
+cd anyclaude-local
 
 # 3. Install dependencies
 npm install
@@ -70,7 +70,7 @@ npm run fmt
 ## Project Structure
 
 ```
-anyclaude-lmstudio/
+anyclaude-local/
 ├── src/
 │   ├── main.ts                      # Entry point, LMStudio provider setup
 │   ├── anthropic-proxy.ts           # HTTP proxy server
@@ -235,8 +235,8 @@ Currently manual testing only. Adding unit tests is welcomed!
 
 ## Questions?
 
-- **Issues**: https://github.com/akaszubski/anyclaude-lmstudio/issues
-- **Discussions**: https://github.com/akaszubski/anyclaude-lmstudio/discussions
+- **Issues**: https://github.com/akaszubski/anyclaude-local/issues
+- **Discussions**: https://github.com/akaszubski/anyclaude-local/discussions
 - **Original Project**: https://github.com/coder/anyclaude
 
 ## License
@@ -247,4 +247,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 **Thank you for contributing!** 🙏
 
-All contributions help make anyclaude-lmstudio better for everyone using local LLMs.
+All contributions help make anyclaude-local better for everyone using local and cloud LLMs!

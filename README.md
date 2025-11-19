@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/stars/akaszubski/anyclaude-local?style=social)](https://github.com/akaszubski/anyclaude-local)
 
-> **🔔 Fork Notice**: This project is a fork of [anyclaude](https://github.com/coder/anyclaude) by Coder Technologies Inc.
-> Original work © Coder Technologies Inc., used under MIT License.
-> See [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) for full attribution and modifications.
+> **🔔 Fork Notice**: This project is a fork of [anyclaude](https://github.com/coder/anyclaude) by Coder Technologies Inc., with early MLX support built on [vLLM-MLX](https://github.com/yonigozlan/vllm-mlx) by Yoni Gozlan.
+> Original work © Coder Technologies Inc. and Yoni Gozlan, used under MIT and Apache 2.0 licenses.
+> See [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) for full attribution, what was preserved, and what changed.
 
 **Run Claude Code with local MLX models OR cheap cloud models - your choice of 100% privacy or 84% cost savings**
 
@@ -451,7 +451,7 @@ anyclaude
          │ ANTHROPIC_BASE_URL → http://localhost:PORT
          ↓
 ┌─────────────────────────────┐
-│  anyclaude-lmstudio Proxy   │
+│  anyclaude-local Proxy      │
 │                             │
 │  1. Receive Anthropic API   │
 │  2. Convert to OpenAI fmt   │
@@ -469,7 +469,7 @@ anyclaude
 └─────────────────┘
 ```
 
-**Key Innovation**: Claude Code uses the Anthropic API format, but anyclaude-lmstudio translates it to OpenAI format for LMStudio, allowing seamless local model usage.
+**Key Innovation**: Claude Code uses the Anthropic API format, but anyclaude-local translates it to OpenAI format for LMStudio/MLX, OR uses OpenRouter for cloud models, allowing seamless local or cloud model usage.
 
 ### Source Code Structure
 
@@ -1492,7 +1492,7 @@ trace-replayer compare ./trace-replays/
 
 ### Complete Guide
 
-**📖 [Trace Analysis & Benchmarking Guide](docs/guides/trace-analysis-guide.md)**
+**📖 [Trace Analysis Guide](docs/guides/trace-analysis.md)**
 
 Complete workflow for:
 
@@ -1529,7 +1529,7 @@ anyclaude
 ```dockerfile
 FROM node:18-alpine
 
-RUN npm install -g anyclaude-lmstudio
+RUN npm install -g anyclaude-local
 
 ENV LMSTUDIO_URL=http://host.docker.internal:1234/v1
 

@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Ask a question about using anyclaude-lmstudio
+about: Ask a question about using anyclaude-local
 title: "[QUESTION] "
 labels: question
 assignees: ""
@@ -12,9 +12,9 @@ What would you like to know?
 
 ## What I've Tried
 
-- [ ] I've read the [README.md](https://github.com/akaszubski/anyclaude-lmstudio#readme)
+- [ ] I've read the [README.md](https://github.com/akaszubski/anyclaude-local#readme)
 - [ ] I've searched existing issues
-- [ ] I've checked the [troubleshooting section](https://github.com/akaszubski/anyclaude-lmstudio#-troubleshooting)
+- [ ] I've checked the [troubleshooting section](https://github.com/akaszubski/anyclaude-local#-troubleshooting)
 
 ## My Setup
 
