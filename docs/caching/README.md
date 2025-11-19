@@ -176,7 +176,7 @@ ANYCLAUDE_DEBUG=2 bun run src/main.ts 2>&1 | grep "Cache\|Complete"
 | All MISS      | System prompt changing | Check with debug output                 |
 | No speed gain | Wrong metric           | Measure time_total, not just processing |
 | Memory leak   | Cache not expiring     | Cache expires after 1 hour              |
-| Port in use   | Old process running    | `pkill -f mlx`                     |
+| Port in use   | Old process running    | `pkill -f mlx`                          |
 
 ## Next Steps
 

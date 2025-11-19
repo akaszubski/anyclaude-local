@@ -367,9 +367,7 @@ function runTests() {
   console.log("╚══════════════════════════════════════════════════════════╝");
 
   if (failed === 0) {
-    console.log(
-      "\n✅ All MLX system prompt fix integration tests passed!"
-    );
+    console.log("\n✅ All MLX system prompt fix integration tests passed!");
     process.exit(0);
   }
   process.exit(1);

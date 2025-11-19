@@ -419,17 +419,17 @@ ANYCLAUDE_DEBUG=1 anyclaude | grep "Cached Items"
 | ----------------- | ------------------------ | ----------------- |
 | `VLLM_CACHE_SIZE` | 256                      | Cache entry count |
 | `ANYCLAUDE_DEBUG` | 0                        | Debug level (0-3) |
-| `MLX_URL`    | http://localhost:8081/v1 | Server URL        |
-| `MLX_MODEL`  | current-model            | Model name        |
+| `MLX_URL`         | http://localhost:8081/v1 | Server URL        |
+| `MLX_MODEL`       | current-model            | Model name        |
 
 ### Key Files
 
-| File                         | Purpose                       |
-| ---------------------------- | ----------------------------- |
-| `scripts/mlx-server.py` | vLLM server with LRU cache    |
-| `src/cache-monitor.ts`       | Metrics tracking              |
-| `src/anthropic-proxy.ts`     | Proxy with tool ordering      |
-| `src/main.ts`                | Entry point with exit handler |
+| File                     | Purpose                       |
+| ------------------------ | ----------------------------- |
+| `scripts/mlx-server.py`  | vLLM server with LRU cache    |
+| `src/cache-monitor.ts`   | Metrics tracking              |
+| `src/anthropic-proxy.ts` | Proxy with tool ordering      |
+| `src/main.ts`            | Entry point with exit handler |
 
 ### Files Modified
 

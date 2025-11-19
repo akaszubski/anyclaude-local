@@ -43,7 +43,7 @@ interface AnyclaudeConfig {
       compatibility?: string;
       description?: string;
     };
-    "mlx"?: {
+    mlx?: {
       enabled?: boolean;
       port?: number;
       baseUrl?: string;
@@ -379,7 +379,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
-  "mlx": createOpenAI({
+  mlx: createOpenAI({
     baseURL: vllmMlxConfig?.baseURL || "http://localhost:8081/v1",
     apiKey: vllmMlxConfig?.apiKey || "mlx",
     // @ts-ignore - compatibility is valid but not in TypeScript types

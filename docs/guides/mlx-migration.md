@@ -13,7 +13,7 @@ This guide explains the differences and migration path between these backends.
 
 ## Quick Comparison
 
-| Feature          | MLX-Textgen (Production)                 | MLX (Legacy)                |
+| Feature          | MLX-Textgen (Production)                 | MLX (Legacy)                     |
 | ---------------- | ---------------------------------------- | -------------------------------- |
 | **Status**       | Active, supported                        | Archived, reference only         |
 | **KV Caching**   | Disk-based, 10-90x speedup               | In-memory, limited               |

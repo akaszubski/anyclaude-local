@@ -28,9 +28,7 @@ console.log(`  Activate script exists: ${fs.existsSync(activateScript)}\n`);
 if (fs.existsSync(activateScript)) {
   console.log("  ✓ PASS: Venv is properly configured\n");
 } else {
-  console.log(
-    "  ✗ FAIL: Venv not found. Run: scripts/setup-mlx-venv.sh\n"
-  );
+  console.log("  ✗ FAIL: Venv not found. Run: scripts/setup-mlx-venv.sh\n");
   process.exit(1);
 }
 

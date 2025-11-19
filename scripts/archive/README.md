@@ -16,12 +16,12 @@ The custom `mlx-server.py` (1400 lines) was replaced with MLX-Textgen because:
 ## Performance Comparison
 
 | Metric             | mlx-server.py | MLX-Textgen       | Improvement    |
-| ------------------ | ------------------ | ----------------- | -------------- |
-| First request      | ~50 seconds        | ~3 seconds        | **15x faster** |
-| Follow-up requests | ~50 seconds        | **~0.55 seconds** | **90x faster** |
-| KV Cache           | ❌ Broken          | ✅ Working        | N/A            |
-| Cache files        | None created       | 26MB safetensors  | ✅             |
-| Code complexity    | 1400 lines         | pip package       | Simplified     |
+| ------------------ | ------------- | ----------------- | -------------- |
+| First request      | ~50 seconds   | ~3 seconds        | **15x faster** |
+| Follow-up requests | ~50 seconds   | **~0.55 seconds** | **90x faster** |
+| KV Cache           | ❌ Broken     | ✅ Working        | N/A            |
+| Cache files        | None created  | 26MB safetensors  | ✅             |
+| Code complexity    | 1400 lines    | pip package       | Simplified     |
 
 ## What Was Replaced
 

@@ -708,10 +708,10 @@ system = normalizeSystemPrompt(system, providerName);
 | 2   | Stream Pipeline          | CRITICAL | Unhandled conversion errors swallowed      | Hung requests, timeout disconnects            |
 | 3   | Content Block Indexing   | HIGH     | Unbounded index increments                 | Message format errors, parse failures         |
 | 4   | Tool State Machine       | HIGH     | Race conditions in streaming tool calls    | Misaligned content blocks, duplicate tools    |
-| 5   | Provider Configuration   | HIGH     | MLX format assumptions                | Malformed responses, token count errors       |
+| 5   | Provider Configuration   | HIGH     | MLX format assumptions                     | Malformed responses, token count errors       |
 | 6   | Non-streaming Error Path | MEDIUM   | Incomplete error propagation               | Silent failures, client-side timeouts         |
 | 7   | Tool Schema Validation   | HIGH     | No validation before processing            | Stack overflow, crashes in schema compilation |
-| 8   | System Prompt Handling   | MEDIUM   | Incomplete normalization for MLX      | JSON errors, request failures                 |
+| 8   | System Prompt Handling   | MEDIUM   | Incomplete normalization for MLX           | JSON errors, request failures                 |
 
 ---
 

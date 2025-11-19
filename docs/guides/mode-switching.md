@@ -295,7 +295,7 @@ anyclaude --mode=claude
 
 ## Mode Comparison
 
-| Feature            | MLX         | LMStudio         | OpenRouter           | Claude             |
+| Feature            | MLX              | LMStudio         | OpenRouter           | Claude             |
 | ------------------ | ---------------- | ---------------- | -------------------- | ------------------ |
 | **Cost**           | Free             | Free             | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
 | **Privacy**        | 100% local       | 100% local       | Cloud                | Cloud              |

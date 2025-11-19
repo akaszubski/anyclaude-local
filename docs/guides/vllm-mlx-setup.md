@@ -267,7 +267,7 @@ max_num_seqs = 4  # default: 8
 
 ## Comparing with Other Backends
 
-| Feature        | MLX    | MLX-LM         | LMStudio      |
+| Feature        | MLX         | MLX-LM         | LMStudio      |
 | -------------- | ----------- | -------------- | ------------- |
 | Speed          | ⚡⚡⚡ Fast | ⚡⚡ Moderate  | ⚡⚡ Moderate |
 | Tool Calling   | ✓ Good      | ⚠️ Basic       | ✓ Good        |

@@ -245,9 +245,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
 
   serverProcess.on("error", (error) => {
     logStream.write(`ERROR: ${error.message}\n`);
-    console.error(
-      `[anyclaude] Failed to start MLX server: ${error.message}`
-    );
+    console.error(`[anyclaude] Failed to start MLX server: ${error.message}`);
     console.error(`[anyclaude] Check logs at: ${logFile}`);
     process.exit(1);
   });

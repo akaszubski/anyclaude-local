@@ -38,7 +38,7 @@ Based on research of Anthropic API, MLX, and MLX:
 | -------------------- | ------------------------- | ------------------------------------ |
 | **Ephemeral Cache**  | 5-min TTL only            | Make repeated requests within 5 min  |
 | **Small Payload**    | System prompt ~500 bytes  | Need 1000+ cached tokens for benefit |
-| **MLX**         | Cache not fully optimized | Use Anthropic API for real gains     |
+| **MLX**              | Cache not fully optimized | Use Anthropic API for real gains     |
 | **One-off Requests** | No cache reuse            | Create multi-request workflows       |
 
 ## Expected Performance

@@ -3,6 +3,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/stars/akaszubski/anyclaude-local?style=social)](https://github.com/akaszubski/anyclaude-local)
 
+> **🔔 Fork Notice**: This project is a fork of [anyclaude](https://github.com/coder/anyclaude) by Coder Technologies Inc.
+> Original work © Coder Technologies Inc., used under MIT License.
+> See [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) for full attribution and modifications.
+
 **Run Claude Code with local MLX models OR cheap cloud models - your choice of 100% privacy or 84% cost savings**
 
 An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of:
@@ -368,12 +372,12 @@ anyclaude --mode=claude
 
 ### Mode Comparison
 
-| Mode            | Cost                   | Privacy    | Tools  | Cache   | Best For                |
-| --------------- | ---------------------- | ---------- | ------ | ------- | ----------------------- |
-| **MLX** ⭐ | Free                   | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
-| **LMStudio**    | Free                   | 100% local | ✅ Yes | Limited | **Cross-platform**      |
-| **OpenRouter**  | $0.60-$2/1M (84% less) | Cloud      | ✅ Yes | ✅ Yes  | **Cost savings**        |
-| **Claude API**  | $3-$15/1M              | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
+| Mode           | Cost                   | Privacy    | Tools  | Cache   | Best For                |
+| -------------- | ---------------------- | ---------- | ------ | ------- | ----------------------- |
+| **MLX** ⭐     | Free                   | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
+| **LMStudio**   | Free                   | 100% local | ✅ Yes | Limited | **Cross-platform**      |
+| **OpenRouter** | $0.60-$2/1M (84% less) | Cloud      | ✅ Yes | ✅ Yes  | **Cost savings**        |
+| **Claude API** | $3-$15/1M              | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
 
 ### Cost Example (50K input + 10K output tokens)
 
@@ -1062,7 +1066,7 @@ Request 3+: Reuse cache → ~5-10s consistently
 
 **Performance Comparison (Same Model, Same Hardware):**
 
-| Metric              | LMStudio      | MLX       | Improvement     |
+| Metric              | LMStudio      | MLX            | Improvement     |
 | ------------------- | ------------- | -------------- | --------------- |
 | First Request       | 50s           | 20-30s         | 2x faster       |
 | Second Request      | 44s           | 5-10s          | **4-9x faster** |
@@ -1541,9 +1545,9 @@ This is an **enhanced port** of the original anyclaude project, adapted for Clau
 | Feature              | Original anyclaude                       | anyclaude-local (this fork)                            |
 | -------------------- | ---------------------------------------- | ------------------------------------------------------ |
 | **Cloud Providers**  | ✅ OpenAI, Google, xAI, Azure, Anthropic | ✅ OpenRouter (400+ models)                            |
-| **Local Backends**   | ✅ LMStudio via failover                 | ✅ MLX (auto-launch) + LMStudio                   |
-| **MLX Support**      | ❌ Not supported                         | ✅ MLX (auto-launch, KV cache)                    |
-| **Auto-launch**      | ❌ Manual server setup                   | ✅ MLX auto-starts/stops                          |
+| **Local Backends**   | ✅ LMStudio via failover                 | ✅ MLX (auto-launch) + LMStudio                        |
+| **MLX Support**      | ❌ Not supported                         | ✅ MLX (auto-launch, KV cache)                         |
+| **Auto-launch**      | ❌ Manual server setup                   | ✅ MLX auto-starts/stops                               |
 | **Trace Logging**    | ❌ Not supported                         | ✅ Auto-enabled for cloud modes                        |
 | **Failover Systems** | ✅ Circuit breaker, health checks        | ❌ Removed (simpler, 4-mode system)                    |
 | **GPT-5 Features**   | ✅ Reasoning controls, service tiers     | ❌ Not applicable                                      |
