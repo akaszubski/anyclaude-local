@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- **Fork Attribution** - Added comprehensive attribution per MIT License (Issue #11)
+  - Created `ACKNOWLEDGEMENTS.md` with full attribution to Coder Technologies Inc.
+  - Added fork notice in README.md linking to ACKNOWLEDGEMENTS.md
+  - Documented original features vs. fork modifications
+  - Included legal disclaimers and third-party dependency credits
+  - Cleaned up markdown formatting from vllm-mlx → mlx rename
+  - Files: ACKNOWLEDGEMENTS.md (141 lines), README.md, 13 documentation files
+
 ### Added
 
 - **Phase 3: Production Hardening** - Error recovery, metrics monitoring, and configuration validation
