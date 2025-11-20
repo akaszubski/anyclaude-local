@@ -73,6 +73,7 @@ This fork (`anyclaude-local`) extends the original work with significant enhance
 This project builds upon and originally included a custom vLLM-MLX server implementation (v2.0-v2.1) built on top of the vLLM-MLX library by Yoni Gozlan.
 
 **Original vLLM-MLX Library:**
+
 - **Repository**: https://github.com/yonigozlan/vllm-mlx
 - **Original authors**: Yoni Gozlan and contributors
 - **License**: Apache 2.0
@@ -81,6 +82,7 @@ This project builds upon and originally included a custom vLLM-MLX server implem
 **What Was Preserved:**
 
 The original vLLM-MLX implementation has been preserved in the project's archives:
+
 - The custom vLLM-MLX server implementation has been archived in `scripts/archive/vllm-mlx-server.py` for historical reference
 - Documentation about vLLM-MLX integration can be found in archived docs
 - The project has migrated to MLX-Textgen (a production-ready MLX inference server)
@@ -88,6 +90,7 @@ The original vLLM-MLX implementation has been preserved in the project's archive
 **What Changed (v2.2.0 Migration):**
 
 The v2.2.0 release changed the MLX backend implementation:
+
 - **Replaced**: Custom vllm-mlx server (1,400 lines) → MLX-Textgen (pip package)
 - **Why**: MLX-Textgen provides production-ready KV caching, better tool calling support, and active maintenance
 - **Impact**: Simplified deployment (pip install vs custom server), improved reliability

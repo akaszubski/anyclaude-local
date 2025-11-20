@@ -284,16 +284,16 @@ npm link
 
 ## Quick Reference
 
-| Task              | Command                            |
-| ----------------- | ---------------------------------- |
-| **Setup**         | `npm link` (one time)              |
-| **Build**         | `npm run build`                    |
-| **Test local**    | `anyclaude` (after npm link)       |
-| **Test directly** | `node dist/main.cjs`               |
-| **Claude mode**   | `ANYCLAUDE_MODE=claude anyclaude`  |
-| **Trace mode**    | `ANYCLAUDE_DEBUG=3 anyclaude`      |
-| **Check version** | `ls -la $(which anyclaude)`        |
-| **Unlink**        | `npm unlink -g anyclaude-local` |
+| Task              | Command                           |
+| ----------------- | --------------------------------- |
+| **Setup**         | `npm link` (one time)             |
+| **Build**         | `npm run build`                   |
+| **Test local**    | `anyclaude` (after npm link)      |
+| **Test directly** | `node dist/main.cjs`              |
+| **Claude mode**   | `ANYCLAUDE_MODE=claude anyclaude` |
+| **Trace mode**    | `ANYCLAUDE_DEBUG=3 anyclaude`     |
+| **Check version** | `ls -la $(which anyclaude)`       |
+| **Unlink**        | `npm unlink -g anyclaude-local`   |
 
 ## Summary
 

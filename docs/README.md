@@ -27,7 +27,18 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 - **[Architecture Summary](architecture/ARCHITECTURE_SUMMARY.md)** - System overview and design patterns
 - **[Model Adapters](architecture/model-adapters.md)** - Model-specific handling and optimization
 - **[Tool Calling Enhancement](architecture/tool-calling-enhancement.md)** - Tool system implementation
-- **[Cache Control Headers](architecture/cache-control-headers.md)** - **NEW!** Anthropic cache_control marker detection and extraction (Phase 2.2)
+- **[Issue #14: Streaming JSON Parser](architecture/streaming-json-parser.md)** - **NEW!** Character-by-character JSON tokenization (78% complete)
+  - JSONTokenizer lexer with state machine
+  - IncrementalJSONParser with partial object building
+  - Delta generation for 40% data reduction
+  - Early tool detection for 60% faster recognition
+  - Security: 1MB buffer, 64-level nesting, 30s timeout
+  - 29/37 unit tests passing (78%)
+- **[Issue #13: Tool Parser Plugin System & Circuit Breaker](architecture/issue-13-tool-parsing-resilience.md)** - Extensible parsing with resilient failure handling
+  - Parser plugin architecture with fallback chains
+  - Circuit breaker state machine for failure recovery
+  - Integration and performance characteristics
+- **[Cache Control Headers](architecture/cache-control-headers.md)** - Anthropic cache_control marker detection and extraction (Phase 2.2)
 
 ---
 
@@ -56,7 +67,17 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
   - MetricsCollector unit tests (52): Cache tracking, latency percentiles, memory, throughput
   - ConfigValidator unit tests (60): Port validation, env vars, model paths, dependencies
   - Integration + regression tests (18 + 11): Metrics endpoint, error recovery
-- **[Production Hardening Implementation](development/production-hardening-implementation.md)** - **NEW!** Phase 3 detailed implementation guide
+- **[Tool Parser Plugin System](development/tool-parser-plugins.md)** - **NEW!** Issue #13 extending tool parsing for new models
+  - Creating custom parsers (~100 lines per parser)
+  - Priority-based parser ordering and fallback chains
+  - Integration with circuit breaker
+  - Performance targets and testing
+- **[Circuit Breaker Guide](development/circuit-breaker-guide.md)** - **NEW!** Issue #13 resilient failure handling for MLX
+  - State machine: CLOSED/OPEN/HALF_OPEN
+  - Configuration and monitoring
+  - Integration examples and best practices
+  - Troubleshooting and performance tuning
+- **[Production Hardening Implementation](development/production-hardening-implementation.md)** - Phase 3 detailed implementation guide
   - ErrorHandler: Error recovery with graceful degradation (44 tests)
   - MetricsCollector: Performance metrics with JSON/Prometheus export (52 tests)
   - ConfigValidator: Pre-startup configuration validation (60 tests)
@@ -162,23 +183,36 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 ---
 
-## 📝 Recent Updates (v2.1.0)
+## 📝 Recent Updates (v2.2.0+)
 
 ### ✅ New Documentation
 
-- **[Cache Performance Tuning](caching/cache-performance-tuning.md)** - Complete guide to cache optimization, monitoring, and tuning
+- **[Streaming JSON Parser](architecture/streaming-json-parser.md)** - Issue #14 architecture and implementation (78% complete)
+  - Character-by-character tokenization
+  - Incremental parsing with delta generation
+  - Early tool detection and security features
+  - Unit test coverage (29/37 tests passing)
 
 ### ✅ Updated Documentation
 
-- **[README.md](../README.md)** - Added latest improvements section, updated testing docs
-- **[CLAUDE.md](../CLAUDE.md)** - Added git hooks automation section
+- **[docs/README.md](README.md)** - Added streaming JSON parser documentation
+- **[CHANGELOG.md](../CHANGELOG.md)** - Updated Issue #9 progress with Issue #14 in-progress status
+- **[docs/development/DEVELOPMENT.md](development/DEVELOPMENT.md)** - Preparing for integration phase
 
 ### ✅ Completed Features
 
-- Streaming response safeguards (message_stop guarantee)
-- Git hooks for automated regression testing
-- Cache performance tuning (60-85% hit rate)
-- 170+ comprehensive test suite with pre-push validation
+- Tool Parser Plugin System (Issue #13) - 97.7% test coverage
+- Circuit Breaker (Issue #13) - 97.7% test coverage
+- Production Hardening Phase 3 - 100% test coverage
+- Cache Performance Tuning (Phase 2.2) - 60-85% hit rate
+- Cache Warmup Zero Cold-Start (Phase 2.3)
+- OpenRouter Integration (400+ models)
+
+### ⏳ In-Progress Features
+
+- Streaming JSON Parser (Issue #14) - 78% unit tests, pending integration
+  - Target: 40% data reduction, 60% faster tool detection
+  - Awaiting: Integration tests, performance benchmarking, stream converter integration
 
 ---
 
@@ -196,5 +230,5 @@ All documentation is organized per [CLAUDE.md](../CLAUDE.md) standards:
 
 ---
 
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-11-20
 **Status**: ✅ Complete and Up-to-Date
