@@ -201,6 +201,7 @@ See [Production Hardening API Reference](docs/reference/production-hardening-api
 **Recommendation:**
 
 For best tool calling experience:
+
 ```bash
 # Option 1: Custom MLX server (local, fast, tool calling works)
 anyclaude --mode=mlx
