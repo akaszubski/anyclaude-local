@@ -277,3 +277,38 @@ class InMemoryKVCacheManager:
         self.evictions += 1
 
         return True
+
+    def has_cache(self, key: str) -> tuple[bool, Optional[str]]:
+        """
+        Check if cache exists for a given key (compatibility method for MLX server)
+
+        Args:
+            key: Cache key
+
+        Returns:
+            Tuple of (exists, key) where exists is True if key is cached
+        """
+        with self.lock:
+            exists = key in self.caches
+            return (exists, key if exists else None)
+
+    def _count_tokens(self, tokenizer, text: str) -> int:
+        """
+        Count tokens in text using tokenizer (compatibility method for MLX server)
+
+        Args:
+            tokenizer: Tokenizer object with encode() method
+            text: Text to count tokens for
+
+        Returns:
+            Token count (estimated if tokenizer fails)
+        """
+        try:
+            if hasattr(tokenizer, 'encode'):
+                return len(tokenizer.encode(text))
+            else:
+                # Rough estimate: ~4 chars per token
+                return len(text) // 4
+        except Exception:
+            # Fallback estimate
+            return len(text) // 4
