@@ -5,8 +5,8 @@
       "enabled": true,
       "baseUrl": "https://openrouter.ai/api/v1",
       "apiKey": "sk-or-v1-YOUR_OPENROUTER_API_KEY_HERE",
-      "model": "z-ai/glm-4.6",
-      "description": "OpenRouter with GLM-4.6 (200K context, $0.60/$2 per 1M tokens)"
+      "model": "google/gemini-2.5-flash",
+      "description": "OpenRouter with Gemini 2.5 Flash (1M context, thinking mode, $0.30/$2.50 per 1M tokens - best value)"
     }
   },
   "debug": {
