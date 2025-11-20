@@ -115,13 +115,11 @@ export function startLMStudioServer(config: ServerLauncherConfig): void {
 }
 
 /**
- * Start MLX server
+ * Start MLX server (official mlx_lm.server)
  */
 export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const port = config.port || 8081;
   const modelPath = config.modelPath || config.model;
-  const serverScript = config.serverScript || "scripts/mlx-server.py";
-  const pythonVenv = config.pythonVenv || path.join(os.homedir(), ".venv-mlx");
 
   // Return early if no model path - user must provide model path for auto-launch
   if (!modelPath || modelPath === "current-model") {
@@ -147,28 +145,10 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     process.exit(1);
   }
 
-  console.log(`[anyclaude] Starting MLX server...`);
+  console.log(`[anyclaude] Starting official MLX-LM server...`);
   console.log(`[anyclaude] Model: ${path.basename(modelPath)}`);
   console.log(`[anyclaude] Port: ${port}`);
   console.log(`[anyclaude] Waiting ~30 seconds for model to load...`);
-
-  // Get the absolute path to the server script
-  const serverScriptPath = path.resolve(serverScript);
-
-  if (!fs.existsSync(serverScriptPath)) {
-    console.error(`[anyclaude] Server script not found: ${serverScriptPath}`);
-    process.exit(1);
-  }
-
-  // Check if venv exists
-  const activateScript = path.join(pythonVenv, "bin", "activate");
-  if (!fs.existsSync(activateScript)) {
-    console.error(
-      `[anyclaude] Python virtual environment not found: ${pythonVenv}`
-    );
-    console.error("[anyclaude] Please run: scripts/setup-mlx-venv.sh");
-    process.exit(1);
-  }
 
   // Create log directory if it doesn't exist
   const logDir = path.join(os.homedir(), ".anyclaude", "logs");
@@ -177,21 +157,24 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   }
 
   // Log file for server output (helps with debugging)
-  const logFile = path.join(logDir, "mlx-textgen-server.log");
+  const logFile = path.join(logDir, "mlx-lm-server.log");
   const logStream = fs.createWriteStream(logFile, { flags: "a" });
   logStream.write(
-    `\n=== MLX Server Started at ${new Date().toISOString()} ===\n`
+    `\n=== Official MLX-LM Server Started at ${new Date().toISOString()} ===\n`
   );
 
-  // Build command based on script type
-  let command: string;
-  if (serverScriptPath.endsWith(".sh")) {
-    // Shell script launcher (MLX-Textgen)
-    command = `bash ${serverScriptPath} "${modelPath}" ${port} "${logFile}" 2>&1`;
-  } else {
-    // Python script launcher (legacy mlx-server.py)
-    command = `source ${activateScript} && PYTHONUNBUFFERED=1 python3 ${serverScriptPath} --model "${modelPath}" --port ${port} 2>&1`;
+  // Find mlx_lm.server in PATH (installed via pipx)
+  const mlxServerPath = path.join(os.homedir(), ".local", "bin", "mlx_lm.server");
+
+  if (!fs.existsSync(mlxServerPath)) {
+    console.error(`[anyclaude] mlx_lm.server not found at: ${mlxServerPath}`);
+    console.error("[anyclaude] Please install mlx-lm:");
+    console.error("[anyclaude]   pipx install mlx-lm");
+    process.exit(1);
   }
+
+  // Build command for official mlx_lm.server
+  const command = `${mlxServerPath} --model "${modelPath}" --port ${port} --host 127.0.0.1 --log-level INFO 2>&1`;
 
   const serverProcess = spawn("bash", ["-c", command], {
     stdio: ["ignore", "pipe", "pipe"],
@@ -199,10 +182,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     env: {
       ...process.env,
       PYTHONUNBUFFERED: "1",
-      // Disable macOS crash handler for this subprocess
-      DYLD_INSERT_LIBRARIES: "",
-      // Disable Python crash handler
-      PYTHONDONTWRITEBYTECODE: "1",
+      PATH: `${path.join(os.homedir(), ".local", "bin")}:${process.env.PATH}`,
     },
   });
 
@@ -218,14 +198,15 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     // Write to log file
     logStream.write(output);
 
-    // Check if server has started
+    // Check if server has started (official mlx_lm.server messages)
     if (
       !hasStarted &&
       (output.includes("Uvicorn running") ||
-        output.includes("Application startup complete"))
+        output.includes("Application startup complete") ||
+        output.includes("Started server process"))
     ) {
       hasStarted = true;
-      debug(1, "[server-launcher] MLX server started successfully");
+      debug(1, "[server-launcher] Official MLX-LM server started successfully");
       console.log(`[anyclaude] MLX server is ready`);
     }
 
@@ -234,7 +215,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
       output.includes("error") ||
       output.includes("Error") ||
       output.includes("failed") ||
-      output.includes("Error")
+      output.includes("Failed")
     ) {
       console.error(`[anyclaude] MLX: ${output.trim()}`);
     }

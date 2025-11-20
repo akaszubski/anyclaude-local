@@ -12,13 +12,12 @@
   "backends": {
     "mlx": {
       "enabled": true,
-      "port": 8080,
-      "baseUrl": "http://localhost:8080/v1",
+      "port": 8081,
+      "baseUrl": "http://localhost:8081/v1",
       "apiKey": "mlx",
       "model": "/path/to/your/mlx/model",
       "maxTokens": 262144,
-      "serverScript": "scripts/mlx-server.py",
-      "description": "Custom MLX backend - RAM-based KV cache, tool calling, vLLM-inspired features"
+      "description": "Official MLX-LM server - battle-tested, tool calling, no bugs (requires: pipx install mlx-lm)"
     },
     "lmstudio": {
       "enabled": false,
@@ -42,7 +41,7 @@
   },
 
   "// BACKEND OPTIONS": {
-    "mlx": "Custom MLX backend - RAM-based KV cache, tool calling works, vLLM-inspired features (recommended for Apple Silicon)",
+    "mlx": "Official MLX-LM server - battle-tested, auto-launch, tool calling works (recommended for Apple Silicon)",
     "lmstudio": "Local models - cross-platform, manual server",
     "openrouter": "Cloud models - access GLM-4.6, Qwen, Claude, GPT-4 via one API (recommended for best compatibility)",
     "claude": "Official Claude API - full features, highest cost"
