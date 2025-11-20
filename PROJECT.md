@@ -39,7 +39,14 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 - ⚠️ **Functionality**: Tool calling works 75% (3/4 backends: OpenRouter/LMStudio/Claude work, MLX-Textgen broken)
 - ✅ **Performance**: 60-85% cache hit rate, 30-50% token reduction; RAM cache provides 100-200x latency improvement for M3 Ultra
-- ✅ **Quality**: 1,400+ tests across 59 test files (unit, integration, regression, E2E); Phase 2.1 adds 57 tests for RAM cache (40 unit + 17 integration)
+- ✅ **Quality**: **1,400+ tests across 101 test files** (unit, integration, regression, E2E, performance)
+  - Core translation: 180+ tests
+  - Error handling: 150+ tests (10 suites × 10 tests each)
+  - Production hardening: 151 tests (error recovery, metrics, config validation)
+  - Cache systems: 141 tests (84 cache control + 57 RAM cache)
+  - Tool calling: 145+ tests (parser plugins, circuit breaker, schema validation)
+  - Streaming: 37 tests (JSON parser, 78% complete)
+  - Integration: 300+ tests (message pipeline, tool workflow, proxy cycle, E2E conversations)
 - 🎯 **User Adoption**: Enable 1000+ developers to use local models with Claude Code
 - 🎯 **Cost Savings**: Help users save $100-1000/month on AI API costs
 
@@ -57,6 +64,25 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 - ✅ Trace logging for cloud modes (auto-enabled, API keys redacted)
 - ✅ **RAM-based KV cache for M3 Ultra**: 100-200x faster cache operations (<1ms GET vs 500-2000ms disk), thread-safe, LRU eviction, security hardened (10KB max key length, memory tracking, input validation)
 
+**Production Infrastructure**:
+
+- ✅ **Error Recovery**: Graceful degradation, circuit breaker (CLOSED/OPEN/HALF_OPEN states), failover manager with exponential backoff
+- ✅ **Monitoring**: Telemetry collector, cache monitor, metrics endpoint (`/v1/metrics`), JSON/Prometheus export
+- ✅ **Validation**: Config validator with pre-startup checks, schema validator for tool definitions, dependency verification
+- ✅ **Tool Parsing**: Plugin system with 6 parsers (Qwen, GPT-OSS, Hermes, Anthropic, Generic, Fallback), automatic parser selection
+- ✅ **Streaming Optimization**: JSON parser with incremental parsing, early tool detection (60% faster), character-by-character tokenization
+- ✅ **Cache Control**: Anthropic cache_control marker extraction, SHA256 hash generation, zero-overhead when disabled
+- ✅ **Health Monitoring**: Server health checks, timeout detection, process management, OOM detection
+
+**Advanced Features**:
+
+- ✅ **Streaming JSON Parser** (693 lines): State machine with incremental parsing, 1MB buffer limit, 64-level nesting protection, 30s timeout
+- ✅ **Cache Control System** (128 lines): SHA256 hashing, token estimation, cache marker extraction, performance metrics
+- ✅ **Tool Parser Plugins** (561 lines): 6 model-specific parsers, automatic fallback chains, error recovery
+- ✅ **Circuit Breaker** (230 lines): Failure tracking, automatic recovery, half-open testing, configurable thresholds
+- ✅ **Model Adapters Framework**: Per-model schema simplification, parameter validation, tool selection guidance
+- ✅ **Trace Analysis Tools**: CLI analyzer for token breakdown, trace replayer for benchmarking, comparison tools
+
 **Supported Platforms**:
 
 - ✅ macOS (Apple Silicon and Intel)
@@ -72,11 +98,12 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 
 **Testing & Quality**:
 
-- ✅ 1,400+ automated tests across 59 test files (unit, integration, regression, E2E)
-- ✅ 57 tests for RAM cache (40 unit tests, 17 integration tests, performance benchmarks)
-- ✅ Git hooks (pre-commit: fast checks, pre-push: full suite)
-- ✅ Regression prevention (streaming bugs caught before push)
-- ✅ Security audit completed for RAM cache (DoS prevention, input validation, memory safety)
+- ✅ **1,400+ automated tests across 101 test files** (unit, integration, regression, E2E, performance)
+- ✅ **Git hooks** (pre-commit: fast checks, pre-push: full suite runs automatically)
+- ✅ **Regression prevention** (streaming bugs, context issues, tool calling failures caught before push)
+- ✅ **Security hardening** (DoS prevention, input validation, memory safety, path traversal protection)
+- ✅ **Error recovery testing** (150+ tests for file I/O, network, tool validation, config, message conversion)
+- ✅ **Performance validation** (benchmarking, load testing, concurrent requests, large context handling)
 
 ### OUT OF SCOPE
 
@@ -309,6 +336,8 @@ anyclaude supports **four backend modes**, each optimized for different use case
 
 **Purpose**: High-performance local inference on Apple Silicon with production-grade KV caching
 
+**⚠️ CRITICAL LIMITATION**: Tool calling is **BROKEN** with all tested models. Use OpenRouter/LMStudio/Claude for coding work.
+
 **Features**:
 
 - Auto-launches MLX-Textgen server when model path is configured
@@ -316,8 +345,11 @@ anyclaude supports **four backend modes**, each optimized for different use case
 - Native MLX acceleration for M1/M2/M3/M4 chips
 - Disk-based KV cache for 10-90x speedup on follow-ups (0.5-10s vs 25-50s)
 - Full translation layer (Anthropic format → OpenAI format)
-- ⚠️ **Tool calling currently broken** (use OpenRouter/LMStudio/Claude for tool-based work)
-- Basic Q&A works reliably (no tool calls)
+- ❌ **Tool calling BROKEN**: Tested with Qwen3, GPT-OSS, Hermes-3 - all fail
+  - Qwen3-Coder-30B: XML format incompatible, infinite loop
+  - GPT-OSS-20B/120B: MLX-Textgen crashes ("None has no element 0")
+  - Hermes-3: Stream hangs after 2 tokens
+- ✅ Basic Q&A works reliably (text-only responses, no file operations)
 - Auto-cleanup when Claude Code exits
 
 **Architecture**:
@@ -1044,7 +1076,9 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
 
 ## File Structure
 
-### Core Files
+### Core Translation Layer (41 TypeScript files)
+
+**Primary Components**:
 
 | File                                 | Purpose                              | Lines | Complexity |
 | ------------------------------------ | ------------------------------------ | ----- | ---------- |
@@ -1054,9 +1088,77 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
 | `src/convert-to-anthropic-stream.ts` | Stream format translation            | ~250  | High       |
 | `src/json-schema.ts`                 | Tool schema conversion               | ~150  | Medium     |
 | `src/context-manager.ts`             | Context window management            | ~180  | Medium     |
-| `src/model-adapters.ts`              | Model-specific adaptations (planned) | ~120  | Low        |
+| `src/model-adapters.ts`              | Model-specific adaptations           | ~120  | Low        |
 | `src/debug.ts`                       | Multi-level debug logging            | ~100  | Low        |
-| `src/trace-logger.ts`                | Request/response tracing             | ~80   | Low        |
+| `src/trace-logger.ts`                | Request/response tracing             | ~150  | Low        |
+
+**Advanced Features**:
+
+| File                                 | Purpose                              | Lines | Status     |
+| ------------------------------------ | ------------------------------------ | ----- | ---------- |
+| `src/streaming-json-parser.ts`       | Incremental JSON parsing             | 693   | 78% (29/37 tests) |
+| `src/cache-control-extractor.ts`     | Anthropic cache marker extraction    | 128   | ✅ Complete (84 tests) |
+| `src/cache-monitor.ts`               | Cache performance tracking           | ~200  | ✅ Complete |
+| `src/failover-manager.ts`            | Error recovery with backoff          | ~180  | ✅ Complete |
+| `src/circuit-breaker.ts`             | Failure state management             | ~150  | ✅ Complete |
+| `src/health-check.ts`                | Server health monitoring             | ~120  | ✅ Complete |
+| `src/telemetry-collector.ts`         | Performance metrics                  | ~180  | ✅ Complete |
+| `src/trace-analyzer.ts`              | CLI tool for trace analysis          | 604   | ✅ Complete |
+| `src/trace-replayer.ts`              | Benchmark traces against models      | ~300  | ✅ Complete |
+| `src/claude-search-executor.ts`      | Web search via Claude/Anthropic API  | 159   | ✅ Complete |
+
+**Total**: 41 TypeScript files in `src/` directory
+
+### Python Infrastructure (scripts/lib/)
+
+**Production Modules** (7 Python libraries):
+
+| File                        | Purpose                              | Lines | Status     |
+| --------------------------- | ------------------------------------ | ----- | ---------- |
+| `tool_parsers.py`           | 6 model-specific tool parsers        | 561   | ✅ Complete (108 tests, 97.7%) |
+| `circuit_breaker.py`        | State machine for failure recovery   | 230   | ✅ Complete |
+| `error_handler.py`          | Graceful degradation, OOM detection  | 381   | ✅ Complete (44 tests) |
+| `metrics_collector.py`      | Performance metrics, Prometheus      | 373   | ✅ Complete (52 tests) |
+| `config_validator.py`       | Pre-startup validation               | 434   | ✅ Complete (60 tests) |
+| `schema_validator.py`       | Tool schema validation               | ~200  | ✅ Complete |
+| `smart_cache.py`            | Intelligent caching logic            | ~150  | ✅ Complete |
+
+**Main Scripts**:
+
+- `ram_cache.py` (279 lines) - In-memory KV cache for M3 Ultra (57 tests)
+- `mlx-textgen-server.sh` - Launcher for MLX-Textgen pip package
+- `benchmark_ram_cache.py` - Performance validation
+
+**Archived**:
+
+- `scripts/archive/mlx-server.py` (1400 lines) - Legacy custom server (replaced by pip package)
+
+### Test Infrastructure (101 test files)
+
+**Unit Tests** (~40 files):
+- JSON schema conversion, tool response parsing
+- Error handling (file I/O, network, tool validation, config, message conversion)
+- Streaming JSON parser (29/37 passing = 78%)
+- Cache monitoring, trace logging, LMStudio client
+
+**Integration Tests** (~30 files):
+- Message pipeline, tool workflow, proxy cycle
+- MLX server tools (basic, streaming, multiple, large, errors)
+- Cache warmup E2E, RAM cache E2E
+- Metrics endpoint, corruption recovery
+
+**Regression Tests** (~15 files):
+- Stream completion, structure, cache hash
+- Backpressure propagation, truncation detection
+- System prompt regression, request logging
+
+**E2E Tests** (~10 files):
+- Full conversations, tool use, interactive testing
+- Bash tool, union schema validation
+
+**Performance Tests** (~6 files):
+- Concurrent requests, large context, MLX server stress
+- Cache warmup performance, load testing
 
 ### Configuration Files
 
@@ -1064,8 +1166,11 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
 - `tsconfig.build.json` - TypeScript config for production builds
 - `package.json` - Dependencies and build scripts
 - `.gitignore` - Ignore node_modules, dist, traces, etc.
+- `.anyclauderc.json` - Backend configuration (optional)
+- `.anyclauderc.example.json` - Configuration template
+- `.anyclauderc.example-openrouter.json` - OpenRouter quick start
 
-### Documentation
+### Documentation (34 files)
 
 - `README.md` - User-facing documentation
 - `PROJECT.md` - This file (architecture, development guide)

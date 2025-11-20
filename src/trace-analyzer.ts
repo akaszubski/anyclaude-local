@@ -111,9 +111,43 @@ function analyzeTokens(trace: TraceData): TokenBreakdown {
  * Analyze timing from trace
  */
 function analyzeTiming(trace: TraceData): TimingAnalysis {
-  // TODO: Extract timing from response if available
-  // For now, return empty object
-  return {};
+  const timing: TimingAnalysis = {};
+
+  // Extract timing information from response headers (if available)
+  if (trace.response?.headers) {
+    const headers = trace.response.headers;
+
+    // Check for Anthropic-specific timing headers
+    // Note: These may not always be present, depending on the API version
+    if (headers["x-request-time"]) {
+      timing.totalTime = parseFloat(headers["x-request-time"]);
+    }
+
+    // Some proxies/CDNs add timing headers
+    if (headers["x-response-time"]) {
+      timing.totalTime = parseFloat(headers["x-response-time"]);
+    }
+  }
+
+  // Extract token usage and calculate tokens per second if we have timing
+  if (trace.response?.body?.usage) {
+    const usage = trace.response.body.usage;
+
+    if (usage.output_tokens) {
+      timing.outputTokens = usage.output_tokens;
+    }
+
+    // Calculate tokens per second if we have both output tokens and total time
+    if (timing.outputTokens && timing.totalTime && timing.totalTime > 0) {
+      timing.tokensPerSecond = timing.outputTokens / timing.totalTime;
+    }
+  }
+
+  // If we don't have direct timing headers, we could potentially calculate
+  // from timestamp differences in streaming responses, but that's not
+  // available in the current trace format
+
+  return timing;
 }
 
 /**
@@ -268,6 +302,41 @@ function printAnalysis(analysis: TraceAnalysis, verbose = false): void {
   console.log(
     `Total Input:       ${t.totalTokens.toLocaleString().padStart(10)} tokens`
   );
+
+  // Display timing information if available
+  if (
+    analysis.timing.totalTime ||
+    analysis.timing.outputTokens ||
+    analysis.timing.tokensPerSecond
+  ) {
+    console.log("\n" + "-".repeat(80));
+    console.log("TIMING & PERFORMANCE");
+    console.log("-".repeat(80));
+
+    if (analysis.timing.totalTime) {
+      console.log(
+        `Total Time:        ${analysis.timing.totalTime.toFixed(3).padStart(10)} seconds`
+      );
+    }
+
+    if (analysis.timing.outputTokens) {
+      console.log(
+        `Output Tokens:     ${analysis.timing.outputTokens.toLocaleString().padStart(10)} tokens`
+      );
+    }
+
+    if (analysis.timing.tokensPerSecond) {
+      console.log(
+        `Tokens/Second:     ${analysis.timing.tokensPerSecond.toFixed(1).padStart(10)} tok/s`
+      );
+    }
+
+    if (analysis.timing.timeToFirstToken) {
+      console.log(
+        `Time to First:     ${analysis.timing.timeToFirstToken.toFixed(3).padStart(10)} seconds`
+      );
+    }
+  }
 
   if (verbose && analysis.trace.request.body.tools) {
     console.log("\n" + "-".repeat(80));

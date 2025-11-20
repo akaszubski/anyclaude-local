@@ -115,15 +115,47 @@ async function searchViaAPI(query: string): Promise<SearchResult[]> {
     throw new Error(`Anthropic API error: ${response.status} ${error}`);
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as any;
   debug(1, `[Claude Search] API response received`);
 
-  // Extract search results from tool_use content
-  // This is simplified - actual parsing depends on response format
+  // Extract search results from response content
   const results: SearchResult[] = [];
 
-  // TODO: Parse actual Anthropic API response format for web search results
-  // For now, return empty array
+  if (data?.content && Array.isArray(data.content)) {
+    for (const block of data.content) {
+      // Look for web_search_tool_result blocks
+      if (block.type === "web_search_tool_result" && block.content) {
+        // Each result has url, title, encrypted_content, page_age
+        for (const result of block.content) {
+          if (result.type === "web_search_result" && result.url && result.title) {
+            results.push({
+              url: result.url,
+              title: result.title,
+            });
+          }
+        }
+      }
+      // Also check for citations in text blocks
+      else if (block.type === "text" && block.citations) {
+        for (const citation of block.citations) {
+          if (
+            citation.type === "web_search_result_location" &&
+            citation.url &&
+            citation.title
+          ) {
+            // Avoid duplicates
+            if (!results.some((r) => r.url === citation.url)) {
+              results.push({
+                url: citation.url,
+                title: citation.title,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
   debug(1, `[Claude Search] Got ${results.length} results from API`);
 
   return results;
