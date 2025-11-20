@@ -848,6 +848,11 @@ class VLLMMLXServer:
                 cache_object = None  # Will hold the loaded/created cache
                 actual_prompt = prompt  # Default to full prompt
 
+                # Track prefix for cache management
+                prefix_prompt = None
+                prefix_tokens = 0
+                used_cache = False
+
                 if MLX_KV_CACHE_ENABLED and original_messages and len(original_messages) > 1:
                     # Split: prefix = all except last message, suffix = last message
                     prefix_messages = original_messages[:-1]
@@ -857,13 +862,12 @@ class VLLMMLXServer:
                     prefix_prompt = self._format_messages(prefix_messages, tools)
 
                     # Check if KV cache exists for this prefix
-                    cache_exists, cache_file = self.kv_cache_manager.has_cache(prefix_prompt)
+                    cache_exists, cache_key = self.kv_cache_manager.has_cache(prefix_prompt)
 
                     if cache_exists:
-                        # Cache hit - but manual cache loading not supported in mlx-lm 0.28.3
-                        # MLX handles caching automatically
-                        logger.debug(f"[MLX KV Cache] Using automatic caching for prefix ({len(prefix_prompt)} chars)")
-                        cache_object = None  # Not used - MLX handles caching internally
+                        # Cache hit - load cached prefix
+                        logger.info(f"[MLX KV Cache] Cache HIT for prefix ({len(prefix_prompt)} chars)")
+                        used_cache = True
 
                         # Format just the suffix as a standalone user message
                         suffix_prompt = suffix_message.get('content', '')
@@ -875,56 +879,43 @@ class VLLMMLXServer:
                         actual_prompt = suffix_prompt
                         logger.debug(f"[MLX KV Cache] Suffix prompt: {actual_prompt[:200]}...")
                     else:
-                        # Cache miss - create cache for future use
-                        logger.info(f"[MLX KV Cache] Creating cache for prefix ({len(prefix_prompt)} chars)")
-                        cache_file, prompt_cache = self.kv_cache_manager.create_cache(model, tokenizer, prefix_prompt)
+                        # Cache miss - will save after generation
+                        logger.info(f"[MLX KV Cache] Cache MISS for prefix ({len(prefix_prompt)} chars)")
+                        used_cache = False
 
-                        if cache_file and prompt_cache:
-                            # Now that cache is created, use it for this generation
-                            suffix_prompt = suffix_message.get('content', '')
-                            if isinstance(suffix_prompt, list):
-                                suffix_prompt = " ".join([
-                                    block.get("text", "") if isinstance(block, dict) else str(block)
-                                    for block in suffix_prompt
-                                ])
-                            actual_prompt = suffix_prompt
-                            logger.debug(f"[MLX KV Cache] Using newly created cache with suffix: {actual_prompt[:200]}...")
-                            # Store the cache object for use below
-                            cache_object = prompt_cache
-                        else:
-                            # Cache creation failed, use full prompt as fallback
-                            logger.warning("[MLX KV Cache] Cache creation failed, using full prompt")
-                            cache_file = None
-                            cache_object = None
+                        # Use full prompt for now, save cache after generation
+                        actual_prompt = prompt
+
+                        # Pre-calculate prefix tokens for later cache save
+                        prefix_tokens = self.kv_cache_manager._count_tokens(tokenizer, prefix_prompt)
                 else:
                     logger.debug("[MLX KV Cache] Skipped (disabled, single message, or no messages)")
 
-                # Add tool calling support if tools provided
+                # Note: tools are already baked into the prompt via chat template
+                # MLX generate() doesn't accept tools parameter
                 if tools:
-                    logger.debug(f"[Generate Safe] Adding {len(tools)} tools to generation")
-                    options['tools'] = tools
-                    options['tool_choice'] = 'auto'  # Let model decide when to use tools
+                    logger.debug(f"[Generate Safe] {len(tools)} tools included in prompt via chat template")
 
                 # Track generation timing and tokens
                 gen_start_time = time.time()
-                used_cache = cache_object is not None
 
                 # Count suffix tokens for metrics
                 suffix_tokens = self.kv_cache_manager._count_tokens(tokenizer, actual_prompt)
 
-                # Generate with optional KV cache
-                if used_cache and cache_object:
-                    logger.debug(f"[MLX KV Cache] Generating with cached KV state + ~{suffix_tokens} new tokens")
-                    result = mlx_lm.generate(
-                        model, tokenizer, actual_prompt,
-                        prompt_cache=cache_object,  # Correct parameter name
-                        **options
-                    )
-                else:
-                    # Standard generation without KV cache
-                    result = mlx_lm.generate(model, tokenizer, actual_prompt, options)
+                # Generate (cache is handled automatically by MLX)
+                result = mlx_lm.generate(model, tokenizer, actual_prompt, **options)
 
                 gen_elapsed = time.time() - gen_start_time
+
+                # Save cache after successful generation (on cache miss)
+                if MLX_KV_CACHE_ENABLED and prefix_prompt and not used_cache:
+                    try:
+                        # Save the prefix to RAM cache for future use
+                        cache_value = prefix_prompt.encode('utf-8')
+                        self.kv_cache_manager.set(prefix_prompt, cache_value, prefix_tokens=prefix_tokens)
+                        logger.info(f"[MLX KV Cache] ✅ Saved prefix to cache ({prefix_tokens} tokens)")
+                    except Exception as e:
+                        logger.warning(f"[MLX KV Cache] Failed to save cache: {e}")
 
                 # Record generation metrics
                 if MLX_KV_CACHE_ENABLED and original_messages:
@@ -1364,6 +1355,12 @@ class VLLMMLXServer:
         max_tokens = request_body.get("max_tokens", 1024)
         stream = request_body.get("stream", False)
 
+        # Repetition penalty (MLX-LM official defaults)
+        # Prevents infinite repetition loops (see: ml-explore/mlx-examples#1131, #1059)
+        # Default 1.05 is gentle enough for coding while preventing loops
+        repetition_penalty = request_body.get("repetition_penalty", 1.05)
+        repetition_context_size = request_body.get("repetition_context_size", 20)
+
         # Smart cache optimization: aggressive trimming for MLX KV cache
         # MLX caches based on prompt prefix matching - smaller window = better cache hits
         original_msg_count = len(messages)
@@ -1418,7 +1415,7 @@ class VLLMMLXServer:
 
         if stream:
             return StreamingResponse(
-                self._stream_generate(prompt, temperature, max_tokens, messages, tools, cache_key, cached_result),
+                self._stream_generate(prompt, temperature, max_tokens, messages, tools, cache_key, cached_result, repetition_penalty, repetition_context_size),
                 media_type="text/event-stream"
             )
         else:
@@ -1433,7 +1430,7 @@ class VLLMMLXServer:
             # Record cache miss (Phase 3)
             self.metrics.record_cache_miss()
             logger.debug(f"[Cache Miss] Processing new request (cache size: {len(self.cache.cache)}/{self.cache.max_size})")
-            response = await self._generate_response(prompt, temperature, max_tokens, messages, tools, cache_key)
+            response = await self._generate_response(prompt, temperature, max_tokens, messages, tools, cache_key, repetition_penalty, repetition_context_size)
             # Record latency for non-cached response (Phase 3)
             latency_ms = (time.time() - request_start_time) * 1000
             self.metrics.record_latency(latency_ms)
@@ -1723,7 +1720,8 @@ namespace functions {{
         return f"{system_prompt}\n\n{conversation}".strip()
 
     async def _stream_generate(self, prompt: str, temperature: float, max_tokens: int,
-                               original_messages: list, tools: list, cache_key: str = None, cached_result=None):
+                               original_messages: list, tools: list, cache_key: str = None, cached_result=None,
+                               repetition_penalty: float = 1.05, repetition_context_size: int = 20):
         """Generate response with streaming and caching"""
 
         try:
@@ -1770,7 +1768,12 @@ namespace functions {{
                         self.model,
                         self.tokenizer,
                         prompt,
-                        {"max_tokens": max_tokens, "verbose": False},
+                        {
+                            "max_tokens": max_tokens,
+                            "verbose": False,
+                            "repetition_penalty": repetition_penalty,
+                            "repetition_context_size": repetition_context_size
+                        },
                         tools,  # Pass tools for native tool calling
                         original_messages  # Pass original messages for KV caching
                     )
@@ -1872,7 +1875,8 @@ namespace functions {{
             yield f"data: {json.dumps(error_msg)}\n\n"
 
     async def _generate_response(self, prompt: str, temperature: float, max_tokens: int,
-                                original_messages: list, tools: list, cache_key: str = None) -> dict:
+                                original_messages: list, tools: list, cache_key: str = None,
+                                repetition_penalty: float = 1.05, repetition_context_size: int = 20) -> dict:
         """Generate non-streaming response with caching"""
 
         try:
@@ -1894,7 +1898,12 @@ namespace functions {{
                         self.model,
                         self.tokenizer,
                         prompt,
-                        {"max_tokens": max_tokens, "verbose": False},
+                        {
+                            "max_tokens": max_tokens,
+                            "verbose": False,
+                            "repetition_penalty": repetition_penalty,
+                            "repetition_context_size": repetition_context_size
+                        },
                         tools,  # Pass tools for native tool calling
                         original_messages  # Pass original messages for KV caching
                     )
