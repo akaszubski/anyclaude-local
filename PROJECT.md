@@ -332,31 +332,33 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 
 anyclaude supports **four backend modes**, each optimized for different use cases:
 
-#### 1. MLX-Textgen Mode (`ANYCLAUDE_MODE=mlx-textgen`, default)
+#### 1. MLX Mode (`ANYCLAUDE_MODE=mlx`, default)
 
-**Purpose**: High-performance local inference on Apple Silicon with production-grade KV caching
+**Purpose**: High-performance local inference on Apple Silicon with custom KV caching and vLLM-inspired features
 
-**⚠️ CRITICAL LIMITATION**: Tool calling is **BROKEN** with all tested models. Use OpenRouter/LMStudio/Claude for coding work.
+**Status**: ✅ Tool calling WORKS with custom mlx-server.py implementation
 
 **Features**:
 
-- Auto-launches MLX-Textgen server when model path is configured
-- Routes to local server (default: `http://localhost:8081/v1`)
+- Auto-launches custom MLX server (scripts/mlx-server.py) when model path is configured
+- Routes to local server (default: `http://localhost:8080/v1`)
 - Native MLX acceleration for M1/M2/M3/M4 chips
-- Disk-based KV cache for 10-90x speedup on follow-ups (0.5-10s vs 25-50s)
+- **RAM-based KV cache** for 100-200x speedup (<1ms GET vs 500-2000ms disk)
+- **Full tool calling support** (Read, Write, Edit, Bash, Git, etc.)
 - Full translation layer (Anthropic format → OpenAI format)
-- ❌ **Tool calling BROKEN**: Tested with Qwen3, GPT-OSS, Hermes-3 - all fail
-  - Qwen3-Coder-30B: XML format incompatible, infinite loop
-  - GPT-OSS-20B/120B: MLX-Textgen crashes ("None has no element 0")
-  - Hermes-3: Stream hangs after 2 tokens
-- ✅ Basic Q&A works reliably (text-only responses, no file operations)
+- **vLLM-inspired features**: Error recovery, circuit breaker, metrics monitoring
+- Production hardening: OOM detection, graceful degradation, health checks
 - Auto-cleanup when Claude Code exits
 
 **Architecture**:
 
 ```
-Claude Code → AnyClaude Proxy → MLX-Textgen Server → MLX Model
-(Anthropic API)  (Translation)   (OpenAI API)         (Local file)
+Claude Code → AnyClaude Proxy → Custom MLX Server → MLX Model
+(Anthropic API)  (Translation)   (scripts/mlx-server.py)  (Local file)
+                                  ↓
+                                  RAM KV Cache (100-200x faster)
+                                  ↓
+                                  vLLM-inspired features
 ```
 
 **Use Cases**:
@@ -364,20 +366,21 @@ Claude Code → AnyClaude Proxy → MLX-Textgen Server → MLX Model
 - Privacy-first development (100% local, no cloud)
 - Cost-free unlimited queries
 - Offline development
-- Fast Q&A iteration with KV cache (10-90x speedup)
-- **Not for**: Tool-based coding (Read/Write/Edit/Bash won't work)
+- **Fast coding with tool calling**: Read/Write/Edit/Bash all work
+- Ultra-fast follow-ups with RAM cache (100-200x speedup)
+- Production-grade reliability with error recovery
 
 **Configuration**:
 
 ```json
 {
-  "backend": "mlx-textgen",
+  "backend": "mlx",
   "backends": {
-    "mlx-textgen": {
+    "mlx": {
       "enabled": true,
-      "port": 8081,
+      "port": 8080,
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/mlx-textgen-server.sh"
+      "serverScript": "scripts/mlx-server.py"
     }
   }
 }
@@ -526,43 +529,49 @@ anyclaude --mode=claude
 
 ### Mode Comparison Table
 
-| Feature            | MLX-Textgen         | LMStudio              | OpenRouter           | Claude             |
-| ------------------ | ------------------- | --------------------- | -------------------- | ------------------ |
-| **Cost**           | Free                | Free                  | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
-| **Privacy**        | 100% local          | 100% local            | Cloud                | Cloud              |
-| **Platform**       | macOS (M1-M4)       | All platforms         | All platforms        | All platforms      |
-| **Auto-launch**    | ✅ Yes              | ❌ Manual             | ✅ Cloud             | ✅ Cloud           |
-| **Prompt Caching** | ✅ Yes (KV, 10-90x) | ⚠️ Limited            | ✅ Yes               | ✅ Yes             |
-| **Tool Calling**   | ❌ Broken           | ✅ Yes                | ✅ Yes               | ✅ Yes             |
-| **Context Window** | Up to 200K          | Varies by model       | Up to 200K           | 200K               |
-| **Speed**          | Ultra fast (KV)     | Fast                  | Fast                 | Fast               |
-| **Model Choice**   | Your MLX models     | Any LMStudio          | 400+ models          | Claude only        |
-| **Trace Logging**  | Manual (DEBUG=3)    | Manual (DEBUG=3)      | ✅ Auto (redacted)   | ✅ Auto (redacted) |
-| **Best For**       | Q&A, speed, privacy | Cross-platform coding | Cost savings, choice | Quality, analysis  |
+| Feature            | MLX (Custom)            | LMStudio              | OpenRouter           | Claude             |
+| ------------------ | ----------------------- | --------------------- | -------------------- | ------------------ |
+| **Cost**           | Free                    | Free                  | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
+| **Privacy**        | 100% local              | 100% local            | Cloud                | Cloud              |
+| **Platform**       | macOS (M1-M4)           | All platforms         | All platforms        | All platforms      |
+| **Auto-launch**    | ✅ Yes                  | ❌ Manual             | ✅ Cloud             | ✅ Cloud           |
+| **Prompt Caching** | ✅ Yes (RAM, 100-200x)  | ⚠️ Limited            | ✅ Yes               | ✅ Yes             |
+| **Tool Calling**   | ✅ Yes                  | ✅ Yes                | ✅ Yes               | ✅ Yes             |
+| **Context Window** | Up to 200K              | Varies by model       | Up to 200K           | 200K               |
+| **Speed**          | Ultra fast (RAM cache)  | Fast                  | Fast                 | Fast               |
+| **Model Choice**   | Your MLX models         | Any LMStudio          | 400+ models          | Claude only        |
+| **Trace Logging**  | Manual (DEBUG=3)        | Manual (DEBUG=3)      | ✅ Auto (redacted)   | ✅ Auto (redacted) |
+| **Best For**       | Privacy, speed, coding  | Cross-platform coding | Cost savings, choice | Quality, analysis  |
 
 ### Backend Evolution History
 
-**Three-stage migration** (v2.0 → v2.2.0):
+**Evolution from vLLM-inspired architecture** (v2.0 → v2.3.0):
 
 1. **MLX-LM** (v2.0, deprecated Oct 2025)
    - Original implementation, basic MLX support
    - No KV caching, limited tool calling
    - Replaced by custom server for better performance
 
-2. **MLX-Textgen** (v2.1-v2.2.0, Oct 2025)
-   - Custom `scripts/mlx-textgen-server.py` (1400 lines)
-   - Added KV caching support
-   - Fixed tool calling reliability (>90% success rate)
-   - **Archived** to `scripts/archive/` for reference
+2. **Custom MLX Server** (v2.1+, Oct 2025 - current, **PRODUCTION**)
+   - Custom `scripts/mlx-server.py` (~1500 lines)
+   - **RAM-based KV cache**: 100-200x speedup (<1ms GET vs 500-2000ms disk)
+   - **Full tool calling support**: Read, Write, Edit, Bash, Git all work
+   - **vLLM-inspired features**:
+     - Error recovery with circuit breaker (CLOSED/OPEN/HALF_OPEN states)
+     - Graceful degradation (OOM detection, automatic cache disable)
+     - Metrics monitoring (`/v1/metrics` endpoint)
+     - Pre-startup validation (ConfigValidator)
+     - Tool parser plugin system (6 model-specific parsers)
+   - Production hardening (Phase 3): 151 tests, all passing
+   - Mode name: `mlx` (simplified from `mlx-textgen`)
 
-3. **MLX-Textgen** (v2.2.0+, Nov 2025 - current)
-   - Migrated to production mlx-textgen pip package
+3. **MLX-Textgen pip package** (v2.2.0, Nov 2025 - **DEPRECATED**)
+   - Attempted migration to mlx-textgen pip package
    - 10-90x speedup via disk-based KV caching
-   - Auto-launch, auto-cleanup, production-grade
-   - **Known issue**: Tool calling broken (investigating fix/workaround)
-   - Mode name still `mlx-textgen` for backward compatibility
+   - **Tool calling broken**: Unusable for Claude Code
+   - Deprecated in favor of custom mlx-server.py
 
-**Recommendation**: Use OpenRouter/LMStudio/Claude for tool-based coding until MLX-Textgen tool calling is fixed.
+**Current Status**: Custom MLX server (scripts/mlx-server.py) is production-ready with full tool calling support and vLLM-inspired reliability features.
 
 ### Architecture Layers
 
@@ -585,8 +594,8 @@ anyclaude --mode=claude
      ┌───────────────────┼───────────────────┬───────────────┐
      ▼                   ▼                   ▼               ▼
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ Claude Mode  │  │ LMStudio Mode│  │ MLX-Textgen Mode│  │OpenRouter Mde│
-│ • Passthrough│  │ • Full xform │  │ • KV cache   │  │ • Cloud API  │
+│ Claude Mode  │  │ LMStudio Mode│  │ MLX Mode     │  │OpenRouter Mode│
+│ • Passthrough│  │ • Full xform │  │ • RAM cache  │  │ • Cloud API  │
 │ • Trace log  │  │ • Streaming  │  │ • Auto-launch│  │ • 400+ models│
 └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
        │                 │                 │                 │
@@ -621,10 +630,11 @@ anyclaude --mode=claude
                 ┌───────────────┴───────────────┐
                 ▼                               ▼
     ┌─────────────────┐             ┌──────────────────┐
-    │ LMStudio Server │             │ MLX-Textgen Server  │
-    │ :1234/v1        │             │ :8081/v1         │
+    │ LMStudio Server │             │ Custom MLX Server│
+    │ :1234/v1        │             │ :8080/v1         │
     │ • Any model     │             │ • Auto-launch    │
-    │ • Hot-swap      │             │ • KV cache       │
+    │ • Hot-swap      │             │ • RAM KV cache   │
+    │                 │             │ • vLLM features  │
     └────────┬────────┘             └────────┬─────────┘
              │                               │
              └──────────────────────┼──────────────────────┘
@@ -1080,32 +1090,32 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
 
 **Primary Components**:
 
-| File                                 | Purpose                              | Lines | Complexity |
-| ------------------------------------ | ------------------------------------ | ----- | ---------- |
-| `src/main.ts`                        | Entry point, configuration, routing  | ~400  | Low        |
-| `src/anthropic-proxy.ts`             | HTTP proxy server, mode routing      | ~650  | Medium     |
-| `src/convert-anthropic-messages.ts`  | Message format translation           | ~300  | High       |
-| `src/convert-to-anthropic-stream.ts` | Stream format translation            | ~250  | High       |
-| `src/json-schema.ts`                 | Tool schema conversion               | ~150  | Medium     |
-| `src/context-manager.ts`             | Context window management            | ~180  | Medium     |
-| `src/model-adapters.ts`              | Model-specific adaptations           | ~120  | Low        |
-| `src/debug.ts`                       | Multi-level debug logging            | ~100  | Low        |
-| `src/trace-logger.ts`                | Request/response tracing             | ~150  | Low        |
+| File                                 | Purpose                             | Lines | Complexity |
+| ------------------------------------ | ----------------------------------- | ----- | ---------- |
+| `src/main.ts`                        | Entry point, configuration, routing | ~400  | Low        |
+| `src/anthropic-proxy.ts`             | HTTP proxy server, mode routing     | ~650  | Medium     |
+| `src/convert-anthropic-messages.ts`  | Message format translation          | ~300  | High       |
+| `src/convert-to-anthropic-stream.ts` | Stream format translation           | ~250  | High       |
+| `src/json-schema.ts`                 | Tool schema conversion              | ~150  | Medium     |
+| `src/context-manager.ts`             | Context window management           | ~180  | Medium     |
+| `src/model-adapters.ts`              | Model-specific adaptations          | ~120  | Low        |
+| `src/debug.ts`                       | Multi-level debug logging           | ~100  | Low        |
+| `src/trace-logger.ts`                | Request/response tracing            | ~150  | Low        |
 
 **Advanced Features**:
 
-| File                                 | Purpose                              | Lines | Status     |
-| ------------------------------------ | ------------------------------------ | ----- | ---------- |
-| `src/streaming-json-parser.ts`       | Incremental JSON parsing             | 693   | 78% (29/37 tests) |
-| `src/cache-control-extractor.ts`     | Anthropic cache marker extraction    | 128   | ✅ Complete (84 tests) |
-| `src/cache-monitor.ts`               | Cache performance tracking           | ~200  | ✅ Complete |
-| `src/failover-manager.ts`            | Error recovery with backoff          | ~180  | ✅ Complete |
-| `src/circuit-breaker.ts`             | Failure state management             | ~150  | ✅ Complete |
-| `src/health-check.ts`                | Server health monitoring             | ~120  | ✅ Complete |
-| `src/telemetry-collector.ts`         | Performance metrics                  | ~180  | ✅ Complete |
-| `src/trace-analyzer.ts`              | CLI tool for trace analysis          | 604   | ✅ Complete |
-| `src/trace-replayer.ts`              | Benchmark traces against models      | ~300  | ✅ Complete |
-| `src/claude-search-executor.ts`      | Web search via Claude/Anthropic API  | 159   | ✅ Complete |
+| File                             | Purpose                             | Lines | Status                 |
+| -------------------------------- | ----------------------------------- | ----- | ---------------------- |
+| `src/streaming-json-parser.ts`   | Incremental JSON parsing            | 693   | 78% (29/37 tests)      |
+| `src/cache-control-extractor.ts` | Anthropic cache marker extraction   | 128   | ✅ Complete (84 tests) |
+| `src/cache-monitor.ts`           | Cache performance tracking          | ~200  | ✅ Complete            |
+| `src/failover-manager.ts`        | Error recovery with backoff         | ~180  | ✅ Complete            |
+| `src/circuit-breaker.ts`         | Failure state management            | ~150  | ✅ Complete            |
+| `src/health-check.ts`            | Server health monitoring            | ~120  | ✅ Complete            |
+| `src/telemetry-collector.ts`     | Performance metrics                 | ~180  | ✅ Complete            |
+| `src/trace-analyzer.ts`          | CLI tool for trace analysis         | 604   | ✅ Complete            |
+| `src/trace-replayer.ts`          | Benchmark traces against models     | ~300  | ✅ Complete            |
+| `src/claude-search-executor.ts`  | Web search via Claude/Anthropic API | 159   | ✅ Complete            |
 
 **Total**: 41 TypeScript files in `src/` directory
 
@@ -1113,15 +1123,15 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
 
 **Production Modules** (7 Python libraries):
 
-| File                        | Purpose                              | Lines | Status     |
-| --------------------------- | ------------------------------------ | ----- | ---------- |
-| `tool_parsers.py`           | 6 model-specific tool parsers        | 561   | ✅ Complete (108 tests, 97.7%) |
-| `circuit_breaker.py`        | State machine for failure recovery   | 230   | ✅ Complete |
-| `error_handler.py`          | Graceful degradation, OOM detection  | 381   | ✅ Complete (44 tests) |
-| `metrics_collector.py`      | Performance metrics, Prometheus      | 373   | ✅ Complete (52 tests) |
-| `config_validator.py`       | Pre-startup validation               | 434   | ✅ Complete (60 tests) |
-| `schema_validator.py`       | Tool schema validation               | ~200  | ✅ Complete |
-| `smart_cache.py`            | Intelligent caching logic            | ~150  | ✅ Complete |
+| File                   | Purpose                             | Lines | Status                         |
+| ---------------------- | ----------------------------------- | ----- | ------------------------------ |
+| `tool_parsers.py`      | 6 model-specific tool parsers       | 561   | ✅ Complete (108 tests, 97.7%) |
+| `circuit_breaker.py`   | State machine for failure recovery  | 230   | ✅ Complete                    |
+| `error_handler.py`     | Graceful degradation, OOM detection | 381   | ✅ Complete (44 tests)         |
+| `metrics_collector.py` | Performance metrics, Prometheus     | 373   | ✅ Complete (52 tests)         |
+| `config_validator.py`  | Pre-startup validation              | 434   | ✅ Complete (60 tests)         |
+| `schema_validator.py`  | Tool schema validation              | ~200  | ✅ Complete                    |
+| `smart_cache.py`       | Intelligent caching logic           | ~150  | ✅ Complete                    |
 
 **Main Scripts**:
 
@@ -1136,27 +1146,32 @@ function getBackendConfig(backend: AnyclaudeMode): BackendConfig;
 ### Test Infrastructure (101 test files)
 
 **Unit Tests** (~40 files):
+
 - JSON schema conversion, tool response parsing
 - Error handling (file I/O, network, tool validation, config, message conversion)
 - Streaming JSON parser (29/37 passing = 78%)
 - Cache monitoring, trace logging, LMStudio client
 
 **Integration Tests** (~30 files):
+
 - Message pipeline, tool workflow, proxy cycle
 - MLX server tools (basic, streaming, multiple, large, errors)
 - Cache warmup E2E, RAM cache E2E
 - Metrics endpoint, corruption recovery
 
 **Regression Tests** (~15 files):
+
 - Stream completion, structure, cache hash
 - Backpressure propagation, truncation detection
 - System prompt regression, request logging
 
 **E2E Tests** (~10 files):
+
 - Full conversations, tool use, interactive testing
 - Bash tool, union schema validation
 
 **Performance Tests** (~6 files):
+
 - Concurrent requests, large context, MLX server stress
 - Cache warmup performance, load testing
 

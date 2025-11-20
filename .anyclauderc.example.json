@@ -3,32 +3,22 @@
   "// USAGE": "Copy this to .anyclauderc.json and customize for your setup",
   "// DOCS": "See CLAUDE.md for detailed configuration guide",
 
-  "backend": "mlx-textgen",
+  "backend": "mlx",
   "debug": {
     "level": 0,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "mlx-textgen": {
+    "mlx": {
       "enabled": true,
       "port": 8080,
       "baseUrl": "http://localhost:8080/v1",
-      "apiKey": "mlx-textgen",
-      "model": "/path/to/your/mlx/model",
-      "maxTokens": 262144,
-      "serverScript": "scripts/mlx-textgen-server.sh",
-      "description": "Production MLX backend - disk-based KV caching, 10-90x speedup"
-    },
-    "mlx-legacy": {
-      "enabled": false,
-      "port": 8082,
-      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "mlx",
       "model": "/path/to/your/mlx/model",
       "maxTokens": 262144,
       "serverScript": "scripts/mlx-server.py",
-      "description": "Legacy MLX backend - for reference only, use mlx-textgen instead"
+      "description": "Custom MLX backend - RAM-based KV cache, tool calling, vLLM-inspired features"
     },
     "lmstudio": {
       "enabled": false,
@@ -52,10 +42,9 @@
   },
 
   "// BACKEND OPTIONS": {
-    "mlx-textgen": "Production MLX backend - disk-based KV cache, 10-90x speedup (recommended)",
-    "mlx-legacy": "Legacy MLX backend - for reference only, use mlx-textgen instead",
+    "mlx": "Custom MLX backend - RAM-based KV cache, tool calling works, vLLM-inspired features (recommended for Apple Silicon)",
     "lmstudio": "Local models - cross-platform, manual server",
-    "openrouter": "Cloud models - access GLM-4.6, Qwen, Claude, GPT-4 via one API",
+    "openrouter": "Cloud models - access GLM-4.6, Qwen, Claude, GPT-4 via one API (recommended for best compatibility)",
     "claude": "Official Claude API - full features, highest cost"
   },
 
@@ -68,17 +57,17 @@
   },
 
   "// ENVIRONMENT VARIABLES": {
-    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|mlx-textgen|openrouter)",
+    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|mlx|openrouter)",
     "ANYCLAUDE_DEBUG": "Debug level (0=off, 1=basic, 2=verbose, 3=trace with prompts)",
     "OPENROUTER_API_KEY": "Your OpenRouter API key (get from openrouter.ai)",
     "OPENROUTER_MODEL": "Override OpenRouter model",
     "ANTHROPIC_API_KEY": "Your Anthropic API key (for claude mode)",
-    "MLX_TEXTGEN_MODEL": "Override MLX-Textgen model path",
+    "MLX_MODEL": "Override MLX model path",
     "LMSTUDIO_MODEL": "Override LMStudio model"
   },
 
   "// QUICK START": {
-    "1. Choose backend": "Set 'backend' to mlx-textgen, lmstudio, openrouter, or claude",
+    "1. Choose backend": "Set 'backend' to mlx, lmstudio, openrouter, or claude",
     "2. Configure backend": "Fill in the appropriate backend section above",
     "3. Run": "anyclaude (or: anyclaude --mode=openrouter to override)"
   },
@@ -96,6 +85,6 @@
     "Claude 3.5 Sonnet (Direct)": "$3.00 input / $15.00 output",
     "Claude 3.5 Sonnet (via OpenRouter)": "$3.00 input / $15.00 output",
     "GPT-4 (via OpenRouter)": "$10.00 input / $30.00 output",
-    "Local models (MLX-Textgen/LMStudio)": "$0 (hardware costs only)"
+    "Local models (MLX/LMStudio)": "$0 (hardware costs only)"
   }
 }
