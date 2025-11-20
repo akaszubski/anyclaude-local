@@ -1,0 +1,7 @@
+# Python dependencies for MLX server and tooling
+
+# Schema Validation (Issue #15)
+jsonschema>=4.0.0,<5.0.0
+
+# Note: MLX-Textgen, FastAPI, Uvicorn should already be installed
+# via the MLX-Textgen setup instructions in README.md

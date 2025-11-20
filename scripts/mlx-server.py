@@ -45,6 +45,9 @@ from lib.config_validator import ConfigValidator, ValidationError, DependencyErr
 # Smart caching for better cache hit rates
 from lib.smart_cache import optimize_messages, estimate_prompt_tokens
 
+# Schema validation for tool calling (Issue #15)
+from lib.schema_validator import SchemaValidator, ValidationResult
+
 # Security constants for file access
 MAX_SYSTEM_PROMPT_SIZE = 1024 * 1024  # 1MB
 ALLOWED_SYSTEM_PROMPT_DIR = Path.home() / ".anyclaude" / "system-prompts"
@@ -691,7 +694,10 @@ class VLLMMLXServer:
             enable_latency_tracking=True
         )
         self.config_validator = ConfigValidator()
-        logger.info("Production hardening modules initialized")
+
+        # Schema validation for tool calling (Issue #15)
+        self.schema_validator = SchemaValidator(timeout_sec=5.0)
+        logger.info("Production hardening modules initialized (with schema validator)")
 
         # Production hardening: Validate configuration at startup (ISSUE 4 fix)
         try:
@@ -1222,7 +1228,10 @@ class VLLMMLXServer:
 
     def _validate_tool_call(self, tool_name, arguments, schema):
         """
-        Validate tool call arguments against schema
+        Validate tool call arguments against schema using jsonschema
+
+        This method now uses the SchemaValidator for comprehensive validation
+        with <10ms overhead and clear error messages (Issue #15).
 
         Args:
             tool_name: Name of the tool
@@ -1232,36 +1241,12 @@ class VLLMMLXServer:
         Returns:
             (is_valid, error_message) tuple
         """
-        # Check required parameters
-        required = schema.get('required', [])
-        for param in required:
-            if param not in arguments:
-                return False, f"Missing required parameter: {param}"
-
-        # Check parameter types (basic validation)
-        properties = schema.get('properties', {})
-        for key, value in arguments.items():
-            if key in properties:
-                expected_type = properties[key].get('type')
-                actual_type = type(value).__name__
-
-                # Map JSON schema types to Python types
-                type_mapping = {
-                    'string': 'str',
-                    'number': ('int', 'float'),
-                    'boolean': 'bool',
-                    'object': 'dict',
-                    'array': 'list'
-                }
-
-                expected = type_mapping.get(expected_type, expected_type)
-                if isinstance(expected, tuple):
-                    if actual_type not in expected:
-                        return False, f"Parameter '{key}' should be {expected_type}, got {actual_type}"
-                elif expected != actual_type:
-                    return False, f"Parameter '{key}' should be {expected_type}, got {actual_type}"
-
-        return True, None
+        try:
+            result = self.schema_validator.validate_tool_call(tool_name, arguments, schema)
+            return result.is_valid, result.error_message
+        except Exception as e:
+            logger.error(f"[Schema Validator] Validation error for {tool_name}: {e}")
+            return False, f"Validation system error: {str(e)}"
 
     def _format_tool_call_openai(self, tool_call, call_id):
         """
