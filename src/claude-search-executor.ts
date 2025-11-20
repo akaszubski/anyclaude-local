@@ -127,7 +127,11 @@ async function searchViaAPI(query: string): Promise<SearchResult[]> {
       if (block.type === "web_search_tool_result" && block.content) {
         // Each result has url, title, encrypted_content, page_age
         for (const result of block.content) {
-          if (result.type === "web_search_result" && result.url && result.title) {
+          if (
+            result.type === "web_search_result" &&
+            result.url &&
+            result.title
+          ) {
             results.push({
               url: result.url,
               title: result.title,

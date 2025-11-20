@@ -529,19 +529,19 @@ anyclaude --mode=claude
 
 ### Mode Comparison Table
 
-| Feature            | MLX (Custom)            | LMStudio              | OpenRouter           | Claude             |
-| ------------------ | ----------------------- | --------------------- | -------------------- | ------------------ |
-| **Cost**           | Free                    | Free                  | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
-| **Privacy**        | 100% local              | 100% local            | Cloud                | Cloud              |
-| **Platform**       | macOS (M1-M4)           | All platforms         | All platforms        | All platforms      |
-| **Auto-launch**    | ✅ Yes                  | ❌ Manual             | ✅ Cloud             | ✅ Cloud           |
-| **Prompt Caching** | ✅ Yes (RAM, 100-200x)  | ⚠️ Limited            | ✅ Yes               | ✅ Yes             |
-| **Tool Calling**   | ✅ Yes                  | ✅ Yes                | ✅ Yes               | ✅ Yes             |
-| **Context Window** | Up to 200K              | Varies by model       | Up to 200K           | 200K               |
-| **Speed**          | Ultra fast (RAM cache)  | Fast                  | Fast                 | Fast               |
-| **Model Choice**   | Your MLX models         | Any LMStudio          | 400+ models          | Claude only        |
-| **Trace Logging**  | Manual (DEBUG=3)        | Manual (DEBUG=3)      | ✅ Auto (redacted)   | ✅ Auto (redacted) |
-| **Best For**       | Privacy, speed, coding  | Cross-platform coding | Cost savings, choice | Quality, analysis  |
+| Feature            | MLX (Custom)           | LMStudio              | OpenRouter           | Claude             |
+| ------------------ | ---------------------- | --------------------- | -------------------- | ------------------ |
+| **Cost**           | Free                   | Free                  | $0.60-$2/1M tokens   | $3-$15/1M tokens   |
+| **Privacy**        | 100% local             | 100% local            | Cloud                | Cloud              |
+| **Platform**       | macOS (M1-M4)          | All platforms         | All platforms        | All platforms      |
+| **Auto-launch**    | ✅ Yes                 | ❌ Manual             | ✅ Cloud             | ✅ Cloud           |
+| **Prompt Caching** | ✅ Yes (RAM, 100-200x) | ⚠️ Limited            | ✅ Yes               | ✅ Yes             |
+| **Tool Calling**   | ✅ Yes                 | ✅ Yes                | ✅ Yes               | ✅ Yes             |
+| **Context Window** | Up to 200K             | Varies by model       | Up to 200K           | 200K               |
+| **Speed**          | Ultra fast (RAM cache) | Fast                  | Fast                 | Fast               |
+| **Model Choice**   | Your MLX models        | Any LMStudio          | 400+ models          | Claude only        |
+| **Trace Logging**  | Manual (DEBUG=3)       | Manual (DEBUG=3)      | ✅ Auto (redacted)   | ✅ Auto (redacted) |
+| **Best For**       | Privacy, speed, coding | Cross-platform coding | Cost savings, choice | Quality, analysis  |
 
 ### Backend Evolution History
 

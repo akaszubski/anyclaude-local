@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for MLX-Textgen.
+anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for our custom MLX server.
 
-**Primary Backend**: MLX-Textgen (KV caching works, but **tool calling FAILS** - unusable for Claude Code)
+**Primary Backend**: Custom MLX Server (`scripts/mlx-server.py`) with RAM-based KV cache and vLLM-inspired features
 
-**⚠️ KNOWN LIMITATION**: Tool calling does not work with any local MLX models (Qwen3, OpenAI GPT OSS, Hermes-3 all fail). Use `--mode=claude` or `--mode=openrouter` for actual Claude Code work.
+**✅ STATUS**: Tool calling WORKS perfectly with custom MLX server (Read, Write, Edit, Bash, Git all functional)
 
-**Legacy Support**: LMStudio (manual connection only, no auto-launch)
+**Note**: MLX-Textgen pip package was deprecated due to broken tool calling. We use our custom implementation with 100-200x faster RAM cache.
+
+**Additional Backends**: LMStudio (cross-platform), OpenRouter (400+ cloud models), Claude API (official)
 
 ## 📁 File Organization Standards
 
@@ -160,24 +162,24 @@ If you notice files out of place:
 
 The proxy works by:
 
-1. Auto-launching MLX-Textgen server (production-grade MLX inference with KV caching)
+1. Auto-launching custom MLX server (RAM-based KV caching + vLLM-inspired features)
 2. Spawning a local HTTP server that mimics the Anthropic API
 3. Intercepting `/v1/messages` requests
 4. Converting Anthropic message format to OpenAI Chat Completions format
-5. Routing to MLX-Textgen (or other backends like LMStudio, OpenRouter)
+5. Routing to custom MLX server (or other backends like LMStudio, OpenRouter, Claude)
 6. Converting responses back to Anthropic format
 7. Setting `ANTHROPIC_BASE_URL` to point Claude Code at the proxy
 
-**Performance:** MLX-Textgen provides 10-90x speedup on follow-up requests via disk-based KV caching.
+**Performance:** Custom MLX server provides 100-200x speedup on follow-up requests via RAM-based KV caching.
 
 Key components:
 
 - `src/main.ts`: Entry point that configures backend provider and spawns Claude with proxy
 - `src/anthropic-proxy.ts`: HTTP server that handles request/response translation
-- `src/server-launcher.ts`: Auto-launch orchestration for MLX-Textgen
+- `src/server-launcher.ts`: Auto-launch orchestration for MLX server
 - `src/convert-anthropic-messages.ts`: Bidirectional message format conversion
 - `src/convert-to-anthropic-stream.ts`: Stream response conversion
-- `scripts/mlx-textgen-server.sh`: MLX-Textgen launcher script
+- `scripts/mlx-server.py`: Custom MLX server with RAM cache and vLLM features (~1500 lines)
 
 See [PROJECT.md](PROJECT.md) for complete architectural deep-dive.
 
@@ -347,7 +349,7 @@ anyclaude
 **That's it!** anyclaude will:
 
 1. **Read config** from `.anyclauderc.json` (if it exists)
-2. **Launch MLX-Textgen server** automatically with your model
+2. **Launch custom MLX server** automatically with your model
 3. **Wait for server** to load the model (~3-50 seconds)
 4. **Run Claude Code** pointing to your local server
 5. **Auto-cleanup** when you exit Claude Code (type `/exit`)
@@ -356,12 +358,12 @@ anyclaude
 
 ### Auto-Launch Workflow (Default)
 
-When you run `anyclaude` with a `.anyclauderc.json` that specifies MLX-Textgen with a model path:
+When you run `anyclaude` with a `.anyclauderc.json` that specifies MLX backend with a model path:
 
 ```bash
-# .anyclauderc.json configured with mlx-textgen backend
+# .anyclauderc.json configured with mlx backend
 anyclaude
-# → Server launches automatically
+# → Custom MLX server launches automatically
 # → Waits for model to load
 # → Claude Code starts with local backend
 # → Type /exit to exit Claude Code and cleanup server
@@ -373,15 +375,15 @@ Create this file in your project root to configure anyclaude:
 
 ```json
 {
-  "backend": "mlx-textgen",
+  "backend": "mlx",
   "backends": {
-    "mlx-textgen": {
+    "mlx": {
       "enabled": true,
       "port": 8080,
       "baseUrl": "http://localhost:8080/v1",
-      "apiKey": "mlx-textgen",
+      "apiKey": "mlx",
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/mlx-textgen-server.sh"
+      "serverScript": "scripts/mlx-server.py"
     },
     "lmstudio": {
       "enabled": false,
@@ -405,23 +407,24 @@ Create this file in your project root to configure anyclaude:
 **See `.anyclauderc.example.json` for a complete configuration example with all backends.**
 **See `.anyclauderc.example-openrouter.json` for OpenRouter-specific quick start.**
 
-**Key fields for mlx-textgen auto-launch:**
+**Key fields for mlx auto-launch:**
 
-- `backend`: Set to `"mlx-textgen"` to use this backend (production default)
+- `backend`: Set to `"mlx"` to use custom MLX server (production default)
 - `model`: Full path to your MLX model (e.g., `/Users/you/.../Qwen3-Coder-30B-A3B-Instruct-MLX-4bit`)
   - If model path is configured, anyclaude auto-launches the server
   - If missing or set to `"current-model"`, expects server to be running already
 - `port`: Where to run the server (default: 8080)
+- `serverScript`: Path to server script (use `"scripts/mlx-server.py"`)
 
 ### Auto-Launch Workflow
 
-When you run `anyclaude` with mlx-textgen configured:
+When you run `anyclaude` with mlx configured:
 
 1. **Check**: Is a server already running on port 8080?
-2. **If no**: Auto-launch the MLX-Textgen server with your configured model
+2. **If no**: Auto-launch the custom MLX server with your configured model
 3. **Wait**: Wait for server to load the model (3-50 seconds)
 4. **Launch**: Spawn Claude Code with proxy pointing to your local server
-5. **Run**: Use Claude Code normally (note: tool calling will not work with MLX models)
+5. **Run**: Use Claude Code normally - **tool calling works!** (Read, Write, Edit, Bash, Git)
 6. **Exit**: When you exit Claude Code (type `/exit`), server shuts down automatically
 
 ### Manual Server Mode
@@ -430,7 +433,7 @@ If you want to run the server separately:
 
 ```bash
 # Terminal 1: Start server manually
-scripts/mlx-textgen-server.sh \
+python scripts/mlx-server.py \
   --model /path/to/model \
   --port 8080
 
@@ -503,7 +506,7 @@ See [openrouter.ai/models](https://openrouter.ai/models) for full list.
 # Override backend mode
 anyclaude --mode=claude          # Use real Claude API
 anyclaude --mode=openrouter      # Use OpenRouter (cloud models)
-anyclaude --mode=mlx-textgen     # Use local MLX-Textgen (production)
+anyclaude --mode=mlx             # Use custom MLX server (local, production)
 anyclaude --mode=lmstudio        # Use local LMStudio
 
 # Debug logging
@@ -526,11 +529,11 @@ anyclaude --test-model
 
 ### Environment Variables
 
-**MLX-Textgen Configuration (Production):**
+**MLX Configuration (Custom Server - Production):**
 
-- `MLX_TEXTGEN_URL`: Server URL (default: `http://localhost:8080/v1`)
-- `MLX_TEXTGEN_MODEL`: Model name/path (overrides config file)
-- `MLX_TEXTGEN_API_KEY`: API key (default: `mlx-textgen`)
+- `MLX_URL`: Server URL (default: `http://localhost:8080/v1`)
+- `MLX_MODEL`: Model name/path (overrides config file)
+- `MLX_API_KEY`: API key (default: `mlx`)
 
 **LMStudio Configuration:**
 
@@ -540,7 +543,7 @@ anyclaude --test-model
 
 **Mode & Debug:**
 
-- `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | mlx-textgen | openrouter)
+- `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | mlx | openrouter)
 - `ANYCLAUDE_DEBUG`: Debug level (0-3)
 - `ANYCLAUDE_NO_AUTO_LAUNCH`: Disable server auto-launch
 - `ANYCLAUDE_SKIP_SETUP_CHECK`: Skip dependency checks
