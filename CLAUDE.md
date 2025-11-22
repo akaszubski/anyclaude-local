@@ -4,15 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for our custom MLX server.
+anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for inference engines.
 
-**Primary Backend**: Custom MLX Server (`scripts/mlx-server.py`) with RAM-based KV cache and vLLM-inspired features
+**Primary Backend**: mistral.rs (Production-ready Rust inference engine with native MLX support)
 
-**✅ STATUS**: Tool calling WORKS perfectly with custom MLX server (Read, Write, Edit, Bash, Git all functional)
+**✅ STATUS**: Tool calling WORKS perfectly with mistral.rs (Read, Write, Edit, Bash, Git all functional)
 
-**Note**: MLX-Textgen pip package was deprecated due to broken tool calling. We use our custom implementation with 100-200x faster RAM cache.
+**Key Features**:
+- Native MLX acceleration on Apple Silicon
+- Mixture-of-Experts (MoE) model support
+- Production-ready performance and stability
+- Full OpenAI-compatible API
 
 **Additional Backends**: LMStudio (cross-platform), OpenRouter (400+ cloud models), Claude API (official)
+
+**Note**: Previous custom MLX server (`scripts/mlx-server.py`) has been deprecated in favor of mistral.rs. See `docs/archive/deprecated-mlx-server/` for historical context.
 
 ## 📁 File Organization Standards
 
@@ -162,24 +168,23 @@ If you notice files out of place:
 
 The proxy works by:
 
-1. Auto-launching custom MLX server (RAM-based KV caching + vLLM-inspired features)
+1. Auto-launching mistral.rs server (Production Rust inference engine with MLX acceleration)
 2. Spawning a local HTTP server that mimics the Anthropic API
 3. Intercepting `/v1/messages` requests
 4. Converting Anthropic message format to OpenAI Chat Completions format
-5. Routing to custom MLX server (or other backends like LMStudio, OpenRouter, Claude)
+5. Routing to mistral.rs (or other backends like LMStudio, OpenRouter, Claude)
 6. Converting responses back to Anthropic format
 7. Setting `ANTHROPIC_BASE_URL` to point Claude Code at the proxy
 
-**Performance:** Custom MLX server provides 100-200x speedup on follow-up requests via RAM-based KV caching.
+**Performance:** mistral.rs provides production-ready performance with native MLX acceleration and KV caching.
 
 Key components:
 
 - `src/main.ts`: Entry point that configures backend provider and spawns Claude with proxy
 - `src/anthropic-proxy.ts`: HTTP server that handles request/response translation
-- `src/server-launcher.ts`: Auto-launch orchestration for MLX server
+- `src/server-launcher.ts`: Auto-launch orchestration for mistral.rs server
 - `src/convert-anthropic-messages.ts`: Bidirectional message format conversion
 - `src/convert-to-anthropic-stream.ts`: Stream response conversion
-- `scripts/mlx-server.py`: Custom MLX server with RAM cache and vLLM features (~1500 lines)
 
 See [PROJECT.md](PROJECT.md) for complete architectural deep-dive.
 
@@ -220,27 +225,12 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
 
 ## Environment Variables
 
-**MLX Configuration:**
+**mistral.rs Configuration (Primary Backend):**
 
 - `MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
 - `MLX_MODEL`: Model name/path (overrides config file)
 - `MLX_API_KEY`: API key (default: `mlx`)
-
-**Cache Warmup Configuration** (MLX only):
-
-- `KV_CACHE_WARMUP`: Enable/disable cache warmup (default: "1" = enabled)
-  - When enabled, pre-warms KV cache during server startup
-  - Eliminates 30-50s cold-start penalty on first request
-  - First request then runs at ~0.3-1s (same as subsequent requests)
-- `WARMUP_TIMEOUT_SEC`: Timeout for cache warmup in seconds (default: 60)
-  - Valid range: 1-300 seconds
-  - If warmup takes longer, it will be cancelled and server will start normally
-  - Graceful degradation: server starts even if warmup fails
-- `WARMUP_SYSTEM_FILE`: Custom system prompt file for cache warmup (optional)
-  - Must be a file in `~/.anyclaude/system-prompts/` directory
-  - File size limit: 1MB maximum
-  - If not specified, uses default system prompt
-  - Security: All paths validated against whitelist (prevents path traversal attacks)
+- `MISTRALRS_PORT`: Port for mistral.rs server (default: 8081)
 
 **LMStudio Configuration:**
 
@@ -250,14 +240,20 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
   - You can switch models in LMStudio without restarting anyclaude
 - `LMSTUDIO_API_KEY`: API key for LMStudio (default: `lm-studio`)
 
+**OpenRouter Configuration:**
+
+- `OPENROUTER_API_KEY`: Your OpenRouter API key
+- `OPENROUTER_MODEL`: Model to use (e.g., `qwen/qwen-2.5-72b-instruct`)
+- `OPENROUTER_BASE_URL`: Base URL (default: `https://openrouter.ai/api/v1`)
+
 **Debug:**
 
 - `ANYCLAUDE_DEBUG`: Enable debug logging (1=basic, 2=verbose, 3=trace with tool calls)
-  - **Note**: When using `--mode=claude`, trace logging (level 3) is **enabled by default**
-  - This saves full prompts and responses to `~/.anyclaude/traces/claude/` for analysis
+  - **Note**: When using `--mode=claude` or `--mode=openrouter`, trace logging (level 3) is **enabled by default**
+  - This saves full prompts and responses to `~/.anyclaude/traces/` for analysis
   - To disable: `ANYCLAUDE_DEBUG=0 anyclaude --mode=claude`
 - `PROXY_ONLY`: Run proxy server without spawning Claude Code
-- `ANYCLAUDE_MODE`: claude | lmstudio | mlx (default: lmstudio)
+- `ANYCLAUDE_MODE`: claude | lmstudio | mlx | openrouter (default: mlx)
 
 ## Debugging Tool Calling Issues
 

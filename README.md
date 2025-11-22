@@ -11,9 +11,9 @@
 
 An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of:
 
-- **Local models** (Custom MLX server with RAM cache, LMStudio) for 100% privacy
+- **Local models** (mistral.rs with native MLX, LMStudio) for 100% privacy
 - **OpenRouter** for access to 400+ cloud models at 84% lower cost than Claude API
-- **Fast inference on Apple Silicon** with custom MLX server's RAM-based KV caching (100-200x speedup)
+- **Fast inference on Apple Silicon** with mistral.rs native MLX acceleration and KV caching
 
 ## ✨ Features
 
@@ -21,7 +21,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 - 🏠 **100% Local** - No cloud API keys required
 - 🔒 **Privacy First** - Your code never leaves your machine
-- ⚡ **Custom MLX Server** - Auto-launches with RAM-based KV cache (100-200x speedup) and full tool calling support
+- ⚡ **mistral.rs Engine** - Production Rust inference with native MLX acceleration, KV caching, and MoE support
 - 🧩 **LMStudio Support** - Cross-platform alternative, works with Qwen Coder, Mistral, Llama, DeepSeek
 
 ### Cloud Models (Cost Effective)
@@ -42,17 +42,17 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 ---
 
-## 🆕 Latest Improvements (v2.3.0)
+## 🆕 Latest Improvements (v3.0.0)
 
-### ✅ Custom MLX Server (Production Ready)
+### ✅ mistral.rs Integration (Production Ready)
 
-- **Implementation**: Custom `scripts/mlx-server.py` (~1500 lines) with vLLM-inspired features
-- **RAM-Based KV Cache**: 100-200x speedup (<1ms GET vs 500-2000ms disk)
+- **Backend**: mistral.rs - Production Rust inference engine with native MLX support
+- **Performance**: Native MLX acceleration with KV caching for fast inference
 - **Full Tool Calling**: ✅ Read, Write, Edit, Bash, Git - all work perfectly
-- **vLLM Features**: Circuit breaker, error recovery, graceful degradation, OOM detection
-- **Metrics Endpoint**: Real-time monitoring at `/v1/metrics` (JSON/Prometheus)
-- **Status**: Production-ready with 151 hardening tests passing
-- **Note**: MLX-Textgen pip package deprecated due to broken tool calling
+- **MoE Support**: Native support for Mixture-of-Experts models
+- **Stability**: Production-ready with excellent error handling
+- **Status**: Primary backend, replaces deprecated custom MLX server
+- **Migration**: Previous custom MLX server archived to `scripts/archive/deprecated-mlx/`
 
 ### ✅ Streaming Response Fixes (v2.1.0)
 

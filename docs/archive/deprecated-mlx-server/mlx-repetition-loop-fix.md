@@ -28,6 +28,7 @@ When asking the model to perform tasks (especially complex ones like "read READM
 The `mlx_lm.generate()` function was called without `repetition_penalty` and `repetition_context_size` parameters:
 
 **Before (Bug):**
+
 ```python
 options = {
     "max_tokens": max_tokens,
@@ -43,6 +44,7 @@ This defaulted to `repetition_penalty=1.0`, which means **NO penalty** for repea
 Added `repetition_penalty` and `repetition_context_size` parameters based on official MLX-LM server defaults:
 
 **After (Fixed):**
+
 ```python
 options = {
     "max_tokens": max_tokens,
@@ -55,10 +57,10 @@ result = mlx_lm.generate(model, tokenizer, prompt, **options)
 
 ### Why These Values?
 
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| `repetition_penalty` | `1.05` | • Official MLX-LM default<br>• Qwen docs recommendation for coding<br>• Gentle enough to preserve intentional code repetition<br>• Strong enough to prevent infinite loops |
-| `repetition_context_size` | `20` | • Official MLX-LM default<br>• Standard window for detecting repetition<br>• Balances memory vs effectiveness |
+| Parameter                 | Value  | Rationale                                                                                                                                                                  |
+| ------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repetition_penalty`      | `1.05` | • Official MLX-LM default<br>• Qwen docs recommendation for coding<br>• Gentle enough to preserve intentional code repetition<br>• Strong enough to prevent infinite loops |
+| `repetition_context_size` | `20`   | • Official MLX-LM default<br>• Standard window for detecting repetition<br>• Balances memory vs effectiveness                                                              |
 
 ## Changes Made
 
@@ -104,6 +106,7 @@ repetition_context_size = request_body.get("repetition_context_size", 20)
 This fix follows patterns from the MLX community and official MLX-LM implementation:
 
 ### Official MLX-LM Server
+
 ```python
 # From ml-explore/mlx-lm/server.py
 repetition_penalty = self.body.get("repetition_penalty", 1.0)
@@ -126,12 +129,12 @@ repetition_context_size = self.body.get("repetition_context_size", 20)
 
 ## Recommended Values by Use Case
 
-| Use Case | `repetition_penalty` | `repetition_context_size` |
-|----------|---------------------|--------------------------|
-| **Coding assistants** | `1.0` - `1.05` | `20` |
-| **General text** | `1.05` - `1.1` | `20` |
-| **Creative writing** | `1.0` - `1.03` | `20` - `40` |
-| **Prevent infinite loops** | `1.05` - `1.2` | `20` |
+| Use Case                   | `repetition_penalty` | `repetition_context_size` |
+| -------------------------- | -------------------- | ------------------------- |
+| **Coding assistants**      | `1.0` - `1.05`       | `20`                      |
+| **General text**           | `1.05` - `1.1`       | `20`                      |
+| **Creative writing**       | `1.0` - `1.03`       | `20` - `40`               |
+| **Prevent infinite loops** | `1.05` - `1.2`       | `20`                      |
 
 **Note**: Values > 1.2 can severely distort outputs and hurt code quality.
 
@@ -148,6 +151,7 @@ Users can override defaults via request body:
 ```
 
 Or via environment variables (if added):
+
 ```bash
 export MLX_REPETITION_PENALTY=1.1
 export MLX_REPETITION_CONTEXT_SIZE=30
@@ -158,11 +162,13 @@ export MLX_REPETITION_CONTEXT_SIZE=30
 Created regression test: `tests/regression/test_mlx_repetition_loop.py`
 
 Run with:
+
 ```bash
 pytest tests/regression/test_mlx_repetition_loop.py -v
 ```
 
 Test coverage:
+
 - ✅ Default values match official MLX-LM
 - ✅ Parameters passed to generation functions
 - ✅ Validation logic
@@ -188,14 +194,14 @@ To verify the fix works:
 
 While fixing this bug, we compared our implementation to the official `mlx-lm` server. Our custom server has advantages:
 
-| Feature | Our Server | Official MLX-LM |
-|---------|-----------|-----------------|
-| **Response caching** | ✅ RAM-based (100-200x faster) | ❌ Only KV cache |
-| **Concurrent requests** | ✅ Async + ThreadPoolExecutor | ❌ Sequential only ([#1183](https://github.com/ml-explore/mlx-examples/issues/1183)) |
-| **Tool calling** | ✅ Advanced validation + fallback | ✅ Basic only |
-| **Claude Code compat** | ✅ Anthropic API format | ❌ OpenAI only |
-| **Production features** | ✅ Metrics, traces, analytics | ⚠️ "Not production-grade" |
-| **Repetition penalty** | ✅ Now matches official | ✅ Always had it |
+| Feature                 | Our Server                        | Official MLX-LM                                                                      |
+| ----------------------- | --------------------------------- | ------------------------------------------------------------------------------------ |
+| **Response caching**    | ✅ RAM-based (100-200x faster)    | ❌ Only KV cache                                                                     |
+| **Concurrent requests** | ✅ Async + ThreadPoolExecutor     | ❌ Sequential only ([#1183](https://github.com/ml-explore/mlx-examples/issues/1183)) |
+| **Tool calling**        | ✅ Advanced validation + fallback | ✅ Basic only                                                                        |
+| **Claude Code compat**  | ✅ Anthropic API format           | ❌ OpenAI only                                                                       |
+| **Production features** | ✅ Metrics, traces, analytics     | ⚠️ "Not production-grade"                                                            |
+| **Repetition penalty**  | ✅ Now matches official           | ✅ Always had it                                                                     |
 
 **Conclusion**: Custom server was the right choice. We just needed to borrow their repetition penalty defaults.
 
@@ -203,14 +209,14 @@ While fixing this bug, we compared our implementation to the official `mlx-lm` s
 
 The official MLX-LM server supports additional sampling parameters:
 
-| Parameter | Default | Purpose | Priority |
-|-----------|---------|---------|----------|
-| `top_p` | `1.0` | Nucleus sampling | Low |
-| `top_k` | `0` | Top-k sampling | Low |
-| `min_p` | `0.0` | Min-p filtering | Low |
-| `seed` | `None` | Reproducible sampling | Medium |
-| `logit_bias` | `None` | Token-level bias | Low |
-| `logprobs` | `-1` | Log probabilities | Low |
+| Parameter    | Default | Purpose               | Priority |
+| ------------ | ------- | --------------------- | -------- |
+| `top_p`      | `1.0`   | Nucleus sampling      | Low      |
+| `top_k`      | `0`     | Top-k sampling        | Low      |
+| `min_p`      | `0.0`   | Min-p filtering       | Low      |
+| `seed`       | `None`  | Reproducible sampling | Medium   |
+| `logit_bias` | `None`  | Token-level bias      | Low      |
+| `logprobs`   | `-1`    | Log probabilities     | Low      |
 
 **Recommendation**: Don't implement these yet. Current parameters cover 99% of coding assistant use cases. Only add when users request specific functionality.
 

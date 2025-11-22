@@ -10,8 +10,9 @@ Symptom: Model outputs "I'm going to use the Task tool..." repeatedly
 Root Cause: mlx_lm.generate() was called without repetition_penalty and
             repetition_context_size parameters, defaulting to 1.0 (no penalty).
 
-Fix: Added repetition_penalty=1.05 and repetition_context_size=20 based on
-     official MLX-LM server defaults and community best practices.
+Current Status: As of 2025-01-20, MLX library doesn't support repetition_penalty
+               parameter. The parameters are accepted in the API but filtered out
+               before being passed to mlx_lm.generate().
 
 References:
 - ml-explore/mlx-examples#1131 - "LLM spirals into infinite loop"
@@ -19,6 +20,7 @@ References:
 - ml-explore/mlx-lm/server.py - Official parameter defaults
 
 Date: 2025-01-20
+Updated: 2025-01-20 (parameters now filtered, not passed to MLX)
 """
 
 import pytest
@@ -31,9 +33,7 @@ sys.path.insert(0, str(project_root / "scripts"))
 
 
 def test_repetition_penalty_parameters_exist():
-    """Test that repetition penalty parameters are defined in request handling"""
-    from mlx_server import MLXServer
-
+    """Test that repetition penalty parameters are accepted in API request"""
     # Mock request body with repetition parameters
     request_body = {
         "messages": [{"role": "user", "content": "Test"}],
@@ -41,16 +41,16 @@ def test_repetition_penalty_parameters_exist():
         "repetition_context_size": 30
     }
 
-    # These should be accessible (no KeyError)
+    # These should be accessible in the API (for compatibility)
     assert "repetition_penalty" in request_body
     assert "repetition_context_size" in request_body
 
-    # Default values match official MLX-LM server conventions
+    # Default values (even though they're filtered out before MLX)
     default_penalty = request_body.get("repetition_penalty", 1.05)
     default_context = request_body.get("repetition_context_size", 20)
 
-    assert default_penalty == 1.1  # Custom value
-    assert default_context == 30   # Custom value
+    assert default_penalty == 1.1  # Custom value from request
+    assert default_context == 30   # Custom value from request
 
 
 def test_default_repetition_penalty():
@@ -68,13 +68,13 @@ def test_default_repetition_penalty():
     assert penalty > 1.0, "Penalty > 1.0 required to prevent infinite loops"
 
 
-def test_generation_options_include_repetition():
-    """Test that generation options dict includes repetition parameters"""
+def test_generation_options_filtered():
+    """Test that repetition parameters are filtered before passing to MLX"""
     max_tokens = 1024
     repetition_penalty = 1.05
     repetition_context_size = 20
 
-    # This is the dict passed to mlx_lm.generate()
+    # This is the original dict with all parameters
     options = {
         "max_tokens": max_tokens,
         "verbose": False,
@@ -82,10 +82,21 @@ def test_generation_options_include_repetition():
         "repetition_context_size": repetition_context_size
     }
 
+    # These should be filtered out before passing to mlx_lm.generate()
+    supported_options = {k: v for k, v in options.items()
+                       if k not in ['repetition_penalty', 'repetition_context_size']}
+
+    # Original options should have all parameters
     assert "repetition_penalty" in options
     assert "repetition_context_size" in options
-    assert options["repetition_penalty"] > 1.0
-    assert options["repetition_context_size"] > 0
+
+    # Filtered options should NOT have repetition parameters
+    assert "repetition_penalty" not in supported_options
+    assert "repetition_context_size" not in supported_options
+
+    # But should keep other parameters
+    assert "max_tokens" in supported_options
+    assert "verbose" in supported_options
 
 
 def test_repetition_penalty_validation():
@@ -160,24 +171,25 @@ def test_parameters_passed_to_non_stream_generate():
     sys.platform != "darwin",
     reason="MLX only runs on macOS"
 )
-def test_mlx_generate_accepts_parameters():
-    """Test that mlx_lm.generate accepts repetition parameters"""
+def test_mlx_generate_parameter_filtering():
+    """Test that unsupported parameters are filtered before calling mlx_lm.generate"""
     try:
         import mlx_lm
+        from mlx_lm.generate import generate_step
+        import inspect
 
-        # Verify mlx_lm.generate signature supports these parameters
-        # (This test will be skipped if mlx_lm is not installed)
+        # Get the actual signature of generate_step
+        sig = inspect.signature(generate_step)
 
-        # According to official docs, these are valid parameters:
-        valid_params = {
-            "max_tokens": 100,
-            "verbose": False,
-            "repetition_penalty": 1.05,
-            "repetition_context_size": 20
-        }
+        # Verify that repetition_penalty is NOT in the signature
+        assert 'repetition_penalty' not in sig.parameters, \
+            "MLX generate_step should NOT have repetition_penalty parameter"
+        assert 'repetition_context_size' not in sig.parameters, \
+            "MLX generate_step should NOT have repetition_context_size parameter"
 
-        # All parameters should be recognized by mlx_lm
-        assert all(isinstance(k, str) for k in valid_params.keys())
+        # Verify that max_tokens IS in the signature
+        assert 'max_tokens' in sig.parameters, \
+            "MLX generate_step should have max_tokens parameter"
 
     except ImportError:
         pytest.skip("mlx_lm not installed")

@@ -57,6 +57,14 @@ class InMemoryKVCacheManager:
         self.cache_misses = 0
         self.evictions = 0
 
+        # Generation metrics (for compatibility with MLX server)
+        self.generation_stats = {
+            'suffix_tokens': [],
+            'generation_times_with_cache': [],
+            'generation_times_without_cache': [],
+            'prefix_tokens': []
+        }
+
         # Thread safety
         self.lock = threading.Lock()
 
@@ -312,3 +320,37 @@ class InMemoryKVCacheManager:
         except Exception:
             # Fallback estimate
             return len(text) // 4
+
+    def record_generation(self, suffix_tokens: int, generation_time: float, used_cache: bool) -> None:
+        """
+        Record generation metrics (compatibility method for MLX server)
+
+        Args:
+            suffix_tokens: Number of tokens in the generated suffix
+            generation_time: Time taken for generation in seconds
+            used_cache: Whether cache was used for this generation
+        """
+        with self.lock:
+            self.generation_stats['suffix_tokens'].append(suffix_tokens)
+            if used_cache:
+                self.generation_stats['generation_times_with_cache'].append(generation_time)
+            else:
+                self.generation_stats['generation_times_without_cache'].append(generation_time)
+
+    def create_cache(self, model, tokenizer, prefix_prompt: str):
+        """
+        Create cache for prefix prompt (compatibility method for MLX server)
+
+        For RAM cache, this is a no-op since we don't pre-create caches.
+        The cache is created on-demand when set() is called.
+
+        Args:
+            model: MLX model object (unused)
+            tokenizer: Tokenizer object (unused)
+            prefix_prompt: Prompt prefix to cache (unused)
+
+        Returns:
+            Tuple of (None, None) for compatibility
+        """
+        # No-op for RAM cache - caches are created on-demand via set()
+        return (None, None)

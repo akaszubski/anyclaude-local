@@ -79,10 +79,13 @@ except Exception as e:
 # Try mlx_lm - note: this may fail due to huggingface_hub import issues
 # That's ok, we'll run in demo mode
 mlx_lm = None
+make_logits_processors = None
 if HAS_MLX:
     try:
         import mlx_lm as mlx_lm_module
         mlx_lm = mlx_lm_module
+        # Import sampling utilities for repetition penalty
+        from mlx_lm.sample_utils import make_logits_processors
         print("✓ MLX LM available" + (" (CPU-only)" if FORCE_CPU else ""))
     except Exception as e:
         print(f"Warning: MLX LM import failed (running in demo mode): {e}")
@@ -902,8 +905,42 @@ class VLLMMLXServer:
                 # Count suffix tokens for metrics
                 suffix_tokens = self.kv_cache_manager._count_tokens(tokenizer, actual_prompt)
 
-                # Generate (cache is handled automatically by MLX)
-                result = mlx_lm.generate(model, tokenizer, actual_prompt, **options)
+                # Extract repetition penalty parameters (MLX requires logits_processors)
+                rep_penalty = options.pop('repetition_penalty', None)
+                rep_context = options.pop('repetition_context_size', 20)
+
+                # Create logits processors for repetition penalty
+                logits_processors = None
+                if rep_penalty is not None and make_logits_processors is not None:
+                    try:
+                        logits_processors = make_logits_processors(
+                            repetition_penalty=rep_penalty,
+                            repetition_context_size=rep_context
+                        )
+                    except TypeError as e:
+                        # Older MLX versions don't support repetition_penalty parameter
+                        # Fall back to default logits processors without repetition penalty
+                        logger.warning(f"[Repetition Penalty] MLX version doesn't support repetition_penalty parameter: {e}")
+                        logger.warning(f"[Repetition Penalty] Skipping repetition penalty (consider upgrading mlx-lm)")
+                        logits_processors = None
+
+                # CRITICAL FIX: Add stop tokens to prevent infinite tool calling loops
+                # Based on vLLM issue #21026 - constrained grammar can generate infinite whitespace
+                # We need to explicitly limit max_tokens to prevent runaway generation
+                # Default max_tokens is 256, but for tool calling we cap at 2048 tokens
+                if 'max_tokens' not in options:
+                    options['max_tokens'] = 2048
+                elif options.get('max_tokens', 0) > 4096:
+                    # Cap extremely high max_tokens to prevent infinite loops
+                    logger.warning(f"[Tool Call Safety] Capping max_tokens from {options['max_tokens']} to 4096")
+                    options['max_tokens'] = 4096
+
+                # Generate with logits processors and bounded token limit
+                result = mlx_lm.generate(
+                    model, tokenizer, actual_prompt,
+                    logits_processors=logits_processors,
+                    **options  # max_tokens (bounded), verbose, etc.
+                )
 
                 gen_elapsed = time.time() - gen_start_time
 
@@ -1189,6 +1226,13 @@ class VLLMMLXServer:
         # String response - check for thinking tokens and tool calls
         text = str(response) if not isinstance(response, str) else response
 
+        # CRITICAL SAFETY CHECK: Detect infinite repetition patterns
+        # If the same tool call appears 3+ times consecutively, truncate to prevent loops
+        # This fixes the vLLM-style infinite tool calling bug (Issue #21026 pattern)
+        if self._has_repetitive_tool_calls(text):
+            logger.warning("[Tool Call Safety] Detected repetitive tool calling pattern - truncating to prevent infinite loop")
+            text = self._truncate_repetitive_tool_calls(text)
+
         # Try LMStudio format first (preferred)
         lmstudio_tool_calls = self._parse_lmstudio_tool_calls(text)
         if lmstudio_tool_calls:
@@ -1216,6 +1260,133 @@ class VLLMMLXServer:
         # No tool calls found - return clean text
         clean_text = self._strip_thinking_tokens(text)
         return None, clean_text
+
+    def _has_repetitive_tool_calls(self, text: str) -> bool:
+        """
+        Detect if text contains repetitive tool calling patterns (infinite loop indicator)
+
+        Checks for 3+ consecutive identical or very similar tool calls, which indicates
+        the vLLM-style infinite generation bug where constrained grammar gets stuck.
+
+        Args:
+            text: Generated text to check
+
+        Returns:
+            True if repetitive pattern detected, False otherwise
+        """
+        import re
+
+        # Pattern for tool calls (supports multiple formats)
+        # LMStudio: [TOOL_REQUEST]{"name":"X",...}[END_TOOL_REQUEST]
+        # Harmony: <|channel|>commentary to=X<|message|>{...}<|call|>
+
+        # Extract all tool call instances
+        lmstudio_calls = re.findall(r'\[TOOL_REQUEST\]({[^}]+})\[END_TOOL_REQUEST\]', text)
+        harmony_calls = re.findall(r'<\|channel\|>commentary\s+to=(\w+)', text)
+
+        # Check LMStudio format for consecutive duplicates
+        if len(lmstudio_calls) >= 3:
+            for i in range(len(lmstudio_calls) - 2):
+                if lmstudio_calls[i] == lmstudio_calls[i+1] == lmstudio_calls[i+2]:
+                    logger.warning(f"[Repetition Detection] Found 3+ identical LMStudio tool calls: {lmstudio_calls[i][:100]}")
+                    return True
+
+        # Check Harmony format for consecutive duplicates
+        if len(harmony_calls) >= 3:
+            for i in range(len(harmony_calls) - 2):
+                if harmony_calls[i] == harmony_calls[i+1] == harmony_calls[i+2]:
+                    logger.warning(f"[Repetition Detection] Found 3+ identical Harmony tool calls: {harmony_calls[i]}")
+                    return True
+
+        # Also check for generic "Explore:" or "Task:" repetition (common in your issue)
+        generic_task_pattern = r'(Explore|Task|Read|Write|Edit|Bash):\s*([^\n]+)'
+        generic_tasks = re.findall(generic_task_pattern, text)
+        if len(generic_tasks) >= 10:  # If 10+ tool calls, likely a loop
+            # Check if they're mostly the same
+            task_counts = {}
+            for tool, desc in generic_tasks:
+                key = f"{tool}:{desc[:50]}"  # First 50 chars of description
+                task_counts[key] = task_counts.get(key, 0) + 1
+
+            # If any task appears 3+ times, flag it
+            for key, count in task_counts.items():
+                if count >= 3:
+                    logger.warning(f"[Repetition Detection] Found {count} occurrences of similar task: {key}")
+                    return True
+
+        return False
+
+    def _truncate_repetitive_tool_calls(self, text: str) -> str:
+        """
+        Truncate text at the point where repetitive tool calls start
+
+        Keeps the first 2 instances of any tool call, removes subsequent duplicates.
+        This prevents infinite loops while preserving legitimate multi-tool calls.
+
+        Args:
+            text: Generated text with repetitive patterns
+
+        Returns:
+            Truncated text with repetition removed
+        """
+        import re
+
+        # Find the position where repetition starts
+        # We'll keep everything up to (and including) the 2nd occurrence of any repeated call
+
+        # For LMStudio format
+        lmstudio_pattern = r'\[TOOL_REQUEST\].*?\[END_TOOL_REQUEST\]'
+        lmstudio_matches = list(re.finditer(lmstudio_pattern, text, re.DOTALL))
+
+        if len(lmstudio_matches) >= 3:
+            # Check for repetition starting from 3rd call
+            for i in range(len(lmstudio_matches) - 2):
+                call_1 = lmstudio_matches[i].group()
+                call_2 = lmstudio_matches[i+1].group()
+                call_3 = lmstudio_matches[i+2].group()
+
+                if call_1 == call_2 == call_3:
+                    # Truncate at the end of the 2nd occurrence
+                    truncate_pos = lmstudio_matches[i+1].end()
+                    logger.info(f"[Truncation] Cutting at position {truncate_pos} (after 2nd occurrence)")
+                    return text[:truncate_pos]
+
+        # For Harmony format
+        harmony_pattern = r'<\|channel\|>commentary\s+to=\w+.*?(?=<\|channel\|>|$)'
+        harmony_matches = list(re.finditer(harmony_pattern, text, re.DOTALL))
+
+        if len(harmony_matches) >= 3:
+            tool_names = [re.search(r'to=(\w+)', m.group()).group(1) for m in harmony_matches if re.search(r'to=(\w+)', m.group())]
+            for i in range(len(tool_names) - 2):
+                if tool_names[i] == tool_names[i+1] == tool_names[i+2]:
+                    # Truncate at the end of the 2nd occurrence
+                    truncate_pos = harmony_matches[i+1].end()
+                    logger.info(f"[Truncation] Cutting Harmony format at position {truncate_pos}")
+                    return text[:truncate_pos]
+
+        # For generic task patterns (like your "Explore: ..." loop)
+        # Find first occurrence of 3+ identical tasks and truncate there
+        generic_pattern = r'⏺\s*(Explore|Task|Read|Write|Edit|Bash):\s*([^\n]+)'
+        generic_matches = list(re.finditer(generic_pattern, text))
+
+        if len(generic_matches) >= 10:
+            # Count occurrences and find where loop starts
+            seen = {}
+            for idx, match in enumerate(generic_matches):
+                key = match.group(1) + ":" + match.group(2)[:50]
+                if key not in seen:
+                    seen[key] = []
+                seen[key].append(idx)
+
+                # If we've seen this task 3 times, truncate at 2nd occurrence
+                if len(seen[key]) == 3:
+                    second_occurrence_idx = seen[key][1]
+                    truncate_pos = generic_matches[second_occurrence_idx].end()
+                    logger.info(f"[Truncation] Cutting generic task pattern at position {truncate_pos}")
+                    return text[:truncate_pos]
+
+        # No truncation needed or pattern not found
+        return text
 
     def _validate_tool_call(self, tool_name, arguments, schema):
         """
@@ -1355,9 +1526,8 @@ class VLLMMLXServer:
         max_tokens = request_body.get("max_tokens", 1024)
         stream = request_body.get("stream", False)
 
-        # Repetition penalty (MLX-LM official defaults)
-        # Prevents infinite repetition loops (see: ml-explore/mlx-examples#1131, #1059)
-        # Default 1.05 is gentle enough for coding while preventing loops
+        # Repetition penalty parameters (supported via logits_processors)
+        # MLX requires these to be passed via make_logits_processors(), not as direct params
         repetition_penalty = request_body.get("repetition_penalty", 1.05)
         repetition_context_size = request_body.get("repetition_context_size", 20)
 

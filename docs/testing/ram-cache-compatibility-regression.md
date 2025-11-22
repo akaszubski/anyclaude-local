@@ -21,10 +21,12 @@ AttributeError: 'InMemoryKVCacheManager' object has no attribute '_count_tokens'
 
 ### Root Cause
 
-The `InMemoryKVCacheManager` class (RAM-based cache) was missing two methods that `mlx-server.py` expected:
+The `InMemoryKVCacheManager` class (RAM-based cache) was missing four methods that `mlx-server.py` expected:
 
-1. **`has_cache(key)`** - Used during cache warmup to check if cached data exists (line 585)
-2. **`_count_tokens(tokenizer, text)`** - Used during generation for metrics tracking (line 913)
+1. **`has_cache(key)`** - Used during cache warmup to check if cached data exists
+2. **`_count_tokens(tokenizer, text)`** - Used during generation for metrics tracking
+3. **`record_generation(suffix_tokens, generation_time, used_cache)`** - Used to track performance metrics
+4. **`create_cache(model, tokenizer, prefix_prompt)`** - Used to create KV cache for prompts
 
 These methods existed in the older `MLXKVCacheManager` (disk-based) but were not implemented when switching to RAM-based cache.
 
@@ -36,7 +38,7 @@ These methods existed in the older `MLXKVCacheManager` (disk-based) but were not
 
 ## Fix Applied
 
-Added two compatibility methods to `scripts/ram_cache.py`:
+Added four compatibility methods to `scripts/ram_cache.py`:
 
 ### 1. `has_cache(key: str) -> tuple[bool, Optional[str]]`
 
@@ -49,6 +51,7 @@ def has_cache(self, key: str) -> tuple[bool, Optional[str]]:
 ```
 
 **Behavior**:
+
 - Returns `(True, key)` if key is cached
 - Returns `(False, None)` if key doesn't exist
 - Thread-safe with lock protection
@@ -68,9 +71,44 @@ def _count_tokens(self, tokenizer, text: str) -> int:
 ```
 
 **Behavior**:
+
 - Uses tokenizer's `encode()` method if available
 - Falls back to character-based estimation (4 chars/token)
 - Gracefully handles exceptions without crashing
+
+### 3. `record_generation(suffix_tokens: int, generation_time: float, used_cache: bool) -> None`
+
+```python
+def record_generation(self, suffix_tokens: int, generation_time: float, used_cache: bool) -> None:
+    """Record generation metrics"""
+    with self.lock:
+        self.generation_stats['suffix_tokens'].append(suffix_tokens)
+        if used_cache:
+            self.generation_stats['generation_times_with_cache'].append(generation_time)
+        else:
+            self.generation_stats['generation_times_without_cache'].append(generation_time)
+```
+
+**Behavior**:
+
+- Records performance metrics for each generation
+- Tracks suffix token counts
+- Separates timing data for cached vs non-cached generations
+- Thread-safe with lock protection
+
+### 4. `create_cache(model, tokenizer, prefix_prompt: str) -> tuple[None, None]`
+
+```python
+def create_cache(self, model, tokenizer, prefix_prompt: str):
+    """Create cache for prefix prompt (no-op for RAM cache)"""
+    return (None, None)
+```
+
+**Behavior**:
+
+- No-op for RAM cache (caches created on-demand via `set()`)
+- Returns `(None, None)` for compatibility with MLX server
+- Disk-based cache uses this to pre-create cache files
 
 ## Regression Test Coverage
 
@@ -95,12 +133,27 @@ def _count_tokens(self, tokenizer, text: str) -> int:
    - Unicode handling
    - Multiline text
 
-3. **`TestMLXServerIntegrationScenarios`** (3 tests)
+3. **`TestInMemoryKVCacheManagerRecordGeneration`** (5 tests)
+   - Method exists check
+   - Metrics storage with cache
+   - Metrics storage without cache
+   - No AttributeError raised
+   - Multiple calls accumulation
+
+4. **`TestInMemoryKVCacheManagerCreateCache`** (5 tests)
+   - Method exists check
+   - Returns (None, None) tuple
+   - No AttributeError raised
+   - Is no-op (doesn't modify state)
+   - Works with mock objects
+
+5. **`TestMLXServerIntegrationScenarios`** (4 tests)
    - Cache warmup workflow
    - Token counting workflow
    - Full generation cycle
+   - Complete workflow with all 4 methods
 
-**Total**: 19 regression tests
+**Total**: 30 regression tests
 
 ### Integration Tests: `tests/integration/test_mlx_mode_startup_regression.py`
 
@@ -191,24 +244,33 @@ npm run build
 ## Related Files
 
 **Implementation**:
+
 - `scripts/ram_cache.py` - RAM cache implementation with compatibility methods
 
 **Tests**:
+
 - `tests/unit/test_ram_cache.py` - Core RAM cache unit tests (40 tests)
 - `tests/regression/test_ram_cache_compatibility_methods.py` - Regression tests (19 tests)
 - `tests/integration/test_mlx_mode_startup_regression.py` - Integration tests (6 tests)
 
 **MLX Server**:
+
 - `scripts/mlx-server.py` - Custom MLX server that uses cache manager
 
-**Total Test Coverage**: 65 tests specifically for RAM cache functionality
+**Total Test Coverage**: 83 tests specifically for RAM cache functionality
+
+- Unit tests: 47 tests (`tests/unit/test_ram_cache.py`)
+- Regression tests: 30 tests (`tests/regression/test_ram_cache_compatibility_methods.py`)
+- Integration tests: 6 tests (`tests/integration/test_mlx_mode_startup_regression.py`)
 
 ## Success Criteria
 
-✅ All 65 Python tests pass
+✅ All 83 Python tests pass
 ✅ MLX mode starts without AttributeError
 ✅ Cache warmup completes successfully
 ✅ Token counting works during generation
+✅ Generation metrics recording works
+✅ Cache creation (no-op) works
 ✅ Pre-push hook includes these tests
 
 ## Future Improvements

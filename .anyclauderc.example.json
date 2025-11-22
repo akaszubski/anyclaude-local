@@ -17,7 +17,7 @@
       "apiKey": "mlx",
       "model": "/path/to/your/mlx/model",
       "maxTokens": 262144,
-      "description": "Official MLX-LM server - battle-tested, tool calling, no bugs (requires: pipx install mlx-lm)"
+      "description": "mistral.rs MLX server - Production Rust engine, native MLX, MoE support, excellent tool calling (requires: brew install mistralrs or cargo install mistralrs)"
     },
     "lmstudio": {
       "enabled": false,
@@ -41,7 +41,7 @@
   },
 
   "// BACKEND OPTIONS": {
-    "mlx": "Official MLX-LM server - battle-tested, auto-launch, tool calling works (recommended for Apple Silicon)",
+    "mlx": "mistral.rs - Production Rust inference with native MLX, auto-launch, MoE support (recommended for Apple Silicon)",
     "lmstudio": "Local models - cross-platform, manual server",
     "openrouter": "Cloud models - access GLM-4.6, Qwen, Claude, GPT-4 via one API (recommended for best compatibility)",
     "claude": "Official Claude API - full features, highest cost"

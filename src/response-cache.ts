@@ -8,10 +8,10 @@
  * Provides 100-200x speedup for repeated prompts.
  */
 
-import crypto from 'crypto';
+import crypto from "crypto";
 
 // Increment this to invalidate all caches when code changes significantly
-const CACHE_VERSION = '1.0.0';
+const CACHE_VERSION = "1.0.0";
 
 export interface CacheStats {
   hits: number;
@@ -53,14 +53,14 @@ export class ResponseCache {
   getCacheKey(messages: any[], tools?: any[]): string | null {
     try {
       const msgStr = JSON.stringify(messages);
-      const toolsStr = tools ? JSON.stringify(tools) : '';
+      const toolsStr = tools ? JSON.stringify(tools) : "";
       const combined = CACHE_VERSION + msgStr + toolsStr;
 
       // Use SHA256 hash for stable keys
-      const hash = crypto.createHash('sha256').update(combined).digest('hex');
+      const hash = crypto.createHash("sha256").update(combined).digest("hex");
       return hash.substring(0, 16);
     } catch (error) {
-      console.warn('[Cache] Key generation failed:', error);
+      console.warn("[Cache] Key generation failed:", error);
       return null;
     }
   }
@@ -132,7 +132,8 @@ export class ResponseCache {
    */
   getStats(): CacheStats {
     const total = this.stats.totalRequests;
-    const hitRate = total > 0 ? (this.stats.hits / total * 100).toFixed(1) : '0.0';
+    const hitRate =
+      total > 0 ? ((this.stats.hits / total) * 100).toFixed(1) : "0.0";
 
     return {
       hits: this.stats.hits,
@@ -162,7 +163,7 @@ export class ResponseCache {
   clear(): void {
     this.cache.clear();
     this.accessOrder = [];
-    console.log('[Cache] Cleared all entries');
+    console.log("[Cache] Cleared all entries");
   }
 
   /**

@@ -753,6 +753,107 @@ class TestInMemoryKVCacheManagerEdgeCases(unittest.TestCase):
                            f"Hash collision or key mismatch for {key}")
 
 
+class TestInMemoryKVCacheManagerCompatibilityMethods(unittest.TestCase):
+    """Test MLX server compatibility methods (record_generation, create_cache)"""
+
+    def setUp(self):
+        """Set up test fixtures"""
+        self.cache = InMemoryKVCacheManager(max_memory_mb=100)
+
+    def tearDown(self):
+        """Clean up after tests"""
+        if hasattr(self, 'cache'):
+            self.cache.clear()
+
+    def test_record_generation_with_cache(self):
+        """Test recording generation metrics when cache is used"""
+        self.cache.record_generation(suffix_tokens=50, generation_time=0.1, used_cache=True)
+
+        # Verify metrics are stored
+        self.assertEqual(len(self.cache.generation_stats['suffix_tokens']), 1)
+        self.assertEqual(self.cache.generation_stats['suffix_tokens'][0], 50)
+        self.assertEqual(len(self.cache.generation_stats['generation_times_with_cache']), 1)
+        self.assertEqual(self.cache.generation_stats['generation_times_with_cache'][0], 0.1)
+        self.assertEqual(len(self.cache.generation_stats['generation_times_without_cache']), 0)
+
+    def test_record_generation_without_cache(self):
+        """Test recording generation metrics when cache is not used"""
+        self.cache.record_generation(suffix_tokens=100, generation_time=2.5, used_cache=False)
+
+        # Verify metrics are stored
+        self.assertEqual(len(self.cache.generation_stats['suffix_tokens']), 1)
+        self.assertEqual(self.cache.generation_stats['suffix_tokens'][0], 100)
+        self.assertEqual(len(self.cache.generation_stats['generation_times_without_cache']), 1)
+        self.assertEqual(self.cache.generation_stats['generation_times_without_cache'][0], 2.5)
+        self.assertEqual(len(self.cache.generation_stats['generation_times_with_cache']), 0)
+
+    def test_record_generation_multiple_calls(self):
+        """Test recording multiple generations"""
+        self.cache.record_generation(suffix_tokens=50, generation_time=0.1, used_cache=True)
+        self.cache.record_generation(suffix_tokens=60, generation_time=0.15, used_cache=True)
+        self.cache.record_generation(suffix_tokens=70, generation_time=2.0, used_cache=False)
+
+        # Verify all metrics are recorded
+        self.assertEqual(len(self.cache.generation_stats['suffix_tokens']), 3)
+        self.assertEqual(len(self.cache.generation_stats['generation_times_with_cache']), 2)
+        self.assertEqual(len(self.cache.generation_stats['generation_times_without_cache']), 1)
+
+    def test_record_generation_thread_safe(self):
+        """Test that record_generation is thread-safe"""
+        def record_many():
+            for i in range(100):
+                self.cache.record_generation(
+                    suffix_tokens=i,
+                    generation_time=0.1,
+                    used_cache=(i % 2 == 0)
+                )
+
+        # Run in parallel threads
+        threads = [threading.Thread(target=record_many) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # Verify all 500 records were added
+        self.assertEqual(len(self.cache.generation_stats['suffix_tokens']), 500)
+
+    def test_create_cache_returns_none_tuple(self):
+        """Test that create_cache returns (None, None) for compatibility"""
+        result = self.cache.create_cache(model=None, tokenizer=None, prefix_prompt="test")
+        self.assertEqual(result, (None, None))
+
+    def test_create_cache_is_noop(self):
+        """Test that create_cache doesn't modify cache state"""
+        # Store initial state
+        self.cache.set("key1", b"value1")
+        stats_before = self.cache.get_stats()
+
+        # Call create_cache
+        self.cache.create_cache(model=None, tokenizer=None, prefix_prompt="test prompt")
+
+        # Verify state unchanged
+        stats_after = self.cache.get_stats()
+        self.assertEqual(stats_before, stats_after)
+        self.assertEqual(self.cache.get("key1"), b"value1")
+
+    def test_create_cache_with_mock_objects(self):
+        """Test create_cache with mock model and tokenizer objects"""
+        class MockModel:
+            pass
+
+        class MockTokenizer:
+            def encode(self, text):
+                return [1, 2, 3]
+
+        result = self.cache.create_cache(
+            model=MockModel(),
+            tokenizer=MockTokenizer(),
+            prefix_prompt="test prompt"
+        )
+        self.assertEqual(result, (None, None))
+
+
 if __name__ == '__main__':
     # Run with verbose output
     unittest.main(verbosity=2)

@@ -11,11 +11,10 @@
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
       "apiKey": "mlx",
-      "model": "openai-gpt-oss-120b-MLX-6.5bit",
-      "modelPath": "/Users/andrewkaszubski/Models/inferencerlabs/openai-gpt-oss-120b-MLX-6.5bit",
-      "maxTokens": 131072,
-      "serverScript": "scripts/mlx-server.py",
-      "description": "OpenAI GPT OSS 120B (6.5-bit) - Largest model, best quality"
+      "model": "default",
+      "modelPath": "/Users/andrewkaszubski/Models/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
+      "maxTokens": 32768,
+      "description": "mistral.rs MLX server - Production-ready, supports MoE, excellent tool calling"
     },
     "lmstudio": {
       "enabled": true,

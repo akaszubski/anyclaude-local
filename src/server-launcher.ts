@@ -115,7 +115,7 @@ export function startLMStudioServer(config: ServerLauncherConfig): void {
 }
 
 /**
- * Start MLX server (official mlx_lm.server)
+ * Start MLX server using mistral.rs (production-ready MLX backend)
  */
 export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   const port = config.port || 8081;
@@ -145,7 +145,7 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     process.exit(1);
   }
 
-  console.log(`[anyclaude] Starting official MLX-LM server...`);
+  console.log(`[anyclaude] Starting mistral.rs MLX server...`);
   console.log(`[anyclaude] Model: ${path.basename(modelPath)}`);
   console.log(`[anyclaude] Port: ${port}`);
   console.log(`[anyclaude] Waiting ~30 seconds for model to load...`);
@@ -156,66 +156,83 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     fs.mkdirSync(logDir, { recursive: true });
   }
 
-  // Log file for server output (helps with debugging)
-  const logFile = path.join(logDir, "mlx-lm-server.log");
+  // Log file for server output
+  const logFile = path.join(logDir, "mistralrs-server.log");
   const logStream = fs.createWriteStream(logFile, { flags: "a" });
   logStream.write(
-    `\n=== Official MLX-LM Server Started at ${new Date().toISOString()} ===\n`
+    `\n=== mistral.rs Server Started at ${new Date().toISOString()} ===\n`
   );
 
-  // Find mlx_lm.server in PATH (installed via pipx)
-  const mlxServerPath = path.join(os.homedir(), ".local", "bin", "mlx_lm.server");
+  // Find mistralrs-server binary
+  const mistralrsBin = path.join(
+    os.homedir(),
+    "Documents",
+    "GitHub",
+    "mistral.rs",
+    "target",
+    "release",
+    "mistralrs-server"
+  );
 
-  if (!fs.existsSync(mlxServerPath)) {
-    console.error(`[anyclaude] mlx_lm.server not found at: ${mlxServerPath}`);
-    console.error("[anyclaude] Please install mlx-lm:");
-    console.error("[anyclaude]   pipx install mlx-lm");
+  if (!fs.existsSync(mistralrsBin)) {
+    console.error(`[anyclaude] mistralrs-server not found at: ${mistralrsBin}`);
+    console.error("[anyclaude] Please build mistral.rs:");
+    console.error("[anyclaude]   cd ~/Documents/GitHub/mistral.rs");
+    console.error("[anyclaude]   cargo build --release --features metal");
     process.exit(1);
   }
 
-  // Build command for official mlx_lm.server
-  const command = `${mlxServerPath} --model "${modelPath}" --port ${port} --host 127.0.0.1 --log-level INFO 2>&1`;
+  // Detect architecture (qwen3moe, llama, etc.) from model path
+  const modelName = path.basename(modelPath).toLowerCase();
+  let architecture = "qwen3moe"; // default for Qwen3 MoE models
+
+  if (modelName.includes("llama")) {
+    architecture = "llama";
+  } else if (modelName.includes("mistral")) {
+    architecture = "mistral";
+  }
+
+  // Build command for mistral.rs
+  const command = `"${mistralrsBin}" --port ${port} --token-source none --isq Q4K plain -m "${modelPath}" -a ${architecture} 2>&1`;
 
   const serverProcess = spawn("bash", ["-c", command], {
     stdio: ["ignore", "pipe", "pipe"],
-    detached: true, // Create a new process group so we can kill all children
+    detached: true,
     env: {
       ...process.env,
-      PYTHONUNBUFFERED: "1",
-      PATH: `${path.join(os.homedir(), ".local", "bin")}:${process.env.PATH}`,
     },
   });
 
   // Register process for cleanup on exit
   registerServerProcess(serverProcess);
 
-  // Write server output to log file and console (for errors)
+  // Write server output to log file
   let hasStarted = false;
+  const STARTUP_TIMEOUT_MS = 120000; // 2 minutes
 
   const handleServerOutput = (data: Buffer) => {
     const output = data.toString();
-
-    // Write to log file
     logStream.write(output);
 
-    // Check if server has started (official mlx_lm.server messages)
+    // Check if server has started
     if (
       !hasStarted &&
-      (output.includes("Uvicorn running") ||
-        output.includes("Application startup complete") ||
-        output.includes("Started server process"))
+      (output.includes("listening on") ||
+        output.includes("OpenAI-compatible server") ||
+        output.includes("Model loaded"))
     ) {
       hasStarted = true;
-      debug(1, "[server-launcher] Official MLX-LM server started successfully");
+      debug(1, "[server-launcher] mistral.rs server started successfully");
       console.log(`[anyclaude] MLX server is ready`);
     }
 
-    // Also log errors to console
+    // Log errors to console
     if (
       output.includes("error") ||
       output.includes("Error") ||
       output.includes("failed") ||
-      output.includes("Failed")
+      output.includes("Failed") ||
+      output.includes("cannot find tensor")
     ) {
       console.error(`[anyclaude] MLX: ${output.trim()}`);
     }
@@ -224,14 +241,38 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   serverProcess.stdout?.on("data", handleServerOutput);
   serverProcess.stderr?.on("data", handleServerOutput);
 
+  // Startup timeout - kill server if it doesn't start in time
+  const startupTimeout = setTimeout(() => {
+    if (!hasStarted) {
+      logStream.write(
+        `TIMEOUT: Server failed to start within ${STARTUP_TIMEOUT_MS / 1000}s\n`
+      );
+      console.error(
+        `[anyclaude] mistral.rs startup timeout (${STARTUP_TIMEOUT_MS / 1000}s)`
+      );
+      console.error(`[anyclaude] Check logs at: ${logFile}`);
+
+      if (serverProcess.pid) {
+        try {
+          process.kill(-serverProcess.pid, "SIGTERM");
+        } catch (e) {
+          // Process may have already exited
+        }
+      }
+      process.exit(1);
+    }
+  }, STARTUP_TIMEOUT_MS);
+
   serverProcess.on("error", (error) => {
+    clearTimeout(startupTimeout);
     logStream.write(`ERROR: ${error.message}\n`);
-    console.error(`[anyclaude] Failed to start MLX server: ${error.message}`);
+    console.error(`[anyclaude] Failed to start mistral.rs: ${error.message}`);
     console.error(`[anyclaude] Check logs at: ${logFile}`);
     process.exit(1);
   });
 
   serverProcess.on("exit", (code, signal) => {
+    clearTimeout(startupTimeout);
     const message =
       code !== null
         ? `exited with code ${code}`
@@ -239,15 +280,16 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     logStream.write(`Process ${message} at ${new Date().toISOString()}\n`);
 
     if (!hasStarted && code !== 0) {
-      console.error(`[anyclaude] MLX server failed to start (${message})`);
+      console.error(`[anyclaude] mistral.rs failed to start (${message})`);
       console.error(`[anyclaude] Check logs at: ${logFile}`);
+      console.error(
+        `[anyclaude] Common issues: model path wrong, architecture mismatch, missing weights`
+      );
     }
   });
 
   // Keep the server running in the background
   serverProcess.unref();
-
-  return;
 }
 
 /**
@@ -293,7 +335,7 @@ export function launchBackendServer(
       model: backendConfig.model,
       modelPath: backendConfig.modelPath,
       serverScript: backendConfig.serverScript,
-      pythonVenv: config.pythonVenv,
+      pythonVenv: backendConfig.pythonVenv || config.pythonVenv,
     });
   } else if (mode === "lmstudio") {
     startLMStudioServer({

@@ -4,40 +4,40 @@
 
 **Make Claude Code work seamlessly with any AI backend - local, cloud, or hybrid.**
 
-AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and multiple AI providers. Whether you're using local models (MLX-Textgen, LMStudio), cloud models (OpenRouter with 400+ options), or official Claude API (Max subscription or API key), anyclaude provides a unified, flexible development experience optimized for your needs.
+AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and multiple AI providers. Whether you're using local models (mistral.rs with MLX, LMStudio), cloud models (OpenRouter with 400+ options), or official Claude API (Max subscription or API key), anyclaude provides a unified, flexible development experience optimized for your needs.
 
 ## GOALS
 
 ### Primary Goals
 
 1. **Enable Privacy-First Development**
-   - Run Claude Code completely offline with local models (MLX-Textgen, LMStudio)
+   - Run Claude Code completely offline with local models (mistral.rs with MLX, LMStudio)
    - Zero data transmission to cloud services
    - Full control over code and conversations
-   - Support for Apple Silicon (M1/M2/M3/M4) with MLX optimization
+   - Support for Apple Silicon (M1/M2/M3/M4) with native MLX acceleration
 
 2. **Reduce AI Development Costs**
-   - Free: Local models (MLX-Textgen, LMStudio) with no API costs
+   - Free: Local models (mistral.rs, LMStudio) with no API costs
    - 84% savings: OpenRouter ($0.60-$2/1M tokens vs Claude $3-$15/1M)
    - Flexible: Switch modes based on task requirements
    - Efficient: Prompt caching reduces token usage by 30-50%
 
 3. **Seamless Claude Code Experience**
-   - Tool calling support (Read, Write, Edit, Bash, Git, etc.)
-   - Note: MLX-Textgen tool calling currently broken (use OpenRouter/LMStudio/Claude for tool-based work)
+   - Full tool calling support (Read, Write, Edit, Bash, Git, etc.)
+   - Production-ready with mistral.rs inference engine
    - Streaming responses with proper backpressure handling
    - Authentication compatibility (Claude Max + API keys)
    - Hot-swappable models without restart
 
 4. **Developer Productivity**
-   - Auto-launch MLX-Textgen server for zero-config experience
-   - 10-90x faster follow-up responses via KV cache (0.5-10s vs 25-50s)
+   - Auto-launch mistral.rs server for zero-config experience
+   - Native MLX acceleration with KV caching
    - Mode switching via CLI flag, env var, or config file
    - Comprehensive debug logging (3 levels) for troubleshooting
 
 ### Success Metrics
 
-- ⚠️ **Functionality**: Tool calling works 75% (3/4 backends: OpenRouter/LMStudio/Claude work, MLX-Textgen broken)
+- ✅ **Functionality**: Tool calling works 100% (4/4 backends: mistral.rs/OpenRouter/LMStudio/Claude all work)
 - ✅ **Performance**: 60-85% cache hit rate, 30-50% token reduction; RAM cache provides 100-200x latency improvement for M3 Ultra
 - ✅ **Quality**: **1,400+ tests across 101 test files** (unit, integration, regression, E2E, performance)
   - Core translation: 180+ tests
@@ -57,12 +57,12 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 **Core Functionality**:
 
 - ✅ Translation between Anthropic Messages API and OpenAI Chat Completions format
-- ✅ Support for 4 backend modes: mlx-textgen, lmstudio, openrouter, claude
+- ✅ Support for 4 backend modes: mlx (mistral.rs), lmstudio, openrouter, claude
 - ✅ Full tool calling translation (streaming and atomic formats)
 - ✅ Streaming response adaptation (AI SDK → Anthropic SSE)
 - ✅ Context window management with automatic truncation
 - ✅ Trace logging for cloud modes (auto-enabled, API keys redacted)
-- ✅ **RAM-based KV cache for M3 Ultra**: 100-200x faster cache operations (<1ms GET vs 500-2000ms disk), thread-safe, LRU eviction, security hardened (10KB max key length, memory tracking, input validation)
+- ✅ **Native MLX acceleration with mistral.rs**: Production-ready Rust inference engine with KV caching, MoE support, and excellent tool calling
 
 **Production Infrastructure**:
 
