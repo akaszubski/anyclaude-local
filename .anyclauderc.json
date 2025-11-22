@@ -1,39 +1,29 @@
 {
-  "backend": "mlx",
+  "backend": "lmstudio",
   "debug": {
-    "level": 3,
-    "enableTraces": true,
-    "enableStreamLogging": true
+    "level": 0,
+    "enableTraces": false,
+    "enableStreamLogging": false
   },
   "backends": {
-    "mlx": {
-      "enabled": true,
-      "port": 8081,
-      "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "mlx",
-      "model": "default",
-      "modelPath": "/Users/andrewkaszubski/Models/lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
-      "maxTokens": 32768,
-      "description": "mistral.rs MLX server - Production-ready, supports MoE, excellent tool calling"
-    },
     "lmstudio": {
       "enabled": true,
-      "baseUrl": "http://localhost:1234/v1",
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
       "compatibility": "legacy",
-      "description": "Local LMStudio with openai-gpt-oss-20b (100+ tokens/sec, tool calling works)"
+      "description": "Local LMStudio - loads whatever model you have running"
     },
     "claude": {
       "enabled": false,
-      "description": "Real Anthropic API"
+      "description": "Real Anthropic API (for comparison and analysis)"
     },
     "openrouter": {
       "enabled": true,
       "baseUrl": "https://openrouter.ai/api/v1",
       "apiKey": "",
-      "model": "qwen/qwen3-coder",
-      "description": "OpenRouter - Qwen3 Coder 480B (3s, $0.22/$0.95, 262K) - Reliable tool calling, precise"
+      "model": "qwen/qwen-2.5-72b-instruct",
+      "description": "OpenRouter - 400+ cloud models including Qwen, GLM-4.6, Claude, GPT-4"
     }
   }
 }

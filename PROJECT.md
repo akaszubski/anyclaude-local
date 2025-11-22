@@ -395,7 +395,7 @@ Claude Code → AnyClaude Proxy → Custom MLX Server → MLX Model
 **Features**:
 
 - Manual server management via LMStudio GUI
-- Routes to LMStudio server (default: `http://localhost:1234/v1`)
+- Routes to LMStudio server (default: `http://localhost:8082/v1`)
 - Model-agnostic: works with whatever model LMStudio has loaded
 - Hot-swappable: switch models in LMStudio without restarting anyclaude
 - Full translation layer (Anthropic format → OpenAI format)
@@ -423,7 +423,7 @@ Claude Code → AnyClaude Proxy → LMStudio Server → Loaded Model
   "backends": {
     "lmstudio": {
       "enabled": true,
-      "baseUrl": "http://localhost:1234/v1",
+      "baseUrl": "http://localhost:8082/v1",
       "model": "current-model"
     }
   }
@@ -1044,8 +1044,8 @@ Place in project root with structure:
     },
     "lmstudio": {
       "enabled": false,
-      "port": 1234,
-      "baseUrl": "http://localhost:1234/v1",
+      "port": 8082,
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model"
     },
@@ -1599,9 +1599,9 @@ Work out-of-box with sensible defaults. But allow power users to tune everything
 **"Connection refused"**
 
 - Ensure LMStudio server is running
-- Default: `http://localhost:1234/v1`
+- Default: `http://localhost:8082/v1`
 - Check `LMSTUDIO_URL` environment variable
-- Test with: `curl http://localhost:1234/v1/models`
+- Test with: `curl http://localhost:8082/v1/models`
 
 **"Authentication failed"** (Claude mode)
 

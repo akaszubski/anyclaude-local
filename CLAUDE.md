@@ -4,21 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-anyclaude is a translation layer for Claude Code that enables using local MLX models through the Anthropic API format. It intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format for inference engines.
+**anyclaude** is a translation layer for Claude Code that enables using local models (LMStudio) or cloud models (OpenRouter) through the Anthropic API format.
 
-**Primary Backend**: mistral.rs (Production-ready Rust inference engine with native MLX support)
+**Supported Backends**:
+- **LMStudio** - Local models with manual server management (100% privacy)
+- **OpenRouter** - 400+ cloud models at 84% lower cost than Claude API
+- **Claude API** - Official Anthropic API for comparison and analysis
 
-**✅ STATUS**: Tool calling WORKS perfectly with mistral.rs (Read, Write, Edit, Bash, Git all functional)
-
-**Key Features**:
-- Native MLX acceleration on Apple Silicon
-- Mixture-of-Experts (MoE) model support
-- Production-ready performance and stability
-- Full OpenAI-compatible API
-
-**Additional Backends**: LMStudio (cross-platform), OpenRouter (400+ cloud models), Claude API (official)
-
-**Note**: Previous custom MLX server (`scripts/mlx-server.py`) has been deprecated in favor of mistral.rs. See `docs/archive/deprecated-mlx-server/` for historical context.
+The proxy intercepts Anthropic API calls and translates them to/from the OpenAI Chat Completions format.
 
 ## 📁 File Organization Standards
 
@@ -50,26 +43,10 @@ tsconfig.json / tsconfig.build.json  # TypeScript config
 docs/
 ├── README.md                    # Documentation index
 ├── guides/                      # User guides
-│   ├── authentication.md
-│   ├── installation-local.md
-│   ├── mode-switching.md
-│   └── debug-quick-start.md
 ├── development/                 # Development guides
-│   ├── DEVELOPMENT.md
-│   ├── testing-guide.md
-│   ├── automated-testing.md
-│   └── model-testing.md
 ├── debugging/                   # Debugging resources
-│   ├── tool-calling-fix.md
-│   ├── tool-call-debug.md
-│   ├── trace-analysis.md
-│   └── ...
 ├── architecture/                # Architecture docs
-│   ├── model-adapters.md
-│   └── tool-calling-enhancement.md
 └── reference/                   # Technical references
-    ├── claude-code-auth.md
-    └── github-issues-summary.md
 ```
 
 ### Scripts: `scripts/`
@@ -77,17 +54,7 @@ docs/
 ```
 scripts/
 ├── debug/                       # Debugging scripts
-│   ├── analyze-tool-calls.sh
-│   ├── capture-tool-call-debug.sh
-│   ├── compare-modes.sh
-│   ├── monitor-tool-calls.sh
-│   ├── test-claude-mode.sh
-│   ├── test-tool-capture.sh
-│   └── test-tool-comparison.sh
-├── test/                        # Test scripts
-│   ├── run-tests.sh
-│   └── test-model-compatibility.sh
-└── shell-aliases.sh             # Useful aliases
+└── test/                        # Test scripts
 ```
 
 ### Source Code: `src/`
@@ -98,10 +65,8 @@ src/
 ├── anthropic-proxy.ts           # HTTP proxy server
 ├── convert-anthropic-messages.ts # Message format conversion
 ├── convert-to-anthropic-stream.ts # Stream conversion
-├── json-schema.ts               # Schema adaptation
 ├── debug.ts                     # Debug logging
-├── trace-logger.ts              # Trace file management
-└── ...
+└── trace-logger.ts              # Trace file management
 ```
 
 ### Tests: `tests/`
@@ -110,8 +75,7 @@ src/
 tests/
 ├── unit/                        # Unit tests
 ├── integration/                 # Integration tests
-├── regression/                  # Regression tests
-└── manual/                      # Manual test scripts
+└── regression/                  # Regression tests
 ```
 
 ### Build Output: `dist/` (gitignored)
@@ -137,52 +101,21 @@ dist/                            # Generated, never commit
 3. **No temporary files**: Clean up test outputs, debug logs, etc.
 4. **Update docs/README.md**: If you added documentation
 
-### Internal References
-
-When linking between docs, use **relative paths**:
-
-```markdown
-<!-- From docs/guides/mode-switching.md → PROJECT.md -->
-
-See [PROJECT.md](../../PROJECT.md) for architecture
-
-<!-- From README.md → docs/guides/mode-switching.md -->
-
-See [Mode Switching Guide](docs/guides/mode-switching.md)
-
-<!-- From docs/debugging/tool-calling-fix.md → docs/architecture/tool-calling-implementation.md -->
-
-See [Tool Calling Implementation](../architecture/tool-calling-implementation.md)
-```
-
-## 🔄 Keeping It Clean
-
-If you notice files out of place:
-
-1. Move to correct subdirectory
-2. Update all internal references
-3. Commit with message: `chore: organize files per standards`
-4. Update this guide if standards evolve
-
 ## Architecture
 
 The proxy works by:
 
-1. Auto-launching mistral.rs server (Production Rust inference engine with MLX acceleration)
-2. Spawning a local HTTP server that mimics the Anthropic API
-3. Intercepting `/v1/messages` requests
-4. Converting Anthropic message format to OpenAI Chat Completions format
-5. Routing to mistral.rs (or other backends like LMStudio, OpenRouter, Claude)
-6. Converting responses back to Anthropic format
-7. Setting `ANTHROPIC_BASE_URL` to point Claude Code at the proxy
-
-**Performance:** mistral.rs provides production-ready performance with native MLX acceleration and KV caching.
+1. Spawning a local HTTP server that mimics the Anthropic API
+2. Intercepting `/v1/messages` requests
+3. Converting Anthropic message format to OpenAI Chat Completions format
+4. Routing to LMStudio or OpenRouter
+5. Converting responses back to Anthropic format
+6. Setting `ANTHROPIC_BASE_URL` to point Claude Code at the proxy
 
 Key components:
 
 - `src/main.ts`: Entry point that configures backend provider and spawns Claude with proxy
 - `src/anthropic-proxy.ts`: HTTP server that handles request/response translation
-- `src/server-launcher.ts`: Auto-launch orchestration for mistral.rs server
 - `src/convert-anthropic-messages.ts`: Bidirectional message format conversion
 - `src/convert-to-anthropic-stream.ts`: Stream response conversion
 
@@ -225,16 +158,9 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
 
 ## Environment Variables
 
-**mistral.rs Configuration (Primary Backend):**
-
-- `MLX_URL`: Server URL (default: `http://localhost:8081/v1`)
-- `MLX_MODEL`: Model name/path (overrides config file)
-- `MLX_API_KEY`: API key (default: `mlx`)
-- `MISTRALRS_PORT`: Port for mistral.rs server (default: 8081)
-
 **LMStudio Configuration:**
 
-- `LMSTUDIO_URL`: LMStudio server URL (default: `http://localhost:1234/v1`)
+- `LMSTUDIO_URL`: LMStudio server URL (default: `http://localhost:8082/v1`)
 - `LMSTUDIO_MODEL`: Model name to use (default: `current-model`)
   - Note: LMStudio serves whatever model is currently loaded, regardless of the model name
   - You can switch models in LMStudio without restarting anyclaude
@@ -243,7 +169,7 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
 **OpenRouter Configuration:**
 
 - `OPENROUTER_API_KEY`: Your OpenRouter API key
-- `OPENROUTER_MODEL`: Model to use (e.g., `qwen/qwen-2.5-72b-instruct`)
+- `OPENROUTER_MODEL`: Model to use (e.g., `google/gemini-2.5-flash`)
 - `OPENROUTER_BASE_URL`: Base URL (default: `https://openrouter.ai/api/v1`)
 
 **Debug:**
@@ -253,46 +179,7 @@ ANYCLAUDE_DEBUG=3 bun run src/main.ts
   - This saves full prompts and responses to `~/.anyclaude/traces/` for analysis
   - To disable: `ANYCLAUDE_DEBUG=0 anyclaude --mode=claude`
 - `PROXY_ONLY`: Run proxy server without spawning Claude Code
-- `ANYCLAUDE_MODE`: claude | lmstudio | mlx | openrouter (default: mlx)
-
-## Debugging Tool Calling Issues
-
-If a user reports tool calling problems with a local model:
-
-1. **Ask for debug log**: `ANYCLAUDE_DEBUG=2 anyclaude` creates `~/.anyclaude/logs/debug-session-*.log`
-2. **Follow the debugging guide**: `docs/debugging/gpt-oss-20b-tool-calling-issue.md`
-3. **Check the log for**:
-   - SESSION CONFIGURATION (model, backend, URLs)
-   - Tool schemas sent to the model
-   - Model's raw output (look for tool_calls vs other formats)
-   - Stream conversion messages showing what format was detected
-
-**Common issues**:
-
-- Model outputs custom format instead of OpenAI tool calls (e.g., commentary format)
-- Model not trained on tool calling
-- mlx chat template not configured for tool calling
-- Schema transformation issues with union types
-
-**Known Model Limitations** (as of v2.1.1):
-
-- **gpt-oss-20b-5bit**: ❌ Poor multi-turn tool calling
-  - First tool call works fine
-  - After receiving tool results, model gets confused
-  - Generates invalid parameters like `{"file?":"?"}`
-  - **Workaround**: Use simpler prompts (1-2 tool calls max) or switch models
-
-- **Qwen3-Coder-30B**: ⚠️ Good for simple tools, struggles with complex schemas
-  - Works well for Read, Write, Bash
-  - Can fail with complex nested JSON
-
-**Recommended Models for Tool Calling**:
-
-- ✅ Qwen 2.5 72B (via OpenRouter)
-- ✅ GLM-4.6 (via OpenRouter)
-- ✅ Claude 3.5 Sonnet (via `--mode=claude`)
-
-See `docs/debugging/gpt-oss-20b-tool-calling-issue.md` for complete debugging workflow.
+- `ANYCLAUDE_MODE`: claude | lmstudio | openrouter (default: lmstudio)
 
 ## Implementation Notes
 
@@ -305,7 +192,7 @@ The proxy uses the `@ai-sdk/openai-compatible` package, which is specifically de
 - Uses standard OpenAI Chat Completions format
 - Supports Server-Sent Events (SSE) streaming
 
-See `src/main.ts:12-17` for the LMStudio provider configuration.
+See `src/main.ts:264-345` for the LMStudio provider configuration.
 
 **Message Format Conversion:**
 
@@ -316,7 +203,7 @@ The proxy converts between two formats:
    - Content blocks with types
    - Tool use with specific format
 
-2. **OpenAI Chat Completions** (LMStudio format):
+2. **OpenAI Chat Completions** (LMStudio/OpenRouter format):
    - System as first message
    - Simple message format
    - Standard tool calling
@@ -333,7 +220,6 @@ The proxy handles Server-Sent Events (SSE) streaming:
 - Deduplicates redundant tool-call events from AI SDK
 
 See `src/convert-to-anthropic-stream.ts` for stream conversion.
-See `docs/debugging/tool-calling-fix.md` for complete tool calling investigation.
 
 ## Quick Start
 
@@ -342,28 +228,7 @@ See `docs/debugging/tool-calling-fix.md` for complete tool calling investigation
 anyclaude
 ```
 
-**That's it!** anyclaude will:
-
-1. **Read config** from `.anyclauderc.json` (if it exists)
-2. **Launch custom MLX server** automatically with your model
-3. **Wait for server** to load the model (~3-50 seconds)
-4. **Run Claude Code** pointing to your local server
-5. **Auto-cleanup** when you exit Claude Code (type `/exit`)
-
 ## Configuration & Usage
-
-### Auto-Launch Workflow (Default)
-
-When you run `anyclaude` with a `.anyclauderc.json` that specifies MLX backend with a model path:
-
-```bash
-# .anyclauderc.json configured with mlx backend
-anyclaude
-# → Custom MLX server launches automatically
-# → Waits for model to load
-# → Claude Code starts with local backend
-# → Type /exit to exit Claude Code and cleanup server
-```
 
 ### Configuration File: `.anyclauderc.json`
 
@@ -371,19 +236,11 @@ Create this file in your project root to configure anyclaude:
 
 ```json
 {
-  "backend": "mlx",
+  "backend": "lmstudio",
   "backends": {
-    "mlx": {
-      "enabled": true,
-      "port": 8080,
-      "baseUrl": "http://localhost:8080/v1",
-      "apiKey": "mlx",
-      "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/mlx-server.py"
-    },
     "lmstudio": {
-      "enabled": false,
-      "baseUrl": "http://localhost:1234/v1",
+      "enabled": true,
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model"
     },
@@ -394,57 +251,21 @@ Create this file in your project root to configure anyclaude:
       "enabled": false,
       "baseUrl": "https://openrouter.ai/api/v1",
       "apiKey": "sk-or-v1-...",
-      "model": "z-ai/glm-4.6"
+      "model": "google/gemini-2.5-flash"
     }
   }
 }
 ```
 
 **See `.anyclauderc.example.json` for a complete configuration example with all backends.**
-**See `.anyclauderc.example-openrouter.json` for OpenRouter-specific quick start.**
-
-**Key fields for mlx auto-launch:**
-
-- `backend`: Set to `"mlx"` to use custom MLX server (production default)
-- `model`: Full path to your MLX model (e.g., `/Users/you/.../Qwen3-Coder-30B-A3B-Instruct-MLX-4bit`)
-  - If model path is configured, anyclaude auto-launches the server
-  - If missing or set to `"current-model"`, expects server to be running already
-- `port`: Where to run the server (default: 8080)
-- `serverScript`: Path to server script (use `"scripts/mlx-server.py"`)
-
-### Auto-Launch Workflow
-
-When you run `anyclaude` with mlx configured:
-
-1. **Check**: Is a server already running on port 8080?
-2. **If no**: Auto-launch the custom MLX server with your configured model
-3. **Wait**: Wait for server to load the model (3-50 seconds)
-4. **Launch**: Spawn Claude Code with proxy pointing to your local server
-5. **Run**: Use Claude Code normally - **tool calling works!** (Read, Write, Edit, Bash, Git)
-6. **Exit**: When you exit Claude Code (type `/exit`), server shuts down automatically
-
-### Manual Server Mode
-
-If you want to run the server separately:
-
-```bash
-# Terminal 1: Start server manually
-python scripts/mlx-server.py \
-  --model /path/to/model \
-  --port 8080
-
-# Terminal 2: Run anyclaude (uses running server)
-anyclaude
-```
-
-Or set the model to `"current-model"` in `.anyclauderc.json` to prevent auto-launch.
 
 ### OpenRouter Configuration (Cloud Models)
 
 OpenRouter provides access to 400+ AI models through a single API, including:
 
+- **Gemini 2.5 Flash** (1M context, $0.30/$2.50 per 1M tokens) - Default, best value
+- **Qwen 2.5 72B** ($0.35/$0.70 per 1M tokens) - Cheapest option
 - **GLM-4.6** (200K context, $0.60/$2 per 1M tokens) - Great for coding
-- **Qwen 2.5 72B** ($0.35/$0.70 per 1M tokens) - Even cheaper!
 - **Claude 3.5 Sonnet** via OpenRouter ($3/$15 per 1M tokens)
 - **GPT-4** via OpenRouter ($10/$30 per 1M tokens)
 - Many open models with **free tiers**!
@@ -452,9 +273,9 @@ OpenRouter provides access to 400+ AI models through a single API, including:
 **Quick Start:**
 
 1. Get an API key from [openrouter.ai](https://openrouter.ai)
-2. Copy `.anyclauderc.example-openrouter.json` to `.anyclauderc.json`
+2. Copy `.anyclauderc.example.json` to `.anyclauderc.json`
 3. Add your API key to the config
-4. Run: `anyclaude`
+4. Run: `anyclaude --mode=openrouter`
 
 **Example config:**
 
@@ -466,7 +287,7 @@ OpenRouter provides access to 400+ AI models through a single API, including:
       "enabled": true,
       "baseUrl": "https://openrouter.ai/api/v1",
       "apiKey": "sk-or-v1-YOUR_KEY_HERE",
-      "model": "z-ai/glm-4.6"
+      "model": "google/gemini-2.5-flash"
     }
   }
 }
@@ -474,9 +295,10 @@ OpenRouter provides access to 400+ AI models through a single API, including:
 
 **Popular models:**
 
-- `z-ai/glm-4.6` - 200K context, excellent coding ($0.60/$2)
+- `google/gemini-2.5-flash` - 1M context, thinking mode ($0.30/$2.50)
 - `qwen/qwen-2.5-72b-instruct` - Cheaper alternative ($0.35/$0.70)
-- `google/gemini-2.0-flash-exp:free` - **Free!**
+- `google/gemini-2.0-flash-001` - **Very cheap!** ($0.10/$0.40)
+- `z-ai/glm-4.6` - Good for coding ($0.60/$2)
 - `anthropic/claude-3.5-sonnet` - Via OpenRouter
 - `openai/gpt-4` - Via OpenRouter
 
@@ -487,7 +309,7 @@ See [openrouter.ai/models](https://openrouter.ai/models) for full list.
 - ✅ **Trace logging enabled by default** (analyze prompts in `~/.anyclaude/traces/openrouter/`)
 - ✅ Tool calling support (Read, Write, Edit, Bash, etc.)
 - ✅ Streaming responses
-- ✅ 200K context window (GLM-4.6)
+- ✅ 1M context window (Gemini models)
 - ✅ Much cheaper than Claude API
 
 **Environment variables:**
@@ -502,7 +324,6 @@ See [openrouter.ai/models](https://openrouter.ai/models) for full list.
 # Override backend mode
 anyclaude --mode=claude          # Use real Claude API
 anyclaude --mode=openrouter      # Use OpenRouter (cloud models)
-anyclaude --mode=mlx             # Use custom MLX server (local, production)
 anyclaude --mode=lmstudio        # Use local LMStudio
 
 # Debug logging
@@ -513,9 +334,6 @@ ANYCLAUDE_DEBUG=3 anyclaude      # Trace with tool calls
 # Test proxy only (no Claude Code)
 PROXY_ONLY=true anyclaude
 
-# Disable auto-launch (server must be running)
-ANYCLAUDE_NO_AUTO_LAUNCH=1 anyclaude
-
 # Check setup status
 anyclaude --check-setup
 
@@ -525,55 +343,27 @@ anyclaude --test-model
 
 ### Environment Variables
 
-**MLX Configuration (Custom Server - Production):**
-
-- `MLX_URL`: Server URL (default: `http://localhost:8080/v1`)
-- `MLX_MODEL`: Model name/path (overrides config file)
-- `MLX_API_KEY`: API key (default: `mlx`)
-
 **LMStudio Configuration:**
 
-- `LMSTUDIO_URL`: Server URL (default: `http://localhost:1234/v1`)
+- `LMSTUDIO_URL`: Server URL (default: `http://localhost:8082/v1`)
 - `LMSTUDIO_MODEL`: Model name (default: `current-model`)
 - `LMSTUDIO_API_KEY`: API key (default: `lm-studio`)
 
 **Mode & Debug:**
 
-- `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | mlx | openrouter)
+- `ANYCLAUDE_MODE`: Backend to use (claude | lmstudio | openrouter)
 - `ANYCLAUDE_DEBUG`: Debug level (0-3)
-- `ANYCLAUDE_NO_AUTO_LAUNCH`: Disable server auto-launch
 - `ANYCLAUDE_SKIP_SETUP_CHECK`: Skip dependency checks
 - `PROXY_ONLY`: Run proxy without Claude Code
 
 ### Troubleshooting
 
-**Server fails to start:**
+**LMStudio not responding:**
 
 ```bash
-# Check server logs
-tail ~/.anyclaude/logs/mlx-textgen-server.log
-
-# Try with more debug output
-ANYCLAUDE_DEBUG=2 anyclaude
+# Make sure LMStudio is running with a model loaded
+# Check server logs in LMStudio UI
 ```
-
-**Port already in use:**
-
-```bash
-# Check what's using port 8080
-lsof -i :8080
-
-# Kill it if needed
-kill -9 <PID>
-
-# Or configure different port in .anyclauderc.json
-```
-
-**Server takes too long to load:**
-
-- This is normal for large models (30-50 seconds for 30B models)
-- Anyclaude waits up to 2 minutes (120 seconds)
-- Check `~/.anyclaude/logs/mlx-textgen-server.log` for progress
 
 **Responses are truncated mid-stream:**
 
@@ -582,17 +372,16 @@ kill -9 <PID>
   - Handling `res.write()` return value for backpressure
   - Adding `X-Accel-Buffering: no` header to prevent proxy buffering
   - Using `Transfer-Encoding: chunked` for proper SSE streaming
-- For details, see: `docs/debugging/stream-truncation-fix.md`
 - If you see truncation, enable debug logging: `ANYCLAUDE_DEBUG=2 anyclaude`
 - Look for `[Backpressure]` messages in logs to confirm fix is working
 
 ## 🔍 Analyzing Claude Code Prompts (Reverse Engineering)
 
-When you run anyclaude in `--mode=claude`, **trace logging is enabled by default**. This records every prompt, system instruction, and tool call to help you understand how Claude Code achieves good coding outcomes.
+When you run anyclaude in `--mode=claude` or `--mode=openrouter`, **trace logging is enabled by default**. This records every prompt, system instruction, and tool call to help you understand how Claude Code achieves good coding outcomes.
 
 ### What Gets Recorded
 
-Full request/response traces saved to `~/.anyclaude/traces/claude/`:
+Full request/response traces saved to `~/.anyclaude/traces/{mode}/`:
 
 - ✅ **Complete system prompts** - the exact instructions Claude Code uses
 - ✅ **Tool definitions** - schemas for Read, Write, Edit, Bash, etc.
@@ -603,7 +392,7 @@ Full request/response traces saved to `~/.anyclaude/traces/claude/`:
 ### Viewing Traces
 
 ```bash
-# Run Claude Code with tracing (enabled by default)
+# Run Claude Code with tracing (enabled by default for claude/openrouter modes)
 anyclaude --mode=claude
 
 # List all trace files
@@ -623,40 +412,6 @@ jq '.response.body.content[] | select(.type == "tool_use")' ~/.anyclaude/traces/
 
 # Find traces with specific tool usage
 grep -l "tool_use" ~/.anyclaude/traces/claude/*.json
-```
-
-### Analyzing Prompting Patterns
-
-**Study effective system prompts:**
-
-```bash
-# Extract all system prompts into one file
-for f in ~/.anyclaude/traces/claude/*.json; do
-  echo "=== Trace: $(basename $f) ===" >> system-prompts.txt
-  jq -r '.request.body.system' "$f" >> system-prompts.txt
-  echo "" >> system-prompts.txt
-done
-```
-
-**Analyze tool calling patterns:**
-
-```bash
-# Find successful tool calls and their parameters
-jq -r '.response.body.content[] |
-  select(.type == "tool_use") |
-  "\(.name): \(.input)"' ~/.anyclaude/traces/claude/*.json
-```
-
-**Compare traces from different tasks:**
-
-```bash
-# Trace from simple question
-anyclaude --mode=claude  # Ask: "What is 2+2?"
-
-# Trace from coding task
-anyclaude --mode=claude  # Ask: "Write a function to reverse a string"
-
-# Compare the system prompts and tool usage
 ```
 
 ### Disable Trace Logging
@@ -692,14 +447,6 @@ Runs before allowing commits:
 
 **When it runs**: `git commit` (local, before creating the commit)
 
-```bash
-# Example
-git commit -m "fix: improve performance"
-# → Pre-commit hook runs (fast)
-# → If passes → commit created
-# → If fails → commit blocked, fix required
-```
-
 ### Pre-push Hook (Full Test Suite)
 
 Runs before pushing to remote:
@@ -712,27 +459,12 @@ Runs before pushing to remote:
 
 **When it runs**: `git push` (before uploading to GitHub)
 
-```bash
-# Example
-git push origin main
-# → Pre-push hook runs (slower, ~30-60 seconds)
-# → If all tests pass → push succeeds
-# → If tests fail → push blocked, fix required
-```
-
 ### Enable Hooks
 
 Hooks are configured in `.githooks/` and enabled via:
 
 ```bash
 git config core.hooksPath .githooks
-```
-
-This should already be set up. Verify with:
-
-```bash
-git config core.hooksPath
-# Should output: .githooks
 ```
 
 ### Testing Before Push
@@ -742,16 +474,4 @@ To test without actually pushing:
 ```bash
 # Run the full test suite manually
 npm test
-
-# This is what the pre-push hook will run
 ```
-
-### Why This Matters for Regression Tests
-
-The streaming bug that happened was caught because:
-
-1. Regression tests exist in the codebase
-2. Pre-push hook now runs `npm test` automatically
-3. Future streaming changes won't slip through because tests will fail
-
-**Key lesson**: Always integrate regression tests into CI/CD, not just write them and hope they run.

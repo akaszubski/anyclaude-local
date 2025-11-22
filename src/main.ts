@@ -15,11 +15,6 @@ import {
 } from "./anthropic-proxy";
 import type { AnyclaudeMode } from "./trace-logger";
 import { debug, isDebugEnabled, logSessionContext } from "./debug";
-import {
-  launchBackendServer,
-  waitForServerReady,
-  cleanupServerProcess,
-} from "./server-launcher";
 import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
 import { getTimeoutConfig, getTimeoutInfoString } from "./timeout-config";
 
@@ -41,15 +36,6 @@ interface AnyclaudeConfig {
       apiKey?: string;
       model?: string;
       compatibility?: string;
-      description?: string;
-    };
-    mlx?: {
-      enabled?: boolean;
-      port?: number;
-      baseUrl?: string;
-      apiKey?: string;
-      model?: string;
-      serverScript?: string;
       description?: string;
     };
     claude?: {
@@ -96,13 +82,12 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
       if (
         mode === "claude" ||
         mode === "lmstudio" ||
-        mode === "mlx" ||
         mode === "openrouter"
       ) {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'mlx', or 'openrouter'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'openrouter'.`
       );
       process.exit(1);
     }
@@ -152,7 +137,6 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
   if (
     envMode === "claude" ||
     envMode === "lmstudio" ||
-    envMode === "mlx" ||
     envMode === "openrouter"
   ) {
     return envMode as AnyclaudeMode;
@@ -164,15 +148,14 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
     if (
       backend === "claude" ||
       backend === "lmstudio" ||
-      backend === "mlx" ||
       backend === "openrouter"
     ) {
       return backend as AnyclaudeMode;
     }
   }
 
-  // Default to mlx (was lmstudio before)
-  return "mlx";
+  // Default to lmstudio
+  return "lmstudio";
 }
 
 // Check for --test-model flag before anything else
@@ -226,7 +209,7 @@ function getBackendConfig(
 ) {
   if (backend === "lmstudio") {
     const defaultConfig = {
-      baseURL: "http://localhost:1234/v1",
+      baseURL: "http://localhost:8082/v1",
       apiKey: "lm-studio",
       model: "current-model",
     };
@@ -242,26 +225,6 @@ function getBackendConfig(
       model:
         process.env.LMSTUDIO_MODEL ||
         configBackends?.lmstudio?.model ||
-        defaultConfig.model,
-    };
-  } else if (backend === "mlx") {
-    const defaultConfig = {
-      baseURL: "http://localhost:8081/v1",
-      apiKey: "mlx",
-      model: "current-model",
-    };
-    return {
-      baseURL:
-        process.env.MLX_URL ||
-        configBackends?.["mlx"]?.baseUrl ||
-        defaultConfig.baseURL,
-      apiKey:
-        process.env.MLX_API_KEY ||
-        configBackends?.["mlx"]?.apiKey ||
-        defaultConfig.apiKey,
-      model:
-        process.env.MLX_MODEL ||
-        configBackends?.["mlx"]?.model ||
         defaultConfig.model,
     };
   } else if (backend === "openrouter") {
@@ -290,15 +253,11 @@ function getBackendConfig(
 
 // Configure providers based on mode
 const lmstudioConfig = getBackendConfig("lmstudio", config.backends);
-const vllmMlxConfig = getBackendConfig("mlx", config.backends);
 const openrouterConfig = getBackendConfig("openrouter", config.backends);
-
-// Launch backend server if needed (non-blocking)
-launchBackendServer(mode, config);
 
 const providers: CreateAnthropicProxyOptions["providers"] = {
   lmstudio: createOpenAI({
-    baseURL: lmstudioConfig?.baseURL || "http://localhost:1234/v1",
+    baseURL: lmstudioConfig?.baseURL || "http://localhost:8082/v1",
     apiKey: lmstudioConfig?.apiKey || "lm-studio",
     // @ts-ignore - compatibility is valid but not in TypeScript types
     compatibility: "legacy", // LMStudio requires Chat Completions format
@@ -379,81 +338,6 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       return response;
     }) as typeof fetch,
   }),
-  mlx: createOpenAI({
-    baseURL: vllmMlxConfig?.baseURL || "http://localhost:8081/v1",
-    apiKey: vllmMlxConfig?.apiKey || "mlx",
-    // @ts-ignore - compatibility is valid but not in TypeScript types
-    compatibility: "legacy", // Required for models like gpt-oss-20b with custom tool calling format
-    fetch: (async (url, init) => {
-      if (init?.body && typeof init.body === "string") {
-        const body = JSON.parse(init.body);
-
-        // Map max_tokens for MLX compatibility
-        const maxTokens = body.max_tokens;
-        delete body.max_tokens;
-        if (typeof maxTokens !== "undefined") {
-          body.max_completion_tokens = maxTokens;
-        }
-
-        // Remove parameters that MLX doesn't support
-        delete body.reasoning;
-        delete body.service_tier;
-
-        // FIX: Clean system prompt for MLX (JSON parsing issues with newlines)
-        // MLX's server has strict JSON validation, normalize newlines in all messages
-        if (body.messages && Array.isArray(body.messages)) {
-          for (const msg of body.messages) {
-            // Clean system role messages
-            if (
-              msg.role === "system" &&
-              msg.content &&
-              typeof msg.content === "string"
-            ) {
-              msg.content = msg.content
-                .replace(/\n/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
-            }
-            // Also clean user messages that might contain newlines
-            if (
-              msg.role === "user" &&
-              msg.content &&
-              typeof msg.content === "string"
-            ) {
-              // User messages can have newlines, but normalize them to prevent JSON issues
-              msg.content = msg.content.replace(/\r\n/g, "\n");
-            }
-          }
-        }
-
-        // Keep tool calling enabled for MLX
-        // MLX supports tools parameter
-
-        // DEBUG: Log tools being sent to MLX
-        if (body.tools && isDebugEnabled()) {
-          debug(
-            1,
-            `[MLX → Request] Sending ${body.tools.length || Object.keys(body.tools).length} tools to server`
-          );
-          debug(2, `[MLX → Tools]`, body.tools);
-        }
-
-        init.body = JSON.stringify(body);
-      }
-
-      const response = await globalThis.fetch(url, init);
-
-      // Log MLX responses when debugging
-      if (isDebugEnabled() && response.body && response.ok) {
-        debug(
-          1,
-          `[MLX → Response] Status: ${response.status}, Content-Type: ${response.headers.get("content-type")}`
-        );
-      }
-
-      return response;
-    }) as typeof fetch,
-  }),
   openrouter: createOpenAI({
     baseURL: openrouterConfig?.baseURL || "https://openrouter.ai/api/v1",
     apiKey: openrouterConfig?.apiKey || process.env.OPENROUTER_API_KEY || "",
@@ -502,37 +386,13 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       // Cache monitor may not be available
     }
 
-    cleanupServerProcess();
-    // Give processes time to exit
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     process.exit(0);
   };
 
   process.on("SIGINT", handleShutdown);
   process.on("SIGTERM", handleShutdown);
 
-  // Wait for backend server to be ready if launching locally
-  if (mode !== "claude") {
-    const backendConfig = config.backends?.[mode];
-    if (backendConfig?.baseUrl) {
-      console.log(
-        `[anyclaude] Waiting for ${mode} backend server to be ready...`
-      );
-      const isReady = await waitForServerReady(backendConfig.baseUrl);
-      if (isReady) {
-        console.log(`[anyclaude] ✓ Backend server is ready`);
-      } else {
-        console.error(
-          `[anyclaude] ✗ Backend server failed to start or is not responding`
-        );
-        process.exit(1);
-      }
-    } else {
-      console.log(
-        `[anyclaude] No baseUrl configured for ${mode}, skipping wait`
-      );
-    }
-  }
+  // LMStudio and OpenRouter don't need auto-launching - user manages them manually
 
   const proxyURL = createAnthropicProxy({
     providers,
@@ -542,16 +402,12 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         ? "claude-3-5-sonnet-20241022"
         : mode === "openrouter"
           ? openrouterConfig?.model || "z-ai/glm-4.6"
-          : mode === "mlx"
-            ? vllmMlxConfig?.model || "current-model"
-            : lmstudioConfig?.model || "current-model",
+          : lmstudioConfig?.model || "current-model",
     mode,
     backendUrl:
       mode === "lmstudio"
         ? lmstudioConfig?.baseURL
-        : mode === "mlx"
-          ? vllmMlxConfig?.baseURL
-          : mode === "openrouter"
+        : mode === "openrouter"
             ? openrouterConfig?.baseURL
             : undefined,
   });
@@ -578,20 +434,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     console.log(
       `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in LMStudio)`
     );
-  } else if (mode === "mlx") {
-    const endpoint = vllmMlxConfig?.baseURL || "http://localhost:8081/v1";
-    console.log(`[anyclaude] MLX endpoint: ${endpoint}`);
-    const modelConfig = config.backends?.["mlx"]?.model;
-    if (modelConfig && modelConfig !== "current-model") {
-      console.log(
-        `[anyclaude] Model: Auto-launching ${path.basename(modelConfig)}`
-      );
-    } else {
-      console.log(
-        `[anyclaude] Model: current-model (server should be running)`
-      );
-    }
-    console.log(`[anyclaude] Features: prompt caching + tool calling`);
+    console.log(`[anyclaude] Make sure LMStudio is running with a model loaded`);
   } else if (mode === "openrouter") {
     const modelName = openrouterConfig?.model || "z-ai/glm-4.6";
     console.log(`[anyclaude] Using OpenRouter API`);
@@ -619,9 +462,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     logSessionContext({
       mode,
       model:
-        mode === "mlx"
-          ? vllmMlxConfig?.model || "current-model"
-          : mode === "lmstudio"
+        mode === "lmstudio"
             ? lmstudioConfig?.model || "current-model"
             : mode === "openrouter"
               ? openrouterConfig?.model || "z-ai/glm-4.6"
@@ -629,9 +470,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       backendUrl:
         mode === "lmstudio"
           ? lmstudioConfig?.baseURL
-          : mode === "mlx"
-            ? vllmMlxConfig?.baseURL
-            : mode === "openrouter"
+          : mode === "openrouter"
               ? openrouterConfig?.baseURL
               : undefined,
       proxyUrl: proxyURL,
@@ -668,7 +507,6 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     });
 
     proc.on("exit", (code) => {
-      cleanupServerProcess();
       process.exit(code ?? 0);
     });
   }

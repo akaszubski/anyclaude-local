@@ -31,8 +31,8 @@ For complete control, create `.anyclauderc.json` in your project root:
   "backends": {
     "lmstudio": {
       "enabled": true,
-      "port": 1234,
-      "baseUrl": "http://localhost:1234/v1",
+      "port": 8082,
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
       "compatibility": "legacy",
@@ -106,8 +106,8 @@ interface AnyclaudeConfig {
   "backends": {
     "lmstudio": {
       "enabled": true,
-      "port": 1234,
-      "baseUrl": "http://localhost:1234/v1",
+      "port": 8082,
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
       "compatibility": "legacy",
@@ -120,8 +120,8 @@ interface AnyclaudeConfig {
 **Options:**
 
 - `enabled` - Whether this backend is available
-- `port` - LMStudio server port (default: 1234)
-- `baseUrl` - LMStudio API endpoint (default: `http://localhost:1234/v1`)
+- `port` - LMStudio server port (default: 8082)
+- `baseUrl` - LMStudio API endpoint (default: `http://localhost:8082/v1`)
 - `apiKey` - API key for LMStudio (default: `lm-studio`)
 - `model` - Model identifier (default: `current-model` - uses whatever is loaded in LMStudio)
 - `compatibility` - OpenAI compatibility mode (default: `legacy`)
@@ -194,7 +194,7 @@ export ANYCLAUDE_MODE=claude
 
 ```bash
 # LMStudio endpoint
-export LMSTUDIO_URL=http://localhost:1234/v1
+export LMSTUDIO_URL=http://localhost:8082/v1
 
 # Model name (LMStudio uses whatever is loaded)
 export LMSTUDIO_MODEL=current-model
@@ -320,7 +320,7 @@ Use LMStudio for all tools:
   },
   "backends": {
     "lmstudio": {
-      "baseUrl": "http://localhost:1234/v1"
+      "baseUrl": "http://localhost:8082/v1"
     }
   }
 }

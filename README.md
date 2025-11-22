@@ -857,8 +857,8 @@ Create `.anyclauderc.json` in your project root to configure backends:
     },
     "lmstudio": {
       "enabled": false,
-      "port": 1234,
-      "baseUrl": "http://localhost:1234/v1",
+      "port": 8082,
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
       "compatibility": "legacy",
@@ -896,7 +896,7 @@ export MLX_MODEL=/path/to/your/mlx/model
 export MLX_API_KEY=mlx
 
 # LMStudio configuration
-export LMSTUDIO_URL=http://localhost:1234/v1
+export LMSTUDIO_URL=http://localhost:8082/v1
 export LMSTUDIO_MODEL=current-model
 export LMSTUDIO_API_KEY=lm-studio
 
@@ -1379,7 +1379,7 @@ Debug logs include:
 2. Go to "Server" tab
 3. Load a model
 4. Click "Start Server"
-5. Verify it shows "Server running on http://localhost:1234"
+5. Verify it shows "Server running on http://localhost:8082"
 
 ### Models respond slowly or take 30-60 seconds
 

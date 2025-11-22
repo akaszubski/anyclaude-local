@@ -17,7 +17,7 @@ Best for: First-time setup, compatibility testing
 1. Download LMStudio from https://lmstudio.ai
 2. Install and launch the application
 3. Download a model (e.g., Qwen3-Coder)
-4. Start the local server (LMStudio will show the URL, typically `http://localhost:1234`)
+4. Start the local server (LMStudio will show the URL, typically `http://localhost:8082`)
 
 ### MLX-LM (Best Performance)
 
@@ -162,7 +162,7 @@ Create `.anyclauderc.json` in your project root:
     },
     "lmstudio": {
       "enabled": true,
-      "baseUrl": "http://localhost:1234/v1",
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
       "description": "LMStudio local model server"
@@ -259,7 +259,7 @@ Settings are checked in this order (highest to lowest priority):
 1. **CLI flags** (`anyclaude --mode=mlx-lm`)
 2. **Environment variables** (`export ANYCLAUDE_MODE=mlx-lm`)
 3. **Configuration file** (`.anyclauderc.json`)
-4. **Defaults** (LMStudio at localhost:1234)
+4. **Defaults** (LMStudio at localhost:8082)
 
 Example:
 
@@ -279,7 +279,7 @@ anyclaude --mode=claude
 
 ```bash
 # Test LMStudio
-curl http://localhost:1234/v1/models
+curl http://localhost:8082/v1/models
 
 # Test MLX-LM
 curl http://localhost:8081/v1/models
@@ -297,7 +297,7 @@ PROXY_ONLY=true anyclaude
 # Should output something like:
 # [anyclaude] Mode: LMSTUDIO
 # [anyclaude] Proxy URL: http://localhost:3000
-# [anyclaude] LMStudio endpoint: http://localhost:1234/v1
+# [anyclaude] LMStudio endpoint: http://localhost:8082/v1
 ```
 
 ### Launch Claude Code
@@ -314,11 +314,11 @@ anyclaude
 
 ### Backend Connection Errors
 
-**Problem:** "Connection refused at localhost:1234"
+**Problem:** "Connection refused at localhost:8082"
 
 **Solution:**
 
-1. Verify backend is running: `curl http://localhost:1234/v1/models`
+1. Verify backend is running: `curl http://localhost:8082/v1/models`
 2. Check port is correct in `.anyclauderc.json`
 3. Ensure model is loaded in LMStudio (check LMStudio UI)
 
@@ -377,7 +377,7 @@ export MLX_MODEL=current-model
 export MLX_API_KEY=mlx
 
 # LMStudio
-export LMSTUDIO_URL=http://localhost:1234/v1
+export LMSTUDIO_URL=http://localhost:8082/v1
 export LMSTUDIO_MODEL=current-model
 export LMSTUDIO_API_KEY=lm-studio
 

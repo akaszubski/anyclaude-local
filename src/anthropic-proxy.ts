@@ -619,11 +619,11 @@ export const createAnthropicProxy = ({
             (() => {
               // Fallback: try to determine from provider name
               if (providerName === "lmstudio") {
-                return process.env.LMSTUDIO_URL || "http://localhost:1234";
+                return process.env.LMSTUDIO_URL || "http://localhost:8082";
               } else if (providerName === "mlx") {
                 return process.env.MLX_URL || "http://localhost:8081";
               }
-              return "http://localhost:1234"; // Conservative default
+              return "http://localhost:8082"; // Conservative default
             })();
 
           try {

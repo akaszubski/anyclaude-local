@@ -23,7 +23,7 @@ export class LMStudioClient {
 
   constructor(baseUrl?: string) {
     this.baseUrl =
-      baseUrl || process.env.LMSTUDIO_URL || "http://localhost:1234";
+      baseUrl || process.env.LMSTUDIO_URL || "http://localhost:8082";
   }
 
   /**

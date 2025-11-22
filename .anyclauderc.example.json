@@ -1,38 +1,29 @@
 {
-  "// COMMENT": "AnyClaude Configuration File",
+  "// COMMENT": "AnyClaude Configuration File - Simplified for LMStudio and OpenRouter only",
   "// USAGE": "Copy this to .anyclauderc.json and customize for your setup",
-  "// DOCS": "See CLAUDE.md for detailed configuration guide",
+  "// DOCS": "See README.md for detailed configuration guide",
 
-  "backend": "mlx",
+  "backend": "lmstudio",
   "debug": {
     "level": 0,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "mlx": {
-      "enabled": true,
-      "port": 8081,
-      "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "mlx",
-      "model": "/path/to/your/mlx/model",
-      "maxTokens": 262144,
-      "description": "mistral.rs MLX server - Production Rust engine, native MLX, MoE support, excellent tool calling (requires: brew install mistralrs or cargo install mistralrs)"
-    },
     "lmstudio": {
-      "enabled": false,
-      "baseUrl": "http://localhost:1234/v1",
+      "enabled": true,
+      "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
       "compatibility": "legacy",
-      "description": "LMStudio - manual server management, switch models in LMStudio UI"
+      "description": "LMStudio - loads whatever model you have running in the UI"
     },
     "openrouter": {
       "enabled": false,
       "baseUrl": "https://openrouter.ai/api/v1",
       "apiKey": "sk-or-v1-YOUR_API_KEY_HERE",
       "model": "google/gemini-2.5-flash",
-      "description": "OpenRouter - 400+ cloud models, 88% cheaper than Claude API, default: Gemini 2.5 Flash (1M context, thinking mode)"
+      "description": "OpenRouter - 400+ cloud models, 88% cheaper than Claude API"
     },
     "claude": {
       "enabled": false,
@@ -41,53 +32,41 @@
   },
 
   "// BACKEND OPTIONS": {
-    "mlx": "mistral.rs - Production Rust inference with native MLX, auto-launch, MoE support (recommended for Apple Silicon)",
-    "lmstudio": "Local models - cross-platform, manual server",
-    "openrouter": "Cloud models - access GLM-4.6, Qwen, Claude, GPT-4 via one API (recommended for best compatibility)",
+    "lmstudio": "Local models - cross-platform, manual server management",
+    "openrouter": "Cloud models - access Gemini, Qwen, Claude, GPT-4 via one API (recommended for best quality)",
     "claude": "Official Claude API - full features, highest cost"
   },
 
   "// POPULAR OPENROUTER MODELS": {
-    "google/gemini-2.5-flash": "$0.30/$2.50 per 1M tokens - 1M context, thinking mode, best value (DEFAULT)",
+    "google/gemini-2.5-flash": "$0.30/$2.50 per 1M tokens - 1M context, thinking mode (DEFAULT, best value)",
     "google/gemini-3-pro-preview": "$2/$12 per 1M tokens - 1M context, state-of-the-art reasoning",
     "z-ai/glm-4.6": "$0.60/$2 per 1M tokens - 200K context, excellent for coding",
     "qwen/qwen-2.5-72b-instruct": "$0.35/$0.70 per 1M tokens - cheapest option",
-    "google/gemini-2.0-flash-001": "$0.10/$0.40 per 1M tokens - 1M context, fastest/cheapest",
+    "google/gemini-2.0-flash-001": "$0.10/$0.40 per 1M tokens - fastest/cheapest",
     "anthropic/claude-3.5-sonnet": "$3/$15 per 1M tokens - highest quality",
     "openai/gpt-4": "$10/$30 per 1M tokens - via OpenRouter"
   },
 
   "// ENVIRONMENT VARIABLES": {
-    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|mlx|openrouter)",
+    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|openrouter)",
     "ANYCLAUDE_DEBUG": "Debug level (0=off, 1=basic, 2=verbose, 3=trace with prompts)",
     "OPENROUTER_API_KEY": "Your OpenRouter API key (get from openrouter.ai)",
     "OPENROUTER_MODEL": "Override OpenRouter model",
     "ANTHROPIC_API_KEY": "Your Anthropic API key (for claude mode)",
-    "MLX_MODEL": "Override MLX model path",
     "LMSTUDIO_MODEL": "Override LMStudio model"
   },
 
   "// QUICK START": {
-    "1. Choose backend": "Set 'backend' to mlx, lmstudio, openrouter, or claude",
-    "2. Configure backend": "Fill in the appropriate backend section above",
-    "3. Run": "anyclaude (or: anyclaude --mode=openrouter to override)"
-  },
-
-  "// TRACE LOGGING": {
-    "When enabled": "ANYCLAUDE_DEBUG=3 or automatic for claude/openrouter modes",
-    "Saves to": "~/.anyclaude/traces/{mode}/",
-    "Purpose": "Analyze Claude Code's prompts and tool usage patterns",
-    "Disable": "ANYCLAUDE_DEBUG=0 anyclaude --mode=claude"
+    "LMStudio": "1. Load a model in LMStudio, 2. Set backend: 'lmstudio', 3. Run: anyclaude",
+    "OpenRouter": "1. Get API key from openrouter.ai, 2. Set backend: 'openrouter', 3. Add apiKey, 4. Run: anyclaude"
   },
 
   "// COST COMPARISON (per 1M tokens)": {
-    "Gemini 2.5 Flash (DEFAULT)": "$0.30 input / $2.50 output - 88% cheaper than Claude, 1M context, thinking mode",
+    "Gemini 2.5 Flash (DEFAULT)": "$0.30 input / $2.50 output - 88% cheaper than Claude, thinking mode",
     "Gemini 2.0 Flash": "$0.10 input / $0.40 output - cheapest cloud option",
-    "Qwen 2.5 72B (OpenRouter)": "$0.35 input / $0.70 output - best value for basic coding",
-    "GLM-4.6 (OpenRouter)": "$0.60 input / $2.00 output - good for coding",
-    "Gemini 3 Pro": "$2.00 input / $12.00 output - state-of-the-art performance",
+    "Qwen 2.5 72B": "$0.35 input / $0.70 output - best value for basic coding",
+    "GLM-4.6": "$0.60 input / $2.00 output - good for coding",
     "Claude 3.5 Sonnet": "$3.00 input / $15.00 output - highest quality",
-    "GPT-4 (via OpenRouter)": "$10.00 input / $30.00 output",
-    "Local models (MLX/LMStudio)": "$0 (hardware costs only)"
+    "Local models (LMStudio)": "$0 (hardware costs only)"
   }
 }
