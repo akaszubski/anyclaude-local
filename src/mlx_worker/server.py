@@ -7,8 +7,10 @@ Provides OpenAI-compatible chat completions endpoint and cluster health monitori
 import os
 import re
 import json
+import sys
 import time
 import uuid
+from pathlib import Path
 from typing import List, Dict, Any, Optional, Union
 from contextlib import asynccontextmanager
 
@@ -19,6 +21,14 @@ import uvicorn
 
 # Get model path from environment - this is the actual filesystem path
 MLX_MODEL_PATH = os.environ.get("MLX_MODEL_PATH", "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit")
+
+# Add scripts directory to path for tool parsers
+scripts_path = Path(__file__).parent.parent.parent / 'scripts'
+sys.path.insert(0, str(scripts_path))
+
+# Import tool parsers
+from lib.qwen_tool_parser import QwenToolParser
+from lib.tool_parsers import ParserRegistry, OpenAIToolParser, FallbackParser
 
 from .inference import generate_stream, InferenceError
 from .cache import (
@@ -59,86 +69,80 @@ class ChatCompletionRequest(BaseModel):
     tools: Optional[List[Dict[str, Any]]] = None
 
 
-def parse_tool_calls(content: str) -> tuple[str, List[Dict[str, Any]]]:
+# Initialize parser registry with priority-ordered parsers
+def _init_parser_registry() -> ParserRegistry:
     """
-    Parse tool calls from model output.
+    Initialize ParserRegistry with Qwen, OpenAI, and Fallback parsers
 
-    Qwen2.5 outputs tool calls in various XML formats:
-    1. <tool_call>{"name": "func", "arguments": {...}}</tool_call>
-    2. <tools>{"name": "func", "arguments": {...}}</tools>
-    3. <function name="func" arguments='{...}'/>
+    Priority order:
+    1. OpenAIToolParser (priority 20) - Standard OpenAI format
+    2. QwenToolParser (priority 10) - Qwen2.5-Coder XML formats
+    3. FallbackParser (priority 100) - Plain text fallback
 
     Returns:
-        Tuple of (text_content, tool_calls)
+        Configured ParserRegistry instance
     """
-    tool_calls = []
-    text_parts = []
-    last_end = 0
+    registry = ParserRegistry()
 
-    # Pattern 1: <tool_call> or <tools> with JSON body
-    pattern1 = r'<(?:tool_call|tools)>\s*(.*?)\s*</(?:tool_call|tools)>'
-    for match in re.finditer(pattern1, content, re.DOTALL):
-        text_parts.append(content[last_end:match.start()])
-        last_end = match.end()
-        try:
-            tool_json = json.loads(match.group(1))
+    # Register parsers in priority order (lower = higher priority)
+    registry.register(QwenToolParser(), priority=10)  # Highest priority for Qwen
+    registry.register(OpenAIToolParser(), priority=20)  # Standard OpenAI format
+    registry.register(FallbackParser(), priority=100)  # Last resort
+
+    return registry
+
+
+# Global parser registry
+_parser_registry = _init_parser_registry()
+
+
+def parse_tool_calls_with_registry(content: str) -> tuple[str, List[Dict[str, Any]]]:
+    """
+    Parse tool calls using ParserRegistry fallback chain
+
+    Args:
+        content: Raw model output
+
+    Returns:
+        Tuple of (text_content, tool_calls in OpenAI format)
+    """
+    # Use parser registry to parse response
+    parsed = _parser_registry.parse_with_fallback(content)
+
+    # Handle different return types
+    if parsed is None:
+        # No tool calls found
+        return content, []
+
+    if isinstance(parsed, dict):
+        # FallbackParser returned text response
+        if parsed.get('type') == 'text':
+            return parsed.get('content', content), []
+        # Unknown dict format
+        return content, []
+
+    if isinstance(parsed, list):
+        # Tool calls found - convert to OpenAI format
+        tool_calls = []
+        text_parts = []
+
+        for call in parsed:
+            # Convert Qwen format to OpenAI format
             tool_calls.append({
                 "id": f"call_{uuid.uuid4().hex[:8]}",
                 "type": "function",
                 "function": {
-                    "name": tool_json.get("name", ""),
-                    "arguments": json.dumps(tool_json.get("arguments", {}))
+                    "name": call.get("name", ""),
+                    "arguments": json.dumps(call.get("arguments", {}))
                 }
             })
-        except json.JSONDecodeError:
-            text_parts.append(match.group(0))
 
-    # Pattern 2: <function name="..." arguments='...'/>
-    pattern2 = r'<function\s+name=["\']([^"\']+)["\']\s+arguments=["\'](.+?)["\']\s*/>'
-    for match in re.finditer(pattern2, content, re.DOTALL):
-        if match.start() >= last_end:
-            text_parts.append(content[last_end:match.start()])
-            last_end = match.end()
-            try:
-                args = json.loads(match.group(2))
-                tool_calls.append({
-                    "id": f"call_{uuid.uuid4().hex[:8]}",
-                    "type": "function",
-                    "function": {
-                        "name": match.group(1),
-                        "arguments": json.dumps(args)
-                    }
-                })
-            except json.JSONDecodeError:
-                text_parts.append(match.group(0))
+        # Return empty text since tool calls were extracted
+        # (text extraction logic could be added if needed)
+        return "", tool_calls
 
-    # Pattern 3: <{json}> format (another Qwen variation)
-    pattern3 = r'<(\{[^>]+\})>'
-    for match in re.finditer(pattern3, content, re.DOTALL):
-        if match.start() >= last_end:
-            text_parts.append(content[last_end:match.start()])
-            last_end = match.end()
-            try:
-                tool_json = json.loads(match.group(1))
-                tool_calls.append({
-                    "id": f"call_{uuid.uuid4().hex[:8]}",
-                    "type": "function",
-                    "function": {
-                        "name": tool_json.get("name", ""),
-                        "arguments": json.dumps(tool_json.get("arguments", {}))
-                    }
-                })
-            except json.JSONDecodeError:
-                text_parts.append(match.group(0))
-
-    # Add remaining text
-    text_parts.append(content[last_end:])
-
-    # Clean up markdown code blocks that might wrap tool calls
-    final_text = "".join(text_parts).strip()
-    final_text = re.sub(r'```(?:xml)?\s*```', '', final_text).strip()
-
-    return final_text, tool_calls
+    # Unknown return type
+    return content, []
 
 
 class CacheWarmRequest(BaseModel):
@@ -154,6 +158,10 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     # Startup
     print("MLX Worker Node starting...")
+
+    # Make parser registry available in app state for testing
+    app.state.parser_registry = _parser_registry
+
     yield
     # Shutdown
     print("MLX Worker Node shutting down...")
@@ -235,8 +243,8 @@ async def chat_completions(
 
                 raw_content = "".join(tokens)
 
-                # Parse tool calls from response
-                content, tool_calls = parse_tool_calls(raw_content)
+                # Parse tool calls from response using registry
+                content, tool_calls = parse_tool_calls_with_registry(raw_content)
 
                 # Record success
                 latency = (time.time() - start_time) * 1000

@@ -95,6 +95,7 @@ Complete documentation for anyclaude - the translation layer enabling Claude Cod
 
 **Fixing Issues**
 
+- **[Qwen Tool Parser Fix](debugging/mlx-worker-qwen-parser-fix.md)** - Multi-format tool call parser for Qwen2.5-Coder-7B with plugin-based fallback chain (Issue #33)
 - **[Tool Calling Fix](debugging/tool-calling-fix.md)** - Investigation of streaming tool parameters
 - **[Tool Call Debug](debugging/tool-call-debug.md)** - Debugging tool execution
 - **[Trace Analysis](debugging/trace-analysis.md)** - Using trace files
