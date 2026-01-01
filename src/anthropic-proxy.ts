@@ -43,6 +43,245 @@ import { getCacheMonitor } from "./cache-monitor-dashboard";
 import { extractMarkers } from "./cache-control-extractor";
 import { getTimeoutConfig } from "./timeout-config";
 import { createHash } from "crypto";
+import {
+  buildOptimizedSystemPrompt,
+  shouldUseSmartPrompt,
+} from "./smart-system-prompt";
+import {
+  optimizePromptAdaptive,
+  type OptimizationResult,
+} from "./adaptive-optimizer";
+import { filterSystemPrompt, OptimizationTier, type FilterResult } from './safe-system-filter';
+import { getClusterManager } from "./cluster/cluster-manager";
+import type { MLXNode } from "./cluster/cluster-types";
+
+/**
+ * Helper function to determine if safe system filter should be used
+ *
+ * Rules:
+ * 1. Returns false if smartSystemPrompt is active (smart takes priority)
+ * 2. Returns true if safeSystemFilter is explicitly true
+ * 3. Returns true if mode is 'lmstudio' AND safeSystemFilter is not explicitly false
+ * 4. Returns false for other modes (claude, openrouter) by default
+ */
+function shouldUseSafeFilter(options: CreateAnthropicProxyOptions): boolean {
+  // Smart prompt takes priority over safe filter
+  if (options.smartSystemPrompt === true) {
+    return false;
+  }
+
+  // Explicitly enabled
+  if (options.safeSystemFilter === true) {
+    return true;
+  }
+
+  // Explicitly disabled
+  if (options.safeSystemFilter === false) {
+    return false;
+  }
+
+  // For LMStudio mode: enabled by default if not explicitly disabled
+  if (options.mode === 'lmstudio' && options.safeSystemFilter === undefined) {
+    return true;
+  }
+
+  // For other modes: disabled by default
+  return false;
+}
+
+/**
+ * Map config tier to OptimizationTier enum
+ *
+ * In 'auto' mode, selects tier based on prompt size:
+ * - < 5000 tokens: MINIMAL
+ * - < 10000 tokens: MODERATE
+ * - < 20000 tokens: AGGRESSIVE
+ * - >= 20000 tokens: EXTREME
+ *
+ * @param tier - Optimization tier: explicit tier name or 'auto' for size-based selection
+ * @param promptTokens - Estimated token count for prompt (used only in auto mode)
+ * @returns OptimizationTier enum value
+ */
+function mapTierConfig(
+  tier: 'auto' | 'minimal' | 'moderate' | 'aggressive' | 'extreme' | undefined,
+  promptTokens?: number
+): OptimizationTier {
+  // If tier is explicit, map to enum
+  if (tier === 'minimal') return OptimizationTier.MINIMAL;
+  if (tier === 'moderate') return OptimizationTier.MODERATE;
+  if (tier === 'aggressive') return OptimizationTier.AGGRESSIVE;
+  if (tier === 'extreme') return OptimizationTier.EXTREME;
+
+  // Auto mode: select tier based on prompt size
+  if (!promptTokens) {
+    return OptimizationTier.MODERATE; // Safe default
+  }
+
+  if (promptTokens < 5000) return OptimizationTier.MINIMAL;
+  if (promptTokens < 10000) return OptimizationTier.MODERATE;
+  if (promptTokens < 20000) return OptimizationTier.AGGRESSIVE;
+  return OptimizationTier.EXTREME;
+}
+
+/**
+ * Get the optimization strategy being used
+ *
+ * Determines which prompt optimization strategy applies based on config options.
+ * Priority order: smart > safe > truncate > passthrough
+ *
+ * @param options - Proxy configuration options
+ * @returns Active strategy: 'smart' (context-aware), 'safe' (filtered), 'truncate' (size-limited), or 'passthrough' (no optimization)
+ */
+function getOptimizationStrategy(options: CreateAnthropicProxyOptions): 'smart' | 'safe' | 'truncate' | 'passthrough' {
+  if (options.smartSystemPrompt === true) {
+    return 'smart';
+  }
+  if (shouldUseSafeFilter(options)) {
+    return 'safe';
+  }
+  if (options.truncateSystemPrompt === true) {
+    return 'truncate';
+  }
+  return 'passthrough';
+}
+
+/**
+ * Apply safe system filter with error handling
+ *
+ * Removes optional sections from system prompt while preserving critical tool calling
+ * instructions. Includes multi-level debug logging for troubleshooting.
+ *
+ * @param prompt - System prompt to filter
+ * @param options - Configuration options (used to determine filter tier)
+ * @returns FilterResult with filtered prompt, statistics, and validation info
+ */
+function applySafeSystemFilter(
+  prompt: string,
+  options: CreateAnthropicProxyOptions
+): FilterResult {
+  const estimateTokens = (text: string) => Math.floor(text.length / 4);
+  const promptTokens = estimateTokens(prompt);
+  const tier = mapTierConfig(options.filterTier, promptTokens);
+
+  const result = filterSystemPrompt(prompt, { tier });
+
+  // Debug logging (only when called standalone, not in optimization chain)
+  if (isDebugEnabled()) {
+    const msg = `[Safe System Filter] Applied tier ${result.appliedTier} | ${result.stats.originalTokens} → ${result.stats.filteredTokens} tokens (${result.stats.reductionPercent.toFixed(1)}% reduction)`;
+    debug(1, msg);
+    // Also log to console for testing
+    console.log(msg);
+  }
+
+  if (isVerboseDebugEnabled()) {
+    const statsData = {
+      originalTokens: result.stats.originalTokens,
+      filteredTokens: result.stats.filteredTokens,
+      reductionPercent: result.stats.reductionPercent.toFixed(1) + '%',
+      processingTimeMs: result.stats.processingTimeMs
+    };
+    debug(2, `[Safe System Filter] Stats:`, statsData);
+    // Also log to console for testing
+    console.log(`[Safe System Filter] Stats: ${JSON.stringify(statsData)}`);
+  }
+
+  if (isTraceDebugEnabled()) {
+    const traceData = {
+      appliedTier: result.appliedTier,
+      validation: result.validation,
+      promptSnippet: result.filteredPrompt.substring(0, 200)
+    };
+    debug(3, `[Safe System Filter] Full prompt details:`, traceData);
+    // Also log to console for testing
+    console.log(`[Safe System Filter] Full prompt details: ${JSON.stringify(traceData)}`);
+  }
+
+  return result;
+}
+
+/**
+ * Select optimization tier based on prompt size and config
+ *
+ * Estimates token count from prompt and selects appropriate optimization tier.
+ * Returns tier as string (uppercase) for test compatibility.
+ *
+ * @param prompt - System prompt to analyze
+ * @param tierConfig - Requested tier: explicit tier name or 'auto' for size-based selection
+ * @returns Optimization tier as uppercase string: MINIMAL, MODERATE, AGGRESSIVE, or EXTREME
+ */
+function selectOptimizationTier(
+  prompt: string,
+  tierConfig: 'auto' | 'minimal' | 'moderate' | 'aggressive' | 'extreme' | undefined
+): 'MINIMAL' | 'MODERATE' | 'AGGRESSIVE' | 'EXTREME' {
+  const estimateTokens = (text: string) => Math.floor(text.length / 4);
+  const promptTokens = estimateTokens(prompt);
+  const tier = mapTierConfig(tierConfig, promptTokens);
+
+  // Convert enum to string for test compatibility
+  return tier as 'MINIMAL' | 'MODERATE' | 'AGGRESSIVE' | 'EXTREME';
+}
+
+/**
+ * Optimize system prompt using selected strategy
+ *
+ * Applies the appropriate optimization strategy and falls back gracefully if it fails.
+ * Safe filter validates filtered prompts and falls back to truncate if validation fails.
+ *
+ * @param prompt - System prompt to optimize
+ * @param options - Configuration options determining which strategy to use
+ * @returns Object with strategy name and optimized (or original) prompt
+ */
+function optimizeSystemPrompt(
+  prompt: string,
+  options: CreateAnthropicProxyOptions
+): { strategy: string; prompt: string } {
+  const strategy = getOptimizationStrategy(options);
+
+  if (strategy === 'safe') {
+    try {
+      const result = applySafeSystemFilter(prompt, options);
+
+      if (result.validation.isValid) {
+        return { strategy: 'safe', prompt: result.filteredPrompt };
+      }
+
+      // Fallback to truncate if validation fails
+      if (options.truncateSystemPrompt) {
+        return { strategy: 'truncate', prompt };
+      }
+    } catch (error) {
+      // On error, fallback to truncate or passthrough
+      if (options.truncateSystemPrompt) {
+        return { strategy: 'truncate', prompt };
+      }
+    }
+  }
+
+  return { strategy, prompt };
+}
+
+/**
+ * Compute hashes for system prompt and tools for cache affinity routing.
+ *
+ * Used by MLX cluster routing to assign requests to nodes with warm caches.
+ *
+ * @param body - Anthropic API request body
+ * @returns Object with systemHash and toolsHash
+ */
+function computePromptHash(body: any): { systemHash: string; toolsHash: string } {
+  let systemPrompt = "";
+  if (typeof body.system === "string") {
+    systemPrompt = body.system;
+  } else if (Array.isArray(body.system)) {
+    systemPrompt = body.system.map((s: any) => (typeof s === "string" ? s : JSON.stringify(s))).join("\n");
+  }
+  const systemInput = JSON.stringify({ system: systemPrompt });
+  const toolsInput = JSON.stringify({ tools: body.tools || [] });
+  return {
+    systemHash: createHash("sha256").update(systemInput).digest("hex"),
+    toolsHash: createHash("sha256").update(toolsInput).digest("hex"),
+  };
+}
 
 export type CreateAnthropicProxyOptions = {
   providers: Record<string, ProviderV2>;
@@ -51,6 +290,12 @@ export type CreateAnthropicProxyOptions = {
   defaultModel: string;
   mode: AnyclaudeMode;
   backendUrl?: string; // URL of the active backend for model queries
+  truncateSystemPrompt?: boolean; // Truncate system prompt for LMStudio
+  systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
+  smartSystemPrompt?: boolean; // Use dynamic context-aware prompt optimization
+  smartPromptMode?: "simple" | "intelligent"; // Optimization strategy
+  safeSystemFilter?: boolean; // Enable/disable safe filtering
+  filterTier?: 'auto' | 'minimal' | 'moderate' | 'aggressive' | 'extreme'; // Optimization tier
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -64,6 +309,12 @@ export const createAnthropicProxy = ({
   defaultModel,
   mode,
   backendUrl,
+  truncateSystemPrompt = false,
+  systemPromptMaxTokens = 2000,
+  smartSystemPrompt = false,
+  smartPromptMode = "simple",
+  safeSystemFilter = false,
+  filterTier = 'auto',
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -462,8 +713,67 @@ export const createAnthropicProxy = ({
         );
 
         // Use default provider and model (LMStudio)
-        const providerName = defaultProvider;
-        const model = defaultModel;
+        let providerName = defaultProvider;
+        let model = defaultModel;
+        let selectedNode: MLXNode | null = null;
+
+        // Cluster routing for MLX cluster mode
+        if (mode === 'mlx-cluster') {
+          try {
+            const clusterManager = getClusterManager();
+
+            // Compute hashes for cache affinity (routes similar prompts to same node for warm cache)
+            const { systemHash, toolsHash } = computePromptHash(body);
+
+            // Extract session ID from request headers for session stickiness
+            const sessionId = req.headers['x-session-id'] as string | undefined;
+
+            // Select node using cache affinity (hash-based routing) and session stickiness
+            // Requests with same system prompt/tools route to node with warm cache when possible
+            selectedNode = clusterManager.selectNode(systemHash, toolsHash, sessionId);
+
+            if (!selectedNode) {
+              debug(1, '[Cluster Routing] No healthy nodes available');
+              res.writeHead(503, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  type: "error",
+                  error: {
+                    type: "overloaded_error",
+                    message: "No healthy cluster nodes available",
+                  },
+                })
+              );
+              return;
+            }
+
+            debug(2, `[Cluster Routing] Selected node ${selectedNode.id} at ${selectedNode.url}`);
+
+            // Get provider from cluster manager instead of providers map
+            const clusterProvider = clusterManager.getNodeProvider(selectedNode.id);
+            if (!clusterProvider) {
+              throw new Error(`Provider not found for node ${selectedNode.id}`);
+            }
+
+            // Override provider and model for cluster routing
+            // Use 'mlx-cluster' as provider name and default model
+            providerName = 'mlx-cluster';
+            // Keep the default model, as MLX nodes use whatever model is loaded
+          } catch (error) {
+            debug(1, '[Cluster Routing] Error during node selection:', error);
+            res.writeHead(503, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                type: "error",
+                error: {
+                  type: "overloaded_error",
+                  message: "Cluster routing failed: " + (error instanceof Error ? error.message : String(error)),
+                },
+              })
+            );
+            return;
+          }
+        }
 
         // FIX #3: Log the request for observability and debugging
         logRequest(body, providerName, model);
@@ -479,7 +789,11 @@ export const createAnthropicProxy = ({
           });
         }
 
-        const provider = providers[providerName];
+        // Get provider - either from cluster or from providers map
+        const provider = mode === 'mlx-cluster' && selectedNode
+          ? getClusterManager().getNodeProvider(selectedNode.id)
+          : providers[providerName];
+
         if (!provider) {
           throw new Error(`Provider not configured: ${providerName}`);
         }
@@ -515,6 +829,198 @@ export const createAnthropicProxy = ({
           }
         }
 
+        // Optimization chain priority: smart → safe → truncate → passthrough
+        // Each strategy is mutually exclusive (early return prevents fallthrough).
+        // Safe filter includes fallback: if validation fails, falls back to truncate.
+
+        // Priority 1: Adaptive multi-tier prompt optimization (smartSystemPrompt)
+        // Context-aware: analyzes user request + conversation history to optimize
+        if (smartSystemPrompt && system && shouldUseSmartPrompt(body, mode)) {
+          // Get user message from request
+          const lastMessage = body.messages[body.messages.length - 1];
+          let userMessage = "";
+          if (typeof lastMessage?.content === "string") {
+            userMessage = lastMessage.content;
+          } else if (Array.isArray(lastMessage?.content) && lastMessage.content.length > 0) {
+            const firstContent = lastMessage.content[0];
+            if (firstContent && "text" in firstContent) {
+              userMessage = firstContent.text;
+            }
+          }
+
+          // Apply adaptive optimization with automatic tier selection
+          const result: OptimizationResult = optimizePromptAdaptive(
+            system,
+            userMessage,
+            body.messages.slice(0, -1) // conversation history
+          );
+
+          system = result.optimizedPrompt;
+
+          debug(
+            1,
+            `[Adaptive Optimizer] Tier: ${result.tier.toUpperCase()} | ${result.stats.originalTokens} → ${result.stats.optimizedTokens} tokens (${result.stats.reductionPercent.toFixed(1)}% reduction) | Complexity: ${(result.metrics.estimatedComplexity * 100).toFixed(0)}%`
+          );
+        }
+        // Priority 2: Safe system filter (safeSystemFilter)
+        // Rule-based: removes optional sections while preserving critical tool calling instructions
+        // Validates filtered prompt matches expected patterns (has fallback to truncate)
+        else if (shouldUseSafeFilter({
+          mode,
+          smartSystemPrompt,
+          safeSystemFilter,
+          truncateSystemPrompt,
+          filterTier,
+          providers,
+          defaultProvider,
+          defaultModel,
+          systemPromptMaxTokens,
+          smartPromptMode
+        } as CreateAnthropicProxyOptions) && system) {
+          try {
+            const filterResult = applySafeSystemFilter(system, {
+              mode,
+              smartSystemPrompt,
+              safeSystemFilter,
+              truncateSystemPrompt,
+              filterTier,
+              providers,
+              defaultProvider,
+              defaultModel,
+              systemPromptMaxTokens,
+              smartPromptMode
+            } as CreateAnthropicProxyOptions);
+
+            if (filterResult.validation.isValid) {
+              system = filterResult.filteredPrompt;
+
+              // Debug level 1: Basic info
+              debug(
+                1,
+                `[Safe Filter] Applied tier ${filterResult.appliedTier} | ${filterResult.stats.originalTokens} → ${filterResult.stats.filteredTokens} tokens (${filterResult.stats.reductionPercent.toFixed(1)}% reduction)`
+              );
+
+              // Debug level 2: Validation and fallback details
+              if (isVerboseDebugEnabled()) {
+                debug(2, `[Safe Filter] Validation:`, {
+                  isValid: filterResult.validation.isValid,
+                  presentPatterns: filterResult.validation.presentPatterns.length,
+                  missingPatterns: filterResult.validation.missingPatterns.length,
+                  fallbackOccurred: filterResult.fallbackOccurred
+                });
+              }
+
+              // Debug level 3: Full details with prompt snippets
+              if (isTraceDebugEnabled()) {
+                debug(3, `[Safe Filter] Full result:`, {
+                  appliedTier: filterResult.appliedTier,
+                  preservedSections: filterResult.preservedSections,
+                  removedSections: filterResult.removedSections,
+                  stats: filterResult.stats,
+                  validation: filterResult.validation,
+                  promptSnippet: filterResult.filteredPrompt.substring(0, 200) + '...'
+                });
+              }
+            } else {
+              // Validation failed - fall through to truncate
+              debug(
+                2,
+                `[Safe Filter] Validation failed, falling back to truncate. Missing patterns:`,
+                filterResult.validation.missingPatterns
+              );
+            }
+          } catch (error) {
+            // Filter error - fall through to truncate
+            debug(
+              2,
+              `[Safe Filter] Error applying filter, falling back:`,
+              error instanceof Error ? error.message : String(error)
+            );
+          }
+        }
+
+        // Priority 3: Simple truncation
+        // Preserves important sections (first 100 lines, marked sections) up to token limit
+        // Falls back to passthrough if truncation disabled
+        if (truncateSystemPrompt && system && !smartSystemPrompt && !shouldUseSafeFilter({
+          mode,
+          smartSystemPrompt,
+          safeSystemFilter,
+          truncateSystemPrompt,
+          filterTier,
+          providers,
+          defaultProvider,
+          defaultModel,
+          systemPromptMaxTokens,
+          smartPromptMode
+        } as CreateAnthropicProxyOptions)) {
+          const originalLength = system.length;
+          // Rough estimate: 1 token ≈ 4 characters
+          const maxChars = systemPromptMaxTokens * 4;
+
+          if (originalLength > maxChars) {
+            // Smart truncation: Extract complete sections, not just headers
+            const lines = system.split("\n");
+            const truncatedLines: string[] = [];
+            let charCount = 0;
+
+            // Critical sections to preserve WITH their content
+            const importantSections = [
+              "You are Claude Code",
+              "# Tone and style",
+              "# Tool usage policy",
+              "# Doing tasks",
+              "# Task Management",
+              "# Asking questions",
+              "# Code References",
+              "IMPORTANT:",
+              "VERY IMPORTANT:",
+              "Usage notes:",
+              "Usage:",
+            ];
+
+            let inImportantSection = false;
+            let sectionStartIdx = -1;
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i]!;
+
+              // Check if this line starts an important section
+              const startsSection = importantSections.some(sec => line.includes(sec));
+
+              if (startsSection) {
+                inImportantSection = true;
+                sectionStartIdx = i;
+              }
+
+              // Check if we're exiting a section (new # header or blank line after content)
+              const isNewSection = line.startsWith("#") && sectionStartIdx !== i;
+              if (inImportantSection && isNewSection && i > sectionStartIdx + 5) {
+                inImportantSection = false;
+              }
+
+              // Always include first 100 lines OR important section content
+              const shouldInclude = i < 100 || inImportantSection;
+
+              if (shouldInclude && charCount + line.length < maxChars) {
+                truncatedLines.push(line);
+                charCount += line.length;
+              }
+
+              // Stop if we exceed max chars
+              if (charCount >= maxChars) break;
+            }
+
+            system = truncatedLines.join("\n");
+            system += "\n\n[System prompt truncated to reduce cache pressure. Core instructions preserved.]";
+
+            debug(
+              1,
+              `[System Prompt] Truncated from ${originalLength} to ${system.length} characters (~${Math.floor(originalLength / 4)} → ~${Math.floor(system.length / 4)} tokens)`
+            );
+          }
+        }
+
         // Note: Previously attempted to normalize system prompt by removing newlines,
         // but this mangled the carefully structured Claude Code instructions.
         // MLX actually handles newlines fine in the system prompt.
@@ -522,6 +1028,14 @@ export const createAnthropicProxy = ({
         // if (system && providerName === "mlx") {
         //   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
         // }
+
+        // Warn about tool calling compatibility (LMStudio only, first request)
+        if (mode === "lmstudio" && body.tools && body.tools.length > 0 && isDebugEnabled()) {
+          debug(
+            1,
+            `[Tool Calling] Sending ${body.tools.length} tools to LMStudio. If you see unusual output (like <|channel|> syntax), your model may not support OpenAI function calling. Try models like Qwen2.5-Coder, DeepSeek-R1, or Llama-3.3.`
+          );
+        }
 
         // Log Claude Code's original tool schemas (TRACE level)
         if (isTraceDebugEnabled() && body.tools) {
@@ -818,6 +1332,9 @@ export const createAnthropicProxy = ({
             });
           }
 
+          // Track request start time for cluster latency recording
+          const requestStartTime = Date.now();
+
           // Create AbortController for timeout protection
           const abortController = new AbortController();
           const timeoutConfig = getTimeoutConfig();
@@ -860,6 +1377,14 @@ export const createAnthropicProxy = ({
                 );
                 // Clear timeout on successful completion
                 if (timeout) clearTimeout(timeout);
+
+                // Record success for cluster routing
+                if (mode === 'mlx-cluster' && selectedNode) {
+                  const latencyMs = Date.now() - requestStartTime;
+                  getClusterManager().recordNodeSuccess(selectedNode.id, latencyMs);
+                  debug(2, `[Cluster Routing] Recorded success for node ${selectedNode.id} (${latencyMs}ms)`);
+                }
+
                 // If the body is already being streamed,
                 // we don't need to do any conversion here.
                 if (body.stream) {
@@ -908,6 +1433,13 @@ export const createAnthropicProxy = ({
                 // Clear timeout on error
                 if (timeout) clearTimeout(timeout);
                 debug(1, `Error for ${providerName}/${model}:`, error);
+
+                // Record failure for cluster routing
+                if (mode === 'mlx-cluster' && selectedNode) {
+                  const err = error instanceof Error ? error : new Error(String(error));
+                  getClusterManager().recordNodeFailure(selectedNode.id, err);
+                  debug(2, `[Cluster Routing] Recorded failure for node ${selectedNode.id}`);
+                }
 
                 // Write comprehensive debug info to temp file
                 const debugFile = writeDebugToTempFile(
@@ -963,6 +1495,13 @@ export const createAnthropicProxy = ({
           }
         } catch (error) {
           debug(1, `Connection error for ${providerName}/${model}:`, error);
+
+          // Record failure for cluster routing
+          if (mode === 'mlx-cluster' && selectedNode) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            getClusterManager().recordNodeFailure(selectedNode.id, err);
+            debug(2, `[Cluster Routing] Recorded failure for node ${selectedNode.id}`);
+          }
 
           // Return a 503 Service Unavailable
           res.writeHead(503, { "Content-Type": "application/json" });
@@ -1413,6 +1952,13 @@ export const createAnthropicProxy = ({
                   : "")
             );
 
+            // Record success for cluster routing (streaming requests)
+            if (mode === 'mlx-cluster' && selectedNode) {
+              const latencyMs = totalDuration;
+              getClusterManager().recordNodeSuccess(selectedNode.id, latencyMs);
+              debug(2, `[Cluster Routing] Recorded streaming success for node ${selectedNode.id} (${latencyMs}ms)`);
+            }
+
             // Record cache metrics for streaming responses
             if (finalUsageData && body) {
               try {
@@ -1583,6 +2129,13 @@ export const createAnthropicProxy = ({
             error
           );
 
+          // Record failure for cluster routing
+          if (mode === 'mlx-cluster' && selectedNode) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            getClusterManager().recordNodeFailure(selectedNode.id, err);
+            debug(2, `[Cluster Routing] Recorded streaming failure for node ${selectedNode.id}`);
+          }
+
           // If we haven't started writing the response yet, send a proper error
           if (!res.headersSent) {
             res.writeHead(503, { "Content-Type": "application/json" });
@@ -1646,4 +2199,13 @@ export const createAnthropicProxy = ({
     return address;
   }
   return `http://localhost:${address.port}`;
+};
+
+// Export helper functions for testing
+export {
+  shouldUseSafeFilter,
+  getOptimizationStrategy,
+  applySafeSystemFilter,
+  selectOptimizationTier,
+  optimizeSystemPrompt,
 };

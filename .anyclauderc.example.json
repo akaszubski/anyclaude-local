@@ -1,5 +1,5 @@
 {
-  "// COMMENT": "AnyClaude Configuration File - Simplified for LMStudio and OpenRouter only",
+  "// COMMENT": "AnyClaude Configuration File - LMStudio, OpenRouter, and MLX Cluster",
   "// USAGE": "Copy this to .anyclauderc.json and customize for your setup",
   "// DOCS": "See README.md for detailed configuration guide",
 
@@ -16,7 +16,13 @@
       "apiKey": "lm-studio",
       "model": "current-model",
       "compatibility": "legacy",
-      "description": "LMStudio - loads whatever model you have running in the UI"
+      "description": "LMStudio - loads whatever model you have running in the UI",
+      "truncateSystemPrompt": false,
+      "systemPromptMaxTokens": 2000,
+      "smartSystemPrompt": false,
+      "smartPromptMode": "simple",
+      "safeSystemFilter": true,
+      "filterTier": "auto"
     },
     "openrouter": {
       "enabled": false,
@@ -28,13 +34,81 @@
     "claude": {
       "enabled": false,
       "description": "Real Anthropic Claude API (requires ANTHROPIC_API_KEY env var)"
+    },
+    "mlx-cluster": {
+      "enabled": false,
+      "description": "Distributed MLX inference across multiple Apple Silicon Macs",
+      "discovery": {
+        "mode": "static",
+        "nodes": [
+          {
+            "id": "mac-studio-1",
+            "url": "http://192.168.1.100:8081"
+          },
+          {
+            "id": "macbook-pro-1",
+            "url": "http://192.168.1.101:8081"
+          }
+        ]
+      },
+      "health": {
+        "checkIntervalMs": 30000,
+        "timeoutMs": 5000,
+        "maxConsecutiveFailures": 3,
+        "unhealthyThreshold": 0.5
+      },
+      "routing": {
+        "strategy": "cache-aware",
+        "maxRetries": 2,
+        "retryDelayMs": 1000
+      },
+      "cache": {
+        "maxCacheAgeSec": 600,
+        "minCacheHitRate": 0.7,
+        "maxCacheSizeTokens": 100000
+      }
     }
   },
 
   "// BACKEND OPTIONS": {
     "lmstudio": "Local models - cross-platform, manual server management",
     "openrouter": "Cloud models - access Gemini, Qwen, Claude, GPT-4 via one API (recommended for best quality)",
-    "claude": "Official Claude API - full features, highest cost"
+    "claude": "Official Claude API - full features, highest cost",
+    "mlx-cluster": "Distributed inference - multiple Macs with shared KV cache (for MLX servers)"
+  },
+
+  "// MLX CLUSTER CONFIGURATION (Issue #22-32)": {
+    "discovery.mode": "static | dns | kubernetes - how to find cluster nodes",
+    "discovery.nodes": "Array of {id, url} for static node configuration",
+    "health.checkIntervalMs": "How often to check node health (default: 30000ms = 30s)",
+    "health.timeoutMs": "Health check timeout (default: 5000ms = 5s)",
+    "health.maxConsecutiveFailures": "Failures before marking unhealthy (default: 3)",
+    "health.unhealthyThreshold": "Failure rate threshold (0.0-1.0, default: 0.5 = 50%)",
+    "routing.strategy": "round-robin | least-loaded | cache-aware | latency-based",
+    "routing.maxRetries": "Retry attempts on node failure (default: 2)",
+    "routing.retryDelayMs": "Delay between retries (default: 1000ms = 1s)",
+    "cache.maxCacheAgeSec": "Max cache entry age before invalidation (default: 600s = 10min)",
+    "cache.minCacheHitRate": "Min hit rate for cache optimization (0.0-1.0, default: 0.7)",
+    "cache.maxCacheSizeTokens": "Max KV cache size in tokens (default: 100000)"
+  },
+
+  "// ROUTING STRATEGIES": {
+    "round-robin": "Simple rotation through healthy nodes",
+    "least-loaded": "Route to node with fewest active requests",
+    "cache-aware": "Prefer nodes with matching system prompt cache (RECOMMENDED)",
+    "latency-based": "Route to node with lowest average response time"
+  },
+
+  "// OPTIMIZATION STRATEGIES (Issue #21)": {
+    "safeSystemFilter": "Enable intelligent prompt optimization that preserves tool calling (default: true for LMStudio, false for others)",
+    "filterTier_auto": "Automatically select tier based on prompt size (recommended)",
+    "filterTier_minimal": "Light optimization - remove optional sections only",
+    "filterTier_moderate": "Balanced - remove verbose explanations",
+    "filterTier_aggressive": "Heavy - remove non-critical guidelines",
+    "filterTier_extreme": "Maximum reduction while preserving core identity and tools",
+    "smartSystemPrompt": "Context-aware dynamic optimization (experimental, higher risk)",
+    "truncateSystemPrompt": "Simple size-based truncation (used as fallback)",
+    "NOTE": "Safe filter takes priority over truncation. Smart prompt takes priority over safe filter."
   },
 
   "// POPULAR OPENROUTER MODELS": {
@@ -48,7 +122,7 @@
   },
 
   "// ENVIRONMENT VARIABLES": {
-    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|openrouter)",
+    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|openrouter|mlx-cluster)",
     "ANYCLAUDE_DEBUG": "Debug level (0=off, 1=basic, 2=verbose, 3=trace with prompts)",
     "OPENROUTER_API_KEY": "Your OpenRouter API key (get from openrouter.ai)",
     "OPENROUTER_MODEL": "Override OpenRouter model",
@@ -58,7 +132,8 @@
 
   "// QUICK START": {
     "LMStudio": "1. Load a model in LMStudio, 2. Set backend: 'lmstudio', 3. Run: anyclaude",
-    "OpenRouter": "1. Get API key from openrouter.ai, 2. Set backend: 'openrouter', 3. Add apiKey, 4. Run: anyclaude"
+    "OpenRouter": "1. Get API key from openrouter.ai, 2. Set backend: 'openrouter', 3. Add apiKey, 4. Run: anyclaude",
+    "MLX Cluster": "1. Start MLX workers on each Mac, 2. Set backend: 'mlx-cluster', 3. Configure nodes, 4. Run: anyclaude --mode=mlx-cluster"
   },
 
   "// COST COMPARISON (per 1M tokens)": {
@@ -67,6 +142,7 @@
     "Qwen 2.5 72B": "$0.35 input / $0.70 output - best value for basic coding",
     "GLM-4.6": "$0.60 input / $2.00 output - good for coding",
     "Claude 3.5 Sonnet": "$3.00 input / $15.00 output - highest quality",
-    "Local models (LMStudio)": "$0 (hardware costs only)"
+    "Local models (LMStudio)": "$0 (hardware costs only)",
+    "MLX Cluster": "$0 (hardware costs only, distributed across multiple Macs)"
   }
 }

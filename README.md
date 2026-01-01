@@ -439,12 +439,51 @@ anyclaude
 }
 ```
 
+### Advanced: Distributed MLX Cluster
+
+For production deployments requiring high availability and load balancing:
+
+```bash
+# Deploy multiple MLX worker nodes
+# Each node runs Python FastAPI server with OpenAI-compatible API
+
+# Worker 1 (GPU1)
+python -m uvicorn src.mlx_worker.server:app --host 0.0.0.0 --port 8081
+
+# Worker 2 (GPU2)
+python -m uvicorn src.mlx_worker.server:app --host 0.0.0.0 --port 8082
+
+# Worker 3 (GPU3)
+python -m uvicorn src.mlx_worker.server:app --host 0.0.0.0 --port 8083
+
+# Configure proxy to use cluster with cache-aware load balancing
+anyclaude --mode=mlx-cluster
+
+# Features:
+# - Intelligent load balancing (round-robin, least-loaded, cache-aware, latency-based)
+# - Automatic health monitoring with circuit breaker
+# - KV cache coordination across nodes
+# - Sticky session routing for cache affinity
+# - Automatic node discovery and failover
+```
+
+**Benefits**:
+- Scale inference across multiple machines
+- Distribute load with intelligent routing
+- Maximize cache hit rate with cache-aware balancing
+- Handle node failures automatically
+- Production-grade monitoring and metrics
+
+**See [CLAUDE.md - MLX Worker Nodes](CLAUDE.md#mlx-worker-nodes-for-distributed-inference) for complete setup guide**.
+
 ### Full Documentation
 
 - **[Mode Switching Guide](docs/guides/mode-switching.md)** - Complete guide to all 4 modes
 - **[OpenRouter Setup](docs/guides/openrouter-setup.md)** - Access 400+ models cheaply
 - **[Authentication Guide](docs/guides/authentication.md)** - API keys for cloud modes
 - **[Trace Analysis](docs/guides/trace-analysis.md)** - Analyze Claude Code prompts
+- **[MLX Cluster Setup](CLAUDE.md#mlx-worker-nodes-for-distributed-inference)** - Distributed inference with load balancing
+- **[MLX Architecture](docs/architecture/mlx-cluster-system.md)** - Cluster design and concepts
 
 ---
 

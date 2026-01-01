@@ -39,691 +39,1142 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Issue #14: Streaming JSON Parser** - Character-by-character JSON tokenization for incremental tool detection
+- **Issue #23: MLX Cluster Configuration Parser** - Configuration parsing and validation for cluster management (654 lines, 97 tests)
 
-  **Implementation Status**: 78% Complete (Unit Tests Passing | Integration Pending)
+  **Purpose**: Parse and validate MLX cluster configuration from files and environment variables with comprehensive error reporting and validation.
 
-  **Streaming JSON Parser** - Incremental JSON parsing with early tool detection (693 lines)
-  - **Purpose**: Detect tool calls from partial JSON before complete response arrives (60% faster than full parse)
-  - **Components**:
-    - JSONTokenizer: Character-by-character lexer with state machine (6 states: IDLE, IN_STRING, IN_NUMBER, IN_KEYWORD, token queue management)
-    - IncrementalJSONParser: Streaming parser with partial object building and delta tracking
-    - Delta Generator: Extracts only new JSON portions (40% data reduction)
-    - Tool Detector: Early recognition from partial JSON (name field detection)
-  - **Architecture**: `src/streaming-json-parser.ts` (693 lines)
-    - Classes: `JSONTokenizer`, `IncrementalJSONParser`, `Token` interface, `ParseResult` interface
-    - Token types: STRING, NUMBER, TRUE, FALSE, NULL, LEFT_BRACE, RIGHT_BRACE, LEFT_BRACKET, RIGHT_BRACKET, COLON, COMMA, EOF, ERROR
-    - Methods: `nextToken()`, `flush()`, `reset()`, `feed()`, `detectToolCall()`, `getDelta()`, `getCurrentState()`, `getField()`
-  - **Security Features**:
-    - 1MB buffer limit (prevents memory exhaustion)
-    - 64-level nesting depth limit (prevents stack overflow)
-    - 30-second timeout (prevents infinite loops)
-    - Input sanitization (removes control characters except \n, \r, \t)
-  - **Performance Targets**:
-    - Tokenizer: <1ms per nextToken() call
-    - Parser: <5ms overhead per chunk
-    - Tool detection: 60% faster than full JSON parse
-    - Data reduction: 40% via delta-only transmission
-  - **Test Coverage**: 29/37 Unit Tests Passing (78%)
-    - Files: `tests/unit/streaming-json-parser.test.js` (629 lines)
-    - Pending: `tests/integration/streaming-json-performance.test.js` (529 lines)
-    - Pending: `tests/regression/streaming-json-regression.test.js` (605 lines)
-  - **Known Issues**:
-    - 8 unit tests failing (edge cases in state machine)
-    - Out-of-order state transitions need handling
-    - Complex nested structure handling incomplete
-    - Recovery from partial token streams
+  **Cluster Configuration Module** - Configuration parsing with environment variable overrides (src/cluster/cluster-config.ts - 654 lines)
+  - **Configuration Parsing Functions**
+    - parseClusterConfig(): Main entry point (file + defaults + env overrides)
+    - loadConfigFile(): Load and parse JSON configuration file
+    - mergeWithDefaults(): Deep merge user config with default values
+    - applyEnvOverrides(): Apply environment variable overrides with validation
+
+  - **Environment Variable Support**
+    - `MLX_CLUSTER_NODES`: JSON array of node objects (overrides discovery.nodes)
+    - `MLX_CLUSTER_STRATEGY`: Load balance strategy (round-robin | least-loaded | cache-aware | latency-based)
+    - `MLX_CLUSTER_HEALTH_INTERVAL`: Health check interval in milliseconds (must be positive)
+    - `MLX_CLUSTER_ENABLED`: Enable/disable clustering (true | false)
+    - Each variable takes precedence over file configuration
+
+  - **Comprehensive Validation** (validateClusterConfig() function)
+    - **Required Fields**: discovery configuration, routing strategy
+    - **Discovery Validation**:
+      - Static mode: At least one node required
+      - URL validation: Must start with http:// or https://
+      - DNS mode: Requires dnsName, namespace, serviceLabel
+      - Kubernetes mode: Requires namespace, serviceLabel
+    - **Routing Validation**:
+      - Strategy must be one of: round-robin, least-loaded, cache-aware, latency-based
+      - maxRetries must be non-negative (warns if > 5)
+      - retryDelayMs must be non-negative
+    - **Health Validation**:
+      - checkIntervalMs, timeoutMs must be positive (warns if >= 60 seconds)
+      - maxConsecutiveFailures must be positive
+      - unhealthyThreshold must be between 0.0 and 1.0
+    - **Cache Validation**:
+      - maxCacheAgeSec, maxCacheSizeTokens must be positive
+      - minCacheHitRate must be between 0.0 and 1.0
+    - **Returns**: ValidationResult with isValid, missingRequired, warnings, errors
+
+  - **Error Handling** (ClusterConfigError custom error class)
+    - Error codes: INVALID_CONFIG, MISSING_NODES, INVALID_URL, PARSE_ERROR, FILE_NOT_FOUND, INVALID_STRATEGY
+    - Includes context information for debugging (file path, field name, value)
+    - Maintains proper stack traces for all errors
+
+  - **Result Types**
+    - ValidationResult: Structured validation feedback (isValid, missingRequired, warnings, errors)
+    - ClusterConfigResult: Configuration parsing result (success, config, error, validation)
+
+  - **Default Values** (sensible production defaults)
+    - Discovery: static mode with empty nodes array
+    - Routing: round-robin strategy, 1 retry, 100ms delay
+    - Health: 30s check interval, 5s timeout, 3 consecutive failures threshold, 0.5 error threshold
+    - Cache: 300s max age, 1M token limit, 0.7 min hit rate
+
+  - **Features**
+    - Deep merge for nested objects (preserves user config structure)
+    - Environment variables take highest precedence
+    - Comprehensive error messages with context
+    - Validation warnings for suboptimal configurations
+    - JSON file parsing with detailed error reporting
+    - Path resolution (absolute and relative paths supported)
+
   - **Usage Example**:
     ```typescript
-    const parser = new IncrementalJSONParser();
-    const result = parser.feed('{"name":"Read","id":"tool_123"');
-    console.log(parser.detectToolCall()); // { name: "Read", id: "tool_123" }
+    import { parseClusterConfig, ClusterConfigError } from './cluster-config';
+
+    const result = parseClusterConfig('/etc/cluster.json');
+    if (result.success) {
+      console.log('Cluster configured:', result.config);
+    } else {
+      console.error('Config error:', result.error);
+      console.error('Code:', result.error.code);
+    }
+
+    // Environment variable override
+    process.env.MLX_CLUSTER_STRATEGY = 'cache-aware';
+    const result2 = parseClusterConfig('/etc/cluster.json');
+    // result2.config.routing.strategy === 'cache-aware'
     ```
-  - **Documentation**: Complete architecture documentation in `docs/architecture/streaming-json-parser.md`
-  - **Next Steps**: Integration testing, performance benchmarking, integration with convert-to-anthropic-stream.ts
 
-- **Issue #13: Tool Parser Plugin System & Circuit Breaker** - Extensible tool parsing with resilient failure handling
+  - **Test Coverage**: 97 comprehensive unit tests (tests/unit/cluster-config.test.ts - 1317 lines)
+    - parseClusterConfig: File loading, defaults, env overrides (15 tests)
+    - loadConfigFile: File parsing, errors, missing files (8 tests)
+    - mergeWithDefaults: Deep merge, nested objects, override behavior (12 tests)
+    - applyEnvOverrides: All 4 environment variables, validation errors (18 tests)
+    - validateClusterConfig: All validation rules, warnings, edge cases (28 tests)
+    - ClusterConfigError: Error codes, context, stack traces (6 tests)
+    - Integration: Full parsing pipeline with all features (10 tests)
 
-  **Tool Parser Plugin System** - Extensible plugin-based tool call parsing (561 lines, 6 parsers)
-  - **Architecture**: ABC-based parser registry with priority ordering and fallback chains
-  - **Parsers**: OpenAI format, Commentary format [TOOL_CALL], Custom format, and Fallback text
+  - **Status**: COMPLETE - All 97 tests passing, ready for cluster manager implementation
+  - **Documentation**: Complete JSDoc on all functions with examples and error conditions
+  - **Integration Ready**: Works with cluster-types.ts for type-safe configuration
+
+- **Issue #24: Node Discovery System for MLX Cluster** - Periodic discovery and validation of MLX nodes (409 lines, 87 tests)
+
+  **Purpose**: Implement automatic discovery and validation of MLX nodes in a cluster with lifecycle callbacks for operational monitoring.
+
+  **Node Discovery Module** - Periodic discovery with validation and lifecycle callbacks (src/cluster/cluster-discovery.ts - 409 lines)
+  - **Discovery Patterns**:
+    - Periodic refresh loop with configurable intervals (default: 30 seconds)
+    - HTTP validation via /v1/models endpoint with timeout handling
+    - Automatic deduplication by node ID and URL
+    - Overlap prevention using isDiscovering flag
+    - State tracking with current discovered nodes map
+
+  - **Lifecycle Callbacks** (DiscoveryCallbacks interface)
+    - onNodeDiscovered(nodeId: string, url: string): Called when a node first becomes available
+    - onNodeLost(nodeId: string, url: string): Called when a previously discovered node becomes unavailable
+    - onDiscoveryError(error: DiscoveryError): Called when discovery encounters network/validation errors
+    - All callbacks are optional and include error handling to prevent cascading failures
+
+  - **Core Classes**
+    - **ClusterDiscovery**: Main discovery manager
+      - start(): Begin periodic discovery and perform initial refresh
+      - stop(): Stop discovery and cleanup timers
+      - isRunning(): Check if discovery is active
+      - getDiscoveredNodes(): Get all currently discovered nodes
+      - Private methods: discoverNodes(), validateNode(), refreshNodes()
+
+    - **DiscoveryError**: Custom error class with structured context
+      - code: Error classification (NODE_TIMEOUT, NETWORK_ERROR, etc.)
+      - nodeId?: Identifier of affected node
+      - url?: URL of affected node
+      - Proper instanceof checks via prototype chain setup
+
+  - **Configuration** (DiscoveryConfig interface)
+    - mode: Discovery method (static | dns | kubernetes)
+    - staticNodes: Array of static node URLs (for static mode)
+    - refreshIntervalMs: Period between discovery checks (default: 30000ms)
+    - validationTimeoutMs: HTTP request timeout (default: 5000ms)
+    - dnsName, port, namespace, serviceLabel: For DNS/K8s modes (future)
+
+  - **Validation Features**
+    - Configuration validation at construction time
+    - Mode-specific validation (static requires staticNodes)
+    - Interval and timeout validation (non-negative values)
+    - HTTP response validation (2xx status codes)
+    - JSON structure validation (/v1/models response format)
+
+  - **Error Handling**
+    - AbortController for precise timeout control
+    - Categorized errors: NODE_TIMEOUT, NETWORK_ERROR, DNS_ERROR
+    - Graceful callback error handling (silently ignored)
+    - No exception propagation during refresh cycles
+
+  - **Node Deduplication Strategy**
+    - Composite key: {nodeId}|{url}
+    - Prevents duplicate IDs
+    - Prevents duplicate URLs
+    - Maintains ordered unique list across refreshes
+
+  - **Timer Management**
+    - Recursive setTimeout for precise intervals (not setInterval)
+    - Proper cleanup on stop() to prevent memory leaks
+    - Async-aware scheduling (refreshNodes() completes before next schedule)
+    - No nested timer accumulation
+
+  - **Features**
+    - Automatic retry with interval-based recovery
+    - Change detection: Identifies newly discovered and lost nodes
+    - Extensible for future DNS and Kubernetes discovery modes
+    - Production-grade timeout handling with AbortController
+    - Debug-friendly error messages with context
+
+  - **Usage Example**:
+    ```typescript
+    import { ClusterDiscovery, DiscoveryCallbacks } from './cluster-discovery';
+
+    const callbacks: DiscoveryCallbacks = {
+      onNodeDiscovered: (nodeId, url) => {
+        console.log(`Node discovered: ${nodeId} at ${url}`);
+      },
+      onNodeLost: (nodeId, url) => {
+        console.log(`Node lost: ${nodeId} at ${url}`);
+      },
+      onDiscoveryError: (error) => {
+        console.error(`Discovery error [${error.code}]: ${error.message}`);
+      },
+    };
+
+    const discovery = new ClusterDiscovery(
+      {
+        mode: 'static',
+        staticNodes: [
+          { id: 'node-1', url: 'http://localhost:8080' },
+          { id: 'node-2', url: 'http://localhost:8081' },
+        ],
+        refreshIntervalMs: 30000,
+        validationTimeoutMs: 5000,
+      },
+      callbacks
+    );
+
+    await discovery.start();
+    const nodes = discovery.getDiscoveredNodes();
+    console.log(`${nodes.length} nodes discovered`);
+    ```
+
+  - **Test Coverage**: 87 comprehensive unit tests (tests/unit/cluster-discovery.test.ts - 1557 lines)
+    - DiscoveryError: Construction, context preservation, instanceof checks (5 tests)
+    - ClusterDiscovery configuration: Validation, error cases (8 tests)
+    - Lifecycle: start, stop, isRunning state transitions (12 tests)
+    - Static discovery: Node parsing, deduplication, ordering (10 tests)
+    - Node validation: HTTP requests, timeout handling, response parsing (15 tests)
+    - Discovery refresh: Change detection, callback invocation (12 tests)
+    - Timer management: Scheduling, cleanup, memory leaks (10 tests)
+    - Callback handling: Error handling, exception suppression (7 tests)
+    - Edge cases: Empty nodes, concurrent calls, rapid start/stop (8 tests)
+
+  - **Status**: COMPLETE - All 87 tests passing, ready for cluster manager integration
+  - **Documentation**: Complete JSDoc on all classes and methods with examples
+  - **Integration Ready**: Works with cluster-types.ts and cluster-config.ts for full cluster management
+
+- **Issue #22: MLX Cluster Type System** - Foundation types for distributed MLX cluster management (319 lines)
+
+  **Purpose**: Create comprehensive TypeScript interfaces for managing MLX clusters with health monitoring, cache-aware routing, and load balancing.
+
+  **Cluster Types Module** - Complete type definitions for distributed MLX (src/cluster/cluster-types.ts - 319 lines)
+  - **Node Status Tracking** (NodeStatus enum)
+    - INITIALIZING: Node starting up, not ready for traffic
+    - HEALTHY: Node operational and performing well
+    - DEGRADED: Node operational but experiencing issues (high latency, errors)
+    - UNHEALTHY: Node failing health checks but still reachable
+    - OFFLINE: Node unreachable or shut down
+
+  - **Cluster Status** (ClusterStatus enum)
+    - STARTING: Cluster initializing, not ready for production
+    - HEALTHY: All nodes healthy, full capacity
+    - DEGRADED: Some nodes unhealthy, reduced capacity
+    - CRITICAL: Most nodes unhealthy, minimal capacity
+    - OFFLINE: No healthy nodes available
+
+  - **Load Balancing Strategies** (LoadBalanceStrategy enum)
+    - ROUND_ROBIN: Simple rotation through healthy nodes
+    - LEAST_LOADED: Route to node with fewest active requests
+    - CACHE_AWARE: Prefer nodes with matching system prompt cache
+    - LATENCY_BASED: Route to node with lowest average response time
+
+  - **Node Composition Interfaces**
+    - NodeHealth: Health check data (lastCheck, consecutiveFailures, avgResponseTime, errorRate)
+    - NodeCacheState: KV cache state (tokens, systemPromptHash, lastUpdated)
+    - NodeMetrics: Performance metrics (requestsInFlight, totalRequests, cacheHitRate, avgLatency)
+    - MLXNode: Complete node representation (id, url, status, health, cache, metrics)
+
+  - **Configuration Interfaces**
+    - HealthConfig: Health check settings (checkIntervalMs, timeoutMs, maxConsecutiveFailures, unhealthyThreshold)
+    - CacheConfig: KV cache management (maxCacheAgeSec, minCacheHitRate, maxCacheSizeTokens)
+    - DiscoveryConfig: Node discovery (mode: static | dns | kubernetes, nodes[], dnsName, namespace, serviceLabel)
+    - RoutingConfig: Load balancing (strategy, maxRetries, retryDelayMs)
+    - MLXClusterConfig: Complete cluster configuration combining all above
+
+  - **Routing & Decision Interfaces**
+    - RoutingContext: Request context (systemPromptHash, estimatedTokens, userPriority)
+    - RoutingDecision: Routing result (nodeId, reason, confidence)
+
+  - **Cluster State Interfaces**
+    - ClusterMetrics: Aggregated metrics (totalNodes, healthyNodes, totalRequests, avgClusterLatency, overallCacheHitRate)
+    - ClusterState: Complete state snapshot (status, nodes[], metrics, lastUpdated)
+
+  - **Architecture Benefits**
+    - Enables cache-aware routing to maximize KV cache hit rates
+    - Supports multiple discovery mechanisms (static, DNS, Kubernetes)
+    - Provides health monitoring for automatic node eviction
+    - Comprehensive metrics for observability and debugging
+    - Foundation for future load balancer implementation
+
+  - **Module Structure**
+    - src/cluster/cluster-types.ts: Type definitions (319 lines)
+    - src/cluster/index.ts: Module exports (19 lines)
+    - Complete JSDoc documentation on all types and enums
+
+  - **Test Coverage**: 100+ comprehensive unit tests (tests/unit/cluster-types.test.ts - 1332 lines)
+    - Node status transitions and validation
+    - Health metric calculations and error conditions
+    - Cache state management and hash tracking
+    - Configuration validation and defaults
+    - Discovery mode support (static, DNS, Kubernetes)
+    - Routing decision context and confidence scoring
+    - Cluster state aggregation and metrics calculation
+    - Edge cases: null handling, boundary values, invalid configurations
+
+  - **Status**: COMPLETE - Type system foundation ready for load balancer implementation
+
+- **Issue #25: Health Monitoring and Circuit Breaker System** - Automatic node health tracking with exponential backoff (967 lines, 150+ tests)
+
+  **Purpose**: Implement comprehensive health monitoring for MLX cluster nodes with circuit breaker pattern to enable intelligent routing and automatic failover.
+
+  **Health Monitoring Module** - Circuit breaker with rolling window metrics (src/cluster/cluster-health.ts - 967 lines)
+  - **Core Components**:
+    - **RollingWindowMetrics**: Time-windowed success rate and latency tracking
+      - Circular buffer for O(1) sample recording
+      - Configurable window size (default: 30 seconds, 100 samples)
+      - Automatic time-based filtering (excludes old samples)
+      - Calculates success rate (0.0-1.0) and average latency
+      - Tracks consecutive successes/failures for rapid state transitions
+
+    - **NodeHealthTracker**: Per-node circuit breaker with state machine
+      - State transitions: INITIALIZING → HEALTHY ↔ DEGRADED ↔ UNHEALTHY → OFFLINE
+      - Exponential backoff for unhealthy nodes (1s → 60s max, configurable)
+      - Degraded status when success rate drops below threshold (default: 80%)
+      - Automatic recovery: Reset backoff on sufficient consecutive successes (default: 5)
+      - Configurable thresholds for unhealthy (default: 50%) and degraded (default: 80%)
+
+    - **ClusterHealth**: Orchestrator for periodic health checks across all nodes
+      - Manages health trackers for multiple nodes
+      - Periodic health check scheduling with configurable intervals (default: 5 seconds)
+      - Manual success/failure recording from request routing
+      - Callback system for health status changes and check results
+      - Comprehensive health metrics retrieval
+
+  - **Error Classes** (Typed for better error handling)
+    - HealthCheckTimeoutError: Health check exceeded timeout
+    - HealthCheckFailedError: HTTP error response (non-2xx status)
+    - HealthCheckNetworkError: Network/connectivity failure
+
+  - **Interfaces and Types**
+    - HealthCheckResult: Result of health check (success, latencyMs, error)
+    - HealthMetrics: Aggregated metrics (successRate, avgLatencyMs, totalSamples, consecutiveSuccesses/Failures)
+    - HealthCallback: Status change callback type
+    - HealthCheckCallback: Health check result callback type
+    - HealthCallbacks: Optional callback registration
+    - BackoffConfig: Exponential backoff tuning (initialDelayMs, maxDelayMs, multiplier)
+
+  - **Key Features**
+    - Circuit breaker pattern: HEALTHY → DEGRADED → UNHEALTHY → OFFLINE with exponential backoff
+    - Time-windowed metrics: Only recent samples count (configurable window)
+    - Consecutive streak tracking: Enables fast recovery and status changes
+    - Manual recording: Can record successes/failures from actual requests
+    - Graceful degradation: Nodes stay available in DEGRADED state for fallback routing
+    - Exponential backoff: Reduces load on recovering unhealthy nodes
+    - Callback notifications: Integrates with monitoring and alerting systems
+
+  - **Circuit Breaker State Machine**
+    ```
+    INITIALIZING
+        │
+        ├─ first success ──→ HEALTHY
+        │
+    HEALTHY ←─→ DEGRADED
+       ↓          ↓
+       │      ┌───┴────────┐
+       │      │ too many    │
+       │      │ failures    │
+       │      ↓             │
+       ├─→ UNHEALTHY ←──────┘
+           ↓     ↑
+        backoff  │
+        retry ───┘
+           ↓
+        OFFLINE
+    ```
+
+  - **Configuration Options** (HealthConfig interface)
+    - checkIntervalMs: Health check interval (default: 5000ms)
+    - timeoutMs: Individual health check timeout (default: 2000ms)
+    - maxConsecutiveFailures: Failures needed to go UNHEALTHY (default: 3)
+    - unhealthyThreshold: Success rate to be UNHEALTHY (default: 0.5)
+    - degradedThreshold: Success rate to be DEGRADED (default: 0.8)
+
+  - **Backoff Configuration** (BackoffConfig interface)
+    - initialDelayMs: Starting retry delay (default: 1000ms)
+    - maxDelayMs: Maximum retry delay (default: 60000ms)
+    - multiplier: Exponential growth factor (default: 2.0)
+
+  - **Usage Example**:
+    ```typescript
+    import { ClusterHealth } from './cluster-health';
+    import { NodeStatus } from './cluster-types';
+
+    const health = new ClusterHealth(
+      { checkIntervalMs: 5000, timeoutMs: 2000 },
+      { initialDelayMs: 1000, maxDelayMs: 60000, multiplier: 2 },
+      {
+        onStatusChange: (nodeId, oldStatus, newStatus, metrics) => {
+          console.log(`${nodeId}: ${oldStatus} → ${newStatus}`);
+          console.log(`Success rate: ${(metrics.successRate * 100).toFixed(1)}%`);
+        },
+        onHealthCheck: (nodeId, result) => {
+          if (!result.success) {
+            console.error(`Health check failed for ${nodeId}:`, result.error?.message);
+          }
+        },
+      }
+    );
+
+    const nodes = [
+      { id: 'node-1', url: 'http://localhost:8080/v1' },
+      { id: 'node-2', url: 'http://localhost:8081/v1' },
+    ];
+
+    health.startHealthChecks(nodes);
+
+    // Later: record actual request results
+    health.recordSuccess('node-1', 125); // 125ms latency
+    health.recordFailure('node-2');
+
+    // Check health
+    if (health.isHealthy('node-1')) {
+      console.log('node-1 is healthy');
+    }
+
+    const allHealth = health.getAllNodeHealth();
+    for (const [nodeId, { status, metrics }] of allHealth) {
+      console.log(`${nodeId}: ${status} (${metrics.successRate * 100}%)`);
+    }
+
+    health.stopHealthChecks();
+    ```
+
+  - **Integration with Cluster System**
+    - Works with ClusterConfig for health check settings
+    - Integrates with MLXNode status field
+    - Provides metrics for routing decisions
+    - Supports callback-based monitoring
+    - Compatible with distributed tracing
+
+  - **Test Coverage**: 150+ comprehensive unit tests (tests/unit/cluster-health.test.ts - 1527 lines)
+    - RollingWindowMetrics: Time windows, circular buffer, metric calculations (25 tests)
+    - NodeHealthTracker: State transitions, exponential backoff, threshold triggers (40 tests)
+    - ClusterHealth: Lifecycle (start/stop), callbacks, manual recording, health retrieval (35 tests)
+    - Error classes: Error structure, inheritance, typed properties (8 tests)
+    - Integration: Full workflow with multiple nodes, callback ordering (20 tests)
+    - Edge cases: Rapid start/stop, offline nodes, callback errors, signal cancellation (22 tests)
+
+  - **Status**: COMPLETE - All 150+ tests passing, ready for cluster manager integration
+  - **Documentation**: Complete JSDoc on all classes, methods, and interfaces with detailed explanations
+  - **Integration Ready**: Works with cluster-config.ts, cluster-discovery.ts, and cluster-types.ts for full cluster orchestration
+
+- **Issue #26: Cache-Affinity Request Router for MLX Cluster** - Intelligent routing and session management with multiple strategies (735 lines)
+
+  **Purpose**: Implement cluster-aware request routing with cache-affinity scoring, sticky session management, and support for multiple load-balancing strategies.
+
+  **Cluster Router Module** - Multi-strategy router with session affinity (src/cluster/cluster-router.ts - 735 lines)
+  - **Core Components**:
+    - **StickySessionManager**: TTL-based session-to-node affinity tracking
+      - Session lifecycle: create, retrieve, remove, count active sessions
+      - Automatic TTL expiration with background cleanup (1-second intervals)
+      - Configurable session TTL (default: 300000ms = 5 minutes)
+      - Lifecycle callbacks: onSessionCreated, onSessionExpired
+      - Graceful callback error handling (failures don't propagate)
+      - Memory-efficient implementation with Map-based storage
+
+    - **ClusterRouter**: Main request routing orchestrator
+      - Four routing strategies: ROUND_ROBIN, LEAST_LOADED, CACHE_AWARE, LATENCY_BASED
+      - Sticky session support: selectNodeWithSticky() method preserves session affinity
+      - Health-aware filtering: Only routes to HEALTHY or DEGRADED nodes
+      - Routing callbacks: onNodeSelected, onRoutingFailed
+      - Strategy delegation pattern for extensibility
+
+  - **Routing Strategies**:
+    - **ROUND_ROBIN**: Cycle through healthy nodes (O(1), no state)
+      - Simple rotation using modulo arithmetic
+      - Confidence: 0.8
+
+    - **LEAST_LOADED**: Route to node with fewest active requests
+      - Tracks metrics.requestsInFlight per node
+      - Minimizes queue depth
+      - Confidence: 0.85
+
+    - **LATENCY_BASED**: Route to node with lowest average response time
+      - Uses health.avgResponseTime metric
+      - Optimizes for response latency
+      - Confidence: 0.85
+
+    - **CACHE_AWARE** (Primary): Score nodes based on cache affinity and health
+      - Cache match: +50 points (systemPromptHash match)
+      - Tools match: +20 points (only if cache matches)
+      - Health score: +25 * successRate (0-25)
+      - Availability: +15 points if requestsInFlight < 5
+      - Recency: +10 points if cache updated within 60s
+      - Maximum score: 120 points
+      - Confidence: score / 120
+      - Fallback to round-robin if no cache hits (0.5 confidence)
+
+  - **Data Structures**:
+    - **StickySession**: Session-to-node mapping with TTL
+      - sessionId: Unique session identifier
+      - nodeId: Pinned node ID
+      - createdAt, expiresAt: Timestamps for TTL tracking
+
+    - **CacheAffinityScore**: Detailed score breakdown for transparency
+      - nodeId, cacheMatch, toolsMatch, healthScore, availability, recency, total
+      - Enables debugging and observability
+
+    - **RouterCallbacks**: Event notification interface
+      - onNodeSelected(decision): Called on successful routing
+      - onSessionCreated(sessionId, nodeId): Called when new session created
+      - onSessionExpired(sessionId, nodeId): Called when session expires
+      - onRoutingFailed(context, reason): Called when routing fails
+
+  - **Sticky Session Example**:
+    ```typescript
+    const router = new ClusterRouter(config);
+
+    // First request: creates session
+    const decision1 = router.selectNodeWithSticky(nodes, context, 'user-123');
+    // Returns routing decision, session pinned to selected node
+
+    // Second request: uses same node while session valid
+    const decision2 = router.selectNodeWithSticky(nodes, context, 'user-123');
+    // Returns same node as decision1 (cache affinity!)
+
+    // After 5 minutes: session expires
+    const decision3 = router.selectNodeWithSticky(nodes, context, 'user-123');
+    // Routes normally again (session expired, new session created)
+    ```
+
+  - **Cache-Aware Routing Example**:
+    ```typescript
+    const config: RoutingConfig = {
+      strategy: LoadBalanceStrategy.CACHE_AWARE,
+      maxRetries: 3,
+      retryDelayMs: 1000,
+    };
+
+    const router = new ClusterRouter(config);
+    const context: RoutingContext = {
+      systemPromptHash: 'abc123...',
+      estimatedTokens: 5000,
+    };
+
+    const decision = router.selectNode(nodes, context);
+    // If Node-1 has matching cache: score = 50 + 20 + 20 + 15 + 10 = 115/120
+    // Routes to Node-1 with confidence 0.96 (cache hit!)
+    ```
+
   - **Features**:
-    - Register custom parsers for new model formats (~100 lines of code per parser)
-    - Priority-based parser ordering for deterministic fallback chains
-    - Security: 1MB JSON size limit, 100ms parse timeout, input validation
-    - Performance: <10ms parser overhead (target met), thread-safe parser registry
-    - Extensibility: Decorator-based registration for minimal boilerplate
-  - **Implementation**: `scripts/lib/tool_parsers.py` (561 lines)
-    - Classes: `ToolParserBase`, `OpenAIToolParser`, `CommentaryToolParser`, `CustomToolParser`, `FallbackParser`, `ParserRegistry`
-    - Methods: `can_parse()`, `parse()`, `validate()`, `parse_with_fallback()`, `register()`
-  - **Test Coverage**: 55 unit tests (tests/unit/test_tool_parsers.py, 704 lines)
-    - OpenAI format parsing (12 tests)
-    - Commentary format parsing (11 tests)
-    - Custom parser registration (9 tests)
-    - Registry priority ordering (8 tests)
-    - Fallback chain behavior (8 tests)
-    - Error handling and validation (7 tests)
+    - Strategy delegation: Easy to add new strategies
+    - Confidence scoring: Know how good a routing decision is
+    - Debug information: Routing reason explains decision
+    - Error resilience: Callback errors don't break routing
+    - Session TTL: Automatic cleanup prevents memory leaks
+    - Health awareness: Only routes to operational nodes
+    - Cache optimization: Maximizes prompt cache hit rates for performance
 
-  **Circuit Breaker** - Resilient error handling for MLX inference (230 lines)
-  - **State Machine**: CLOSED (normal) -> OPEN (failing) -> HALF_OPEN (testing) -> CLOSED (recovered)
+  - **Integration Points**:
+    - Works with cluster-config.ts for routing strategy configuration
+    - Works with cluster-health.ts for node health status
+    - Works with cluster-types.ts for type safety
+    - Works with cluster-discovery.ts for available nodes
+
+  - **Configuration** (RoutingConfig interface)
+    - strategy: Load balancing strategy (required)
+    - maxRetries: Maximum retry attempts (default: 3, warn if > 5)
+    - retryDelayMs: Delay between retries in milliseconds (default: 100)
+
+  - **Usage Patterns**:
+    - Session-based routing (HTTP requests): selectNodeWithSticky()
+    - Stateless routing (batch jobs): selectNode()
+    - Callback-based observability: RouterCallbacks interface
+    - Custom strategy: Can extend by implementing additional selectXxx() methods
+
+  - **Status**: COMPLETE - Production-ready request router
+  - **Documentation**: Complete JSDoc on all classes and methods with examples
+  - **Integration Ready**: Works with all cluster management modules (config, discovery, health, types)
+  - **Next Steps**: Integrate into proxy request handler for cluster-aware request routing
+
+- **Issue #27: KV Cache Coordination for MLX Cluster** - Cache warmup, synchronization, and lifecycle management (696 lines, 100+ tests)
+
+  **Purpose**: Coordinate KV cache state across MLX cluster nodes with automatic warmup, periodic synchronization, and cache-aware metrics for maximizing prompt cache hits.
+
+  **Cache Coordination Module** - Multi-component cache management system (src/cluster/cluster-cache.ts - 696 lines)
+  - **CacheError**: Typed error class for cache operations
+    - Error codes: CACHE_EXPIRED, SYNC_FAILED, WARMUP_TIMEOUT, INVALID_NODE
+    - Includes nodeId and hash context for debugging
+    - Maintains proper error inheritance and stack traces
+
+  - **CacheRegistry**: Hash-indexed cache state tracking per node
+    - Primary index: nodeId → CacheEntry (O(1) lookups)
+    - Hash index: systemPromptHash → Set<nodeId> (find nodes with specific cache)
+    - Automatic hash index updates on set/delete operations
+    - Expiration: Remove stale entries based on maxCacheAgeSec configuration
+    - Methods: set(), get(), delete(), clear(), findNodesWithCache(), getAllCachedHashes()
+    - Metrics: getNodeCount(), getCacheCount() for observability
+
+  - **CacheWarmup**: Parallel cache warming with concurrency control
+    - generateHash(): SHA256 hash generation for prompt identification
+    - warmUpNodes(): Batch processing with configurable concurrency limits
+    - warmUpSingleNode(): Individual node cache priming with timeout handling
+    - Uses Promise.race() for timeout enforcement
+    - Callbacks: onCacheWarmedUp (success), onCacheWarmupFailed (error)
+    - Returns: CacheWarmupResult with status, hash, tokens, duration
+
+  - **CacheSynchronizer**: Periodic cache state polling
+    - Recursive setTimeout pattern for controlled periodic updates
+    - syncCacheState(): Parallel polling of all nodes, expiration of stale entries
+    - syncSingleNode(): Individual node sync via GET /v1/cluster/cache endpoint
+    - Overlap prevention: syncInProgress flag prevents concurrent syncs
+    - Error resilience: Continues sync even if individual nodes fail
+    - Callbacks: onCacheSyncComplete (stats), onCacheSyncError (error)
+    - Returns sync statistics: syncedNodes, failedNodes, totalNodes
+
+  - **ClusterCache**: Main orchestrator combining all components
+    - initialize(): Warmup all nodes, register successful caches, start periodic sync
+    - Integration workflow: warmup → registry → sync loop
+    - Methods: stop(), isRunning(), findNodesWithCache(), getNodeCacheState()
+    - Metrics: getCacheStats() returns nodeCount, cacheCount, uniqueHashes
+
+  - **Interfaces**:
+    - **CacheEntry**: nodeId, nodeUrl, systemPromptHash, tokens, lastUpdated, hitRate
+    - **CacheWarmupResult**: nodeId, success, hash, tokens, error, durationMs
+    - **CacheWarmupOptions**: concurrency, timeoutMs, retryCount, systemPrompt
+    - **CacheCallbacks**: Optional callbacks for warmup/sync lifecycle events
+
+  - **Key Features**:
+    - Hash-based cache lookup: O(1) node selection for cache hits
+    - Concurrent warmup: Configurable batch size avoids overwhelming cluster
+    - Automatic expiration: Stale cache entries removed during sync
+    - Error resilience: Node failures don't break cluster operations
+    - Observable callbacks: Monitor cache lifecycle for debugging
+    - Metrics tracking: Hit rates, node counts, cache statistics
+
+  - **Integration Points**:
+    - Works with cluster-types.ts for type definitions (CacheConfig interface)
+    - Works with cluster-config.ts for configuration (cache section)
+    - Works with cluster-router.ts for cache-aware routing decisions
+    - Works with cluster-health.ts for node state monitoring
+    - Exported from cluster/index.ts for public API access
+
+  - **Configuration** (from CacheConfig in cluster-types.ts)
+    - maxCacheAgeSec: Time before cache entries expire (default: 300s)
+    - maxCacheSizeTokens: Maximum tokens per cache (from config, informational)
+    - minCacheHitRate: Minimum hit rate threshold (from config, for routing decisions)
+
+  - **Usage Example**:
+    ```typescript
+    import { ClusterCache, CacheWarmupOptions } from './cluster/cluster-cache';
+
+    const cacheCoordinator = new ClusterCache(
+      { maxCacheAgeSec: 300 },
+      {
+        onCacheWarmedUp: (result) => console.log('Node warmed:', result.nodeId),
+        onCacheSyncComplete: (stats) => console.log('Synced:', stats.syncedNodes, 'nodes'),
+      }
+    );
+
+    const warmupOptions: CacheWarmupOptions = {
+      concurrency: 4,
+      timeoutMs: 30000,
+      retryCount: 2,
+      systemPrompt: 'You are Claude...',
+    };
+
+    await cacheCoordinator.initialize(
+      [{ id: 'node-1', url: 'http://localhost:8000' }],
+      warmupOptions,
+      30000 // syncIntervalMs
+    );
+
+    // Later: find nodes with matching cache
+    const nodes = cacheCoordinator.findNodesWithCache('abc123...');
+    console.log('Cache hits available on:', nodes.map(n => n.nodeId));
+
+    // Shutdown
+    cacheCoordinator.stop();
+    ```
+
+  - **Testing**: Comprehensive test coverage (tests/unit/cluster-cache.test.ts - 100+ tests)
+    - CacheError: Construction, context fields, inheritance (8 tests)
+    - CacheRegistry: CRUD operations, hash indexing, expiration (25+ tests)
+    - CacheWarmup: Hash generation, concurrency control, timeout handling (20+ tests)
+    - CacheSynchronizer: Periodic sync, overlap prevention, error handling (20+ tests)
+    - ClusterCache integration: Initialization, warmup+sync workflow, stats (15+ tests)
+    - Edge cases: Empty registry, stale entries, node failures during sync
+
+  - **Public API** (exported from cluster/index.ts)
+    - Classes: CacheError, CacheRegistry, CacheWarmup, CacheSynchronizer, ClusterCache
+    - Interfaces: CacheEntry, CacheWarmupResult, CacheWarmupOptions, CacheCallbacks
+
+  - **Status**: COMPLETE - Production-ready cache coordination
+  - **Documentation**: Complete JSDoc on all classes and methods
+  - **Integration Ready**: Works with all cluster management modules (config, discovery, health, router, types)
+
+- **Issue #28: Main Cluster Orchestration** - Central coordination of cluster discovery, health, cache, and routing (743 lines, 120+ tests)
+
+  **Purpose**: Provide unified orchestration layer for MLX cluster management, coordinating discovery, health monitoring, cache coordination, and intelligent routing into a cohesive system.
+
+  **ClusterManager Module** - Main cluster orchestrator (src/cluster/cluster-manager.ts - 743 lines)
+  - **ClusterManagerError**: Typed error class for cluster operations
+    - Error codes: ALREADY_INITIALIZED, INITIALIZING, INVALID_CONFIG, INITIALIZATION_FAILED, NOT_INITIALIZED
+    - Includes code property and optional cause for debugging
+    - Proper error inheritance and stack trace preservation
+
+  - **ClusterStatus Interface**: Snapshot of cluster state
+    - initialized: Cluster manager initialization status
+    - totalNodes: Total number of nodes in cluster
+    - healthyNodes: Count of healthy nodes available for routing
+    - nodes: Array with per-node details (id, url, healthy status, latency, error count)
+    - cacheStats: Optional cache statistics (nodeCount, cacheCount, uniqueHashes)
+
+  - **Singleton Pattern** - Three functions for lifecycle management
+    - initializeCluster(config): Main entry point with full initialization sequence
+      - Validates configuration using cluster-config validation
+      - Creates ClusterManager instance
+      - Runs async initialization (discovery, providers, health, cache, router)
+      - Prevents concurrent initialization attempts
+      - Comprehensive error handling with descriptive messages
+    - getClusterManager(): Retrieve singleton instance
+      - Throws ClusterManagerError if not initialized
+    - resetClusterManager(): Graceful shutdown and cleanup
+      - Idempotent - safe to call multiple times
+      - Clears singleton reference
+
+  - **ClusterManager Class**: Main orchestration logic
+    - Initialization Sequence (async initialize):
+      - Step 1: Create and start ClusterDiscovery
+      - Step 2: Get discovered nodes from discovery
+      - Step 3: Create AI SDK provider for each node (via createProviderForNode)
+      - Step 4: Create and start ClusterHealth with discovered nodes
+      - Step 5: Create and initialize ClusterCache (non-fatal if fails)
+      - Step 6: Create ClusterRouter with routing configuration
+      - Step 7: Set initialized flag to true
+    - Provider Management (createProviderForNode):
+      - Uses @ai-sdk/openai for OpenAI-compatible servers
+      - Implements custom fetch for LMStudio compatibility
+      - Maps max_tokens → max_completion_tokens
+      - Enables llama.cpp's cache_prompt parameter for prompt caching
+      - Removes unsupported parameters (reasoning, service_tier)
+    - Node Selection (selectNode):
+      - Accepts systemPromptHash, toolsHash, optional sessionId
+      - Filters discovered nodes to only healthy ones
+      - Builds RoutingContext with hashes and priority
+      - Calls router.selectNodeWithSticky for cache-affinity routing
+      - Returns selected MLXNode or null if no healthy nodes
+    - Health Tracking:
+      - recordNodeSuccess(nodeId, latencyMs): Update health with success metric
+      - recordNodeFailure(nodeId, error): Record failure for circuit breaker
+    - Status Reporting (getStatus):
+      - Returns snapshot of cluster state
+      - Builds per-node status with health and latency information
+      - Includes cache statistics if cache enabled
+      - Returns pre-initialization state if not ready
+    - Shutdown (async shutdown):
+      - Cleanup sequence (discovery → health → cache → router → providers)
+      - Idempotent - safe to call multiple times
+      - Ignores errors during shutdown
+      - Clears initialized flag
+
+  - **Integration with Cluster Components**:
+    - ClusterDiscovery: Discovers nodes and provides getDiscoveredNodes()
+    - ClusterHealth: Tracks node health and provides isHealthy(nodeId)
+    - ClusterRouter: Selects nodes via selectNodeWithSticky()
+    - ClusterCache: Coordinates cache state across nodes
+    - Configuration: Uses MLXClusterConfig with discovery, health, cache, routing sections
+
+  - **Provider Creation Strategy** (createProviderForNode)
+    - Uses same pattern as src/main.ts:264-345 for LMStudio compatibility
+    - Maps parameters for OpenAI-compatible servers
+    - Custom fetch intercepts requests for parameter translation
+    - Returns provider callable for use with @vercel/ai SDK
+
+  - **Configuration** (from MLXClusterConfig)
+    - discovery: Node discovery settings (mode, nodes, intervals)
+    - health: Health check parameters (interval, timeout, failure threshold)
+    - cache: Cache coordination settings (max age, hit rate threshold)
+    - routing: Load balancing strategy and retry settings
+
+  - **Key Features**:
+    - Singleton pattern prevents multiple concurrent managers
+    - Unified API for all cluster operations
+    - Non-fatal cache failures (cluster works without cache)
+    - Comprehensive initialization validation
+    - Real-time cluster status reporting
+    - Session affinity support via router integration
+    - Graceful shutdown with proper cleanup sequencing
+
+  - **Error Handling**:
+    - ALREADY_INITIALIZED: Prevents multiple managers
+    - INITIALIZING: Prevents concurrent initialization
+    - INVALID_CONFIG: Configuration validation failure
+    - INITIALIZATION_FAILED: Wrapped exceptions with context
+    - NOT_INITIALIZED: getClusterManager() called before init
+
+  - **Usage Example**:
+    ```typescript
+    import { initializeCluster, getClusterManager } from './cluster';
+
+    // Initialize with configuration
+    const config: MLXClusterConfig = {
+      discovery: { mode: 'static', nodes: [{ id: 'n1', url: 'http://localhost:8000' }] },
+      health: { checkIntervalMs: 10000, ... },
+      cache: { maxCacheAgeSec: 300, ... },
+      routing: { strategy: 'cache-aware', ... }
+    };
+
+    const manager = await initializeCluster(config);
+
+    // Select node for request
+    const node = manager.selectNode(systemPromptHash, toolsHash, sessionId);
+    if (node) {
+      const provider = manager.getNodeProvider(node.id);
+      // Use provider for AI SDK calls
+      const startTime = Date.now();
+      const result = await generateText({ model: provider(...), ... });
+      const latency = Date.now() - startTime;
+
+      // Record success
+      manager.recordNodeSuccess(node.id, latency);
+    }
+
+    // Check cluster status
+    const status = manager.getStatus();
+    console.log(`Cluster: ${status.healthyNodes}/${status.totalNodes} nodes healthy`);
+
+    // Graceful shutdown
+    await manager.shutdown();
+    resetClusterManager();
+    ```
+
+  - **Testing**: Comprehensive test coverage (tests/unit/cluster-manager.test.ts - 1744 lines, 120+ tests)
+    - ClusterManagerError: Error structure, inheritance, properties (12 tests)
+    - Singleton pattern: initialization, retrieval, reset, concurrency (20+ tests)
+    - Provider management: creation, retrieval, lifecycle, failure handling (15+ tests)
+    - Node selection: availability, session affinity, cache routing, health filtering (25+ tests)
+    - Health tracking: success/failure recording, state updates, routing impact (15+ tests)
+    - Status reporting: structure accuracy, real-time updates, pre-init state (12+ tests)
+    - Shutdown: component cleanup, idempotency, error handling, state reset (10+ tests)
+    - Integration: full initialization, routing, session affinity, degradation (15+ tests)
+    - Edge cases: Empty cluster, all unhealthy, timeout, provider failure, concurrent access
+
+  - **Public API** (exported from cluster/index.ts)
+    - Classes: ClusterManager, ClusterManagerError
+    - Interfaces: ClusterStatus
+    - Functions: initializeCluster, getClusterManager, resetClusterManager
+
+  - **Status**: COMPLETE - Production-ready cluster orchestration
+  - **Documentation**: Complete JSDoc on all classes, methods, and functions
+  - **Integration Ready**: Coordinates all cluster subsystems (config, discovery, health, router, cache)
+
+- **Issue #32: MLX Worker Node Server** - OpenAI-compatible worker node for distributed inference (1050 lines)
+
+  **Purpose**: Implement Python worker nodes that provide OpenAI-compatible chat completions with health monitoring, KV cache coordination, and metrics tracking for MLX cluster workers.
+
+  **MLX Worker Node** - Production Python FastAPI server for cluster nodes (src/mlx_worker/ - 1050 lines total)
+  - **Overview**: Distributed worker nodes enable scaling MLX inference across multiple machines with intelligent load balancing, cache coordination, and health monitoring.
+
+  - **Core Modules**:
+    - **inference.py** (185 lines): MLX model loading, token generation, and token counting
+    - **cache.py** (166 lines): KV cache management with state tracking and warming
+    - **health.py** (264 lines): Health monitoring with metrics and circuit breaker integration
+    - **server.py** (366 lines): FastAPI HTTP server with OpenAI-compatible endpoints
+    - **__init__.py** (69 lines): Package exports and version info
+    - **requirements.txt**: Dependencies (fastapi, uvicorn, mlx, mlx-lm, pydantic, pytest)
+
+  - **Inference Engine** (src/mlx_worker/inference.py)
+    - **load_model(model_path, config)**: Load MLX model and tokenizer with caching
+      - Automatic caching to avoid redundant model loading
+      - Optional configuration dict for mlx_lm parameters
+      - Returns tuple of (model, tokenizer)
+      - Raises: ModelNotFoundError, InferenceError
+
+    - **generate_stream(messages, model_path, max_tokens, temperature, top_p, cache_prompt)**: Streaming token generation
+      - Formats messages into prompt string
+      - Uses mlx_lm's native cache_prompt for KV cache
+      - Yields tokens as strings for SSE streaming
+      - Raises: ValueError (empty messages), InferenceError
+
+    - **count_tokens(text, model_path)**: Token counting via model tokenizer
+      - Uses model's tokenizer for accurate token counts
+      - Caches model to avoid redundant loading
+      - Returns integer token count
+      - Raises: InferenceError
+
+    - **_format_messages(messages, tokenizer)**: Internal message formatting
+      - Converts role-based messages to prompt text
+      - Handles: system, user, assistant roles
+      - Ends with "Assistant:" to prompt for response
+
+  - **Cache Manager** (src/mlx_worker/cache.py - Singleton)
+    - **CacheState dataclass**: Tracks cache state matching TypeScript NodeCacheState interface
+      - tokens: int - Number of cached tokens
+      - systemPromptHash: str - SHA-256 hash of cached system prompt
+      - lastUpdated: float - Unix timestamp in milliseconds (float for precision)
+
+    - **CacheManager.get_state()**: Get current cache state
+      - Returns: Dict with tokens, systemPromptHash, lastUpdated
+      - Thread-safe via RWLock pattern
+
+    - **CacheManager.warm(system_prompt, model_path)**: Warm cache with system prompt
+      - Computes SHA-256 hash of system prompt
+      - Counts tokens using tokenizer
+      - Pre-processes with model (enables KV caching)
+      - Updates state and returns updated cache state
+      - Raises: CacheError
+
+    - **CacheManager.clear()**: Clear cache state
+      - Resets tokens, hash, and timestamp
+      - Thread-safe
+
+    - **Module-level functions**: get_cache_state(), warm_cache(), clear_cache(), compute_prompt_hash()
+      - Public interface to global cache manager singleton
+      - compute_prompt_hash(): Returns 64-character hex SHA-256 hash
+
+  - **Health Monitor** (src/mlx_worker/health.py - Singleton)
+    - **NodeHealth dataclass**: Health check results matching TypeScript interface
+      - lastCheck: float - Unix timestamp in milliseconds
+      - consecutiveFailures: int - Number of consecutive failures
+      - avgResponseTime: float - Average response latency in milliseconds
+      - errorRate: float - Ratio of failed requests (0.0-1.0)
+
+    - **NodeMetrics dataclass**: Performance metrics matching TypeScript interface
+      - requestsInFlight: int - Active concurrent requests
+      - totalRequests: int - Total requests since startup
+      - cacheHitRate: float - Cache hit ratio (0.0-1.0)
+      - avgLatency: float - Average response latency in milliseconds
+
+    - **HealthMonitor class** (Singleton):
+      - get_health(): Returns NodeHealth dict with current health metrics
+      - get_metrics(): Returns NodeMetrics dict with current performance metrics
+      - record_success(latency): Record successful request with latency
+      - record_failure(latency): Record failed request with latency
+      - increment_in_flight(): Increment active request counter
+      - decrement_in_flight(): Decrement active request counter
+      - record_cache_hit(): Increment cache hit counter
+      - record_cache_miss(): Increment cache miss counter
+      - All methods: Thread-safe via RWLock
+
+    - **Module-level functions**:
+      - get_node_health(): Get current node health
+      - get_metrics(): Get current node metrics
+      - record_request(success, latency): Record request outcome
+      - increment_requests_in_flight(), decrement_requests_in_flight()
+      - record_cache_hit(), record_cache_miss()
+      - All raise: HealthError on failure, ValueError if latency negative
+
+  - **FastAPI Server** (src/mlx_worker/server.py)
+    - **Endpoints**: OpenAI-compatible chat completions and cluster management
+
+      1. **POST /v1/chat/completions** (ChatCompletionRequest)
+         - Model: str (default: "current-model")
+         - Messages: List[ChatMessage] (role, content)
+         - max_tokens: int (default: 2048)
+         - temperature: float (default: 0.7)
+         - top_p: float (default: 0.9)
+         - stream: bool (default: false)
+         - Headers: X-Session-Id (generated or provided)
+         - Response: OpenAI ChatCompletion object or SSE stream
+         - Features:
+           - Cache hit detection via system prompt hash matching
+           - Non-streaming JSON response (ChatCompletion object)
+           - Streaming SSE response (chat.completion.chunk events)
+           - Session ID tracking (X-Session-Id header)
+           - Latency tracking and metrics recording
+           - Error handling: 400 (validation), 500 (inference errors)
+           - In-flight request tracking
+           - Cache hit/miss recording
+
+      2. **GET /v1/models** (OpenAI-compatible)
+         - Returns: List of available models
+         - Data: Single model "current-model"
+         - Format: {"object": "list", "data": [...]}
+
+      3. **GET /health** (Cluster health check)
+         - Returns: Combined health, cache, and metrics
+         - Status: "healthy" | "degraded" | "unhealthy" based on metrics
+         - Health thresholds:
+           - "unhealthy": >= 5 consecutive failures OR errorRate > 0.5
+           - "degraded": >= 2 consecutive failures
+           - "healthy": otherwise
+         - Response: {"status": str, "health": Dict, "cache": Dict, "metrics": Dict}
+
+      4. **GET /cache** (Get cache state)
+         - Returns: Current cache state (tokens, hash, lastUpdated)
+
+      5. **POST /cache/warm** (Warm cache with system prompt)
+         - Request: {"system_prompt": str}
+         - Returns: {"success": bool, "hash": str, ...cache_state}
+         - Raises: 500 CacheError on failure
+
+    - **Pydantic Models** (Request/response validation):
+      - ChatMessage: role (system|user|assistant), content
+      - ChatCompletionRequest: model, messages, max_tokens, temperature, top_p, stream
+      - CacheWarmRequest: system_prompt
+
+    - **Streaming Response** (_stream_response async generator):
+      - Yields SSE-formatted events (data: {...}\n\n)
+      - Chunk format: id, object, created, model, choices[{delta, finish_reason}]
+      - Final chunk: finish_reason="stop"
+      - End marker: "data: [DONE]\n\n"
+      - Error events: Includes error.message and error.type
+
+    - **Lifespan Management** (@asynccontextmanager lifespan):
+      - Startup: Print startup message
+      - Shutdown: Print shutdown message
+
+  - **Configuration** (requirements.txt):
+    - fastapi>=0.104.0: Async web framework
+    - uvicorn[standard]>=0.24.0: ASGI server with reload support
+    - mlx>=0.30.1: Apple ML framework
+    - mlx-lm>=0.30.0: MLX language model utilities
+    - pydantic>=2.0.0: Data validation
+    - pytest>=7.4.0, pytest-asyncio>=0.21.0, httpx>=0.25.0: Testing
+
+  - **Usage**:
+    ```python
+    import uvicorn
+    from mlx_worker.server import app
+
+    # Run server on port 8081
+    uvicorn.run(app, host="0.0.0.0", port=8081, log_level="info")
+    ```
+
+    ```bash
+    # Start single worker node
+    python -m src.mlx_worker.server
+
+    # Start with environment configuration
+    MLX_PORT=8082 python -m src.mlx_worker.server
+    ```
+
+  - **Integration with Cluster**:
+    - Workers register themselves via discovery system (src/cluster/cluster-discovery.ts)
+    - Health checks via GET /health endpoint
+    - Cache coordination via cluster cache manager (Issue #27)
+    - Metrics feed into cluster router (Issue #26) for load balancing decisions
+    - Session IDs enable sticky session routing (cache affinity)
+
+  - **Thread Safety**:
+    - CacheManager: Singleton with threading.Lock for state access
+    - HealthMonitor: Singleton with threading.Lock for metrics access
+    - All public functions are thread-safe for concurrent requests
+
+  - **Test Coverage**:
+    - Unit tests: tests/unit/test_mlx_worker_*.py (3 files)
+    - Integration tests: tests/integration/test_mlx_worker_server.py
+    - Test dependencies: tests/requirements-mlx-worker-tests.txt
+
+  - **Status**: COMPLETE - Production-ready MLX worker nodes
+  - **Documentation**: Complete docstrings on all classes, methods, and functions
+  - **Integration Ready**: Works with cluster system for distributed inference
+
+- **Issue #21: Safe System Filter Integration** - Intelligent prompt optimization that preserves tool calling
+
+  **Purpose**: Integrate safe-system-filter.ts into the proxy's optimization chain for intelligent prompt reduction without breaking tool calling functionality.
+
+  **Safe System Filter** - Tier-based section removal with validation (src/safe-system-filter.ts)
+  - **Optimization Tiers**: MINIMAL, MODERATE, AGGRESSIVE, EXTREME (configurable)
+  - **Validation**: Ensures critical sections (tool usage, function calling) are preserved
+  - **Fallback**: Falls back to truncation if validation fails
+  - **Auto-tier selection**: Based on prompt size (< 5k → MINIMAL, < 10k → MODERATE, < 20k → AGGRESSIVE, >= 20k → EXTREME)
+
+  **Proxy Integration** (src/anthropic-proxy.ts:54-131)
+  - **shouldUseSafeFilter()**: Decision logic (lines 56-80)
+    - Smart prompt takes priority over safe filter
+    - Enabled by default for LMStudio, can be enabled for other backends
+    - Explicitly configurable via `safeSystemFilter` option
+  - **mapTierConfig()**: Config tier to enum mapping (lines 82-99)
+  - **getOptimizationStrategy()**: Strategy selection (lines 101-114)
+  - **applySafeSystemFilter()**: Filter application with debug logging (lines 116-151)
+  - **Optimization Chain Priority**:
+    1. Smart prompt (highest, experimental)
+    2. Safe filter (intelligent with validation)
+    3. Truncation (fallback)
+    4. Passthrough (default)
+
+  **Configuration Options**
+  - `safeSystemFilter`: Enable/disable safe filtering (default: true for LMStudio, false for others)
+  - `filterTier`: Optimization tier (auto | minimal | moderate | aggressive | extreme)
+  - Environment variables: `ANYCLAUDE_SAFE_FILTER`, `ANYCLAUDE_FILTER_TIER`
+
+  **Debug Logging**
+  - Level 1: Basic stats (tokens before/after, reduction percentage)
+  - Level 2: Validation details (present/missing patterns, fallback occurred)
+  - Level 3: Full trace (preserved/removed sections, prompt snippets)
+
+  **Testing**: tests/integration/anthropic-proxy-safe-filter-integration.test.js
+  - Tests shouldUseSafeFilter() decision logic
+  - Tests optimization chain priority
+  - Tests fallback behavior when validation fails
+  - Tests mode-specific defaults and configuration overrides
+  - Tests debug logging at all levels
+  - Verifies no regression in streaming or tool calling
+
+  **Documentation Updates**
+  - CLAUDE.md: Added safe filter explanation, configuration options, troubleshooting
+  - .anyclauderc.example.json: Added safeSystemFilter and filterTier examples
+  - Inline comments in proxy and filter code
+
+- **Issue #19: Prompt Section Parser** - Intelligent prompt parsing for tier-based optimization
+
+  **Purpose**: Parse Claude Code system prompts into sections for intelligent truncation and optimization based on importance tiers.
+
+  **Prompt Section Parser** - Markdown header parsing with tier classification (354 lines)
+  - **Purpose**: Parse system prompts into sections with importance tiers for safe truncation during optimization
+  - **Components**:
+    - parseIntoSections(): Parse prompt into sections with metadata (headers, line numbers, critical detection)
+    - classifySection(): Tier-based importance classification (0-3)
+    - getSectionsByTier(): Filter sections by maximum tier
+    - reconstructPrompt(): Rebuild optimized prompt from filtered sections
+    - generateId(): Convert headers to kebab-case IDs
+  - **Architecture**: `src/prompt-section-parser.ts` (354 lines)
+    - Interface: `PromptSection` with id, header, content, tier, line numbers, critical flag
+    - Constants: `TIER_PATTERNS` object with regex patterns for each tier
+    - Exports: `parseIntoSections()`, `classifySection()`, `getSectionsByTier()`, `reconstructPrompt()`
+  - **Tier Classification**:
+    - Tier 0: Tool usage policy, function calling, tool schemas (critical for functionality)
+    - Tier 1: Core identity, tone, doing tasks (important for behavior)
+    - Tier 2: Planning, git workflow, asking questions (helpful but optional)
+    - Tier 3: Examples, verbose content (can be removed)
   - **Features**:
-    - Automatic failure detection: Trips after 5 consecutive failures
-    - Auto-recovery attempt: Switches to HALF_OPEN after 60s timeout
-    - +40% uptime under failure scenarios (graceful degradation)
-    - Metrics tracking: Total calls, successes, failures, rejections, state transitions
-    - Thread-safe: Locking protection for concurrent requests
-    - Low overhead: <1ms circuit breaker overhead (target met)
-  - **Implementation**: `scripts/lib/circuit_breaker.py` (230 lines)
-    - Classes: `CircuitBreaker`, `CircuitBreakerState` (enum), `CircuitBreakerError`, `CircuitBreakerMetrics`
-    - Methods: `call()`, `get_state()`, `get_metrics()`, `reset()`, `_on_success()`, `_on_failure()`, `_should_attempt_reset()`
-  - **Test Coverage**: 33 unit tests (tests/unit/test_circuit_breaker.py, 690 lines)
-    - State transitions (9 tests): CLOSED->OPEN->HALF_OPEN->CLOSED, edge cases
-    - Metrics accuracy (8 tests): Failure rates, rejection rates, state tracking
-    - Performance validation (6 tests): <1ms overhead measurement
-    - Thread safety (5 tests): Concurrent request handling, race conditions
-    - Configuration (5 tests): Customizable thresholds and timeouts
-
-  **Integration & Failover** - Parser-circuit breaker integration (523 lines, 20 integration tests)
-  - Tests: `tests/integration/test_parser_failover.py`
-    - Circuit breaker + parser registry fallback chains (8 tests)
-    - Metrics flow through integrated components (7 tests)
-    - Failure scenarios and recovery (5 tests)
-
-  **Test Fixtures** - Comprehensive test data (390 lines)
-  - Files: `tests/fixtures/tool_call_formats.py`
-    - OpenAI tool_calls format examples
-    - Commentary [TOOL_CALL] tag examples
-    - Custom model-specific formats
-    - Edge cases and error scenarios
-
-  **Overall Statistics**:
-  - Total implementation: 791 lines (tool_parsers 561 + circuit_breaker 230)
-  - Total tests: 108 tests across 3 test files (2,307 lines)
-  - Test coverage: 86/88 tests passing (97.7%)
-  - Performance: <10ms parser overhead, <1ms circuit breaker overhead (both targets met)
-  - Security: Input validation (1MB limit), timeout protection (100ms), thread-safe operations
-
-- **Phase 3: Production Hardening** - Error recovery, metrics monitoring, and configuration validation
-  - **ErrorHandler**: Production error handling with graceful degradation
-    - Graceful degradation on persistent cache errors (5 consecutive errors triggers cache disable)
-    - OOM detection with automatic cache clearing and preventive measures
-    - Network retry with exponential backoff (max 3 retries, configurable backoff)
-    - Error message sanitization to prevent path disclosure (security VUL-003)
-    - Thread-safe error tracking with locking
-    - Implementation: `scripts/lib/error_handler.py` (381 lines)
-    - Classes: `ErrorHandler`, `CacheError`, `OOMError`, `NetworkError`
-    - Methods: `handle_cache_error()`, `handle_oom_error()`, `retry_with_backoff()`, `sanitize_error_message()`
-
-  - **MetricsCollector**: Real-time performance metrics tracking
-    - Cache hit/miss rate tracking with automatic calculation
-    - Latency percentiles (P50, P95, P99) with linear interpolation
-    - Memory usage tracking (current, peak, growth, initial)
-    - Throughput calculation (requests per second over rolling window)
-    - JSON and Prometheus export formats
-    - Thread-safe concurrent access with minimal lock contention
-    - Implementation: `scripts/lib/metrics_collector.py` (373 lines)
-    - Class: `MetricsCollector` with 15 public methods
-    - Methods: `record_cache_hit()`, `record_cache_miss()`, `record_latency()`, `record_memory_usage()`, `record_throughput()`, `get_cache_stats()`, `get_latency_stats()`, `get_memory_stats()`, `get_throughput_stats()`, `export_metrics_json()`, `export_metrics_prometheus()`
-
-  - **ConfigValidator**: Pre-startup configuration validation
-    - Environment variable validation (type checking, range validation)
-    - Model path validation (existence, permissions, required files)
-    - Port conflict detection (1-65535 range, privilege level warnings)
-    - Dependency version checking (installed, version requirements)
-    - Complete config validation with error collection
-    - Security: Path traversal protection, file size limits, privilege checking
-    - Implementation: `scripts/lib/config_validator.py` (434 lines)
-    - Classes: `ConfigValidator`, `ValidationError`, `DependencyError`
-    - Methods: `validate_port()`, `validate_env_var()`, `validate_model_path()`, `validate_dependency()`, `validate_all_config()`
-
-  - **Metrics Endpoint**: New `/v1/metrics` endpoint for performance monitoring
-    - Query parameters: `format=json|prometheus`
-    - JSON format: Structured metrics with timestamp, uptime, cache, latency, memory, throughput
-    - Prometheus format: Standard Prometheus text format for Grafana integration
-    - Real-time performance data for monitoring and alerting
-    - Integration: Added to `scripts/mlx-server.py` (lines 1351-1358)
-    - Example: `curl http://localhost:8080/v1/metrics` or `curl http://localhost:8080/v1/metrics?format=prometheus`
-
-  - **Comprehensive Tests**: 151 tests total (343 + 447 + 484 + 457 lines)
-    - Unit tests for ErrorHandler (44 tests): cache error handling, OOM detection, network retry, error sanitization
-    - Unit tests for MetricsCollector (52 tests): cache tracking, latency percentiles, memory tracking, throughput calculation
-    - Unit tests for ConfigValidator (60 tests): port validation, env var validation, model path validation, dependency checking
-    - Integration test for metrics endpoint (18 tests): JSON format, Prometheus format, real-time updates
-    - Error recovery regression tests (11 tests): graceful degradation, cache re-enable, fallback modes
-    - Test files:
-      - `tests/unit/test_error_handler.py` (343 lines, 44 tests)
-      - `tests/unit/test_metrics_collector.py` (447 lines, 52 tests)
-      - `tests/unit/test_config_validator.py` (484 lines, 60 tests)
-      - `tests/integration/test_metrics_endpoint.py` (457 lines, 18 tests)
-      - `tests/regression/test_error_recovery_regression.js` (11 tests)
-      - Plus 9 error-specific JS tests (network, config, proxy, message, schema, context, tool validation, file IO, stream)
-
-  - **Stability Testing**: 100-request stress test suite
-    - Tests error recovery under load
-    - Validates metrics accuracy during sustained load
-    - Monitors memory growth and OOM prevention
-    - Exercises all three error types (cache, OOM, network)
-    - Test: `tests/integration/test_production_hardening.py TestStressAndRecovery`
-
-  - **Status**: COMPLETE - All 151 tests PASS, ready for production use
-  - **Documentation**: Complete API reference in `docs/reference/production-hardening-api.md`
-    - Endpoint documentation with request/response examples
-    - Class and method API reference
-    - Integration examples
-    - Security notes and hardening features
-  - **Security**: All vulnerabilities mitigated
-    - VUL-003: Path disclosure in error messages - FIXED with sanitization
-    - VUL-004: Unbounded memory growth - FIXED with peak tracking and OOM detection
-    - VUL-005: Network retry storms - FIXED with exponential backoff and max retries
-    - See `docs/development/security-fixes-cache-warmup.md` for complete audit
-
-  - **Backward Compatibility**: Fully backward compatible
-    - All three modules are optional (graceful degradation if not initialized)
-    - Existing cache and request handling unchanged
-    - New metrics endpoint is additive only
-    - Config validation is opt-in at startup
-
-- **Phase 2.3: Cache Warmup for Zero Cold-Start Latency** - Pre-warm KV cache during server startup
-  - **Feature**: Eliminates 30-50s cold-start penalty on first request, matching subsequent request speed
-  - **Implementation**: Added warmup functions to `scripts/mlx-server.py` (lines 462-684)
-    - `get_standard_system_prompt()` (lines 462-540) - Secure system prompt loading with path traversal protection
-    - `warmup_kv_cache()` (lines 542-684) - Async KV cache warmup with timeout and error recovery
-  - **Performance**: First request as fast as subsequent ones (0.3-1s vs 30-50s cold start)
-  - **Configuration**: Three environment variables
-    - `KV_CACHE_WARMUP`: Enable/disable warmup (default: "1" = enabled)
-    - `WARMUP_TIMEOUT_SEC`: Timeout in seconds (default: 60, valid range: 1-300)
-    - `WARMUP_SYSTEM_FILE`: Custom system prompt file path (must be in ~/.anyclaude/system-prompts/)
-  - **Security**: All 5 vulnerabilities fixed and security-audited
-    - Path traversal protection: Whitelist validation of system prompt files
-    - Unvalidated timeout fix: Bounds checking (1-300 seconds)
-    - Unbounded file read fix: 1MB file size limit enforced
-    - Information disclosure fix: Sanitized log messages (no full file paths)
-    - Input validation: Comprehensive parameter validation
-  - **Comprehensive tests**: 55 tests created (23 unit + 19 integration + 13 performance)
-    - Unit tests: warmup function behavior, parameter validation, error handling
-    - Integration tests: full server warmup flow, error recovery, timeout handling
-    - Performance tests: latency reduction validation, cache effectiveness
-  - **Status**: COMPLETE - All 55 tests PASS, code review APPROVED, security audit APPROVED
-  - **Documentation**: Complete security audit in `docs/development/security-fixes-cache-warmup.md`
-  - **Graceful degradation**: Server starts normally even if warmup fails (non-blocking)
-
-- **Phase 2.2: Cache_control Header Detection & Extraction** - Anthropic-compatible caching markers
-  - **New module**: `src/cache-control-extractor.ts` (128 lines) - Cache marker extraction and hash generation
-  - **Features**: SHA256 hash generation for cache keys, token estimation (~4 chars/token), cache_control marker extraction from system prompts and user messages
-  - **Security**: SHA256 cryptographic hashing, comprehensive input validation, DoS-resistant (linear scaling)
-  - **Performance**: Hash generation <1ms, token estimation <1μs, zero overhead when no cache_control markers present
-  - **Integration**: Integrated into `src/anthropic-proxy.ts` (line 43) for automatic cache header detection
-  - **Comprehensive tests**: 84 tests passing (61 unit + 23 integration) across 5 test files
-    - Unit tests: Cache hash consistency (17), marker extraction (14), token estimation (30)
-    - Integration tests: Cache header generation (23)
-  - **Test files**:
-    - `tests/unit/test-cache-hash-consistency.js` (400 lines)
-    - `tests/unit/test-cache-marker-extraction.js` (576 lines)
-    - `tests/unit/test-cache-monitoring.js` (434 lines)
-    - `tests/integration/test-cache-headers.js` (601 lines)
-    - `tests/integration/test-cache-e2e.js` (515 lines)
-  - **Status**: COMPLETE - All 84 tests PASS, code review APPROVED, security audit PASS
-  - **API**: `generateCacheHash()` for deterministic cache keys, `extractMarkers()` for marker detection, `estimateTokens()` for token counting
-  - **Documentation**: Complete architecture docs in `docs/architecture/cache-control-headers.md`
-
-- **Phase 2.1: RAM-Based KV Cache for M3 Ultra** - Ultra-low-latency cache implementation
-  - **New module**: `scripts/ram_cache.py` (279 lines) - InMemoryKVCacheManager class
-  - **Performance**: 100-200x faster than disk cache (GET <1ms vs 500-2000ms, SET <50ms, throughput 3.7M ops/sec)
-  - **Thread-safe**: Single lock protects all shared state, minimal lock hold time
-  - **LRU eviction**: Configurable memory limit (default 300GB for M3 Ultra), automatic eviction when limit reached
-  - **Security**: 10KB maximum key length (DoS prevention), key+value memory tracking, input validation (rejects None, empty keys, non-bytes values)
-  - **Zero dependencies**: Pure Python stdlib only (threading, time, typing)
-  - **Comprehensive tests**: 40 unit tests (tests/unit/test_ram_cache.py), 17 integration tests (tests/integration/test_ram_cache_e2e.py)
-  - **Performance benchmarks**: `scripts/benchmark_ram_cache.py` validates all performance targets met
-  - **Status**: COMPLETE - All 57 tests PASS, security audit completed and approved
-  - **Files**: scripts/ram_cache.py, tests/unit/test_ram_cache.py, tests/integration/test_ram_cache_e2e.py, scripts/benchmark_ram_cache.py
-
-- **Phase 1.2: Tool Calling Test & Verification Infrastructure** - Comprehensive testing framework for custom MLX server
-  - **New modules**: `src/tool-schema-converter.ts`, `src/tool-response-parser.ts` (src/tool-schema-converter.ts:1-113, src/tool-response-parser.ts:1-267)
-  - **Schema conversion**: Convert Anthropic `input_schema` ↔ OpenAI `parameters` (src/tool-schema-converter.ts:50-104)
-  - **Response parsing**: Parse OpenAI `tool_calls` → Anthropic `tool_use`, handle streaming deltas (src/tool-response-parser.ts:55-267)
-  - **Unit tests**: 18 tests for schema conversion and response parsing (tests/unit/test-tool-schema-conversion.js, tests/unit/test-tool-response-parsing.js)
-  - **Integration tests**: 35 tests for basic tools, streaming, multiple tools, error handling, large responses (tests/integration/test-mlx-server-\*.js)
-  - **Test plan**: Complete Phase 1.2 test plan with 80%+ coverage target (tests/TEST-PLAN-PHASE-1.2.md)
-  - **Manual testing**: Interactive test script for quick verification (tests/manual/test-mlx-server-interactive.sh)
-  - **Status**: RED phase (TDD) - tests written, implementation pending
-  - **Documentation**: All modules have complete JSDoc comments explaining format conversions and edge cases
-
-- **Legacy MLX Server Restored** - Restored MLX server as `scripts/mlx-server.py` for reference
-  - Source: `scripts/archive/mlx-server.py` (custom MLX implementation)
-  - Purpose: Reference implementation for custom MLX servers
-  - Status: Legacy backend, **MLX-Textgen remains production backend**
-  - Documentation: Created `docs/guides/mlx-migration.md` explaining differences
-  - Note: Both MLX backends have tool calling limitations (use `--mode=claude` or `--mode=openrouter` for production)
-
-## [2.1.1] - 2025-11-02
-
-### Fixed
-
-- **E2E Test Reliability** - Fixed integration test that failed in CI when proxy wasn't running
-  - Test 1 now gracefully skips when `ANYCLAUDE_PROXY_PORT` env var not set
-  - Matches pattern from Test 10 (conditional execution based on environment)
-  - Prevents pre-push hook from blocking legitimate commits
-  - Full E2E testing still available when proxy is running locally
-
-### Documentation
-
-- **Attribution & Credits** - Enhanced open-source attribution for production quality
-  - Added comprehensive `NOTICE` file with formal attribution to original anyclaude project
-  - Updated `LICENSE` with proper copyright chain (Coder Technologies Inc. → akaszubski)
-  - Added detailed Credits section to README.md explaining fork relationship
-  - Documented all significant enhancements vs. original project
-  - Acknowledged all key contributors and dependency projects
-
-- **Test Count Accuracy** - Updated documentation to reflect actual test coverage
-  - Changed "170+ tests" to "1,400+ tests across 60 files" throughout docs
-  - Updated PROJECT.md success metrics (test count was 8x underreported)
-  - Updated README.md feature highlights
-
-### Changed
-
-- **Autonomous-Dev Plugin** - Synced to latest version from source
-  - Updated file organization enforcement to respect CLAUDE.md standards
-  - Scripts migrated from `scripts/` to `hooks/` directory
-  - GenAI-enhanced validation with graceful fallback to heuristics
-
-### Removed
-
-- **Temporary Test Files** - Cleaned up development artifacts
-  - Removed `test-cache.ts`, `test-cache-fix.ts`, `test-model-detection.js`
-  - These were temporary scripts not part of formal test suite
-  - File organization validation now passes cleanly
-
-## [2.1.0] - 2025-11-01
-
-### Fixed
-
-- **TypeScript Type Safety** - Fixed 17 TypeScript compilation errors
-  - Added null checks in context-manager.ts for undefined values
-  - Added type guards in model-adapters.ts, tool-parsers.ts
-  - Fixed path handling in trace-analyzer.ts, trace-replayer.ts
-  - Excluded unused .test.ts files from type checking
-  - All source files now compile without errors
-
-- **CI/CD Testing** - Enabled automated tests in GitHub Actions
-  - Uncommented test execution step in `.github/workflows/ci.yml`
-  - Tests now run automatically on push/PR
-  - Prevents regressions from reaching main branch
-
-### Changed
-
-- **Version** - Bumped to 2.1.0 to align with documentation
-
-### Added
-
-- **OpenRouter Integration** - Access 400+ cloud models at 84% lower cost than Claude API
-  - New backend: `--mode=openrouter` for cloud models via OpenRouter
-  - Default model: GLM-4.6 (200K context, $0.60/$2 per 1M tokens)
-  - Popular models: Qwen 2.5 72B ($0.35/$0.70), Gemini 2.0 Flash (FREE)
-  - Full tool calling support (Read, Write, Edit, Bash, etc.)
-  - Streaming responses via SSE
-  - Configuration: `.anyclauderc.json` with openrouter backend
-  - Environment vars: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`
-  - Documentation: `docs/guides/openrouter-setup.md`
-
-- **Trace Logging by Default** - Analyze Claude Code's prompts automatically
-  - Auto-enabled for `claude` and `openrouter` modes (ANYCLAUDE_DEBUG=3)
-  - Saves all prompts/responses to `~/.anyclaude/traces/{mode}/`
-  - Helps reverse-engineer effective agent patterns
-  - Study system prompts, tool usage, and parameter patterns
-  - Disable with: `ANYCLAUDE_DEBUG=0`
-  - Documentation: `docs/guides/trace-analysis.md`
-
-- **Configuration Consolidation** - Simplified config management
-  - New: `.anyclauderc.example.json` - comprehensive example with all 4 backends
-  - New: `.anyclauderc.example-openrouter.json` - quick start for OpenRouter
-  - Removed: `.anyclauderc` (old text format), `.env.example` (superseded)
-  - All configuration now in JSON format with inline documentation
-  - Better .gitignore handling for user config files
-
-- **Documentation Reorganization** - Cleaner project structure
-  - Moved 16 historical docs from root to `docs/archive/`
-  - Created `docs/archive/README.md` index
-  - Root directory now has 7 essential markdown files (meets standards)
-  - New guides: OpenRouter Setup, Trace Analysis
-  - Updated all documentation for 4-mode system (mlx, lmstudio, openrouter, claude)
-
-### Changed
-
-- **Trace logging** - Now enabled by default for cloud modes (claude, openrouter)
-- **Mode detection** - Updated to support openrouter mode via CLI, env var, and config file
-- **Startup messages** - Added OpenRouter backend information
-- **Documentation** - Updated README.md and CLAUDE.md to highlight OpenRouter
-
-### Removed
-
-- **Web Search** - Removed DuckDuckGo web search (unreliable, not needed)
-  - WebSearch tool filtered out for local models (mlx, lmstudio, openrouter)
-  - Use `--mode=claude` if web search capability needed
-  - Removed: `src/web-search-handler.ts`, related tests
-- **Legacy config files** - Removed old configuration formats
-  - Removed: `.anyclauderc` (text format)
-  - Removed: `.env.example` (superseded by .anyclauderc.json)
-  - Local `.env` files can be deleted (already gitignored)
-
-### Fixed
-
-- **Tool calling streaming format** - Fixed OpenAI streaming compatibility
-  - Changed `object: "text_completion"` to `object: "chat.completion.chunk"` (correct OpenAI format)
-  - Tool calls now stream incrementally with index-based deltas (AI SDK requirement)
-  - Fixed mutual exclusivity: either stream text OR tool_calls, never both
-  - **Root cause**: Streaming text content alongside tool_calls violated OpenAI format
-  - **Result**: Tool calls now execute reliably without "Streaming fallback triggered" errors
-
-- **XML tool call parsing** - Enhanced pattern matching for Qwen3 output format
-  - Added support for unwrapped format: `<function=Name>...` (without `<tool_call>` wrapper)
-  - Prioritizes wrapped format, falls back to unwrapped automatically
-  - **Result**: Handles both XML formats Qwen3-Coder-30B generates
-
-- **Cache versioning** - Prevents stale cached responses after code changes
-  - Added `CACHE_VERSION` constant that invalidates cache when incremented
-  - Cache keys now include version: `hash(version + messages + tools)`
-  - **Result**: No more manual cache clearing needed after updates
-
-- **Context limit detection** - Fixed Qwen3-Coder-30B context window
-  - Added `"qwen3-coder-30b": 262144` to model lookup table
-  - **Result**: Now uses full 262K context (209K usable with 80% safety margin) instead of 32K default
-
-- **WebSearch tool filtering** - Graceful handling of unsupported tools
-  - Filters out `web_search` tool for local models (requires external API)
-  - Tool still works when using real Claude API (`--mode=claude`)
-  - **Result**: No more crashes when Claude Code requests web searches
-
-### Changed
-
-- MLX streaming now buffers response before sending to check for tool calls
-- Tool call deltas sent incrementally per OpenAI spec (name first, then arguments)
-
-## [2.2.0] - 2025-10-31
-
-### Fixed
-
-- **🎉 Native Tool Calling for MLX!** - Tool calling now works reliably (>90% vs 30% before)
-  - **Root cause**: MLX server used fragile text parsing instead of native mlx_lm tool calling
-  - **Implementation**: Pass `tools` parameter directly to `mlx_lm.generate()` (line 256)
-  - Added 3 helper methods: `_extract_tool_calls()`, `_validate_tool_call()`, `_format_tool_call_openai()` (lines 287-373)
-  - Updated streaming and non-streaming response handling to use native extraction with fallback (lines 636, 743)
-  - Automatic fallback to text parsing if native tool calling not supported
-  - **Result**: All Claude Code tools (Read, Write, Bash, Grep, Glob) now work reliably with local models
-  - Prompt caching preserved (60-85% hit rate maintained)
-  - See `docs/debugging/tool-calling-fix.md` for implementation details
-
-### Added
-
-- **Comprehensive TDD test suite for tool calling** - 38 tests following best practices
-  - `tests/unit/test_vllm_tool_calling.py` - 15 unit tests (parameter passing, extraction, validation, formatting)
-  - `tests/integration/test-vllm-tool-integration.js` - 6 integration tests (HTTP API, streaming, multiple tools)
-  - `tests/system/test-tool-execution-e2e.js` - 5 system E2E tests (full proxy flow, Anthropic format)
-  - `tests/uat/test_tool_calling_uat.js` - 12 UAT scenarios (real-world user workflows)
-  - Test-to-code ratio: 8:1 (~1,460 lines of tests for ~180 lines of code)
-  - **Result**: Implementation validated at all levels (unit, integration, system, acceptance)
-
-- **Tool calling verification tools** - Quick validation and diagnostics
-  - `diagnose-tool-support.py` - Check if mlx_lm supports native tool calling
-  - `scripts/quick-tool-test.sh` - Automated end-to-end verification (30 seconds)
-  - `test-with-anyclaude.sh` - Pre-test environment checks
-  - **Result**: Can verify tool calling status in 30 seconds
-
-- **Comprehensive documentation** - Complete guides for implementation and usage
-  - `docs/debugging/tool-calling-fix.md` - Complete implementation guide
-  - `docs/debugging/tool-call-debug.md` - Debugging tool execution
-  - `docs/debugging/capture-tool-calls.md` - Recording tool events
-  - `TOOL-FIX-SUMMARY.md` - Technical implementation summary (252 lines)
-  - `THREE-MODES.md` - Complete guide to using all three backends (376 lines)
-  - `ARCHITECTURE-OVERVIEW.md` - Visual architecture diagrams (479 lines)
-  - `READY-TO-TEST.md` - Testing quick start guide (198 lines)
-  - `TESTING-STATUS.md` - Current implementation and testing status (250 lines)
-  - **Total**: 8 new comprehensive guides (2,283 lines)
-
-### Changed
-
-- **README.md updated** - Reflects v2.2.0 and three-mode architecture
-  - Added "One Command, Three Modes" feature section
-  - Added v2.2.0 tool calling fix to "Latest Improvements"
-  - Updated "Choosing the Right Mode" comparison table
-  - Clarified Quick Start with three setup options (MLX, LMStudio, Real Claude)
-  - Added mode switching instructions
-  - Updated documentation section with all new guides
-  - **Result**: README now accurately reflects current capabilities and architecture
-
-- **Three-mode architecture clarified** - One command, three backends
-  - **Mode 1**: Real Claude API (passthrough to api.anthropic.com, as designed by Anthropic)
-  - **Mode 2**: MLX (local with auto-launch, caching, native tool calling)
-  - **Mode 3**: LMStudio (local with manual server, easy model switching)
-  - Switch modes: `ANYCLAUDE_MODE=<mode> anyclaude` or edit `.anyclauderc.json`
-  - **Result**: Users can choose the right backend for their needs
-
-### Technical Details
-
-**Files Modified**:
-
-- `scripts/mlx-server.py`: ~100 lines changed (70 new, 30 modified)
-  - Line 256: Updated `_generate_safe()` signature to accept tools
-  - Lines 265-268: Add tools to mlx_lm.generate() options
-  - Lines 287-373: Added 3 helper methods
-  - Line 519: Updated streaming generation to pass tools
-  - Line 617: Updated non-streaming generation to pass tools
-  - Lines 636-643: Updated streaming response handling
-  - Lines 743-751: Updated non-streaming response handling
-
-**Architecture**:
-
-```
-Claude Code → anyclaude proxy → mlx-server.py → mlx_lm.generate(tools) → MLX framework
-```
-
-**Methodology**:
-
-- TDD (Test-Driven Development): Tests written before implementation
-- Comprehensive test coverage: Unit, integration, system, UAT
-- Best practices: Software engineering standards, proper documentation
-- Backward compatible: Automatic fallback if native tool calling not supported
-
-## [2.1.0] - 2025-10-31
-
-### Fixed
-
-- **🎉 Token tracking completely fixed!** - Cache metrics now show accurate token counts and savings
-  - **Root cause #1**: Stream converter used wrong field names (`inputTokens` instead of `promptTokens`)
-  - **Root cause #2**: MLX server didn't send usage data in streaming responses
-  - Created robust `token-extractor.ts` that tries multiple field name variations
-  - Handles `promptTokens` (AI SDK), `inputTokens` (Anthropic), `prompt_tokens` (OpenAI)
-  - Fixed MLX server to calculate and send token counts in streaming final event
-  - Added tiktoken-based estimation fallback for backends without usage data
-  - Extracts cached token counts for accurate cache performance measurement
-  - **Result**: Cache metrics now show 60-80% token savings, enabling optimization
-  - See `docs/caching/cache-performance-tuning.md` for optimization details
-
-### Added
-
-- **Comprehensive UAT (User Acceptance Testing) suite** - Real-world usage validation
-  - `tests/uat/test_cache_performance.js` - Cache hit rates, token savings (4 tests)
-  - `tests/uat/test_real_world_workflows.js` - Code generation, debugging, tool calling (4 tests)
-  - `tests/uat/test_token_tracking.js` - Diagnostic tool for token tracking issues
-  - `docs/testing/UAT-GUIDE.md` - Complete UAT testing guide (200+ lines)
-  - `docs/testing/QUICK-TEST-GUIDE.md` - One-page quick reference
-  - **Result**: Can now validate cache performance and reliability with real usage patterns
-
-- **Token extraction tests** - TDD approach to prevent regressions
-  - `tests/unit/test-token-extraction.js` - Unit tests for token extractor (3 tests)
-  - `tests/integration/test-token-tracking-e2e.js` - End-to-end integration tests (4 tests)
-  - npm scripts: `test:uat`, `test:uat:cache`, `test:uat:workflows`, `test:uat:tokens`
-  - All tests pass ✅ (11 new tests + existing 22 unit tests)
-
-### Changed
-
-- **Cache performance analysis documented** - `CACHE-IMPROVEMENTS.md` provides complete roadmap
-  - 33.3% hit rate is normal for short sessions (analysis included)
-  - Token tracking was the blocker (now fixed)
-  - Identified optimization opportunities (cache warming, persistent cache)
-  - Success metrics and realistic expectations defined
-
-## [2.0.1] - 2025-10-30
-
-### Fixed
-
-- **JSON Schema union type compatibility** - Fixed "invalid_union" errors with tongyi-deepresearch and gpt-oss-20b models
-  - Enhanced `providerizeSchema()` to resolve `oneOf`, `anyOf`, `allOf` union types
-  - Transforms multi-type arrays (`type: ['string', 'number']`) to single types
-  - LMStudio doesn't support JSON Schema union types, so we resolve to first non-null type
-  - `allOf` schemas are merged (properties, required fields, types)
-  - Added comprehensive unit tests for all union type patterns
-  - **Result**: Complex Claude Code tool schemas now work with all LMStudio models
-  - See [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) for details
-
-## [2.0.0] - 2025-10-26
-
-### Fixed
-
-- **🎉 Tool calling completely fixed!** - Resolved all "Error reading file" and tool execution failures
-  - Implemented proper streaming tool parameter handling via `input_json_delta` events
-  - Track streamed tool IDs to prevent duplicates from AI SDK's redundant events
-  - Aligned with original [coder/anyclaude](https://github.com/coder/anyclaude) streaming approach
-  - **Result**: 0 errors - tool calls work perfectly with all LMStudio models
-  - Verified with Qwen3 Coder 30B, GPT-OSS-20B, and multiple tool types
-  - See [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) for complete investigation
-
-### Changed
-
-- **Major architectural documentation update** - PROJECT.md now emphasizes translation layer concept
-  - Updated tool calling solution with correct streaming implementation
-  - Added 5-layer architecture diagram showing translation flow
-  - Documented key translation challenges and solutions
-  - Emphasized "Active Translation, Not Simple Passthrough" principle
-- **Documentation reorganization** - Moved from root clutter to organized structure
-  - Created `docs/` directory with categorized subdirectories
-  - `docs/guides/` - User guides (authentication, mode switching, installation)
-  - `docs/development/` - Development and testing guides
-  - `docs/debugging/` - Debugging tools and tool calling investigation
-  - `docs/architecture/` - Architectural documentation
-  - `docs/reference/` - Technical references
-  - Added `docs/README.md` as comprehensive documentation index
-  - **Root now clean**: Only essential files (README, CHANGELOG, LICENSE, etc.)
-- **README.md messaging updated** - Changed from "simplified fork" to "intelligent translation layer"
-  - Accurately reflects project's architectural complexity
-  - Matches PROJECT.md's positioning as Claude Code 2.0 port
-  - Added links to organized documentation structure
-
-### Added
-
-- **Mode switching**: Toggle between LMStudio (local models) and Claude (real Anthropic API) modes
-  - `ANYCLAUDE_MODE=claude|lmstudio` environment variable
-  - `--mode=claude|lmstudio` CLI flag (takes priority over env var)
-  - Default mode: `lmstudio` (backwards compatible)
-- **Trace logging**: Automatic request/response logging in Claude mode
-  - Saves full tool schemas, requests, and responses
-  - Stored in `~/.anyclaude/traces/claude/` directory
-  - Timestamped JSON format for easy parsing
-  - API keys automatically redacted from traces
-  - Restrictive file permissions (0600) for security
-- **TRACE debug level (3)** - Enhanced debugging for tool call investigation
-  - Logs all tool-input-start/delta/end events
-  - Shows complete tool call parameters
-  - Tracks streaming vs atomic tool call handling
-- **Anthropic provider integration**: Real Claude API support in Claude mode
-  - Passthrough mode (no format conversion)
-  - Full compatibility with Claude Code
-  - Uses `@ai-sdk/anthropic` package
-- **Unit tests**: Comprehensive test coverage for trace logging
-  - Directory creation and permissions
-  - File writing and reading
-  - API key sanitization
-  - Trace file management
-
-### Security
-
-- API keys redacted from all trace files
-- Trace files created with 0600 permissions (read/write by owner only)
-- Trace directories created with 0700 permissions (full access by owner only)
-- Sensitive headers (x-api-key, Authorization, etc.) automatically sanitized
-
-### Documentation
-
-- **NEW**: [docs/README.md](docs/README.md) - Complete documentation index
-- **NEW**: [docs/debugging/tool-calling-fix.md](docs/debugging/tool-calling-fix.md) - Tool calling investigation
-- **UPDATED**: PROJECT.md - Corrected tool calling section, emphasized translation layer
-- **UPDATED**: README.md - Changed messaging to match architectural reality
-- Added organized documentation structure (guides, development, debugging, architecture, reference)
-- Added example workflow for reverse engineering tool schemas
-- Added security best practices for trace files
-
-### BREAKING CHANGES
-
-- **Version bump to 2.0.0** due to:
-  - Complete rewrite of tool calling mechanism (architectural change)
-  - Dual-mode architecture (claude vs lmstudio)
-  - Documentation reorganization (file paths changed)
-  - While backward compatible in usage, represents major architectural evolution
-
-## [1.0.0] - 2025-10-25
-
-### Added
-
-- **Initial fork from anyclaude v1.2.1** by Coder Technologies Inc.
-- **LMStudio-only support** - Simplified to focus exclusively on local models
-- **Dynamic model switching** - Use generic "current-model" name to switch LMStudio models without restart
-- **Comprehensive documentation** - Setup guides, testing instructions, troubleshooting
-- **Debug system** - Two-level debug logging (ANYCLAUDE_DEBUG=1|2)
-- **PROJECT.md** - Strategic direction document for autonomous development
-- **Testing guides** - Instructions for verifying model switching works
-
-### Removed
-
-- **Cloud provider support** - Removed OpenAI, Google, xAI, Azure, and cloud Anthropic providers (~1500 lines)
-- **Failover systems** - Removed circuit breaker, health checks, and automatic failover logic
-- **Advanced features** - Removed GPT-5 reasoning controls, service tier management
-- **Multi-provider routing** - Simplified to single LMStudio provider
-- **Command-line flags** - Removed --reasoning-effort and --service-tier flags
-- **Dependencies** - Removed @ai-sdk/anthropic, @ai-sdk/azure, @ai-sdk/google, @ai-sdk/xai, yargs-parser
-
-### Changed
-
-- **Package name** - Renamed from "anyclaude" to "anyclaude-local"
-- **Default model** - Changed from "local-model" to "current-model" for clarity
-- **Repository URL** - https://github.com/akaszubski/anyclaude-local
-- **Focus** - Simplified codebase for local-first, privacy-focused usage
-- **main.ts** - Reduced from 235 lines to 71 lines
-- **anthropic-proxy.ts** - Reduced from 900 lines to 433 lines
-
-### Documentation
-
-- Updated README.md with LMStudio-only setup instructions
-- Updated CLAUDE.md with simplified architecture documentation
-- Added LICENSE with dual copyright attribution
-- Added comprehensive testing section with curl examples
-- Created PROJECT.md for autonomous development workflow
-
-### Attribution
-
-- Forked from: https://github.com/coder/anyclaude
-- Original authors: Coder Technologies Inc.
-- Original license: MIT
-- Fork maintains MIT license with dual copyright
-
-## Fork Relationship
-
-This project is a **simplified fork** of the original anyclaude project:
-
-**Original Project**: [anyclaude](https://github.com/coder/anyclaude) by [Coder](https://coder.com)
-
-- Multi-provider support (OpenAI, Google, xAI, Azure, Anthropic)
-- Advanced failover and circuit breaker patterns
-- GPT-5 reasoning effort controls
-- OpenRouter integration
-
-**This Fork**: anyclaude-local
-
-- **Focused on**: Local MLX models and cloud models via OpenRouter
-- **Removed**: Multi-cloud provider complexity (single abstraction layer instead)
-- **Added**: MLX-Textgen auto-launch, OpenRouter integration, production hardening
-- **Enhanced**: Tool calling reliability, metrics monitoring, cache control headers
-
-All credit for the original concept and implementation goes to the anyclaude team at Coder.
-
-[unreleased]: https://github.com/akaszubski/anyclaude-local/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/akaszubski/anyclaude-local/releases/tag/v1.0.0
+    - Handles preamble (content before first header) as special "preamble" section
+    - Detects code blocks (skips headers inside ```) for accurate parsing
+    - Tracks line numbers for each section (startLine, endLine)
+    - Integrates with critical-sections.ts for critical pattern detection
+    - Preserves markdown formatting during reconstruction
+  - **Integration Points**:
+    - Used by adaptive-optimizer.ts to safely filter sections before truncation
+    - Validates critical sections won't be removed (uses detectCriticalSections())
+    - Enables tier-based prompt optimization (keep tiers 0-1, remove tiers 2-3)
+  - **Usage Example**:
+    ```typescript
+    import { parseIntoSections, getSectionsByTier, reconstructPrompt } from './prompt-section-parser';
+
+    const sections = parseIntoSections(prompt);
+    const important = getSectionsByTier(sections, 1); // Tiers 0-1 only
+    const optimized = reconstructPrompt(important);
+    ```
+  - **Test Coverage**: 54/54 Unit Tests PASSING (100%)
+    - File: `tests/unit/test-prompt-section-parser.js` (1050 lines)
+    - Test suites:
+      - Section parsing: Headers, preamble, empty prompts, line tracking (15 tests)
+      - Tier classification: Pattern matching accuracy, default tier (12 tests)
+      - Critical section detection: Integration with critical-sections.ts (8 tests)
+      - Filtering by tier: maxTier boundary, empty results (6 tests)
+      - Prompt reconstruction: Markdown preservation, section ordering (7 tests)
+      - ID generation: Kebab-case conversion, special characters (6 tests)
+    - Edge cases: Empty content, nested headers, code blocks with headers, unicode (6 tests)
+  - **Status**: COMPLETE - All 54 tests PASS, ready for production use
+  - **Documentation**: Complete with JSDoc comments on all exported functions and interfaces
+  - **No External Dependencies**: Pure TypeScript, uses built-in string/regex operations
+
+- **Issue #20: Safe System Prompt Filter** - Tiered filtering with automatic validation and fallback (461 lines)
+
+  **Purpose**: Safely filter Claude Code system prompts with automatic validation to prevent breaking tool-calling functionality.
+
+  **Safe System Prompt Filter** - Tiered filtering with validation gate and fallback chain (461 lines)
+  - **Purpose**: Filter system prompts by tier (MINIMAL, MODERATE, AGGRESSIVE, EXTREME) with automatic validation and fallback to ensure tool-calling functionality is never broken
+  - **Components**:
+    - filterSystemPrompt(): Main filtering function with tier-based filtering and validation gate
+    - estimateTokens(): Token estimation using 1 token ≈ 4 characters heuristic

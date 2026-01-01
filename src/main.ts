@@ -1,4 +1,4 @@
-// Proxy wrapper to run Claude Code with LMStudio local models or real Anthropic API
+// Proxy wrapper to run Claude Code with LMStudio, MLX Cluster, OpenRouter, or Anthropic API
 
 // Load environment variables from .env file
 import * as dotenv from "dotenv";
@@ -17,6 +17,8 @@ import type { AnyclaudeMode } from "./trace-logger";
 import { debug, isDebugEnabled, logSessionContext } from "./debug";
 import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
 import { getTimeoutConfig, getTimeoutInfoString } from "./timeout-config";
+import { initializeCluster, getClusterManager, resetClusterManager } from "./cluster/cluster-manager";
+import type { MLXClusterConfig } from "./cluster/cluster-types";
 
 /**
  * Configuration file structure for .anyclauderc.json
@@ -37,6 +39,10 @@ interface AnyclaudeConfig {
       model?: string;
       compatibility?: string;
       description?: string;
+      truncateSystemPrompt?: boolean; // Truncate Claude Code system prompt to reduce cache pressure
+      systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
+      smartSystemPrompt?: boolean; // Use AI-powered dynamic prompt optimization (EXPERIMENTAL)
+      smartPromptMode?: "simple" | "intelligent"; // simple=keyword, intelligent=use LLM (default: simple)
     };
     claude?: {
       enabled?: boolean;
@@ -48,6 +54,30 @@ interface AnyclaudeConfig {
       apiKey?: string;
       model?: string;
       description?: string;
+    };
+    "mlx-cluster"?: {
+      enabled?: boolean;
+      discovery?: {
+        mode: "static" | "dynamic";
+        nodes?: Array<{ url: string; nodeId: string }>;
+        refreshIntervalMs?: number;
+      };
+      health?: {
+        checkIntervalMs?: number;
+        timeoutMs?: number;
+        unhealthyThreshold?: number;
+        healthyThreshold?: number;
+      };
+      routing?: {
+        strategy: "round-robin" | "least-loaded" | "cache-aware" | "latency-based";
+        maxRetries?: number;
+        retryDelayMs?: number;
+      };
+      cache?: {
+        enabled?: boolean;
+        maxCacheAgeSec?: number;
+        checkIntervalMs?: number;
+      };
     };
   };
 }
@@ -74,20 +104,32 @@ function loadConfig(): AnyclaudeConfig {
 
 /**
  * Parse CLI arguments for --mode flag
+ * Supports both --mode=value and --mode value syntax
  */
 function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    // Handle --mode=value syntax
     if (arg.startsWith("--mode=")) {
       const mode = arg.substring(7).toLowerCase();
-      if (
-        mode === "claude" ||
-        mode === "lmstudio" ||
-        mode === "openrouter"
-      ) {
+      if (mode === "claude" || mode === "lmstudio" || mode === "openrouter" || mode === "mlx-cluster") {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', or 'openrouter'.`
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'openrouter', or 'mlx-cluster'.`
+      );
+      process.exit(1);
+    }
+
+    // Handle --mode value syntax (space-separated)
+    if (arg === "--mode" && i + 1 < args.length) {
+      const mode = args[i + 1].toLowerCase();
+      if (mode === "claude" || mode === "lmstudio" || mode === "openrouter" || mode === "mlx-cluster") {
+        return mode as AnyclaudeMode;
+      }
+      console.error(
+        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'openrouter', or 'mlx-cluster'.`
       );
       process.exit(1);
     }
@@ -137,7 +179,8 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
   if (
     envMode === "claude" ||
     envMode === "lmstudio" ||
-    envMode === "openrouter"
+    envMode === "openrouter" ||
+    envMode === "mlx-cluster"
   ) {
     return envMode as AnyclaudeMode;
   }
@@ -148,7 +191,8 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
     if (
       backend === "claude" ||
       backend === "lmstudio" ||
-      backend === "openrouter"
+      backend === "openrouter" ||
+      backend === "mlx-cluster"
     ) {
       return backend as AnyclaudeMode;
     }
@@ -279,6 +323,11 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
         // Disable parallel tool calls for better compatibility
         body.parallel_tool_calls = false;
 
+        // ENABLE PROMPT CACHING: llama.cpp's cache_prompt parameter
+        // This tells LMStudio to cache the prompt prefix (system + history)
+        // and reuse it across requests, avoiding full recomputation
+        body.cache_prompt = true;
+
         init.body = JSON.stringify(body);
       }
 
@@ -368,10 +417,24 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
 };
 
 // Wrap initialization in async IIFE
+// Skip execution in test environment to allow function exports to be tested
+if (process.env.NODE_ENV !== 'test') {
 (async () => {
   // Setup signal handlers for graceful shutdown
   const handleShutdown = async () => {
     debug(1, "[anyclaude] Received shutdown signal, cleaning up...");
+
+    // Shutdown cluster manager if initialized
+    try {
+      const clusterMgr = getClusterManager();
+      if (clusterMgr) {
+        debug(1, "[anyclaude] Shutting down cluster manager...");
+        await clusterMgr.shutdown();
+      }
+    } catch (error) {
+      // Cluster manager may not be initialized
+      debug(2, "[anyclaude] Cluster manager shutdown skipped:", error);
+    }
 
     // Import cache monitor to display stats on exit
     try {
@@ -392,6 +455,41 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
   process.on("SIGINT", handleShutdown);
   process.on("SIGTERM", handleShutdown);
 
+  // Initialize cluster manager if mlx-cluster mode is selected
+  if (mode === "mlx-cluster") {
+    const clusterConfig = config.backends?.["mlx-cluster"];
+
+    if (!clusterConfig) {
+      console.error("[anyclaude] ERROR: mlx-cluster mode selected but no cluster configuration found in .anyclauderc.json");
+      console.error("[anyclaude] Please add 'mlx-cluster' configuration to backends section");
+      process.exit(1);
+    }
+
+    // Validate required fields
+    if (!clusterConfig.discovery || !clusterConfig.health || !clusterConfig.routing || !clusterConfig.cache) {
+      console.error("[anyclaude] ERROR: Incomplete cluster configuration");
+      console.error("[anyclaude] Required fields: discovery, health, routing, cache");
+      process.exit(1);
+    }
+
+    try {
+      debug(1, "[anyclaude] Initializing MLX cluster...");
+      await initializeCluster(clusterConfig as MLXClusterConfig);
+
+      const clusterMgr = getClusterManager();
+      if (clusterMgr) {
+        const status = clusterMgr.getStatus();
+        debug(1, `[anyclaude] Cluster initialized: ${status.totalNodes} nodes, ${status.healthyNodes} healthy`);
+      }
+    } catch (error) {
+      console.error("[anyclaude] ERROR: Failed to initialize cluster:", error);
+      if (error instanceof Error) {
+        console.error("[anyclaude] Details:", error.message);
+      }
+      process.exit(1);
+    }
+  }
+
   // LMStudio and OpenRouter don't need auto-launching - user manages them manually
 
   const proxyURL = createAnthropicProxy({
@@ -408,8 +506,14 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       mode === "lmstudio"
         ? lmstudioConfig?.baseURL
         : mode === "openrouter"
-            ? openrouterConfig?.baseURL
-            : undefined,
+          ? openrouterConfig?.baseURL
+          : undefined,
+    // Only truncate for LMStudio (MLX has non-trimmable cache)
+    // OpenRouter/Claude have production-grade caching and can handle full prompts
+    truncateSystemPrompt: mode === "lmstudio" ? config.backends?.lmstudio?.truncateSystemPrompt ?? false : false,
+    systemPromptMaxTokens: mode === "lmstudio" ? config.backends?.lmstudio?.systemPromptMaxTokens ?? 2000 : 0,
+    smartSystemPrompt: mode === "lmstudio" ? config.backends?.lmstudio?.smartSystemPrompt ?? false : false,
+    smartPromptMode: mode === "lmstudio" ? config.backends?.lmstudio?.smartPromptMode ?? "simple" : "simple",
   });
 
   console.log(`[anyclaude] Backend: ${mode.toUpperCase()}`);
@@ -434,7 +538,9 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     console.log(
       `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in LMStudio)`
     );
-    console.log(`[anyclaude] Make sure LMStudio is running with a model loaded`);
+    console.log(
+      `[anyclaude] Make sure LMStudio is running with a model loaded`
+    );
   } else if (mode === "openrouter") {
     const modelName = openrouterConfig?.model || "z-ai/glm-4.6";
     console.log(`[anyclaude] Using OpenRouter API`);
@@ -454,6 +560,28 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       const traceDir = require("os").homedir() + "/.anyclaude/traces/claude";
       console.log(`[anyclaude] Trace directory: ${traceDir}`);
     }
+  } else if (mode === "mlx-cluster") {
+    const clusterMgr = getClusterManager();
+    if (clusterMgr) {
+      const status = clusterMgr.getStatus();
+      console.log(`[anyclaude] Using MLX Cluster`);
+      console.log(`[anyclaude] Nodes: ${status.totalNodes} total, ${status.healthyNodes} healthy`);
+      console.log(`[anyclaude] Strategy: ${config.backends?.["mlx-cluster"]?.routing?.strategy || "cache-aware"}`);
+
+      if (status.nodes && status.nodes.length > 0) {
+        console.log(`[anyclaude] Cluster status:`);
+        status.nodes.forEach(node => {
+          const healthIndicator = node.healthy ? "✓" : "✗";
+          const latency = node.latencyMs ? ` (${node.latencyMs}ms)` : "";
+          console.log(`[anyclaude]   ${healthIndicator} ${node.id}: ${node.url}${latency}`);
+        });
+      }
+
+      if (process.env.ANYCLAUDE_DEBUG) {
+        const traceDir = require("os").homedir() + "/.anyclaude/traces/mlx-cluster";
+        console.log(`[anyclaude] Trace directory: ${traceDir}`);
+      }
+    }
   }
   console.log("");
 
@@ -463,16 +591,16 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
       mode,
       model:
         mode === "lmstudio"
-            ? lmstudioConfig?.model || "current-model"
-            : mode === "openrouter"
-              ? openrouterConfig?.model || "z-ai/glm-4.6"
-              : "claude-3-5-sonnet-20241022",
+          ? lmstudioConfig?.model || "current-model"
+          : mode === "openrouter"
+            ? openrouterConfig?.model || "z-ai/glm-4.6"
+            : "claude-3-5-sonnet-20241022",
       backendUrl:
         mode === "lmstudio"
           ? lmstudioConfig?.baseURL
           : mode === "openrouter"
-              ? openrouterConfig?.baseURL
-              : undefined,
+            ? openrouterConfig?.baseURL
+            : undefined,
       proxyUrl: proxyURL,
       config: {
         backend: mode,
@@ -511,3 +639,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
     });
   }
 })();
+}
+
+// Export functions for testing
+export { parseModeFromArgs, detectMode };
