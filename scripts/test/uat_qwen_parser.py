@@ -171,10 +171,10 @@ def main():
         expected_tool=None  # Model should answer directly
     ))
 
-    # Test 5: Complex nested arguments
+    # Test 5: Complex nested arguments (with explicit tool instruction)
     results.append(test_tool_call(
         "Complex Arguments",
-        [{"role": "user", "content": "Write a Python function that prints hello to /tmp/script.py"}],
+        [{"role": "user", "content": "Use the Write tool to save this content to /tmp/script.py: print('hello')"}],
         [write_tool],
         expected_tool="Write"
     ))

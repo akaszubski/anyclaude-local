@@ -2,15 +2,16 @@
 """
 Qwen Tool Parser
 
-Handles 8 format variations from Qwen2.5-Coder-7B model:
+Handles 9 format variations from Qwen2.5-Coder-7B model:
 1. <tool_call>{"name": "func", "arguments": {...}}</tool_call>
 2. <tools>[{"name": "func", "arguments": {...}}]</tools>
 3. <function>{"name": "func", "arguments": {...}}</function>
-4. <function-call>{"name": "func", "arguments": {...}}</function-call>
+4. <function-call>{"name": "func", "arguments": {...}}</function-call> (also <function_call>)
 5. <{"name": "func", "arguments": {...}}>
 6. <ToolName arg1="val1" arg2="val2"/> (tool name as XML tag with args as attributes)
 7. <function name="func" arguments='{...}'/> (function tag with name/args attributes)
 8. ```json\n{"name": "func", "arguments": {...}}\n``` (raw JSON in code block)
+9. <response>{"name": "func", "arguments": {...}}</response>
 
 GitHub Issue: #33 - MLX Worker tool calling format inconsistency
 
@@ -45,12 +46,14 @@ class QwenToolParser(ToolParserBase):
         """
         super().__init__(max_json_size_mb, timeout_ms)
 
-        # Register all 8 Qwen format patterns
+        # Register all 9 Qwen format patterns
         # Use non-greedy matching by default
         self.patterns = {
             'tool_call': re.compile(r'<tool_call>(.*?)</tool_call>', re.DOTALL),
             'tools': re.compile(r'<tools>(.*?)</tools>', re.DOTALL),
             'function': re.compile(r'<function>(.*?)</function>', re.DOTALL),
+            # Format 9: <response>JSON</response>
+            'response': re.compile(r'<response>(.*?)</response>', re.DOTALL),
             # Matches both <function-call> and <function_call> (hyphen or underscore)
             'function_call': re.compile(r'<function[-_]call>(.*?)</function[-_]call>', re.DOTALL),
             'json_bracket': re.compile(r'<(\{[^>]*?\})>', re.DOTALL),
