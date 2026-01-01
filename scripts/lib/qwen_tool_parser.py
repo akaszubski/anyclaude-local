@@ -2,11 +2,15 @@
 """
 Qwen Tool Parser
 
-Handles 4 XML format variations from Qwen2.5-Coder-7B model:
+Handles 8 format variations from Qwen2.5-Coder-7B model:
 1. <tool_call>{"name": "func", "arguments": {...}}</tool_call>
 2. <tools>[{"name": "func", "arguments": {...}}]</tools>
 3. <function>{"name": "func", "arguments": {...}}</function>
-4. <{"name": "func", "arguments": {...}}>
+4. <function-call>{"name": "func", "arguments": {...}}</function-call>
+5. <{"name": "func", "arguments": {...}}>
+6. <ToolName arg1="val1" arg2="val2"/> (tool name as XML tag with args as attributes)
+7. <function name="func" arguments='{...}'/> (function tag with name/args attributes)
+8. ```json\n{"name": "func", "arguments": {...}}\n``` (raw JSON in code block)
 
 GitHub Issue: #33 - MLX Worker tool calling format inconsistency
 
@@ -41,13 +45,32 @@ class QwenToolParser(ToolParserBase):
         """
         super().__init__(max_json_size_mb, timeout_ms)
 
-        # Register all 4 Qwen format patterns
+        # Register all 8 Qwen format patterns
         # Use non-greedy matching by default
         self.patterns = {
             'tool_call': re.compile(r'<tool_call>(.*?)</tool_call>', re.DOTALL),
             'tools': re.compile(r'<tools>(.*?)</tools>', re.DOTALL),
             'function': re.compile(r'<function>(.*?)</function>', re.DOTALL),
-            'json_bracket': re.compile(r'<(\{[^>]*?\})>', re.DOTALL)
+            'function_call': re.compile(r'<function-call>(.*?)</function-call>', re.DOTALL),
+            'json_bracket': re.compile(r'<(\{[^>]*?\})>', re.DOTALL),
+            # Format 6: <ToolName arg="value"/> - tool name as XML tag with attributes
+            # Matches: <Read file_path="/tmp/test.txt"/> or <Bash command="ls"/>
+            'tag_with_attrs': re.compile(
+                r'<([A-Z][a-zA-Z]*)\s+([^>]+?)(?:/>|>\s*</\1>)',
+                re.DOTALL
+            ),
+            # Format 7: <function name="func" arguments='{...}'/> - function tag with name/args attributes
+            # Matches: <function name="Write" arguments='{"file_path": "..."}' />
+            'function_attrs': re.compile(
+                r'<function\s+name\s*=\s*["\']([^"\']+)["\']\s+arguments\s*=\s*["\'](.+?)["\']\s*/>',
+                re.DOTALL
+            ),
+            # Format 8: Raw JSON tool call in markdown code block
+            # Matches: ```json\n{"name": "Write", "arguments": {...}}\n```
+            'raw_json_block': re.compile(
+                r'```(?:json)?\s*(\{[^`]*?"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:[^`]*?\})\s*```',
+                re.DOTALL
+            )
         }
 
     def can_parse(self, response: Union[str, Dict, None]) -> bool:
@@ -96,24 +119,50 @@ class QwenToolParser(ToolParserBase):
             # Validate size
             self._validate_json_size(response)
 
-            # Normalize output
-            normalized = self._normalize_output(response)
-
             # Extract tool calls from all format types
             tool_calls = []
 
-            # Try each format pattern
+            # First, try raw_json_block on ORIGINAL response (before normalization strips code blocks)
+            if 'raw_json_block' in self.patterns:
+                for match_obj in self.patterns['raw_json_block'].finditer(response):
+                    try:
+                        self._validate_timeout(start_time)
+                        match = match_obj.group(1)
+                        parsed = self._parse_format(match, 'raw_json_block')
+                        if parsed:
+                            tool_calls.extend(parsed)
+                    except json.JSONDecodeError:
+                        continue
+                    except ToolParseError:
+                        raise
+
+            # Normalize output for other patterns
+            normalized = self._normalize_output(response)
+
+            # Try each format pattern (skip raw_json_block, already processed)
             for format_name, pattern in self.patterns.items():
+                if format_name == 'raw_json_block':
+                    continue  # Already processed above
                 # Use finditer for more control
                 for match_obj in pattern.finditer(normalized):
-                    match = match_obj.group(1)
-
                     try:
                         # Validate timeout before processing each match
                         self._validate_timeout(start_time)
 
-                        # Parse based on format
-                        parsed = self._parse_format(match, format_name)
+                        # Handle tag_with_attrs specially (2 capture groups)
+                        if format_name == 'tag_with_attrs':
+                            tool_name = match_obj.group(1)  # e.g., "Bash"
+                            attrs_str = match_obj.group(2)  # e.g., 'command="ls"'
+                            parsed = self._parse_format(attrs_str, format_name, tool_name=tool_name)
+                        elif format_name == 'function_attrs':
+                            # Format 7: <function name="X" arguments='Y'/>
+                            tool_name = match_obj.group(1)  # e.g., "Write"
+                            args_json = match_obj.group(2)  # e.g., '{"file_path": "..."}'
+                            parsed = self._parse_format(args_json, format_name, tool_name=tool_name)
+                        else:
+                            match = match_obj.group(1)
+                            parsed = self._parse_format(match, format_name)
+
                         if parsed:
                             tool_calls.extend(parsed)
 
@@ -228,13 +277,14 @@ class QwenToolParser(ToolParserBase):
 
         return text
 
-    def _parse_format(self, match: str, format_name: str) -> List[Dict]:
+    def _parse_format(self, match: str, format_name: str, tool_name: str = None) -> List[Dict]:
         """
         Parse tool call from specific format
 
         Args:
             match: Matched content from regex
-            format_name: Format type ('tool_call', 'tools', 'function', 'json_bracket')
+            format_name: Format type ('tool_call', 'tools', 'function', 'json_bracket', 'tag_with_attrs')
+            tool_name: Tool name for 'tag_with_attrs' format
 
         Returns:
             List of parsed tool calls
@@ -247,7 +297,31 @@ class QwenToolParser(ToolParserBase):
         # Strip whitespace
         match = match.strip()
 
-        if format_name == 'tools':
+        if format_name == 'tag_with_attrs':
+            # Format 6: <ToolName arg="value"/> - parse XML attributes
+            # tool_name is the tag name (e.g., "Read", "Bash")
+            # match is the attributes string (e.g., 'command="ls /tmp"')
+            arguments = self._parse_xml_attributes(match)
+            if tool_name and arguments is not None:
+                tool_calls.append({
+                    'name': tool_name,
+                    'arguments': arguments
+                })
+
+        elif format_name == 'function_attrs':
+            # Format 7: <function name="X" arguments='Y'/>
+            # tool_name is from the name attribute, match is the arguments JSON
+            try:
+                arguments = json.loads(match)
+                if tool_name and isinstance(arguments, dict):
+                    tool_calls.append({
+                        'name': tool_name,
+                        'arguments': arguments
+                    })
+            except json.JSONDecodeError:
+                pass  # Skip malformed JSON
+
+        elif format_name == 'tools':
             # Format 2: <tools>[...]</tools> - array of tool calls
             tools_array = json.loads(match)
 
@@ -277,6 +351,34 @@ class QwenToolParser(ToolParserBase):
                 })
 
         return tool_calls
+
+    def _parse_xml_attributes(self, attrs_str: str) -> Optional[Dict]:
+        """
+        Parse XML attributes string into a dictionary
+
+        Args:
+            attrs_str: Attributes string like 'arg1="val1" arg2="val2"'
+
+        Returns:
+            Dictionary of attribute name-value pairs
+        """
+        arguments = {}
+
+        # Match attributes: name="value" or name='value'
+        attr_pattern = re.compile(r'(\w+)\s*=\s*["\']([^"\']*)["\']')
+
+        for attr_match in attr_pattern.finditer(attrs_str):
+            attr_name = attr_match.group(1)
+            attr_value = attr_match.group(2)
+
+            # Try to parse value as JSON for nested objects/arrays
+            try:
+                arguments[attr_name] = json.loads(attr_value)
+            except json.JSONDecodeError:
+                # Keep as string
+                arguments[attr_name] = attr_value
+
+        return arguments if arguments else None
 
 
 __all__ = ['QwenToolParser', 'ToolParseError']
