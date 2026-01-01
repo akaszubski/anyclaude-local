@@ -51,7 +51,8 @@ class QwenToolParser(ToolParserBase):
             'tool_call': re.compile(r'<tool_call>(.*?)</tool_call>', re.DOTALL),
             'tools': re.compile(r'<tools>(.*?)</tools>', re.DOTALL),
             'function': re.compile(r'<function>(.*?)</function>', re.DOTALL),
-            'function_call': re.compile(r'<function-call>(.*?)</function-call>', re.DOTALL),
+            # Matches both <function-call> and <function_call> (hyphen or underscore)
+            'function_call': re.compile(r'<function[-_]call>(.*?)</function[-_]call>', re.DOTALL),
             'json_bracket': re.compile(r'<(\{[^>]*?\})>', re.DOTALL),
             # Format 6: <ToolName arg="value"/> - tool name as XML tag with attributes
             # Matches: <Read file_path="/tmp/test.txt"/> or <Bash command="ls"/>
