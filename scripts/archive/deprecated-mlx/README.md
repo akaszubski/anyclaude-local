@@ -25,10 +25,12 @@ If you're still using the old MLX server, migrate to mistral.rs:
 ## What Was Archived
 
 **Files**:
+
 - `mlx-server.py` - Custom MLX server implementation (~1500 lines)
 - `ram_cache.py` - RAM-based KV cache manager
 
 **Documentation**:
+
 - Various debugging docs from the MLX server development era
 - Implementation guides and migration postmortems
 - Tool calling fixes and repetition penalty patches
@@ -36,6 +38,7 @@ If you're still using the old MLX server, migrate to mistral.rs:
 ## Historical Context
 
 The custom MLX server was developed because:
+
 - MLX-Textgen pip package had broken tool calling
 - vLLM-MLX was experimental and incomplete
 - We needed a working local solution for Apple Silicon
@@ -45,6 +48,7 @@ It served us well for versions 2.0-2.3, but mistral.rs is the better long-term s
 ## For Archival/Research Purposes
 
 If you need to reference the old implementation:
+
 - System prompt caching implementation
 - RAM-based KV cache design
 - vLLM-inspired features (circuit breaker, error recovery)

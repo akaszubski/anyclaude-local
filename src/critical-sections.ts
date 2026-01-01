@@ -96,25 +96,29 @@ export const CRITICAL_SECTIONS: CriticalSection[] = [
     name: "tool-usage-policy-header",
     pattern: /# Tool usage policy/,
     required: true,
-    description: "Header marking the tool usage policy section - contains critical function call instructions",
+    description:
+      "Header marking the tool usage policy section - contains critical function call instructions",
   },
   {
     name: "function-calls-instruction",
     pattern: /When making function calls/,
     required: false,
-    description: "Core instruction for how to make function calls - critical for tool invocation",
+    description:
+      "Core instruction for how to make function calls - critical for tool invocation",
   },
   {
     name: "json-format-requirement",
     pattern: /\b(?:JSON|json)\b/,
     required: true,
-    description: "Requirement to use JSON format for parameters - prevents malformed tool calls",
+    description:
+      "Requirement to use JSON format for parameters - prevents malformed tool calls",
   },
   {
     name: "doing-tasks-section",
     pattern: /# Doing tasks/,
     required: true,
-    description: "Section header for task execution instructions - contains workflow guidance",
+    description:
+      "Section header for task execution instructions - contains workflow guidance",
   },
   {
     name: "important-markers",
@@ -126,25 +130,29 @@ export const CRITICAL_SECTIONS: CriticalSection[] = [
     name: "very-important-markers",
     pattern: /VERY IMPORTANT:/,
     required: false,
-    description: "Markers for the most critical instructions - optional but recommended",
+    description:
+      "Markers for the most critical instructions - optional but recommended",
   },
   {
     name: "absolute-path-requirement",
     pattern: /absolute file paths?/i,
     required: false,
-    description: "Instruction to use absolute paths instead of relative paths - prevents file access errors",
+    description:
+      "Instruction to use absolute paths instead of relative paths - prevents file access errors",
   },
   {
     name: "function-calls-tags",
     pattern: /<function_calls>/,
     required: false,
-    description: "XML-style function call tags - used in some tool invocation formats",
+    description:
+      "XML-style function call tags - used in some tool invocation formats",
   },
   {
     name: "invoke-tag",
     pattern: /<invoke name=/,
     required: false,
-    description: "Tool invocation tag format - shows how to structure tool calls",
+    description:
+      "Tool invocation tag format - shows how to structure tool calls",
   },
 ];
 
@@ -186,7 +194,10 @@ export function detectCriticalSections(prompt: string): CriticalSectionMatch[] {
   for (const section of CRITICAL_SECTIONS) {
     // Find all matches for this pattern
     // Using RegExp.exec() in a loop is ReDoS-safe because our patterns are simple
-    const regex = new RegExp(section.pattern.source, section.pattern.flags + "g");
+    const regex = new RegExp(
+      section.pattern.source,
+      section.pattern.flags + "g"
+    );
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(prompt)) !== null) {
@@ -241,35 +252,41 @@ export function validateCriticalPresence(prompt: string): ValidationResult {
   }
 
   // Identify required sections
-  const requiredSections = CRITICAL_SECTIONS.filter(s => s.required);
+  const requiredSections = CRITICAL_SECTIONS.filter((s) => s.required);
   const requiredCount = requiredSections.length;
 
   // Find missing required sections
   const missingRequired = requiredSections.filter(
-    section => !foundSectionNames.has(section.name)
+    (section) => !foundSectionNames.has(section.name)
   );
 
   // Find missing optional sections for warnings
-  const optionalSections = CRITICAL_SECTIONS.filter(s => !s.required);
+  const optionalSections = CRITICAL_SECTIONS.filter((s) => !s.required);
   const missingOptional = optionalSections.filter(
-    section => !foundSectionNames.has(section.name)
+    (section) => !foundSectionNames.has(section.name)
   );
 
   // Generate warnings only for important optional sections
   // (exclude XML-style tags which are not commonly used)
   const warnings: string[] = [];
-  const importantOptionalNames = ['very-important-markers', 'absolute-path-requirement'];
+  const importantOptionalNames = [
+    "very-important-markers",
+    "absolute-path-requirement",
+  ];
   for (const section of missingOptional) {
     if (importantOptionalNames.includes(section.name)) {
-      warnings.push(`Optional section missing: "${section.name}" - ${section.description}`);
+      warnings.push(
+        `Optional section missing: "${section.name}" - ${section.description}`
+      );
     }
   }
 
   // Calculate coverage percentage
   const foundRequiredCount = requiredCount - missingRequired.length;
-  const coveragePercent = requiredCount > 0
-    ? Math.round((foundRequiredCount / requiredCount) * 100)
-    : 100; // Empty prompts get 100% coverage (no requirements to meet)
+  const coveragePercent =
+    requiredCount > 0
+      ? Math.round((foundRequiredCount / requiredCount) * 100)
+      : 100; // Empty prompts get 100% coverage (no requirements to meet)
 
   // Validation passes if all required sections are present
   const isValid = missingRequired.length === 0;

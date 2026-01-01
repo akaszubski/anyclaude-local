@@ -8,11 +8,11 @@
   "backends": {
     "lmstudio": {
       "enabled": true,
-      "baseUrl": "http://localhost:8082/v1",
-      "apiKey": "lm-studio",
+      "baseUrl": "http://localhost:8081/v1",
+      "apiKey": "mlx-worker",
       "model": "current-model",
       "compatibility": "legacy",
-      "description": "Local LMStudio - loads whatever model you have running"
+      "description": "Local MLX Worker - uses Qwen2.5-Coder-7B via MLX"
     },
     "claude": {
       "enabled": false,

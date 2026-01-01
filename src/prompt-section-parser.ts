@@ -56,21 +56,9 @@ const TIER_PATTERNS = {
     /tool.*schema/i,
     /available.*tools/i,
   ],
-  1: [
-    /core.*identity/i,
-    /tone/i,
-    /doing.*tasks/i,
-    /task.*management/i,
-  ],
-  2: [
-    /planning/i,
-    /git.*workflow/i,
-    /asking.*questions/i,
-  ],
-  3: [
-    /example/i,
-    /verbose/i,
-  ],
+  1: [/core.*identity/i, /tone/i, /doing.*tasks/i, /task.*management/i],
+  2: [/planning/i, /git.*workflow/i, /asking.*questions/i],
+  3: [/example/i, /verbose/i],
 };
 
 /**
@@ -133,7 +121,11 @@ export function parseIntoSections(prompt: string): PromptSection[] {
   }
 
   // Handle content before first header (preamble)
-  if (headerIndices.length > 0 && headerIndices[0] && headerIndices[0].index > 0) {
+  if (
+    headerIndices.length > 0 &&
+    headerIndices[0] &&
+    headerIndices[0].index > 0
+  ) {
     const preambleContent = lines.slice(0, headerIndices[0].index).join("\n");
     if (preambleContent.trim().length > 0) {
       const preambleSection: PromptSection = {
@@ -152,12 +144,12 @@ export function parseIntoSections(prompt: string): PromptSection[] {
 
       // Force tier 0 only if contains tool-calling critical sections
       const toolCriticalNames = [
-        'tool-usage-policy-header',
-        'function-calls-instruction',
-        'function-calls-tags',
-        'invoke-tag',
+        "tool-usage-policy-header",
+        "function-calls-instruction",
+        "function-calls-tags",
+        "invoke-tag",
       ];
-      const hasToolCritical = criticalMatches.some(match =>
+      const hasToolCritical = criticalMatches.some((match) =>
         toolCriticalNames.includes(match.section.name)
       );
 
@@ -196,12 +188,12 @@ export function parseIntoSections(prompt: string): PromptSection[] {
     // Force tier 0 only if contains tool-calling critical sections
     // (not just header markers like "# Doing tasks")
     const toolCriticalNames = [
-      'tool-usage-policy-header',
-      'function-calls-instruction',
-      'function-calls-tags',
-      'invoke-tag',
+      "tool-usage-policy-header",
+      "function-calls-instruction",
+      "function-calls-tags",
+      "invoke-tag",
     ];
-    const hasToolCritical = criticalMatches.some(match =>
+    const hasToolCritical = criticalMatches.some((match) =>
       toolCriticalNames.includes(match.section.name)
     );
 
@@ -279,7 +271,7 @@ export function getSectionsByTier(
   sections: PromptSection[],
   maxTier: number
 ): PromptSection[] {
-  return sections.filter(section => section.tier <= maxTier);
+  return sections.filter((section) => section.tier <= maxTier);
 }
 
 /**

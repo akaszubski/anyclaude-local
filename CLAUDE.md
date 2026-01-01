@@ -117,12 +117,14 @@ The proxy works by:
 Key components:
 
 **TypeScript Proxy (Node.js)**:
+
 - `src/main.ts`: Entry point that configures backend provider and spawns Claude with proxy
 - `src/anthropic-proxy.ts`: HTTP server that handles request/response translation
 - `src/convert-anthropic-messages.ts`: Bidirectional message format conversion
 - `src/convert-to-anthropic-stream.ts`: Stream response conversion
 
 **MLX Cluster System**:
+
 - `src/cluster/cluster-manager.ts`: MLX cluster orchestration and load balancing
 - `src/cluster/cluster-types.ts`: Type definitions for cluster operations
 - `src/cluster/cluster-config.ts`: Configuration parsing and validation
@@ -132,6 +134,7 @@ Key components:
 - `src/cluster/cluster-cache.ts`: KV cache coordination across nodes
 
 **MLX Worker Nodes (Python)**:
+
 - `src/mlx_worker/server.py`: FastAPI HTTP server with OpenAI-compatible endpoints
 - `src/mlx_worker/inference.py`: MLX model loading and token generation
 - `src/mlx_worker/cache.py`: KV cache management with state tracking
@@ -262,6 +265,7 @@ body.cache_prompt = true;
 ```
 
 This tells LMStudio to:
+
 - ✅ Cache the system prompt + conversation history
 - ✅ Reuse cached prefixes across requests
 - ✅ Only process new user messages
@@ -276,6 +280,7 @@ See `src/main.ts:264-345` for the LMStudio provider configuration.
 **⚠️ DEPRECATED**: The custom prompt optimization system has been replaced with **native llama.cpp caching** via the `cache_prompt` parameter.
 
 **Why deprecated:**
+
 - Custom optimization broke tool calling by removing critical instructions
 - Adds complexity and maintenance burden
 - llama.cpp's native caching is simpler and more reliable
@@ -299,6 +304,7 @@ The safe system filter provides intelligent prompt optimization that preserves c
 - **Debug logging**: Three levels of detail (basic stats, validation details, full trace)
 
 **When to use Safe Filter vs Other Methods**:
+
 - **Native Caching** (`cache_prompt`): Use when prompt is stable (default for LMStudio)
 - **Safe Filter** (`safeSystemFilter`): Use for long prompts that need reduction while preserving tool calling
 - **Truncation** (`truncateSystemPrompt`): Use as fallback or simple size reduction
@@ -307,6 +313,7 @@ The safe system filter provides intelligent prompt optimization that preserves c
 See `src/safe-system-filter.ts` and tests/integration/anthropic-proxy-safe-filter-integration.test.js for details.
 
 **Optimization Chain Priority** (in anthropic-proxy.ts):
+
 1. **Smart Prompt** (highest priority, experimental): Full rewrite based on context
 2. **Safe Filter**: Intelligent section removal with validation
 3. **Truncation**: Simple size-based reduction
@@ -487,6 +494,7 @@ anyclaude --test-model
 **Tool calling broken (model outputs weird syntax like `<|channel|>`):**
 
 If you see output like:
+
 ```
 <|channel|>commentary to=functions/Glob <|constrain|>json<|message|>{"pattern":"README.md"}
 ```
@@ -494,12 +502,14 @@ If you see output like:
 **Most common cause:** You have `smartSystemPrompt: true` enabled, which is experimental and can break tool calling.
 
 **Quick fix:**
+
 ```bash
 # Disable optimization in .anyclauderc.json
 "smartSystemPrompt": false
 ```
 
 **Other possible causes:**
+
 1. **Model doesn't support OpenAI function calling:**
    - ✅ **Qwen2.5-Coder** (7B, 14B, 32B) - Excellent tool calling support
    - ✅ **DeepSeek-R1** - Good function calling
@@ -512,6 +522,7 @@ If you see output like:
    ```
 
 **Debug tool calling:**
+
 ```bash
 # Check if optimization is enabled
 grep "smartSystemPrompt" .anyclauderc.json
@@ -561,6 +572,7 @@ but could not: Cache is not trimmable. Clearing the cache instead.
 ```
 
 **What this means:**
+
 - Claude Code's system prompt (~12-20k tokens) is too large for MLX's cache
 - On each turn, MLX must clear and rebuild the entire cache
 - This slows down prompt processing and wastes memory
@@ -570,6 +582,7 @@ but could not: Cache is not trimmable. Clearing the cache instead.
 anyclaude automatically truncates the Claude Code system prompt **only for LMStudio** to reduce cache pressure.
 
 **Why only LMStudio?**
+
 - ✅ **OpenRouter/Claude**: Have production-grade prompt caching that handles 12-20k token prompts efficiently
 - ❌ **LMStudio (MLX)**: Has non-trimmable cache that must be fully cleared, causing performance issues
 
@@ -579,26 +592,29 @@ Truncation is automatically applied:
 {
   "backends": {
     "lmstudio": {
-      "truncateSystemPrompt": true,    // Default: true
-      "systemPromptMaxTokens": 2000    // Default: 2000 (~8000 chars)
+      "truncateSystemPrompt": true, // Default: true
+      "systemPromptMaxTokens": 2000 // Default: 2000 (~8000 chars)
     }
   }
 }
 ```
 
 **What gets truncated:**
+
 - ✅ Keeps core identity and critical instructions (first 50 lines)
 - ✅ Preserves important sections: "Tool usage policy", "Doing tasks", etc.
 - ✅ Reduces ~12-20k tokens → ~2k tokens
 - ✅ Adds note explaining truncation
 
 **Results:**
+
 - Faster prompt processing (10-20x less to reprocess)
 - Lower memory usage
 - Better cache utilization
 - Cache warnings still appear (MLX limitation), but with much smaller prompts
 
 **To disable truncation:**
+
 ```json
 {
   "backends": {
@@ -610,6 +626,7 @@ Truncation is automatically applied:
 ```
 
 **To see truncation in action:**
+
 ```bash
 ANYCLAUDE_DEBUG=1 anyclaude
 # Look for: [System Prompt] Truncated from X to Y characters
@@ -622,6 +639,7 @@ ANYCLAUDE_DEBUG=1 anyclaude
 If you see messages like "Safe filter validation failed, falling back to truncate":
 
 **What this means:**
+
 - The filter detected that removing certain sections might break tool calling or critical instructions
 - This is a safety measure - the filter preserved the full prompt rather than risk breaking functionality
 - The system fell back to truncation instead
@@ -647,7 +665,7 @@ ANYCLAUDE_DEBUG=3 anyclaude
   "backends": {
     "lmstudio": {
       "safeSystemFilter": true,
-      "filterTier": "minimal"  // Try lighter tier first
+      "filterTier": "minimal" // Try lighter tier first
     }
   }
 }
@@ -686,14 +704,14 @@ ANYCLAUDE_SAFE_FILTER=false ANYCLAUDE_TRUNCATE_PROMPT=false ANYCLAUDE_DEBUG=2 an
 
 ### Backend Comparison: Prompt Caching Capabilities
 
-| Backend | Prompt Caching | Max System Prompt | Truncation Needed? |
-|---------|---------------|-------------------|-------------------|
-| **LMStudio (MLX)** | ❌ Non-trimmable cache | ~2-4k tokens practical | ✅ **YES** (enabled by default) |
-| **MLX Cluster** | ✅ Cache-aware routing | ~4-8k tokens practical | ⚠️ Optional (per-node truncation) |
-| **OpenRouter (Gemini)** | ✅ Automatic caching | 1M+ tokens | ❌ NO (full prompt sent) |
-| **OpenRouter (Claude)** | ✅ Prompt caching API | 200k+ tokens | ❌ NO (full prompt sent) |
-| **OpenRouter (GPT-4)** | ✅ Smart caching | 128k+ tokens | ❌ NO (full prompt sent) |
-| **Claude API** | ✅ Prompt caching API | 200k+ tokens | ❌ NO (full prompt sent) |
+| Backend                 | Prompt Caching         | Max System Prompt      | Truncation Needed?                |
+| ----------------------- | ---------------------- | ---------------------- | --------------------------------- |
+| **LMStudio (MLX)**      | ❌ Non-trimmable cache | ~2-4k tokens practical | ✅ **YES** (enabled by default)   |
+| **MLX Cluster**         | ✅ Cache-aware routing | ~4-8k tokens practical | ⚠️ Optional (per-node truncation) |
+| **OpenRouter (Gemini)** | ✅ Automatic caching   | 1M+ tokens             | ❌ NO (full prompt sent)          |
+| **OpenRouter (Claude)** | ✅ Prompt caching API  | 200k+ tokens           | ❌ NO (full prompt sent)          |
+| **OpenRouter (GPT-4)**  | ✅ Smart caching       | 128k+ tokens           | ❌ NO (full prompt sent)          |
+| **Claude API**          | ✅ Prompt caching API  | 200k+ tokens           | ❌ NO (full prompt sent)          |
 
 **Recommendation**: Use OpenRouter for best experience with Claude Code's long system prompts. MLX Cluster is ideal for distributed local models with intelligent cache routing. LMStudio is suitable for single-node setups but requires truncation.
 
@@ -704,12 +722,14 @@ The MLX worker nodes (Python/FastAPI) enable distributed inference across multip
 ### MLX Worker Architecture
 
 **Worker Nodes** are production Python servers that:
+
 - Run on any machine with Python 3.8+ and MLX support
 - Provide OpenAI-compatible `/v1/chat/completions` endpoint
 - Track health metrics and cache state for cluster routing decisions
 - Enable warm cache coordination with other nodes
 
 **Key Features**:
+
 - OpenAI-compatible API (drop-in replacement for LMStudio)
 - Health monitoring with circuit breaker (GET /health)
 - KV cache state tracking and warming (GET /cache, POST /cache/warm)
@@ -720,6 +740,7 @@ The MLX worker nodes (Python/FastAPI) enable distributed inference across multip
 ### Setting Up MLX Worker Nodes
 
 **Requirements**:
+
 - Python 3.8+
 - MLX (Apple Silicon recommended, but works on other platforms)
 - FastAPI and uvicorn
@@ -814,21 +835,25 @@ curl -X POST http://localhost:8081/v1/chat/completions \
 ```
 
 **Response** (non-streaming):
+
 ```json
 {
   "id": "chatcmpl-abc123",
   "object": "chat.completion",
   "created": 1735334400,
   "model": "current-model",
-  "choices": [{
-    "index": 0,
-    "message": {"role": "assistant", "content": "...response..."},
-    "finish_reason": "stop"
-  }]
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "...response..." },
+      "finish_reason": "stop"
+    }
+  ]
 }
 ```
 
 **Streaming Response** (stream=true):
+
 - Yields SSE events (text/event-stream)
 - Each chunk: `data: {json}\n\n`
 - Final chunk: `data: [DONE]\n\n`
@@ -840,9 +865,10 @@ curl http://localhost:8081/health
 ```
 
 **Response**:
+
 ```json
 {
-  "status": "healthy",  // "healthy" | "degraded" | "unhealthy"
+  "status": "healthy", // "healthy" | "degraded" | "unhealthy"
   "health": {
     "lastCheck": 1735334400000,
     "consecutiveFailures": 0,
@@ -897,9 +923,9 @@ Worker nodes integrate with MLX Cluster via:
   "discovery": {
     "mode": "static",
     "nodes": [
-      {"id": "worker-1", "url": "http://gpu1:8081"},
-      {"id": "worker-2", "url": "http://gpu2:8081"},
-      {"id": "worker-3", "url": "http://gpu3:8081"}
+      { "id": "worker-1", "url": "http://gpu1:8081" },
+      { "id": "worker-2", "url": "http://gpu2:8081" },
+      { "id": "worker-3", "url": "http://gpu3:8081" }
     ]
   },
   "routing": {

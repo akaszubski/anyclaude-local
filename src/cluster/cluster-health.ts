@@ -16,8 +16,13 @@
  * @module cluster-health
  */
 
-import type { MLXNode, NodeStatus, NodeHealth, HealthConfig } from './cluster-types';
-import { NodeStatus as NodeStatusEnum } from './cluster-types';
+import type {
+  MLXNode,
+  NodeStatus,
+  NodeHealth,
+  HealthConfig,
+} from "./cluster-types";
+import { NodeStatus as NodeStatusEnum } from "./cluster-types";
 
 // ============================================================================
 // Error Classes
@@ -34,7 +39,7 @@ export class HealthCheckTimeoutError extends Error {
 
   constructor(nodeId: string, timeoutMs: number) {
     super(`Health check for node ${nodeId} timed out after ${timeoutMs}ms`);
-    this.name = 'HealthCheckTimeoutError';
+    this.name = "HealthCheckTimeoutError";
     this.nodeId = nodeId;
     this.timeoutMs = timeoutMs;
   }
@@ -51,8 +56,10 @@ export class HealthCheckFailedError extends Error {
   readonly statusText: string;
 
   constructor(nodeId: string, statusCode: number, statusText: string) {
-    super(`Health check for node ${nodeId} failed with status ${statusCode}: ${statusText}`);
-    this.name = 'HealthCheckFailedError';
+    super(
+      `Health check for node ${nodeId} failed with status ${statusCode}: ${statusText}`
+    );
+    this.name = "HealthCheckFailedError";
     this.nodeId = nodeId;
     this.statusCode = statusCode;
     this.statusText = statusText;
@@ -70,7 +77,7 @@ export class HealthCheckNetworkError extends Error {
 
   constructor(nodeId: string, cause: Error) {
     super(`Health check for node ${nodeId} failed: ${cause.message}`);
-    this.name = 'HealthCheckNetworkError';
+    this.name = "HealthCheckNetworkError";
     this.nodeId = nodeId;
     this.cause = cause;
   }
@@ -124,7 +131,10 @@ export type HealthCallback = (
  * @param nodeId - ID of the node
  * @param result - Result of the health check
  */
-export type HealthCheckCallback = (nodeId: string, result: HealthCheckResult) => void;
+export type HealthCheckCallback = (
+  nodeId: string,
+  result: HealthCheckResult
+) => void;
 
 /**
  * Callbacks for health monitoring events.
@@ -183,7 +193,7 @@ export class RollingWindowMetrics {
    */
   constructor(windowSizeMs: number = 30000, maxSamples: number = 100) {
     if (windowSizeMs <= 0) {
-      throw new Error('Window size must be positive');
+      throw new Error("Window size must be positive");
     }
 
     this.windowSizeMs = windowSizeMs;
@@ -200,7 +210,7 @@ export class RollingWindowMetrics {
    */
   recordSuccess(latencyMs: number): void {
     if (latencyMs < 0) {
-      throw new Error('Latency cannot be negative');
+      throw new Error("Latency cannot be negative");
     }
 
     this.addSample({
@@ -243,7 +253,8 @@ export class RollingWindowMetrics {
 
     const avgLatencyMs =
       successfulSamples.length > 0
-        ? successfulSamples.reduce((sum, s) => sum + (s.latencyMs || 0), 0) / successfulSamples.length
+        ? successfulSamples.reduce((sum, s) => sum + (s.latencyMs || 0), 0) /
+          successfulSamples.length
         : 0;
 
     return {
@@ -358,7 +369,11 @@ export class NodeHealthTracker {
    * @param config - Health check configuration
    * @param backoffConfig - Exponential backoff configuration
    */
-  constructor(nodeId: string, config: ExtendedHealthConfig, backoffConfig: BackoffConfig) {
+  constructor(
+    nodeId: string,
+    config: ExtendedHealthConfig,
+    backoffConfig: BackoffConfig
+  ) {
     this.nodeId = nodeId;
     this.config = {
       degradedThreshold: 0.8,
@@ -448,7 +463,10 @@ export class NodeHealthTracker {
    * For unhealthy/offline nodes, checks backoff delay.
    */
   shouldAttemptCheck(): boolean {
-    if (this.status === NodeStatusEnum.HEALTHY || this.status === NodeStatusEnum.DEGRADED) {
+    if (
+      this.status === NodeStatusEnum.HEALTHY ||
+      this.status === NodeStatusEnum.DEGRADED
+    ) {
       return true;
     }
 
@@ -464,7 +482,10 @@ export class NodeHealthTracker {
    */
   shouldAttemptRecovery(): boolean {
     // Don't attempt recovery for healthy/degraded nodes
-    if (this.status === NodeStatusEnum.HEALTHY || this.status === NodeStatusEnum.DEGRADED) {
+    if (
+      this.status === NodeStatusEnum.HEALTHY ||
+      this.status === NodeStatusEnum.DEGRADED
+    ) {
       return false;
     }
 
@@ -511,14 +532,18 @@ export class NodeHealthTracker {
     const metrics = this.metrics.getMetrics();
 
     // INITIALIZING → HEALTHY on first success
-    if (this.status === NodeStatusEnum.INITIALIZING && metrics.consecutiveSuccesses > 0) {
+    if (
+      this.status === NodeStatusEnum.INITIALIZING &&
+      metrics.consecutiveSuccesses > 0
+    ) {
       this.status = NodeStatusEnum.HEALTHY;
       return;
     }
 
     // UNHEALTHY/OFFLINE → HEALTHY on recovery
     if (
-      (this.status === NodeStatusEnum.UNHEALTHY || this.status === NodeStatusEnum.OFFLINE) &&
+      (this.status === NodeStatusEnum.UNHEALTHY ||
+        this.status === NodeStatusEnum.OFFLINE) &&
       metrics.consecutiveSuccesses >= 2
     ) {
       this.status = NodeStatusEnum.HEALTHY;
@@ -642,10 +667,10 @@ export class ClusterHealth {
 
     // Register provided callbacks with default IDs
     if (callbacks?.onStatusChange) {
-      this.statusCallbacks.set('default', callbacks.onStatusChange);
+      this.statusCallbacks.set("default", callbacks.onStatusChange);
     }
     if (callbacks?.onHealthCheck) {
-      this.healthCheckCallbacks.set('default', callbacks.onHealthCheck);
+      this.healthCheckCallbacks.set("default", callbacks.onHealthCheck);
     }
   }
 
@@ -657,7 +682,7 @@ export class ClusterHealth {
    */
   startHealthChecks(nodes: MLXNode[]): void {
     if (this.running) {
-      throw new Error('Health checks are already running');
+      throw new Error("Health checks are already running");
     }
 
     this.running = true;
@@ -665,7 +690,10 @@ export class ClusterHealth {
     // Initialize trackers for each node
     for (const node of nodes) {
       if (!this.trackers.has(node.id)) {
-        this.trackers.set(node.id, new NodeHealthTracker(node.id, this.config, this.backoffConfig));
+        this.trackers.set(
+          node.id,
+          new NodeHealthTracker(node.id, this.config, this.backoffConfig)
+        );
       }
 
       // Start periodic health check
@@ -706,7 +734,10 @@ export class ClusterHealth {
    * @returns {Object} Status and metrics
    * @throws {Error} If node is unknown
    */
-  getNodeHealth(nodeId: string): { status: NodeStatus; metrics: HealthMetrics } {
+  getNodeHealth(nodeId: string): {
+    status: NodeStatus;
+    metrics: HealthMetrics;
+  } {
     const tracker = this.trackers.get(nodeId);
     if (!tracker) {
       throw new Error(`Unknown node: ${nodeId}`);
@@ -723,8 +754,14 @@ export class ClusterHealth {
    *
    * @returns {Map} Map of nodeId to status and metrics
    */
-  getAllNodeHealth(): Map<string, { status: NodeStatus; metrics: HealthMetrics }> {
-    const result = new Map<string, { status: NodeStatus; metrics: HealthMetrics }>();
+  getAllNodeHealth(): Map<
+    string,
+    { status: NodeStatus; metrics: HealthMetrics }
+  > {
+    const result = new Map<
+      string,
+      { status: NodeStatus; metrics: HealthMetrics }
+    >();
 
     Array.from(this.trackers.entries()).forEach(([nodeId, tracker]) => {
       result.set(nodeId, {
@@ -755,7 +792,12 @@ export class ClusterHealth {
     const newStatus = tracker.getStatus();
 
     if (oldStatus !== newStatus) {
-      this.notifyStatusChange(nodeId, oldStatus, newStatus, tracker.getHealth());
+      this.notifyStatusChange(
+        nodeId,
+        oldStatus,
+        newStatus,
+        tracker.getHealth()
+      );
     }
   }
 
@@ -778,7 +820,12 @@ export class ClusterHealth {
     const newStatus = tracker.getStatus();
 
     if (oldStatus !== newStatus) {
-      this.notifyStatusChange(nodeId, oldStatus, newStatus, tracker.getHealth());
+      this.notifyStatusChange(
+        nodeId,
+        oldStatus,
+        newStatus,
+        tracker.getHealth()
+      );
     }
   }
 
@@ -795,7 +842,9 @@ export class ClusterHealth {
     }
 
     const status = tracker.getStatus();
-    return status === NodeStatusEnum.UNHEALTHY || status === NodeStatusEnum.OFFLINE;
+    return (
+      status === NodeStatusEnum.UNHEALTHY || status === NodeStatusEnum.OFFLINE
+    );
   }
 
   /**
@@ -835,7 +884,10 @@ export class ClusterHealth {
   private async performHealthCheck(node: MLXNode): Promise<HealthCheckResult> {
     const startTime = Date.now();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      this.config.timeoutMs
+    );
 
     try {
       const response = await Promise.race([
@@ -843,14 +895,24 @@ export class ClusterHealth {
           signal: controller.signal,
         }),
         new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new HealthCheckTimeoutError(node.id, this.config.timeoutMs)), this.config.timeoutMs);
+          setTimeout(
+            () =>
+              reject(
+                new HealthCheckTimeoutError(node.id, this.config.timeoutMs)
+              ),
+            this.config.timeoutMs
+          );
         }),
       ]);
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new HealthCheckFailedError(node.id, response.status, response.statusText);
+        throw new HealthCheckFailedError(
+          node.id,
+          response.status,
+          response.statusText
+        );
       }
 
       const latencyMs = Math.max(0, Date.now() - startTime);
@@ -858,7 +920,10 @@ export class ClusterHealth {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      if (error instanceof HealthCheckTimeoutError || error instanceof HealthCheckFailedError) {
+      if (
+        error instanceof HealthCheckTimeoutError ||
+        error instanceof HealthCheckFailedError
+      ) {
         return { success: false, error };
       }
 
@@ -902,13 +967,19 @@ export class ClusterHealth {
       this.notifyHealthCheck(node.id, result);
 
       if (oldStatus !== newStatus) {
-        this.notifyStatusChange(node.id, oldStatus, newStatus, tracker.getHealth());
+        this.notifyStatusChange(
+          node.id,
+          oldStatus,
+          newStatus,
+          tracker.getHealth()
+        );
       }
 
       // Schedule next check
       if (this.running) {
         const delay =
-          newStatus === NodeStatusEnum.UNHEALTHY || newStatus === NodeStatusEnum.OFFLINE
+          newStatus === NodeStatusEnum.UNHEALTHY ||
+          newStatus === NodeStatusEnum.OFFLINE
             ? tracker.getNextCheckDelay()
             : this.config.checkIntervalMs;
 
@@ -943,7 +1014,7 @@ export class ClusterHealth {
         callback(nodeId, oldStatus, newStatus, metrics);
       } catch (error) {
         // Ignore callback errors to prevent one bad callback from breaking others
-        console.error('Health callback error:', error);
+        console.error("Health callback error:", error);
       }
     });
   }
@@ -960,7 +1031,7 @@ export class ClusterHealth {
         callback(nodeId, result);
       } catch (error) {
         // Ignore callback errors to prevent one bad callback from breaking others
-        console.error('Health check callback error:', error);
+        console.error("Health check callback error:", error);
       }
     });
   }

@@ -12,6 +12,7 @@ This guide walks you through setting up mistralrs-server with PagedAttention for
 **Our RAM KV cache was broken** (~5% hit rate, only works with exact matches).
 
 **mistralrs has real PagedAttention**:
+
 - ✅ **+77% throughput** on Qwen 30B (9.24 → 16.34 tok/s)
 - ✅ **+131% throughput** on Llama 3B (10.08 → 23.28 tok/s)
 - ✅ **Block-level caching** (reuses system prompt across conversations!)
@@ -65,6 +66,7 @@ cargo build --release --features metal
 ### ❌ Incompatible Formats
 
 **MLX-Quantized Models** (What you currently have!)
+
 - Models from `mlx-community/*`
 - Models ending in `-MLX-4bit` or `-MLX-8bit`
 - Error: `cannot find tensor model.layers.0.mlp.gate_proj.weight`
@@ -129,12 +131,14 @@ mistralrs-server \
 ```
 
 **What happens**:
+
 1. Downloads model from HuggingFace (if not cached)
 2. Loads model into memory (~30-50 seconds)
 3. Starts HTTP server on port 8081
 4. Ready to serve requests!
 
 **Test it**:
+
 ```bash
 curl http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -166,23 +170,23 @@ mistralrs-server \
 
 ### Configuration Explained
 
-| Flag | Purpose | Recommendation |
-|------|---------|----------------|
-| `--paged-attn` | Enable PagedAttention | **Always use** |
+| Flag                 | Purpose                      | Recommendation                              |
+| -------------------- | ---------------------------- | ------------------------------------------- |
+| `--paged-attn`       | Enable PagedAttention        | **Always use**                              |
 | `--pa-gpu-mem-usage` | % of GPU memory for KV cache | 0.85 (85%) for Mac Studio, 0.70 for MacBook |
-| `--pa-blk-size` | Tokens per block | 32 (default, works well) |
-| `--pa-cache-type` | KV cache dtype | `f8e4m3` for 2x memory, `auto` for quality |
-| `--max-seqs` | Concurrent requests | 10 for local dev, 50+ for production |
+| `--pa-blk-size`      | Tokens per block             | 32 (default, works well)                    |
+| `--pa-cache-type`    | KV cache dtype               | `f8e4m3` for 2x memory, `auto` for quality  |
+| `--max-seqs`         | Concurrent requests          | 10 for local dev, 50+ for production        |
 
 ### Memory Recommendations by Hardware
 
-| Device | RAM | GPU Cores | `--pa-gpu-mem-usage` | Expected Performance |
-|--------|-----|-----------|---------------------|---------------------|
-| **Mac Studio M3 Ultra** | 192GB | 76 | 0.90 | Best (20+ tok/s) |
-| **Mac Studio M2 Ultra** | 192GB | 76 | 0.85 | Excellent (18-20 tok/s) |
-| **MacBook Pro M3 Max** | 128GB | 40 | 0.80 | Great (15-18 tok/s) |
-| **MacBook Pro M3 Pro** | 36GB | 18 | 0.70 | Good (10-15 tok/s) |
-| **MacBook Air M3** | 24GB | 10 | 0.60 | Decent (8-12 tok/s, small models only) |
+| Device                  | RAM   | GPU Cores | `--pa-gpu-mem-usage` | Expected Performance                   |
+| ----------------------- | ----- | --------- | -------------------- | -------------------------------------- |
+| **Mac Studio M3 Ultra** | 192GB | 76        | 0.90                 | Best (20+ tok/s)                       |
+| **Mac Studio M2 Ultra** | 192GB | 76        | 0.85                 | Excellent (18-20 tok/s)                |
+| **MacBook Pro M3 Max**  | 128GB | 40        | 0.80                 | Great (15-18 tok/s)                    |
+| **MacBook Pro M3 Pro**  | 36GB  | 18        | 0.70                 | Good (10-15 tok/s)                     |
+| **MacBook Air M3**      | 24GB  | 10        | 0.60                 | Decent (8-12 tok/s, small models only) |
 
 ---
 
@@ -261,6 +265,7 @@ python scripts/mlx-server.py --model /path/to/model --port 8080
 ```
 
 **Expected results** (Qwen 30B on M3 Max):
+
 - **MLX server**: ~9-12 tok/s
 - **mistralrs**: ~16-20 tok/s (**+60-80% faster!**)
 
@@ -271,6 +276,7 @@ python scripts/mlx-server.py --model /path/to/model --port 8080
 ### Issue 1: "command not found: cargo"
 
 **Solution**: Install Rust
+
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
@@ -279,6 +285,7 @@ source $HOME/.cargo/env
 ### Issue 2: "Failed to allocate GPU memory"
 
 **Solution**: Reduce `--pa-gpu-mem-usage`
+
 ```bash
 # Try 70% instead of 85%
 --pa-gpu-mem-usage 0.70
@@ -289,6 +296,7 @@ source $HOME/.cargo/env
 **Symptoms**: "Out of memory" or server dies during inference
 
 **Solutions**:
+
 1. Reduce KV cache allocation: `--pa-gpu-mem-usage 0.60`
 2. Use smaller model (e.g., 7B instead of 30B)
 3. Disable PagedAttention temporarily: remove `--paged-attn`
@@ -296,6 +304,7 @@ source $HOME/.cargo/env
 ### Issue 4: Model download fails
 
 **Solution**: Download model manually first
+
 ```bash
 # Download via HuggingFace CLI
 pip install huggingface-hub
@@ -310,6 +319,7 @@ mistralrs-server ... -m ~/.cache/huggingface/hub/models--mlx-community--Qwen3-Co
 **Status**: Unknown - needs testing!
 
 **Test it**:
+
 ```bash
 curl http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -338,14 +348,14 @@ curl http://localhost:8081/v1/chat/completions \
 
 ## Performance Comparison
 
-| Metric | MLX Server (Ours) | mistralrs + PagedAttention | Improvement |
-|--------|-------------------|---------------------------|-------------|
-| **First Request** | 10-12 tok/s | 10-12 tok/s | 0% (same, no cache) |
-| **Follow-up (Same System)** | 10-12 tok/s | **16-20 tok/s** | **+60-80%** 🔥 |
-| **Multi-Turn Conversation** | 10-12 tok/s | **16-20 tok/s** | **+60-80%** 🔥 |
-| **Memory (30B Model)** | ~40GB | **~20GB** (with FP8) | **2x better** |
-| **Cache Hit Rate** | ~5% | **~80-95%** | **16-19x better** |
-| **Concurrent Requests** | 1 (sequential) | 10+ (batched) | **10x+** |
+| Metric                      | MLX Server (Ours) | mistralrs + PagedAttention | Improvement         |
+| --------------------------- | ----------------- | -------------------------- | ------------------- |
+| **First Request**           | 10-12 tok/s       | 10-12 tok/s                | 0% (same, no cache) |
+| **Follow-up (Same System)** | 10-12 tok/s       | **16-20 tok/s**            | **+60-80%** 🔥      |
+| **Multi-Turn Conversation** | 10-12 tok/s       | **16-20 tok/s**            | **+60-80%** 🔥      |
+| **Memory (30B Model)**      | ~40GB             | **~20GB** (with FP8)       | **2x better**       |
+| **Cache Hit Rate**          | ~5%               | **~80-95%**                | **16-19x better**   |
+| **Concurrent Requests**     | 1 (sequential)    | 10+ (batched)              | **10x+**            |
 
 ---
 

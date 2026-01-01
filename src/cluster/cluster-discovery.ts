@@ -16,8 +16,8 @@ import type {
   NodeHealth,
   NodeMetrics,
   NodeCacheState,
-} from './cluster-types';
-import { NodeStatus } from './cluster-types';
+} from "./cluster-types";
+import { NodeStatus } from "./cluster-types";
 
 /**
  * Discovery-specific error with structured context.
@@ -33,7 +33,7 @@ export class DiscoveryError extends Error {
     context?: { nodeId?: string; url?: string }
   ) {
     super(message);
-    this.name = 'DiscoveryError';
+    this.name = "DiscoveryError";
     this.code = code;
     this.nodeId = context?.nodeId;
     this.url = context?.url;
@@ -65,7 +65,7 @@ export interface DiscoveryCallbacks {
  * - dnsName, port, namespace, serviceLabel: For DNS/K8s modes
  */
 export interface DiscoveryConfig {
-  readonly mode: 'static' | 'dns' | 'kubernetes';
+  readonly mode: "static" | "dns" | "kubernetes";
   readonly staticNodes?: Array<{ url: string; id: string }>;
   readonly refreshIntervalMs?: number;
   readonly validationTimeoutMs?: number;
@@ -103,9 +103,11 @@ export class ClusterDiscovery {
     this.config = {
       ...config,
       refreshIntervalMs:
-        config.refreshIntervalMs ?? ClusterDiscovery.DEFAULT_REFRESH_INTERVAL_MS,
+        config.refreshIntervalMs ??
+        ClusterDiscovery.DEFAULT_REFRESH_INTERVAL_MS,
       validationTimeoutMs:
-        config.validationTimeoutMs ?? ClusterDiscovery.DEFAULT_VALIDATION_TIMEOUT_MS,
+        config.validationTimeoutMs ??
+        ClusterDiscovery.DEFAULT_VALIDATION_TIMEOUT_MS,
     };
     this.callbacks = callbacks || {};
   }
@@ -115,17 +117,17 @@ export class ClusterDiscovery {
    */
   private validateConfig(config: DiscoveryConfig): void {
     // Validate mode
-    if (!['static', 'dns', 'kubernetes'].includes(config.mode)) {
+    if (!["static", "dns", "kubernetes"].includes(config.mode)) {
       throw new Error(`Invalid discovery mode: ${config.mode}`);
     }
 
     // Validate static mode requirements
-    if (config.mode === 'static') {
+    if (config.mode === "static") {
       if (!config.staticNodes || !Array.isArray(config.staticNodes)) {
-        throw new Error('Static discovery mode requires staticNodes array');
+        throw new Error("Static discovery mode requires staticNodes array");
       }
       if (config.staticNodes.length === 0) {
-        throw new Error('staticNodes array cannot be empty');
+        throw new Error("staticNodes array cannot be empty");
       }
     }
 
@@ -134,7 +136,7 @@ export class ClusterDiscovery {
       config.refreshIntervalMs !== undefined &&
       config.refreshIntervalMs < 0
     ) {
-      throw new Error('refreshIntervalMs must be non-negative');
+      throw new Error("refreshIntervalMs must be non-negative");
     }
 
     // Validate validation timeout
@@ -142,7 +144,7 @@ export class ClusterDiscovery {
       config.validationTimeoutMs !== undefined &&
       config.validationTimeoutMs < 0
     ) {
-      throw new Error('validationTimeoutMs must be non-negative');
+      throw new Error("validationTimeoutMs must be non-negative");
     }
   }
 
@@ -151,7 +153,7 @@ export class ClusterDiscovery {
    */
   public async start(): Promise<void> {
     if (this.running) {
-      throw new Error('Discovery is already running');
+      throw new Error("Discovery is already running");
     }
 
     this.running = true;
@@ -209,7 +211,7 @@ export class ClusterDiscovery {
    * Discover candidate node URLs from config.
    */
   private discoverNodes(): Array<{ url: string; id: string }> {
-    if (this.config.mode === 'static' && this.config.staticNodes) {
+    if (this.config.mode === "static" && this.config.staticNodes) {
       // Deduplicate by ID and URL
       const seen = new Set<string>();
       const unique: Array<{ url: string; id: string }> = [];
@@ -246,7 +248,9 @@ export class ClusterDiscovery {
     timeout?: number
   ): Promise<MLXNode | null> {
     const effectiveTimeout =
-      timeout ?? this.config.validationTimeoutMs ?? ClusterDiscovery.DEFAULT_VALIDATION_TIMEOUT_MS;
+      timeout ??
+      this.config.validationTimeoutMs ??
+      ClusterDiscovery.DEFAULT_VALIDATION_TIMEOUT_MS;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
@@ -254,7 +258,7 @@ export class ClusterDiscovery {
     try {
       const endpoint = `${url}/v1/models`;
       const response = await fetch(endpoint, {
-        method: 'GET',
+        method: "GET",
         signal: controller.signal,
       });
 
@@ -285,7 +289,7 @@ export class ClusterDiscovery {
         },
         cache: {
           tokens: 0,
-          systemPromptHash: '',
+          systemPromptHash: "",
           lastUpdated: Date.now(),
         },
         metrics: {
@@ -301,10 +305,10 @@ export class ClusterDiscovery {
       clearTimeout(timeoutId);
 
       // Determine error type
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         // Timeout
         const discoveryError = new DiscoveryError(
-          'NODE_TIMEOUT',
+          "NODE_TIMEOUT",
           `Node validation timed out after ${effectiveTimeout}ms`,
           { nodeId: id, url }
         );
@@ -314,12 +318,12 @@ export class ClusterDiscovery {
           // Silently ignore callback errors
         }
       } else if (
-        error.message?.includes('ENOTFOUND') ||
-        error.message?.includes('getaddrinfo')
+        error.message?.includes("ENOTFOUND") ||
+        error.message?.includes("getaddrinfo")
       ) {
         // DNS error
         const discoveryError = new DiscoveryError(
-          'NETWORK_ERROR',
+          "NETWORK_ERROR",
           `DNS resolution failed: ${error.message}`,
           { nodeId: id, url }
         );
@@ -331,7 +335,7 @@ export class ClusterDiscovery {
       } else {
         // Generic network/connection error
         const discoveryError = new DiscoveryError(
-          'NETWORK_ERROR',
+          "NETWORK_ERROR",
           `Network error: ${error.message}`,
           { nodeId: id, url }
         );

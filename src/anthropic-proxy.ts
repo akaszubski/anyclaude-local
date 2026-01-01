@@ -51,7 +51,11 @@ import {
   optimizePromptAdaptive,
   type OptimizationResult,
 } from "./adaptive-optimizer";
-import { filterSystemPrompt, OptimizationTier, type FilterResult } from './safe-system-filter';
+import {
+  filterSystemPrompt,
+  OptimizationTier,
+  type FilterResult,
+} from "./safe-system-filter";
 import { getClusterManager } from "./cluster/cluster-manager";
 import type { MLXNode } from "./cluster/cluster-types";
 
@@ -81,7 +85,7 @@ function shouldUseSafeFilter(options: CreateAnthropicProxyOptions): boolean {
   }
 
   // For LMStudio mode: enabled by default if not explicitly disabled
-  if (options.mode === 'lmstudio' && options.safeSystemFilter === undefined) {
+  if (options.mode === "lmstudio" && options.safeSystemFilter === undefined) {
     return true;
   }
 
@@ -103,14 +107,14 @@ function shouldUseSafeFilter(options: CreateAnthropicProxyOptions): boolean {
  * @returns OptimizationTier enum value
  */
 function mapTierConfig(
-  tier: 'auto' | 'minimal' | 'moderate' | 'aggressive' | 'extreme' | undefined,
+  tier: "auto" | "minimal" | "moderate" | "aggressive" | "extreme" | undefined,
   promptTokens?: number
 ): OptimizationTier {
   // If tier is explicit, map to enum
-  if (tier === 'minimal') return OptimizationTier.MINIMAL;
-  if (tier === 'moderate') return OptimizationTier.MODERATE;
-  if (tier === 'aggressive') return OptimizationTier.AGGRESSIVE;
-  if (tier === 'extreme') return OptimizationTier.EXTREME;
+  if (tier === "minimal") return OptimizationTier.MINIMAL;
+  if (tier === "moderate") return OptimizationTier.MODERATE;
+  if (tier === "aggressive") return OptimizationTier.AGGRESSIVE;
+  if (tier === "extreme") return OptimizationTier.EXTREME;
 
   // Auto mode: select tier based on prompt size
   if (!promptTokens) {
@@ -132,17 +136,19 @@ function mapTierConfig(
  * @param options - Proxy configuration options
  * @returns Active strategy: 'smart' (context-aware), 'safe' (filtered), 'truncate' (size-limited), or 'passthrough' (no optimization)
  */
-function getOptimizationStrategy(options: CreateAnthropicProxyOptions): 'smart' | 'safe' | 'truncate' | 'passthrough' {
+function getOptimizationStrategy(
+  options: CreateAnthropicProxyOptions
+): "smart" | "safe" | "truncate" | "passthrough" {
   if (options.smartSystemPrompt === true) {
-    return 'smart';
+    return "smart";
   }
   if (shouldUseSafeFilter(options)) {
-    return 'safe';
+    return "safe";
   }
   if (options.truncateSystemPrompt === true) {
-    return 'truncate';
+    return "truncate";
   }
-  return 'passthrough';
+  return "passthrough";
 }
 
 /**
@@ -177,8 +183,8 @@ function applySafeSystemFilter(
     const statsData = {
       originalTokens: result.stats.originalTokens,
       filteredTokens: result.stats.filteredTokens,
-      reductionPercent: result.stats.reductionPercent.toFixed(1) + '%',
-      processingTimeMs: result.stats.processingTimeMs
+      reductionPercent: result.stats.reductionPercent.toFixed(1) + "%",
+      processingTimeMs: result.stats.processingTimeMs,
     };
     debug(2, `[Safe System Filter] Stats:`, statsData);
     // Also log to console for testing
@@ -189,11 +195,13 @@ function applySafeSystemFilter(
     const traceData = {
       appliedTier: result.appliedTier,
       validation: result.validation,
-      promptSnippet: result.filteredPrompt.substring(0, 200)
+      promptSnippet: result.filteredPrompt.substring(0, 200),
     };
     debug(3, `[Safe System Filter] Full prompt details:`, traceData);
     // Also log to console for testing
-    console.log(`[Safe System Filter] Full prompt details: ${JSON.stringify(traceData)}`);
+    console.log(
+      `[Safe System Filter] Full prompt details: ${JSON.stringify(traceData)}`
+    );
   }
 
   return result;
@@ -211,14 +219,20 @@ function applySafeSystemFilter(
  */
 function selectOptimizationTier(
   prompt: string,
-  tierConfig: 'auto' | 'minimal' | 'moderate' | 'aggressive' | 'extreme' | undefined
-): 'MINIMAL' | 'MODERATE' | 'AGGRESSIVE' | 'EXTREME' {
+  tierConfig:
+    | "auto"
+    | "minimal"
+    | "moderate"
+    | "aggressive"
+    | "extreme"
+    | undefined
+): "MINIMAL" | "MODERATE" | "AGGRESSIVE" | "EXTREME" {
   const estimateTokens = (text: string) => Math.floor(text.length / 4);
   const promptTokens = estimateTokens(prompt);
   const tier = mapTierConfig(tierConfig, promptTokens);
 
   // Convert enum to string for test compatibility
-  return tier as 'MINIMAL' | 'MODERATE' | 'AGGRESSIVE' | 'EXTREME';
+  return tier as "MINIMAL" | "MODERATE" | "AGGRESSIVE" | "EXTREME";
 }
 
 /**
@@ -237,22 +251,22 @@ function optimizeSystemPrompt(
 ): { strategy: string; prompt: string } {
   const strategy = getOptimizationStrategy(options);
 
-  if (strategy === 'safe') {
+  if (strategy === "safe") {
     try {
       const result = applySafeSystemFilter(prompt, options);
 
       if (result.validation.isValid) {
-        return { strategy: 'safe', prompt: result.filteredPrompt };
+        return { strategy: "safe", prompt: result.filteredPrompt };
       }
 
       // Fallback to truncate if validation fails
       if (options.truncateSystemPrompt) {
-        return { strategy: 'truncate', prompt };
+        return { strategy: "truncate", prompt };
       }
     } catch (error) {
       // On error, fallback to truncate or passthrough
       if (options.truncateSystemPrompt) {
-        return { strategy: 'truncate', prompt };
+        return { strategy: "truncate", prompt };
       }
     }
   }
@@ -268,12 +282,17 @@ function optimizeSystemPrompt(
  * @param body - Anthropic API request body
  * @returns Object with systemHash and toolsHash
  */
-function computePromptHash(body: any): { systemHash: string; toolsHash: string } {
+function computePromptHash(body: any): {
+  systemHash: string;
+  toolsHash: string;
+} {
   let systemPrompt = "";
   if (typeof body.system === "string") {
     systemPrompt = body.system;
   } else if (Array.isArray(body.system)) {
-    systemPrompt = body.system.map((s: any) => (typeof s === "string" ? s : JSON.stringify(s))).join("\n");
+    systemPrompt = body.system
+      .map((s: any) => (typeof s === "string" ? s : JSON.stringify(s)))
+      .join("\n");
   }
   const systemInput = JSON.stringify({ system: systemPrompt });
   const toolsInput = JSON.stringify({ tools: body.tools || [] });
@@ -295,7 +314,7 @@ export type CreateAnthropicProxyOptions = {
   smartSystemPrompt?: boolean; // Use dynamic context-aware prompt optimization
   smartPromptMode?: "simple" | "intelligent"; // Optimization strategy
   safeSystemFilter?: boolean; // Enable/disable safe filtering
-  filterTier?: 'auto' | 'minimal' | 'moderate' | 'aggressive' | 'extreme'; // Optimization tier
+  filterTier?: "auto" | "minimal" | "moderate" | "aggressive" | "extreme"; // Optimization tier
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -314,7 +333,7 @@ export const createAnthropicProxy = ({
   smartSystemPrompt = false,
   smartPromptMode = "simple",
   safeSystemFilter = false,
-  filterTier = 'auto',
+  filterTier = "auto",
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -718,7 +737,7 @@ export const createAnthropicProxy = ({
         let selectedNode: MLXNode | null = null;
 
         // Cluster routing for MLX cluster mode
-        if (mode === 'mlx-cluster') {
+        if (mode === "mlx-cluster") {
           try {
             const clusterManager = getClusterManager();
 
@@ -726,14 +745,18 @@ export const createAnthropicProxy = ({
             const { systemHash, toolsHash } = computePromptHash(body);
 
             // Extract session ID from request headers for session stickiness
-            const sessionId = req.headers['x-session-id'] as string | undefined;
+            const sessionId = req.headers["x-session-id"] as string | undefined;
 
             // Select node using cache affinity (hash-based routing) and session stickiness
             // Requests with same system prompt/tools route to node with warm cache when possible
-            selectedNode = clusterManager.selectNode(systemHash, toolsHash, sessionId);
+            selectedNode = clusterManager.selectNode(
+              systemHash,
+              toolsHash,
+              sessionId
+            );
 
             if (!selectedNode) {
-              debug(1, '[Cluster Routing] No healthy nodes available');
+              debug(1, "[Cluster Routing] No healthy nodes available");
               res.writeHead(503, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
@@ -747,27 +770,34 @@ export const createAnthropicProxy = ({
               return;
             }
 
-            debug(2, `[Cluster Routing] Selected node ${selectedNode.id} at ${selectedNode.url}`);
+            debug(
+              2,
+              `[Cluster Routing] Selected node ${selectedNode.id} at ${selectedNode.url}`
+            );
 
             // Get provider from cluster manager instead of providers map
-            const clusterProvider = clusterManager.getNodeProvider(selectedNode.id);
+            const clusterProvider = clusterManager.getNodeProvider(
+              selectedNode.id
+            );
             if (!clusterProvider) {
               throw new Error(`Provider not found for node ${selectedNode.id}`);
             }
 
             // Override provider and model for cluster routing
             // Use 'mlx-cluster' as provider name and default model
-            providerName = 'mlx-cluster';
+            providerName = "mlx-cluster";
             // Keep the default model, as MLX nodes use whatever model is loaded
           } catch (error) {
-            debug(1, '[Cluster Routing] Error during node selection:', error);
+            debug(1, "[Cluster Routing] Error during node selection:", error);
             res.writeHead(503, { "Content-Type": "application/json" });
             res.end(
               JSON.stringify({
                 type: "error",
                 error: {
                   type: "overloaded_error",
-                  message: "Cluster routing failed: " + (error instanceof Error ? error.message : String(error)),
+                  message:
+                    "Cluster routing failed: " +
+                    (error instanceof Error ? error.message : String(error)),
                 },
               })
             );
@@ -790,9 +820,10 @@ export const createAnthropicProxy = ({
         }
 
         // Get provider - either from cluster or from providers map
-        const provider = mode === 'mlx-cluster' && selectedNode
-          ? getClusterManager().getNodeProvider(selectedNode.id)
-          : providers[providerName];
+        const provider =
+          mode === "mlx-cluster" && selectedNode
+            ? getClusterManager().getNodeProvider(selectedNode.id)
+            : providers[providerName];
 
         if (!provider) {
           throw new Error(`Provider not configured: ${providerName}`);
@@ -841,7 +872,10 @@ export const createAnthropicProxy = ({
           let userMessage = "";
           if (typeof lastMessage?.content === "string") {
             userMessage = lastMessage.content;
-          } else if (Array.isArray(lastMessage?.content) && lastMessage.content.length > 0) {
+          } else if (
+            Array.isArray(lastMessage?.content) &&
+            lastMessage.content.length > 0
+          ) {
             const firstContent = lastMessage.content[0];
             if (firstContent && "text" in firstContent) {
               userMessage = firstContent.text;
@@ -865,18 +899,21 @@ export const createAnthropicProxy = ({
         // Priority 2: Safe system filter (safeSystemFilter)
         // Rule-based: removes optional sections while preserving critical tool calling instructions
         // Validates filtered prompt matches expected patterns (has fallback to truncate)
-        else if (shouldUseSafeFilter({
-          mode,
-          smartSystemPrompt,
-          safeSystemFilter,
-          truncateSystemPrompt,
-          filterTier,
-          providers,
-          defaultProvider,
-          defaultModel,
-          systemPromptMaxTokens,
-          smartPromptMode
-        } as CreateAnthropicProxyOptions) && system) {
+        else if (
+          shouldUseSafeFilter({
+            mode,
+            smartSystemPrompt,
+            safeSystemFilter,
+            truncateSystemPrompt,
+            filterTier,
+            providers,
+            defaultProvider,
+            defaultModel,
+            systemPromptMaxTokens,
+            smartPromptMode,
+          } as CreateAnthropicProxyOptions) &&
+          system
+        ) {
           try {
             const filterResult = applySafeSystemFilter(system, {
               mode,
@@ -888,7 +925,7 @@ export const createAnthropicProxy = ({
               defaultProvider,
               defaultModel,
               systemPromptMaxTokens,
-              smartPromptMode
+              smartPromptMode,
             } as CreateAnthropicProxyOptions);
 
             if (filterResult.validation.isValid) {
@@ -904,9 +941,11 @@ export const createAnthropicProxy = ({
               if (isVerboseDebugEnabled()) {
                 debug(2, `[Safe Filter] Validation:`, {
                   isValid: filterResult.validation.isValid,
-                  presentPatterns: filterResult.validation.presentPatterns.length,
-                  missingPatterns: filterResult.validation.missingPatterns.length,
-                  fallbackOccurred: filterResult.fallbackOccurred
+                  presentPatterns:
+                    filterResult.validation.presentPatterns.length,
+                  missingPatterns:
+                    filterResult.validation.missingPatterns.length,
+                  fallbackOccurred: filterResult.fallbackOccurred,
                 });
               }
 
@@ -918,7 +957,8 @@ export const createAnthropicProxy = ({
                   removedSections: filterResult.removedSections,
                   stats: filterResult.stats,
                   validation: filterResult.validation,
-                  promptSnippet: filterResult.filteredPrompt.substring(0, 200) + '...'
+                  promptSnippet:
+                    filterResult.filteredPrompt.substring(0, 200) + "...",
                 });
               }
             } else {
@@ -942,18 +982,23 @@ export const createAnthropicProxy = ({
         // Priority 3: Simple truncation
         // Preserves important sections (first 100 lines, marked sections) up to token limit
         // Falls back to passthrough if truncation disabled
-        if (truncateSystemPrompt && system && !smartSystemPrompt && !shouldUseSafeFilter({
-          mode,
-          smartSystemPrompt,
-          safeSystemFilter,
-          truncateSystemPrompt,
-          filterTier,
-          providers,
-          defaultProvider,
-          defaultModel,
-          systemPromptMaxTokens,
-          smartPromptMode
-        } as CreateAnthropicProxyOptions)) {
+        if (
+          truncateSystemPrompt &&
+          system &&
+          !smartSystemPrompt &&
+          !shouldUseSafeFilter({
+            mode,
+            smartSystemPrompt,
+            safeSystemFilter,
+            truncateSystemPrompt,
+            filterTier,
+            providers,
+            defaultProvider,
+            defaultModel,
+            systemPromptMaxTokens,
+            smartPromptMode,
+          } as CreateAnthropicProxyOptions)
+        ) {
           const originalLength = system.length;
           // Rough estimate: 1 token ≈ 4 characters
           const maxChars = systemPromptMaxTokens * 4;
@@ -986,7 +1031,9 @@ export const createAnthropicProxy = ({
               const line = lines[i]!;
 
               // Check if this line starts an important section
-              const startsSection = importantSections.some(sec => line.includes(sec));
+              const startsSection = importantSections.some((sec) =>
+                line.includes(sec)
+              );
 
               if (startsSection) {
                 inImportantSection = true;
@@ -994,8 +1041,13 @@ export const createAnthropicProxy = ({
               }
 
               // Check if we're exiting a section (new # header or blank line after content)
-              const isNewSection = line.startsWith("#") && sectionStartIdx !== i;
-              if (inImportantSection && isNewSection && i > sectionStartIdx + 5) {
+              const isNewSection =
+                line.startsWith("#") && sectionStartIdx !== i;
+              if (
+                inImportantSection &&
+                isNewSection &&
+                i > sectionStartIdx + 5
+              ) {
                 inImportantSection = false;
               }
 
@@ -1012,7 +1064,8 @@ export const createAnthropicProxy = ({
             }
 
             system = truncatedLines.join("\n");
-            system += "\n\n[System prompt truncated to reduce cache pressure. Core instructions preserved.]";
+            system +=
+              "\n\n[System prompt truncated to reduce cache pressure. Core instructions preserved.]";
 
             debug(
               1,
@@ -1030,7 +1083,12 @@ export const createAnthropicProxy = ({
         // }
 
         // Warn about tool calling compatibility (LMStudio only, first request)
-        if (mode === "lmstudio" && body.tools && body.tools.length > 0 && isDebugEnabled()) {
+        if (
+          mode === "lmstudio" &&
+          body.tools &&
+          body.tools.length > 0 &&
+          isDebugEnabled()
+        ) {
           debug(
             1,
             `[Tool Calling] Sending ${body.tools.length} tools to LMStudio. If you see unusual output (like <|channel|> syntax), your model may not support OpenAI function calling. Try models like Qwen2.5-Coder, DeepSeek-R1, or Llama-3.3.`
@@ -1379,10 +1437,16 @@ export const createAnthropicProxy = ({
                 if (timeout) clearTimeout(timeout);
 
                 // Record success for cluster routing
-                if (mode === 'mlx-cluster' && selectedNode) {
+                if (mode === "mlx-cluster" && selectedNode) {
                   const latencyMs = Date.now() - requestStartTime;
-                  getClusterManager().recordNodeSuccess(selectedNode.id, latencyMs);
-                  debug(2, `[Cluster Routing] Recorded success for node ${selectedNode.id} (${latencyMs}ms)`);
+                  getClusterManager().recordNodeSuccess(
+                    selectedNode.id,
+                    latencyMs
+                  );
+                  debug(
+                    2,
+                    `[Cluster Routing] Recorded success for node ${selectedNode.id} (${latencyMs}ms)`
+                  );
                 }
 
                 // If the body is already being streamed,
@@ -1435,10 +1499,14 @@ export const createAnthropicProxy = ({
                 debug(1, `Error for ${providerName}/${model}:`, error);
 
                 // Record failure for cluster routing
-                if (mode === 'mlx-cluster' && selectedNode) {
-                  const err = error instanceof Error ? error : new Error(String(error));
+                if (mode === "mlx-cluster" && selectedNode) {
+                  const err =
+                    error instanceof Error ? error : new Error(String(error));
                   getClusterManager().recordNodeFailure(selectedNode.id, err);
-                  debug(2, `[Cluster Routing] Recorded failure for node ${selectedNode.id}`);
+                  debug(
+                    2,
+                    `[Cluster Routing] Recorded failure for node ${selectedNode.id}`
+                  );
                 }
 
                 // Write comprehensive debug info to temp file
@@ -1497,10 +1565,14 @@ export const createAnthropicProxy = ({
           debug(1, `Connection error for ${providerName}/${model}:`, error);
 
           // Record failure for cluster routing
-          if (mode === 'mlx-cluster' && selectedNode) {
-            const err = error instanceof Error ? error : new Error(String(error));
+          if (mode === "mlx-cluster" && selectedNode) {
+            const err =
+              error instanceof Error ? error : new Error(String(error));
             getClusterManager().recordNodeFailure(selectedNode.id, err);
-            debug(2, `[Cluster Routing] Recorded failure for node ${selectedNode.id}`);
+            debug(
+              2,
+              `[Cluster Routing] Recorded failure for node ${selectedNode.id}`
+            );
           }
 
           // Return a 503 Service Unavailable
@@ -1953,10 +2025,13 @@ export const createAnthropicProxy = ({
             );
 
             // Record success for cluster routing (streaming requests)
-            if (mode === 'mlx-cluster' && selectedNode) {
+            if (mode === "mlx-cluster" && selectedNode) {
               const latencyMs = totalDuration;
               getClusterManager().recordNodeSuccess(selectedNode.id, latencyMs);
-              debug(2, `[Cluster Routing] Recorded streaming success for node ${selectedNode.id} (${latencyMs}ms)`);
+              debug(
+                2,
+                `[Cluster Routing] Recorded streaming success for node ${selectedNode.id} (${latencyMs}ms)`
+              );
             }
 
             // Record cache metrics for streaming responses
@@ -2130,10 +2205,14 @@ export const createAnthropicProxy = ({
           );
 
           // Record failure for cluster routing
-          if (mode === 'mlx-cluster' && selectedNode) {
-            const err = error instanceof Error ? error : new Error(String(error));
+          if (mode === "mlx-cluster" && selectedNode) {
+            const err =
+              error instanceof Error ? error : new Error(String(error));
             getClusterManager().recordNodeFailure(selectedNode.id, err);
-            debug(2, `[Cluster Routing] Recorded streaming failure for node ${selectedNode.id}`);
+            debug(
+              2,
+              `[Cluster Routing] Recorded streaming failure for node ${selectedNode.id}`
+            );
           }
 
           // If we haven't started writing the response yet, send a proper error

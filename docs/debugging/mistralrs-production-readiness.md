@@ -14,7 +14,6 @@
    - ✅ Server output → `~/.anyclaude/logs/mistralrs-server.log`
    - ✅ Timestamped session start
    - ✅ Errors logged to console and file
-   
 2. **Process Management**
    - ✅ Process tracked for cleanup
    - ✅ Detached process group
@@ -78,7 +77,7 @@ async function waitForServerHealth(
   timeout: number = 120000
 ): Promise<boolean> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeout) {
     try {
       const response = await fetch(`http://localhost:${port}/health`);
@@ -88,9 +87,9 @@ async function waitForServerHealth(
     } catch (error) {
       // Server not ready yet
     }
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  
+
   return false;
 }
 ```
@@ -106,8 +105,8 @@ const STARTUP_TIMEOUT = 120000; // 2 minutes
 
 const timeoutId = setTimeout(() => {
   if (!hasStarted) {
-    console.error('[anyclaude] Server startup timeout');
-    serverProcess.kill('SIGTERM');
+    console.error("[anyclaude] Server startup timeout");
+    serverProcess.kill("SIGTERM");
     process.exit(1);
   }
 }, STARTUP_TIMEOUT);
@@ -131,7 +130,7 @@ if (hasStarted) {
     "mlx": {
       "binaryPath": "~/Documents/GitHub/mistral.rs/target/release/mistralrs-server",
       // OR auto-detect from PATH
-      "binaryPath": "mistralrs-server"  // searches PATH
+      "binaryPath": "mistralrs-server" // searches PATH
     }
   }
 }
@@ -146,24 +145,24 @@ if (hasStarted) {
 ```typescript
 function detectArchitecture(modelPath: string, configPath?: string): string {
   // 1. Check config.json in model directory
-  const configFile = path.join(modelPath, 'config.json');
+  const configFile = path.join(modelPath, "config.json");
   if (fs.existsSync(configFile)) {
-    const config = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+    const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
     if (config.model_type) {
       return config.model_type; // qwen3_moe, llama, etc.
     }
   }
-  
+
   // 2. Fall back to filename heuristics
   const modelName = path.basename(modelPath).toLowerCase();
-  if (modelName.includes('qwen3') && modelName.includes('moe')) {
-    return 'qwen3moe';
+  if (modelName.includes("qwen3") && modelName.includes("moe")) {
+    return "qwen3moe";
   }
   // ... etc
-  
+
   // 3. Default
-  console.warn('[anyclaude] Could not detect architecture, using default');
-  return 'qwen3moe';
+  console.warn("[anyclaude] Could not detect architecture, using default");
+  return "qwen3moe";
 }
 ```
 
@@ -180,7 +179,7 @@ function detectArchitecture(modelPath: string, configPath?: string): string {
 ```typescript
 interface LogEntry {
   timestamp: string;
-  level: 'info' | 'warn' | 'error' | 'debug';
+  level: "info" | "warn" | "error" | "debug";
   component: string;
   message: string;
   metadata?: Record<string, any>;
@@ -191,10 +190,10 @@ function log(entry: LogEntry): void {
     ...entry,
     timestamp: new Date().toISOString(),
   });
-  
-  logStream.write(formatted + '\n');
-  
-  if (entry.level === 'error') {
+
+  logStream.write(formatted + "\n");
+
+  if (entry.level === "error") {
     console.error(`[${entry.component}] ${entry.message}`);
   }
 }
@@ -217,9 +216,9 @@ interface ServerMetrics {
 
 function logMetrics(metrics: ServerMetrics): void {
   log({
-    level: 'info',
-    component: 'metrics',
-    message: 'Server performance',
+    level: "info",
+    component: "metrics",
+    message: "Server performance",
     metadata: metrics,
   });
 }
@@ -233,14 +232,14 @@ function logMetrics(metrics: ServerMetrics): void {
 
 ```typescript
 // Use rotating-file-stream
-import rfs from 'rotating-file-stream';
+import rfs from "rotating-file-stream";
 
-const logStream = rfs.createStream('mistralrs-server.log', {
+const logStream = rfs.createStream("mistralrs-server.log", {
   path: logDir,
-  size: '10M',      // Rotate every 10 MB
-  interval: '1d',   // Or daily
-  compress: 'gzip', // Compress old logs
-  maxFiles: 7,      // Keep 7 days
+  size: "10M", // Rotate every 10 MB
+  interval: "1d", // Or daily
+  compress: "gzip", // Compress old logs
+  maxFiles: 7, // Keep 7 days
 });
 ```
 
@@ -256,20 +255,22 @@ const logStream = rfs.createStream('mistralrs-server.log', {
 
 ```typescript
 // tests/unit/test-server-launcher.ts
-describe('mistral.rs server launcher', () => {
-  test('validates binary exists', () => {
-    expect(() => startVLLMMLXServer({
-      port: 8081,
-      modelPath: '/nonexistent/model'
-    })).toThrow('mistralrs-server not found');
+describe("mistral.rs server launcher", () => {
+  test("validates binary exists", () => {
+    expect(() =>
+      startVLLMMLXServer({
+        port: 8081,
+        modelPath: "/nonexistent/model",
+      })
+    ).toThrow("mistralrs-server not found");
   });
-  
-  test('detects architecture from config.json', () => {
-    const arch = detectArchitecture('/path/to/qwen3-moe');
-    expect(arch).toBe('qwen3moe');
+
+  test("detects architecture from config.json", () => {
+    const arch = detectArchitecture("/path/to/qwen3-moe");
+    expect(arch).toBe("qwen3moe");
   });
-  
-  test('handles startup timeout', async () => {
+
+  test("handles startup timeout", async () => {
     // Mock server that never starts
     const result = await waitForServerHealth(9999, 5000);
     expect(result).toBe(false);
@@ -330,14 +331,14 @@ def test_mistralrs_auto_launch():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    
+
     # Wait for startup
     time.sleep(30)
-    
+
     # Check server responds
     response = requests.get('http://localhost:8081/health')
     assert response.status_code == 200
-    
+
     proc.terminate()
 ```
 
@@ -355,11 +356,13 @@ def test_mistralrs_auto_launch():
 let restartCount = 0;
 const MAX_RESTARTS = 3;
 
-serverProcess.on('exit', (code, signal) => {
+serverProcess.on("exit", (code, signal) => {
   if (code !== 0 && restartCount < MAX_RESTARTS) {
     restartCount++;
-    console.warn(`[anyclaude] Server crashed, restarting (${restartCount}/${MAX_RESTARTS})...`);
-    
+    console.warn(
+      `[anyclaude] Server crashed, restarting (${restartCount}/${MAX_RESTARTS})...`
+    );
+
     setTimeout(() => {
       startVLLMMLXServer(config);
     }, 5000);
@@ -377,19 +380,19 @@ serverProcess.on('exit', (code, signal) => {
 function validateMistralRSVersion(binPath: string): boolean {
   const result = spawnSync(binPath, ['--version']);
   const version = result.stdout.toString().match(/v(\d+\.\d+\.\d+)/)?[1];
-  
+
   if (!version) {
     console.warn('[anyclaude] Could not detect mistral.rs version');
     return true; // Allow anyway
   }
-  
+
   const minVersion = '0.6.0';
   if (semver.lt(version, minVersion)) {
     console.error(`[anyclaude] mistral.rs ${version} is too old`);
     console.error(`[anyclaude] Please upgrade to ${minVersion} or newer`);
     return false;
   }
-  
+
   return true;
 }
 ```
@@ -403,6 +406,7 @@ function validateMistralRSVersion(binPath: string): boolean {
 ## Implementation Priority
 
 ### Week 1: Critical (Must-Have)
+
 - [x] ✅ Basic server launcher (DONE)
 - [ ] 🔴 Health checks with timeout
 - [ ] 🔴 Startup timeout
@@ -410,12 +414,14 @@ function validateMistralRSVersion(binPath: string): boolean {
 - [ ] 🔴 Integration tests
 
 ### Week 2: High Priority (Should-Have)
+
 - [ ] 🟡 Binary path configuration
 - [ ] 🟡 Improved architecture detection
 - [ ] 🟡 Regression tests
 - [ ] 🟡 Structured logging
 
 ### Week 3: Medium Priority (Nice-to-Have)
+
 - [ ] 🟢 Performance metrics
 - [ ] 🟢 Log rotation
 - [ ] 🟢 Crash recovery
@@ -428,6 +434,7 @@ function validateMistralRSVersion(binPath: string): boolean {
 Before marking as production-ready, verify:
 
 ### Functional Tests
+
 - [ ] Server launches successfully
 - [ ] Health endpoint responds
 - [ ] First request completes
@@ -436,6 +443,7 @@ Before marking as production-ready, verify:
 - [ ] Server cleanup on exit
 
 ### Error Handling Tests
+
 - [ ] Binary not found → clear error
 - [ ] Model path invalid → clear error
 - [ ] Port already in use → clear error
@@ -444,6 +452,7 @@ Before marking as production-ready, verify:
 - [ ] OOM during load → detects and reports
 
 ### Performance Tests
+
 - [ ] Load time < 60s (for 30B model)
 - [ ] First token < 2s
 - [ ] Throughput > 70 T/s
@@ -451,6 +460,7 @@ Before marking as production-ready, verify:
 - [ ] No memory leaks over 100 requests
 
 ### Reliability Tests
+
 - [ ] Runs for 24 hours without crash
 - [ ] Handles 1000 consecutive requests
 - [ ] Recovers from network interruption
@@ -461,14 +471,14 @@ Before marking as production-ready, verify:
 
 ## Current Risk Assessment
 
-| Risk | Severity | Mitigation Status |
-|------|----------|-------------------|
-| Server hangs during startup | 🔴 HIGH | ❌ No timeout |
-| False "ready" message | 🔴 HIGH | ❌ No health check |
-| Logs fill disk | 🟡 MEDIUM | ❌ No rotation |
-| Binary not found | 🟡 MEDIUM | ✅ Error message |
-| Wrong architecture | 🟡 MEDIUM | ⚠️ Basic detection |
-| Crash goes unnoticed | 🟢 LOW | ⚠️ Exit logging |
+| Risk                        | Severity  | Mitigation Status  |
+| --------------------------- | --------- | ------------------ |
+| Server hangs during startup | 🔴 HIGH   | ❌ No timeout      |
+| False "ready" message       | 🔴 HIGH   | ❌ No health check |
+| Logs fill disk              | 🟡 MEDIUM | ❌ No rotation     |
+| Binary not found            | 🟡 MEDIUM | ✅ Error message   |
+| Wrong architecture          | 🟡 MEDIUM | ⚠️ Basic detection |
+| Crash goes unnoticed        | 🟢 LOW    | ⚠️ Exit logging    |
 
 **Overall Status**: ⚠️ **BETA** - Works but needs hardening
 
@@ -477,13 +487,15 @@ Before marking as production-ready, verify:
 ## Recommended Next Steps
 
 1. **Immediate** (This Week):
+
    ```bash
    # Add health check + timeout
-   # Add unit tests  
+   # Add unit tests
    # Add integration test
    ```
 
 2. **Short Term** (Next 2 Weeks):
+
    ```bash
    # Add structured logging
    # Add binary path config

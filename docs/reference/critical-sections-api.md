@@ -83,22 +83,22 @@ interface ValidationResult {
 Array of 9 critical patterns (5 required, 4 optional) that must be preserved for tool-calling.
 
 ```typescript
-export const CRITICAL_SECTIONS: CriticalSection[]
+export const CRITICAL_SECTIONS: CriticalSection[];
 ```
 
 **Patterns**:
 
-| Name | Required | Pattern | Purpose |
-|------|----------|---------|---------|
-| tool-usage-policy-header | YES | `/# Tool usage policy/` | Marks tool usage policy section |
-| json-format-requirement | YES | `/\b(?:JSON\|json)\b/` | Requires JSON parameter format |
-| doing-tasks-section | YES | `/# Doing tasks/` | Marks task execution section |
-| important-markers | YES | `/IMPORTANT:/` | Critical instruction markers |
-| function-calls-instruction | NO | `/When making function calls/` | Function call methodology |
-| very-important-markers | NO | `/VERY IMPORTANT:/` | Most critical instructions |
-| absolute-path-requirement | NO | `/absolute file paths?/i` | Absolute path requirement |
-| function-calls-tags | NO | `/<function_calls>/` | XML-style function call tags |
-| invoke-tag | NO | `/<invoke name=/` | Tool invocation tag format |
+| Name                       | Required | Pattern                        | Purpose                         |
+| -------------------------- | -------- | ------------------------------ | ------------------------------- |
+| tool-usage-policy-header   | YES      | `/# Tool usage policy/`        | Marks tool usage policy section |
+| json-format-requirement    | YES      | `/\b(?:JSON\|json)\b/`         | Requires JSON parameter format  |
+| doing-tasks-section        | YES      | `/# Doing tasks/`              | Marks task execution section    |
+| important-markers          | YES      | `/IMPORTANT:/`                 | Critical instruction markers    |
+| function-calls-instruction | NO       | `/When making function calls/` | Function call methodology       |
+| very-important-markers     | NO       | `/VERY IMPORTANT:/`            | Most critical instructions      |
+| absolute-path-requirement  | NO       | `/absolute file paths?/i`      | Absolute path requirement       |
+| function-calls-tags        | NO       | `/<function_calls>/`           | XML-style function call tags    |
+| invoke-tag                 | NO       | `/<invoke name=/`              | Tool invocation tag format      |
 
 ## Functions
 
@@ -107,15 +107,17 @@ export const CRITICAL_SECTIONS: CriticalSection[]
 Detect all critical sections present in a prompt.
 
 ```typescript
-function detectCriticalSections(prompt: string): CriticalSectionMatch[]
+function detectCriticalSections(prompt: string): CriticalSectionMatch[];
 ```
 
 **Parameters**:
+
 - `prompt` (string): The system prompt to analyze
 
 **Returns**: Array of matched critical sections with positions
 
 **Security**:
+
 - ReDoS-resistant: Uses simple patterns without nested quantifiers
 - Memory-safe: No state accumulation across calls
 - Input sanitization: Handles null bytes and control characters
@@ -123,14 +125,18 @@ function detectCriticalSections(prompt: string): CriticalSectionMatch[]
 **Performance**: <1ms per pattern match on typical prompts
 
 **Example**:
-```typescript
-import { detectCriticalSections } from './critical-sections';
 
-const prompt = "You are Claude Code.\n\n# Tool usage policy\n\nWhen making function calls...";
+```typescript
+import { detectCriticalSections } from "./critical-sections";
+
+const prompt =
+  "You are Claude Code.\n\n# Tool usage policy\n\nWhen making function calls...";
 const matches = detectCriticalSections(prompt);
 
 for (const match of matches) {
-  console.log(`Found: "${match.matchedText}" at position ${match.start}-${match.end}`);
+  console.log(
+    `Found: "${match.matchedText}" at position ${match.start}-${match.end}`
+  );
   console.log(`Pattern: ${match.section.name}`);
 }
 ```
@@ -140,10 +146,11 @@ for (const match of matches) {
 Validate that all required critical sections are present in a prompt.
 
 ```typescript
-function validateCriticalPresence(prompt: string): ValidationResult
+function validateCriticalPresence(prompt: string): ValidationResult;
 ```
 
 **Parameters**:
+
 - `prompt` (string): The system prompt to validate
 
 **Returns**: Validation result with coverage details
@@ -153,13 +160,14 @@ function validateCriticalPresence(prompt: string): ValidationResult
 **Performance**: <5ms on typical prompts (1-20k tokens)
 
 **Example**:
+
 ```typescript
-import { validateCriticalPresence } from './critical-sections';
+import { validateCriticalPresence } from "./critical-sections";
 
 const result = validateCriticalPresence(optimizedPrompt);
 
 if (!result.isValid) {
-  console.error('Cannot optimize - missing critical sections:');
+  console.error("Cannot optimize - missing critical sections:");
   for (const missing of result.missingRequired) {
     console.error(`  - ${missing.name}: ${missing.description}`);
   }
@@ -170,6 +178,7 @@ if (!result.isValid) {
 ```
 
 **Interpretation**:
+
 - `isValid === true`: All required sections present - safe to use
 - `isValid === false`: Missing required sections - optimization broke tool-calling
 - `coveragePercent === 100`: All required sections present
@@ -183,14 +192,14 @@ if (!result.isValid) {
 Validate before and after truncating a system prompt:
 
 ```typescript
-import { validateCriticalPresence } from './critical-sections';
+import { validateCriticalPresence } from "./critical-sections";
 
 const originalPrompt = "...very long system prompt...";
 
 // Check baseline
 const baseBefore = validateCriticalPresence(originalPrompt);
 if (!baseBefore.isValid) {
-  throw new Error('Original prompt missing critical sections');
+  throw new Error("Original prompt missing critical sections");
 }
 
 // Apply optimization
@@ -199,11 +208,11 @@ const optimized = truncatePrompt(originalPrompt, maxTokens);
 // Validate after optimization
 const baseAfter = validateCriticalPresence(optimized);
 if (!baseAfter.isValid) {
-  console.error('Optimization removed critical sections. Required sections:');
+  console.error("Optimization removed critical sections. Required sections:");
   for (const section of baseAfter.missingRequired) {
     console.error(`  - ${section.name}: ${section.description}`);
   }
-  throw new Error('Optimization broke tool-calling');
+  throw new Error("Optimization broke tool-calling");
 }
 
 console.log(`Optimization successful - ${baseAfter.coveragePercent}% coverage`);
@@ -214,7 +223,7 @@ console.log(`Optimization successful - ${baseAfter.coveragePercent}% coverage`);
 Find exactly which patterns are in a prompt:
 
 ```typescript
-import { detectCriticalSections } from './critical-sections';
+import { detectCriticalSections } from "./critical-sections";
 
 const matches = detectCriticalSections(prompt);
 const patterns = new Map<string, CriticalSectionMatch[]>();
@@ -241,7 +250,7 @@ for (const [name, matches] of patterns) {
 Track how much of required functionality is preserved:
 
 ```typescript
-import { validateCriticalPresence } from './critical-sections';
+import { validateCriticalPresence } from "./critical-sections";
 
 const result = validateCriticalPresence(prompt);
 
@@ -249,14 +258,14 @@ console.log(`Tool-calling Coverage: ${result.coveragePercent}%`);
 console.log(`Sections Found: ${result.foundSections}/${result.requiredCount}`);
 
 if (result.missingRequired.length > 0) {
-  console.log('Missing required sections:');
+  console.log("Missing required sections:");
   for (const section of result.missingRequired) {
     console.log(`  - ${section.name}: ${section.description}`);
   }
 }
 
 if (result.warnings.length > 0) {
-  console.log('Warnings:');
+  console.log("Warnings:");
   for (const warning of result.warnings) {
     console.log(`  - ${warning}`);
   }
@@ -274,6 +283,7 @@ All patterns are designed to prevent Regular Expression Denial of Service (ReDoS
 - **Performance**: <1000ms on malicious input (10k+ character strings)
 
 Tested with adversarial inputs:
+
 - 10,000+ character repeating strings
 - Alternating character patterns
 - Nested pattern attempts
@@ -298,14 +308,14 @@ Function implementations are memory-safe:
 ### With Adaptive Prompt Optimization
 
 ```typescript
-import { validateCriticalPresence } from './critical-sections';
+import { validateCriticalPresence } from "./critical-sections";
 
 class AdaptiveOptimizer {
   async optimizePrompt(prompt: string, maxTokens: number): Promise<string> {
     // Validate before optimization
     const before = validateCriticalPresence(prompt);
     if (!before.isValid) {
-      throw new Error('Cannot optimize - missing critical sections');
+      throw new Error("Cannot optimize - missing critical sections");
     }
 
     // Apply optimization strategies
@@ -317,11 +327,13 @@ class AdaptiveOptimizer {
     // Validate after optimization
     const after = validateCriticalPresence(optimized);
     if (!after.isValid) {
-      console.warn('Optimization broke tool-calling, reverting');
+      console.warn("Optimization broke tool-calling, reverting");
       return prompt; // Fall back to original
     }
 
-    console.log(`Optimization successful - coverage: ${after.coveragePercent}%`);
+    console.log(
+      `Optimization successful - coverage: ${after.coveragePercent}%`
+    );
     return optimized;
   }
 
@@ -335,12 +347,12 @@ class AdaptiveOptimizer {
 
 ## Performance Characteristics
 
-| Operation | Typical Time | Max Time |
-|-----------|--------------|----------|
-| detectCriticalSections() | <1ms | <100ms (on 100k+ char) |
-| validateCriticalPresence() | <5ms | <100ms (on 100k+ char) |
-| Pattern matching per section | <0.1ms | <10ms |
-| Memory per call | <100KB | <10MB on repeated calls |
+| Operation                    | Typical Time | Max Time                |
+| ---------------------------- | ------------ | ----------------------- |
+| detectCriticalSections()     | <1ms         | <100ms (on 100k+ char)  |
+| validateCriticalPresence()   | <5ms         | <100ms (on 100k+ char)  |
+| Pattern matching per section | <0.1ms       | <10ms                   |
+| Memory per call              | <100KB       | <10MB on repeated calls |
 
 ## Testing
 
@@ -349,6 +361,7 @@ class AdaptiveOptimizer {
 **Test Coverage**: 136 tests, 100% passing
 
 **Test Categories**:
+
 - Structure validation (10 tests)
 - Pattern detection (27 tests)
 - Validation logic (32 tests)
@@ -357,6 +370,7 @@ class AdaptiveOptimizer {
 - Edge cases and integration (25 tests)
 
 **Key Test Scenarios**:
+
 - Empty and whitespace-only prompts
 - Malicious ReDoS attempts (10k+ characters)
 - Unicode and control characters

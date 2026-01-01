@@ -18,14 +18,18 @@
  * @module cluster-manager
  */
 
-import type { MLXClusterConfig, MLXNode, RoutingContext } from './cluster-types';
-import { NodeStatus } from './cluster-types';
-import { validateClusterConfig } from './cluster-config';
-import { ClusterDiscovery } from './cluster-discovery';
-import { ClusterHealth } from './cluster-health';
-import { ClusterRouter } from './cluster-router';
-import { ClusterCache } from './cluster-cache';
-import { createOpenAI } from '@ai-sdk/openai';
+import type {
+  MLXClusterConfig,
+  MLXNode,
+  RoutingContext,
+} from "./cluster-types";
+import { NodeStatus } from "./cluster-types";
+import { validateClusterConfig } from "./cluster-config";
+import { ClusterDiscovery } from "./cluster-discovery";
+import { ClusterHealth } from "./cluster-health";
+import { ClusterRouter } from "./cluster-router";
+import { ClusterCache } from "./cluster-cache";
+import { createOpenAI } from "@ai-sdk/openai";
 
 // ============================================================================
 // Error Classes
@@ -42,7 +46,7 @@ export class ClusterManagerError extends Error {
 
   constructor(code: string, message: string, cause?: Error) {
     super(message);
-    this.name = 'ClusterManagerError';
+    this.name = "ClusterManagerError";
     this.code = code;
     this.cause = cause;
 
@@ -131,20 +135,22 @@ let isInitializing = false;
  * const manager = await initializeCluster(config);
  * ```
  */
-export async function initializeCluster(config: MLXClusterConfig): Promise<ClusterManager> {
+export async function initializeCluster(
+  config: MLXClusterConfig
+): Promise<ClusterManager> {
   // Check if already initialized
   if (clusterManager) {
     throw new ClusterManagerError(
-      'ALREADY_INITIALIZED',
-      'Cluster manager is already initialized. Call resetClusterManager() first.'
+      "ALREADY_INITIALIZED",
+      "Cluster manager is already initialized. Call resetClusterManager() first."
     );
   }
 
   // Check if initialization is in progress
   if (isInitializing) {
     throw new ClusterManagerError(
-      'INITIALIZING',
-      'Cluster manager initialization is already in progress'
+      "INITIALIZING",
+      "Cluster manager initialization is already in progress"
     );
   }
 
@@ -157,11 +163,13 @@ export async function initializeCluster(config: MLXClusterConfig): Promise<Clust
     if (!validation.isValid) {
       const errorMessages = [
         ...validation.errors,
-        ...validation.missingRequired.map((field) => `Missing required field: ${field}`),
+        ...validation.missingRequired.map(
+          (field) => `Missing required field: ${field}`
+        ),
       ];
       throw new ClusterManagerError(
-        'INVALID_CONFIG',
-        `Configuration validation failed: ${errorMessages.join(', ')}`
+        "INVALID_CONFIG",
+        `Configuration validation failed: ${errorMessages.join(", ")}`
       );
     }
 
@@ -180,7 +188,7 @@ export async function initializeCluster(config: MLXClusterConfig): Promise<Clust
       throw err;
     }
     throw new ClusterManagerError(
-      'INITIALIZATION_FAILED',
+      "INITIALIZATION_FAILED",
       `Failed to initialize cluster manager: ${err instanceof Error ? err.message : String(err)}`,
       err instanceof Error ? err : undefined
     );
@@ -205,8 +213,8 @@ export async function initializeCluster(config: MLXClusterConfig): Promise<Clust
 export function getClusterManager(): ClusterManager {
   if (!clusterManager) {
     throw new ClusterManagerError(
-      'NOT_INITIALIZED',
-      'Cluster manager is not initialized. Call initializeCluster() first.'
+      "NOT_INITIALIZED",
+      "Cluster manager is not initialized. Call initializeCluster() first."
     );
   }
   return clusterManager;
@@ -343,19 +351,19 @@ export class ClusterManager {
       try {
         this.cache = new ClusterCache(this.config.cache);
         await this.cache.initialize(
-          nodes.map(n => ({ id: n.id, url: n.url })),
-          'default-system-prompt', // Default system prompt for warmup
+          nodes.map((n) => ({ id: n.id, url: n.url })),
+          "default-system-prompt", // Default system prompt for warmup
           {
             concurrency: 3,
             timeoutMs: 5000,
             retryCount: 2,
-            systemPrompt: 'default-system-prompt',
+            systemPrompt: "default-system-prompt",
           },
           30000 // 30 second sync interval
         );
       } catch (err) {
         // Cache initialization failed, but cluster can still operate
-        console.error('Cache initialization failed:', err);
+        console.error("Cache initialization failed:", err);
         this.cache = null;
       }
 
@@ -383,10 +391,10 @@ export class ClusterManager {
   private createProviderForNode(node: MLXNode): any {
     const provider = createOpenAI({
       baseURL: node.url,
-      apiKey: 'lm-studio', // Default API key for MLX nodes
+      apiKey: "lm-studio", // Default API key for MLX nodes
       name: `mlx-cluster-${node.id}`,
       fetch: (async (url: any, options?: any) => {
-        if (!options?.body || typeof options.body !== 'string') {
+        if (!options?.body || typeof options.body !== "string") {
           return fetch(url, options);
         }
 
@@ -436,7 +444,11 @@ export class ClusterManager {
    * }
    * ```
    */
-  selectNode(systemPromptHash: string, toolsHash: string, sessionId?: string): MLXNode | null {
+  selectNode(
+    systemPromptHash: string,
+    toolsHash: string,
+    sessionId?: string
+  ): MLXNode | null {
     if (!this.initialized || !this.discovery || !this.router || !this.health) {
       return null;
     }
@@ -446,7 +458,9 @@ export class ClusterManager {
 
     // Filter to healthy nodes only
     const healthyNodes = allNodes.filter((node) => {
-      return node.status === NodeStatus.HEALTHY && this.health!.isHealthy(node.id);
+      return (
+        node.status === NodeStatus.HEALTHY && this.health!.isHealthy(node.id)
+      );
     });
 
     // If no healthy nodes, return null
@@ -458,7 +472,7 @@ export class ClusterManager {
     const context: RoutingContext = {
       systemPromptHash,
       estimatedTokens: 0, // Not used in current implementation
-      userPriority: 'normal',
+      userPriority: "normal",
     };
 
     // Call router to select node

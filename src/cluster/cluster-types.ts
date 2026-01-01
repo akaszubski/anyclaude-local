@@ -36,11 +36,11 @@ export type NodeId = string;
  * - OFFLINE: Node is unreachable or shut down
  */
 export enum NodeStatus {
-  INITIALIZING = 'initializing',
-  HEALTHY = 'healthy',
-  DEGRADED = 'degraded',
-  UNHEALTHY = 'unhealthy',
-  OFFLINE = 'offline',
+  INITIALIZING = "initializing",
+  HEALTHY = "healthy",
+  DEGRADED = "degraded",
+  UNHEALTHY = "unhealthy",
+  OFFLINE = "offline",
 }
 
 /**
@@ -53,10 +53,10 @@ export enum NodeStatus {
  * - LATENCY_BASED: Route to node with lowest average response time
  */
 export enum LoadBalanceStrategy {
-  ROUND_ROBIN = 'round-robin',
-  LEAST_LOADED = 'least-loaded',
-  CACHE_AWARE = 'cache-aware',
-  LATENCY_BASED = 'latency-based',
+  ROUND_ROBIN = "round-robin",
+  LEAST_LOADED = "least-loaded",
+  CACHE_AWARE = "cache-aware",
+  LATENCY_BASED = "latency-based",
 }
 
 /**
@@ -70,11 +70,11 @@ export enum LoadBalanceStrategy {
  * - OFFLINE: No healthy nodes available
  */
 export enum ClusterStatus {
-  STARTING = 'starting',
-  HEALTHY = 'healthy',
-  DEGRADED = 'degraded',
-  CRITICAL = 'critical',
-  OFFLINE = 'offline',
+  STARTING = "starting",
+  HEALTHY = "healthy",
+  DEGRADED = "degraded",
+  CRITICAL = "critical",
+  OFFLINE = "offline",
 }
 
 /**
@@ -204,7 +204,7 @@ export interface CacheConfig {
  * - serviceLabel: Kubernetes service label selector (when mode='kubernetes')
  */
 export interface DiscoveryConfig {
-  readonly mode: 'static' | 'dns' | 'kubernetes';
+  readonly mode: "static" | "dns" | "kubernetes";
   readonly nodes?: Array<{ url: string; id: string }>;
   readonly dnsName?: string;
   readonly port?: number;
@@ -276,7 +276,7 @@ export interface RoutingDecision {
 export interface RoutingContext {
   readonly systemPromptHash: string;
   readonly estimatedTokens: number;
-  readonly userPriority: 'low' | 'normal' | 'high';
+  readonly userPriority: "low" | "normal" | "high";
 }
 
 /**

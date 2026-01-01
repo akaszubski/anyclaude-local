@@ -48,7 +48,7 @@ import {
   resetClusterManager,
   ClusterManager,
   ClusterStatus,
-} from '../../src/cluster/cluster-manager';
+} from "../../src/cluster/cluster-manager";
 import {
   MLXClusterConfig,
   MLXNode,
@@ -56,7 +56,7 @@ import {
   NodeStatus,
   LoadBalanceStrategy,
   RoutingDecision,
-} from '../../src/cluster/cluster-types';
+} from "../../src/cluster/cluster-types";
 
 // ============================================================================
 // Test Helpers and Mocks
@@ -72,7 +72,7 @@ const mockDiscoveryInstance = {
   getDiscoveredNodes: jest.fn().mockReturnValue([]),
 };
 
-jest.mock('../../src/cluster/cluster-discovery', () => ({
+jest.mock("../../src/cluster/cluster-discovery", () => ({
   ClusterDiscovery: jest.fn().mockImplementation(() => mockDiscoveryInstance),
 }));
 
@@ -87,7 +87,7 @@ const mockHealthInstance = {
   recordFailure: jest.fn(),
   isHealthy: jest.fn().mockReturnValue(true),
   getNodeHealth: jest.fn().mockReturnValue({
-    status: 'healthy' as any,
+    status: "healthy" as any,
     metrics: {
       successRate: 1.0,
       avgLatencyMs: 100,
@@ -104,7 +104,7 @@ const mockHealthInstance = {
   }),
 };
 
-jest.mock('../../src/cluster/cluster-health', () => ({
+jest.mock("../../src/cluster/cluster-health", () => ({
   ClusterHealth: jest.fn().mockImplementation(() => mockHealthInstance),
 }));
 
@@ -114,14 +114,14 @@ jest.mock('../../src/cluster/cluster-health', () => ({
  */
 const mockRouterInstance = {
   selectNodeWithSticky: jest.fn().mockReturnValue({
-    nodeId: 'node-1',
-    reason: 'test-routing',
+    nodeId: "node-1",
+    reason: "test-routing",
     confidence: 0.9,
   }),
   destroy: jest.fn(),
 };
 
-jest.mock('../../src/cluster/cluster-router', () => ({
+jest.mock("../../src/cluster/cluster-router", () => ({
   ClusterRouter: jest.fn().mockImplementation(() => mockRouterInstance),
 }));
 
@@ -139,25 +139,25 @@ const mockCacheInstance = {
   }),
 };
 
-jest.mock('../../src/cluster/cluster-cache', () => ({
+jest.mock("../../src/cluster/cluster-cache", () => ({
   ClusterCache: jest.fn().mockImplementation(() => mockCacheInstance),
 }));
 
 /**
  * Mock @ai-sdk/openai
  */
-jest.mock('@ai-sdk/openai', () => ({
+jest.mock("@ai-sdk/openai", () => ({
   createOpenAI: jest.fn().mockImplementation(() => ({
     // Mock provider methods
     chat: jest.fn(),
   })),
 }));
 
-import { ClusterDiscovery } from '../../src/cluster/cluster-discovery';
-import { ClusterHealth } from '../../src/cluster/cluster-health';
-import { ClusterRouter } from '../../src/cluster/cluster-router';
-import { ClusterCache } from '../../src/cluster/cluster-cache';
-import { createOpenAI } from '@ai-sdk/openai';
+import { ClusterDiscovery } from "../../src/cluster/cluster-discovery";
+import { ClusterHealth } from "../../src/cluster/cluster-health";
+import { ClusterRouter } from "../../src/cluster/cluster-router";
+import { ClusterCache } from "../../src/cluster/cluster-cache";
+import { createOpenAI } from "@ai-sdk/openai";
 
 /**
  * Helper to create a minimal MLX node
@@ -165,7 +165,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 function createTestNode(id: string, url?: string): MLXNode {
   return {
     id: id as NodeId,
-    url: url || `http://localhost:${8080 + parseInt(id.split('-')[1] || '1', 10)}`,
+    url:
+      url || `http://localhost:${8080 + parseInt(id.split("-")[1] || "1", 10)}`,
     status: NodeStatus.HEALTHY,
     health: {
       lastCheck: Date.now(),
@@ -175,7 +176,7 @@ function createTestNode(id: string, url?: string): MLXNode {
     },
     cache: {
       tokens: 1000,
-      systemPromptHash: 'hash-default',
+      systemPromptHash: "hash-default",
       lastUpdated: Date.now(),
     },
     metrics: {
@@ -202,10 +203,10 @@ function createTestNodes(count: number): MLXNode[] {
 function createTestConfig(): MLXClusterConfig {
   return {
     discovery: {
-      mode: 'static',
+      mode: "static",
       nodes: [
-        { url: 'http://localhost:8080', id: 'node-1' },
-        { url: 'http://localhost:8081', id: 'node-2' },
+        { url: "http://localhost:8080", id: "node-1" },
+        { url: "http://localhost:8081", id: "node-2" },
       ],
     },
     health: {
@@ -287,7 +288,7 @@ function resetMocks() {
   mockDiscoveryInstance.getDiscoveredNodes.mockReturnValue([]);
   mockHealthInstance.isHealthy.mockReturnValue(true);
   mockHealthInstance.getNodeHealth.mockReturnValue({
-    status: 'healthy' as any,
+    status: "healthy" as any,
     metrics: {
       successRate: 1.0,
       avgLatencyMs: 100,
@@ -302,8 +303,8 @@ function resetMocks() {
     errorCount: 0,
   });
   mockRouterInstance.selectNodeWithSticky.mockReturnValue({
-    nodeId: 'node-1',
-    reason: 'test-routing',
+    nodeId: "node-1",
+    reason: "test-routing",
     confidence: 0.9,
   });
   mockCacheInstance.getCacheStats.mockReturnValue({
@@ -341,33 +342,37 @@ afterEach(() => {
 // Test Suite: ClusterManagerError
 // ============================================================================
 
-describe('ClusterManagerError', () => {
-  test('should create error with code and message', () => {
-    const error = new ClusterManagerError('TEST_ERROR', 'Test error message');
-    expect(error.code).toBe('TEST_ERROR');
-    expect(error.message).toBe('Test error message');
+describe("ClusterManagerError", () => {
+  test("should create error with code and message", () => {
+    const error = new ClusterManagerError("TEST_ERROR", "Test error message");
+    expect(error.code).toBe("TEST_ERROR");
+    expect(error.message).toBe("Test error message");
   });
 
-  test('should create error with cause', () => {
-    const cause = new Error('Original error');
-    const error = new ClusterManagerError('TEST_ERROR', 'Test error message', cause);
+  test("should create error with cause", () => {
+    const cause = new Error("Original error");
+    const error = new ClusterManagerError(
+      "TEST_ERROR",
+      "Test error message",
+      cause
+    );
     expect(error.cause).toBe(cause);
   });
 
-  test('should extend Error class', () => {
-    const error = new ClusterManagerError('TEST_ERROR', 'Test error message');
+  test("should extend Error class", () => {
+    const error = new ClusterManagerError("TEST_ERROR", "Test error message");
     expect(error).toBeInstanceOf(Error);
   });
 
-  test('should set name property correctly', () => {
-    const error = new ClusterManagerError('TEST_ERROR', 'Test error message');
-    expect(error.name).toBe('ClusterManagerError');
+  test("should set name property correctly", () => {
+    const error = new ClusterManagerError("TEST_ERROR", "Test error message");
+    expect(error.name).toBe("ClusterManagerError");
   });
 
-  test('should have stack trace available', () => {
-    const error = new ClusterManagerError('TEST_ERROR', 'Test error message');
+  test("should have stack trace available", () => {
+    const error = new ClusterManagerError("TEST_ERROR", "Test error message");
     expect(error.stack).toBeDefined();
-    expect(error.stack).toContain('ClusterManagerError');
+    expect(error.stack).toContain("ClusterManagerError");
   });
 });
 
@@ -375,9 +380,9 @@ describe('ClusterManagerError', () => {
 // Test Suite: Singleton Pattern
 // ============================================================================
 
-describe('Singleton Pattern', () => {
-  describe('initializeCluster', () => {
-    test('should create instance with valid config', async () => {
+describe("Singleton Pattern", () => {
+  describe("initializeCluster", () => {
+    test("should create instance with valid config", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -390,7 +395,7 @@ describe('Singleton Pattern', () => {
       expect(manager).toBeInstanceOf(ClusterManager);
     });
 
-    test('should throw if already initialized', async () => {
+    test("should throw if already initialized", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -399,11 +404,15 @@ describe('Singleton Pattern', () => {
 
       await initializeCluster(config);
 
-      await expect(initializeCluster(config)).rejects.toThrow(ClusterManagerError);
-      await expect(initializeCluster(config)).rejects.toThrow('already initialized');
+      await expect(initializeCluster(config)).rejects.toThrow(
+        ClusterManagerError
+      );
+      await expect(initializeCluster(config)).rejects.toThrow(
+        "already initialized"
+      );
     });
 
-    test('should start discovery during initialization', async () => {
+    test("should start discovery during initialization", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -415,7 +424,7 @@ describe('Singleton Pattern', () => {
       expect(mockDiscovery?.start).toHaveBeenCalled();
     });
 
-    test('should start health checks during initialization', async () => {
+    test("should start health checks during initialization", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -428,7 +437,7 @@ describe('Singleton Pattern', () => {
       expect(mockHealth?.startHealthChecks).toHaveBeenCalled();
     });
 
-    test('should initialize cache during initialization', async () => {
+    test("should initialize cache during initialization", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockCache = getMockCache();
@@ -441,27 +450,31 @@ describe('Singleton Pattern', () => {
       expect(mockCache?.initialize).toHaveBeenCalled();
     });
 
-    test('should throw ClusterManagerError on invalid config', async () => {
+    test("should throw ClusterManagerError on invalid config", async () => {
       const invalidConfig = {} as MLXClusterConfig;
 
-      await expect(initializeCluster(invalidConfig)).rejects.toThrow(ClusterManagerError);
+      await expect(initializeCluster(invalidConfig)).rejects.toThrow(
+        ClusterManagerError
+      );
     });
 
-    test('should validate discovery config', async () => {
+    test("should validate discovery config", async () => {
       const config = createTestConfig();
       // Invalid config: static mode requires nodes
       const invalidConfig = {
         ...config,
         discovery: {
-          mode: 'static' as const,
+          mode: "static" as const,
           // Missing nodes
         },
       };
 
-      await expect(initializeCluster(invalidConfig)).rejects.toThrow(ClusterManagerError);
+      await expect(initializeCluster(invalidConfig)).rejects.toThrow(
+        ClusterManagerError
+      );
     });
 
-    test('should validate health config', async () => {
+    test("should validate health config", async () => {
       const config = createTestConfig();
       const invalidConfig = {
         ...config,
@@ -471,10 +484,12 @@ describe('Singleton Pattern', () => {
         },
       };
 
-      await expect(initializeCluster(invalidConfig)).rejects.toThrow(ClusterManagerError);
+      await expect(initializeCluster(invalidConfig)).rejects.toThrow(
+        ClusterManagerError
+      );
     });
 
-    test('should validate routing config', async () => {
+    test("should validate routing config", async () => {
       const config = createTestConfig();
       const invalidConfig = {
         ...config,
@@ -484,10 +499,12 @@ describe('Singleton Pattern', () => {
         },
       };
 
-      await expect(initializeCluster(invalidConfig)).rejects.toThrow(ClusterManagerError);
+      await expect(initializeCluster(invalidConfig)).rejects.toThrow(
+        ClusterManagerError
+      );
     });
 
-    test('should handle concurrent initialization attempts', async () => {
+    test("should handle concurrent initialization attempts", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -502,8 +519,8 @@ describe('Singleton Pattern', () => {
     });
   });
 
-  describe('getClusterManager', () => {
-    test('should return instance after initialization', async () => {
+  describe("getClusterManager", () => {
+    test("should return instance after initialization", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -516,12 +533,12 @@ describe('Singleton Pattern', () => {
       expect(retrieved).toBe(manager);
     });
 
-    test('should throw if not initialized', () => {
+    test("should throw if not initialized", () => {
       expect(() => getClusterManager()).toThrow(ClusterManagerError);
-      expect(() => getClusterManager()).toThrow('not initialized');
+      expect(() => getClusterManager()).toThrow("not initialized");
     });
 
-    test('should return same instance on multiple calls', async () => {
+    test("should return same instance on multiple calls", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -536,8 +553,8 @@ describe('Singleton Pattern', () => {
     });
   });
 
-  describe('resetClusterManager', () => {
-    test('should clear instance', async () => {
+  describe("resetClusterManager", () => {
+    test("should clear instance", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -550,7 +567,7 @@ describe('Singleton Pattern', () => {
       expect(() => getClusterManager()).toThrow(ClusterManagerError);
     });
 
-    test('should allow initialization after reset', async () => {
+    test("should allow initialization after reset", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -563,7 +580,7 @@ describe('Singleton Pattern', () => {
       await expect(initializeCluster(config)).resolves.toBeDefined();
     });
 
-    test('should stop discovery when resetting', async () => {
+    test("should stop discovery when resetting", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -576,7 +593,7 @@ describe('Singleton Pattern', () => {
       expect(mockDiscovery?.stop).toHaveBeenCalled();
     });
 
-    test('should stop health checks when resetting', async () => {
+    test("should stop health checks when resetting", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -590,7 +607,7 @@ describe('Singleton Pattern', () => {
       expect(mockHealth?.stopHealthChecks).toHaveBeenCalled();
     });
 
-    test('should stop cache when resetting', async () => {
+    test("should stop cache when resetting", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockCache = getMockCache();
@@ -604,11 +621,11 @@ describe('Singleton Pattern', () => {
       expect(mockCache?.stop).toHaveBeenCalled();
     });
 
-    test('should not throw if called when not initialized', () => {
+    test("should not throw if called when not initialized", () => {
       expect(() => resetClusterManager()).not.toThrow();
     });
 
-    test('should handle multiple reset calls safely', async () => {
+    test("should handle multiple reset calls safely", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -628,9 +645,9 @@ describe('Singleton Pattern', () => {
 // Test Suite: Provider Management
 // ============================================================================
 
-describe('Provider Management', () => {
-  describe('getNodeProvider', () => {
-    test('should return provider for known node', async () => {
+describe("Provider Management", () => {
+  describe("getNodeProvider", () => {
+    test("should return provider for known node", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -638,13 +655,13 @@ describe('Provider Management', () => {
       }
 
       const manager = await initializeCluster(config);
-      const provider = manager.getNodeProvider('node-1' as NodeId);
+      const provider = manager.getNodeProvider("node-1" as NodeId);
 
       expect(provider).toBeDefined();
       expect(provider).not.toBeNull();
     });
 
-    test('should return null for unknown node', async () => {
+    test("should return null for unknown node", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -652,12 +669,12 @@ describe('Provider Management', () => {
       }
 
       const manager = await initializeCluster(config);
-      const provider = manager.getNodeProvider('unknown-node' as NodeId);
+      const provider = manager.getNodeProvider("unknown-node" as NodeId);
 
       expect(provider).toBeNull();
     });
 
-    test('should create providers during initialization', async () => {
+    test("should create providers during initialization", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -669,9 +686,9 @@ describe('Provider Management', () => {
       expect(createOpenAI).toHaveBeenCalledTimes(3);
     });
 
-    test('should create provider with correct baseURL from node', async () => {
+    test("should create provider with correct baseURL from node", async () => {
       const config = createTestConfig();
-      const nodes = [createTestNode('node-1', 'http://custom-url:9000')];
+      const nodes = [createTestNode("node-1", "http://custom-url:9000")];
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
         mockDiscovery.getDiscoveredNodes.mockReturnValue(nodes);
@@ -681,12 +698,12 @@ describe('Provider Management', () => {
 
       expect(createOpenAI).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: 'http://custom-url:9000',
+          baseURL: "http://custom-url:9000",
         })
       );
     });
 
-    test('should have provider count matching discovered nodes', async () => {
+    test("should have provider count matching discovered nodes", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -699,7 +716,7 @@ describe('Provider Management', () => {
       expect(status.totalNodes).toBe(5);
     });
 
-    test('should make provider accessible after discovery complete', async () => {
+    test("should make provider accessible after discovery complete", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -707,12 +724,12 @@ describe('Provider Management', () => {
       }
 
       const manager = await initializeCluster(config);
-      const provider = manager.getNodeProvider('node-1' as NodeId);
+      const provider = manager.getNodeProvider("node-1" as NodeId);
 
       expect(provider).not.toBeNull();
     });
 
-    test('should return null for provider after node removed', async () => {
+    test("should return null for provider after node removed", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const nodes = createTestNodes(2);
@@ -728,11 +745,11 @@ describe('Provider Management', () => {
       }
 
       // Provider should still exist until next update cycle
-      const provider = manager.getNodeProvider('node-2' as NodeId);
+      const provider = manager.getNodeProvider("node-2" as NodeId);
       expect(provider).toBeDefined(); // May still exist temporarily
     });
 
-    test('should handle provider creation failure gracefully', async () => {
+    test("should handle provider creation failure gracefully", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -743,12 +760,12 @@ describe('Provider Management', () => {
       (createOpenAI as jest.Mock)
         .mockReturnValueOnce({ chat: jest.fn() })
         .mockImplementationOnce(() => {
-          throw new Error('Provider creation failed');
+          throw new Error("Provider creation failed");
         });
 
       const manager = await initializeCluster(config);
-      const provider1 = manager.getNodeProvider('node-1' as NodeId);
-      const provider2 = manager.getNodeProvider('node-2' as NodeId);
+      const provider1 = manager.getNodeProvider("node-1" as NodeId);
+      const provider2 = manager.getNodeProvider("node-2" as NodeId);
 
       expect(provider1).toBeDefined();
       expect(provider2).toBeNull(); // Failed to create
@@ -760,9 +777,9 @@ describe('Provider Management', () => {
 // Test Suite: Node Selection
 // ============================================================================
 
-describe('Node Selection', () => {
-  describe('selectNode', () => {
-    test('should return node when available', async () => {
+describe("Node Selection", () => {
+  describe("selectNode", () => {
+    test("should return node when available", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -771,20 +788,20 @@ describe('Node Selection', () => {
       }
       if (mockRouter) {
         mockRouter.selectNodeWithSticky.mockReturnValue({
-          nodeId: 'node-1' as NodeId,
-          reason: 'cache-affinity',
+          nodeId: "node-1" as NodeId,
+          reason: "cache-affinity",
           confidence: 0.9,
         });
       }
 
       const manager = await initializeCluster(config);
-      const node = manager.selectNode('hash-123', 'tools-456');
+      const node = manager.selectNode("hash-123", "tools-456");
 
       expect(node).not.toBeNull();
-      expect(node?.id).toBe('node-1');
+      expect(node?.id).toBe("node-1");
     });
 
-    test('should return null when no healthy nodes', async () => {
+    test("should return null when no healthy nodes", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -796,12 +813,12 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      const node = manager.selectNode('hash-123', 'tools-456');
+      const node = manager.selectNode("hash-123", "tools-456");
 
       expect(node).toBeNull();
     });
 
-    test('should use sticky routing with sessionId', async () => {
+    test("should use sticky routing with sessionId", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -810,16 +827,16 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.selectNode('hash-123', 'tools-456', 'session-abc');
+      manager.selectNode("hash-123", "tools-456", "session-abc");
 
       expect(mockRouter?.selectNodeWithSticky).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ systemPromptHash: 'hash-123' }),
-        'session-abc'
+        expect.objectContaining({ systemPromptHash: "hash-123" }),
+        "session-abc"
       );
     });
 
-    test('should use load balancing without sessionId', async () => {
+    test("should use load balancing without sessionId", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -828,16 +845,16 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.selectNode('hash-123', 'tools-456');
+      manager.selectNode("hash-123", "tools-456");
 
       expect(mockRouter?.selectNodeWithSticky).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ systemPromptHash: 'hash-123' }),
+        expect.objectContaining({ systemPromptHash: "hash-123" }),
         undefined
       );
     });
 
-    test('should pass systemPromptHash to router', async () => {
+    test("should pass systemPromptHash to router", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -846,21 +863,21 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.selectNode('custom-hash', 'tools-456');
+      manager.selectNode("custom-hash", "tools-456");
 
       expect(mockRouter?.selectNodeWithSticky).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ systemPromptHash: 'custom-hash' }),
+        expect.objectContaining({ systemPromptHash: "custom-hash" }),
         undefined
       );
     });
 
-    test('should filter unhealthy nodes before routing', async () => {
+    test("should filter unhealthy nodes before routing", async () => {
       const config = createTestConfig();
       const nodes = [
-        createTestNode('node-1'),
-        { ...createTestNode('node-2'), status: NodeStatus.UNHEALTHY },
-        createTestNode('node-3'),
+        createTestNode("node-1"),
+        { ...createTestNode("node-2"), status: NodeStatus.UNHEALTHY },
+        createTestNode("node-3"),
       ];
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -869,23 +886,23 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.selectNode('hash-123', 'tools-456');
+      manager.selectNode("hash-123", "tools-456");
 
       expect(mockRouter?.selectNodeWithSticky).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'node-1' }),
-          expect.objectContaining({ id: 'node-3' }),
+          expect.objectContaining({ id: "node-1" }),
+          expect.objectContaining({ id: "node-3" }),
         ]),
         expect.anything(),
         undefined
       );
     });
 
-    test('should return null when all nodes unhealthy', async () => {
+    test("should return null when all nodes unhealthy", async () => {
       const config = createTestConfig();
       const nodes = [
-        { ...createTestNode('node-1'), status: NodeStatus.UNHEALTHY },
-        { ...createTestNode('node-2'), status: NodeStatus.OFFLINE },
+        { ...createTestNode("node-1"), status: NodeStatus.UNHEALTHY },
+        { ...createTestNode("node-2"), status: NodeStatus.OFFLINE },
       ];
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -897,12 +914,12 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      const node = manager.selectNode('hash-123', 'tools-456');
+      const node = manager.selectNode("hash-123", "tools-456");
 
       expect(node).toBeNull();
     });
 
-    test('should handle empty cluster gracefully', async () => {
+    test("should handle empty cluster gracefully", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -914,12 +931,12 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      const node = manager.selectNode('hash-123', 'tools-456');
+      const node = manager.selectNode("hash-123", "tools-456");
 
       expect(node).toBeNull();
     });
 
-    test('should pass toolsHash in routing context', async () => {
+    test("should pass toolsHash in routing context", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -928,19 +945,19 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.selectNode('hash-123', 'custom-tools');
+      manager.selectNode("hash-123", "custom-tools");
 
       expect(mockRouter?.selectNodeWithSticky).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          systemPromptHash: 'hash-123',
+          systemPromptHash: "hash-123",
           // toolsHash would be used internally
         }),
         undefined
       );
     });
 
-    test('should use discovered nodes for routing', async () => {
+    test("should use discovered nodes for routing", async () => {
       const config = createTestConfig();
       const nodes = createTestNodes(3);
       const mockDiscovery = getMockDiscovery();
@@ -950,13 +967,13 @@ describe('Node Selection', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.selectNode('hash-123', 'tools-456');
+      manager.selectNode("hash-123", "tools-456");
 
       expect(mockRouter?.selectNodeWithSticky).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'node-1' }),
-          expect.objectContaining({ id: 'node-2' }),
-          expect.objectContaining({ id: 'node-3' }),
+          expect.objectContaining({ id: "node-1" }),
+          expect.objectContaining({ id: "node-2" }),
+          expect.objectContaining({ id: "node-3" }),
         ]),
         expect.anything(),
         undefined
@@ -969,9 +986,9 @@ describe('Node Selection', () => {
 // Test Suite: Health Tracking
 // ============================================================================
 
-describe('Health Tracking', () => {
-  describe('recordNodeSuccess', () => {
-    test('should update health tracker on success', async () => {
+describe("Health Tracking", () => {
+  describe("recordNodeSuccess", () => {
+    test("should update health tracker on success", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -980,12 +997,12 @@ describe('Health Tracking', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.recordNodeSuccess('node-1' as NodeId, 150);
+      manager.recordNodeSuccess("node-1" as NodeId, 150);
 
-      expect(mockHealth?.recordSuccess).toHaveBeenCalledWith('node-1', 150);
+      expect(mockHealth?.recordSuccess).toHaveBeenCalledWith("node-1", 150);
     });
 
-    test('should handle unknown nodeId gracefully', async () => {
+    test("should handle unknown nodeId gracefully", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -995,11 +1012,11 @@ describe('Health Tracking', () => {
       const manager = await initializeCluster(config);
 
       expect(() => {
-        manager.recordNodeSuccess('unknown-node' as NodeId, 150);
+        manager.recordNodeSuccess("unknown-node" as NodeId, 150);
       }).not.toThrow();
     });
 
-    test('should record latency correctly', async () => {
+    test("should record latency correctly", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1008,12 +1025,12 @@ describe('Health Tracking', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.recordNodeSuccess('node-1' as NodeId, 250);
+      manager.recordNodeSuccess("node-1" as NodeId, 250);
 
-      expect(mockHealth?.recordSuccess).toHaveBeenCalledWith('node-1', 250);
+      expect(mockHealth?.recordSuccess).toHaveBeenCalledWith("node-1", 250);
     });
 
-    test('should allow multiple success recordings', async () => {
+    test("should allow multiple success recordings", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1022,16 +1039,16 @@ describe('Health Tracking', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.recordNodeSuccess('node-1' as NodeId, 100);
-      manager.recordNodeSuccess('node-1' as NodeId, 200);
-      manager.recordNodeSuccess('node-2' as NodeId, 150);
+      manager.recordNodeSuccess("node-1" as NodeId, 100);
+      manager.recordNodeSuccess("node-1" as NodeId, 200);
+      manager.recordNodeSuccess("node-2" as NodeId, 150);
 
       expect(mockHealth?.recordSuccess).toHaveBeenCalledTimes(3);
     });
   });
 
-  describe('recordNodeFailure', () => {
-    test('should update health tracker on failure', async () => {
+  describe("recordNodeFailure", () => {
+    test("should update health tracker on failure", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1040,13 +1057,13 @@ describe('Health Tracking', () => {
       }
 
       const manager = await initializeCluster(config);
-      const error = new Error('Request failed');
-      manager.recordNodeFailure('node-1' as NodeId, error);
+      const error = new Error("Request failed");
+      manager.recordNodeFailure("node-1" as NodeId, error);
 
-      expect(mockHealth?.recordFailure).toHaveBeenCalledWith('node-1', error);
+      expect(mockHealth?.recordFailure).toHaveBeenCalledWith("node-1", error);
     });
 
-    test('should handle unknown nodeId gracefully', async () => {
+    test("should handle unknown nodeId gracefully", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1054,14 +1071,14 @@ describe('Health Tracking', () => {
       }
 
       const manager = await initializeCluster(config);
-      const error = new Error('Request failed');
+      const error = new Error("Request failed");
 
       expect(() => {
-        manager.recordNodeFailure('unknown-node' as NodeId, error);
+        manager.recordNodeFailure("unknown-node" as NodeId, error);
       }).not.toThrow();
     });
 
-    test('should capture error details', async () => {
+    test("should capture error details", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1070,13 +1087,13 @@ describe('Health Tracking', () => {
       }
 
       const manager = await initializeCluster(config);
-      const error = new Error('Connection timeout');
-      manager.recordNodeFailure('node-1' as NodeId, error);
+      const error = new Error("Connection timeout");
+      manager.recordNodeFailure("node-1" as NodeId, error);
 
-      expect(mockHealth?.recordFailure).toHaveBeenCalledWith('node-1', error);
+      expect(mockHealth?.recordFailure).toHaveBeenCalledWith("node-1", error);
     });
 
-    test('should allow multiple failure recordings', async () => {
+    test("should allow multiple failure recordings", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1085,14 +1102,14 @@ describe('Health Tracking', () => {
       }
 
       const manager = await initializeCluster(config);
-      manager.recordNodeFailure('node-1' as NodeId, new Error('Error 1'));
-      manager.recordNodeFailure('node-1' as NodeId, new Error('Error 2'));
-      manager.recordNodeFailure('node-2' as NodeId, new Error('Error 3'));
+      manager.recordNodeFailure("node-1" as NodeId, new Error("Error 1"));
+      manager.recordNodeFailure("node-1" as NodeId, new Error("Error 2"));
+      manager.recordNodeFailure("node-2" as NodeId, new Error("Error 3"));
 
       expect(mockHealth?.recordFailure).toHaveBeenCalledTimes(3);
     });
 
-    test('should affect subsequent routing decisions', async () => {
+    test("should affect subsequent routing decisions", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1103,7 +1120,7 @@ describe('Health Tracking', () => {
       const manager = await initializeCluster(config);
 
       // Record failures
-      manager.recordNodeFailure('node-1' as NodeId, new Error('Failed'));
+      manager.recordNodeFailure("node-1" as NodeId, new Error("Failed"));
 
       // Mock health check to mark node as unhealthy
       if (mockHealth) {
@@ -1111,13 +1128,13 @@ describe('Health Tracking', () => {
       }
 
       // Next selection should avoid unhealthy node
-      const node = manager.selectNode('hash-123', 'tools-456');
-      expect(node?.id).not.toBe('node-1');
+      const node = manager.selectNode("hash-123", "tools-456");
+      expect(node?.id).not.toBe("node-1");
     });
   });
 
-  describe('health state integration', () => {
-    test('should reflect health in node status', async () => {
+  describe("health state integration", () => {
+    test("should reflect health in node status", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1131,7 +1148,7 @@ describe('Health Tracking', () => {
       expect(status.healthyNodes).toBeGreaterThan(0);
     });
 
-    test('should update healthy node count after failures', async () => {
+    test("should update healthy node count after failures", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1142,10 +1159,12 @@ describe('Health Tracking', () => {
       const manager = await initializeCluster(config);
 
       // Record failures to make node unhealthy
-      manager.recordNodeFailure('node-1' as NodeId, new Error('Failed'));
+      manager.recordNodeFailure("node-1" as NodeId, new Error("Failed"));
 
       if (mockHealth) {
-        mockHealth.isHealthy.mockImplementation((nodeId) => nodeId !== 'node-1');
+        mockHealth.isHealthy.mockImplementation(
+          (nodeId) => nodeId !== "node-1"
+        );
       }
 
       const status = manager.getStatus();
@@ -1159,9 +1178,9 @@ describe('Health Tracking', () => {
 // Test Suite: Status Reporting
 // ============================================================================
 
-describe('Status Reporting', () => {
-  describe('getStatus', () => {
-    test('should return correct status structure', async () => {
+describe("Status Reporting", () => {
+  describe("getStatus", () => {
+    test("should return correct status structure", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1171,14 +1190,14 @@ describe('Status Reporting', () => {
       const manager = await initializeCluster(config);
       const status = manager.getStatus();
 
-      expect(status).toHaveProperty('initialized');
-      expect(status).toHaveProperty('totalNodes');
-      expect(status).toHaveProperty('healthyNodes');
-      expect(status).toHaveProperty('nodes');
+      expect(status).toHaveProperty("initialized");
+      expect(status).toHaveProperty("totalNodes");
+      expect(status).toHaveProperty("healthyNodes");
+      expect(status).toHaveProperty("nodes");
       expect(Array.isArray(status.nodes)).toBe(true);
     });
 
-    test('should show initialized state', async () => {
+    test("should show initialized state", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1191,7 +1210,7 @@ describe('Status Reporting', () => {
       expect(status.initialized).toBe(true);
     });
 
-    test('should count total nodes correctly', async () => {
+    test("should count total nodes correctly", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1204,12 +1223,12 @@ describe('Status Reporting', () => {
       expect(status.totalNodes).toBe(5);
     });
 
-    test('should count healthy nodes correctly', async () => {
+    test("should count healthy nodes correctly", async () => {
       const config = createTestConfig();
       const nodes = [
-        createTestNode('node-1'),
-        { ...createTestNode('node-2'), status: NodeStatus.UNHEALTHY },
-        createTestNode('node-3'),
+        createTestNode("node-1"),
+        { ...createTestNode("node-2"), status: NodeStatus.UNHEALTHY },
+        createTestNode("node-3"),
       ];
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1217,7 +1236,9 @@ describe('Status Reporting', () => {
         mockDiscovery.getDiscoveredNodes.mockReturnValue(nodes);
       }
       if (mockHealth) {
-        mockHealth.isHealthy.mockImplementation((nodeId) => nodeId !== 'node-2');
+        mockHealth.isHealthy.mockImplementation(
+          (nodeId) => nodeId !== "node-2"
+        );
       }
 
       const manager = await initializeCluster(config);
@@ -1226,7 +1247,7 @@ describe('Status Reporting', () => {
       expect(status.healthyNodes).toBe(2);
     });
 
-    test('should include per-node health information', async () => {
+    test("should include per-node health information", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1237,12 +1258,12 @@ describe('Status Reporting', () => {
       const status = manager.getStatus();
 
       expect(status.nodes.length).toBe(2);
-      expect(status.nodes[0]).toHaveProperty('id');
-      expect(status.nodes[0]).toHaveProperty('url');
-      expect(status.nodes[0]).toHaveProperty('healthy');
+      expect(status.nodes[0]).toHaveProperty("id");
+      expect(status.nodes[0]).toHaveProperty("url");
+      expect(status.nodes[0]).toHaveProperty("healthy");
     });
 
-    test('should include cache stats when available', async () => {
+    test("should include cache stats when available", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1253,16 +1274,16 @@ describe('Status Reporting', () => {
       const status = manager.getStatus();
 
       expect(status.cacheStats).toBeDefined();
-      expect(status.cacheStats).toHaveProperty('nodeCount');
-      expect(status.cacheStats).toHaveProperty('cacheCount');
+      expect(status.cacheStats).toHaveProperty("nodeCount");
+      expect(status.cacheStats).toHaveProperty("cacheCount");
     });
 
-    test('should work before initialization (returns not initialized)', () => {
+    test("should work before initialization (returns not initialized)", () => {
       // Before any initialization
       expect(() => getClusterManager()).toThrow();
     });
 
-    test('should update in real-time', async () => {
+    test("should update in real-time", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1275,7 +1296,9 @@ describe('Status Reporting', () => {
 
       // Simulate node becoming unhealthy
       if (mockHealth) {
-        mockHealth.isHealthy.mockImplementation((nodeId) => nodeId !== 'node-1');
+        mockHealth.isHealthy.mockImplementation(
+          (nodeId) => nodeId !== "node-1"
+        );
       }
 
       const status2 = manager.getStatus();
@@ -1284,7 +1307,7 @@ describe('Status Reporting', () => {
       // Health counts might differ
     });
 
-    test('should include error count per node', async () => {
+    test("should include error count per node", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1302,10 +1325,10 @@ describe('Status Reporting', () => {
       const manager = await initializeCluster(config);
       const status = manager.getStatus();
 
-      expect(status.nodes[0]).toHaveProperty('errorCount');
+      expect(status.nodes[0]).toHaveProperty("errorCount");
     });
 
-    test('should include latency when available', async () => {
+    test("should include latency when available", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1327,8 +1350,8 @@ describe('Status Reporting', () => {
     });
   });
 
-  describe('isInitialized', () => {
-    test('should return true after initialization', async () => {
+  describe("isInitialized", () => {
+    test("should return true after initialization", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1340,12 +1363,12 @@ describe('Status Reporting', () => {
       expect(manager.isInitialized()).toBe(true);
     });
 
-    test('should return false before initialization', () => {
+    test("should return false before initialization", () => {
       // Can't test without instance, but covered by singleton tests
       expect(() => getClusterManager()).toThrow();
     });
 
-    test('should return false after shutdown', async () => {
+    test("should return false after shutdown", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1364,9 +1387,9 @@ describe('Status Reporting', () => {
 // Test Suite: Shutdown
 // ============================================================================
 
-describe('Shutdown', () => {
-  describe('shutdown method', () => {
-    test('should stop discovery', async () => {
+describe("Shutdown", () => {
+  describe("shutdown method", () => {
+    test("should stop discovery", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1379,7 +1402,7 @@ describe('Shutdown', () => {
       expect(mockDiscovery?.stop).toHaveBeenCalled();
     });
 
-    test('should stop health checks', async () => {
+    test("should stop health checks", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1393,7 +1416,7 @@ describe('Shutdown', () => {
       expect(mockHealth?.stopHealthChecks).toHaveBeenCalled();
     });
 
-    test('should stop cache sync', async () => {
+    test("should stop cache sync", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockCache = getMockCache();
@@ -1407,7 +1430,7 @@ describe('Shutdown', () => {
       expect(mockCache?.stop).toHaveBeenCalled();
     });
 
-    test('should destroy router', async () => {
+    test("should destroy router", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockRouter = getMockRouter();
@@ -1421,7 +1444,7 @@ describe('Shutdown', () => {
       expect(mockRouter?.destroy).toHaveBeenCalled();
     });
 
-    test('should clear providers', async () => {
+    test("should clear providers", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1431,11 +1454,11 @@ describe('Shutdown', () => {
       const manager = await initializeCluster(config);
       await manager.shutdown();
 
-      const provider = manager.getNodeProvider('node-1' as NodeId);
+      const provider = manager.getNodeProvider("node-1" as NodeId);
       expect(provider).toBeNull();
     });
 
-    test('should set initialized to false', async () => {
+    test("should set initialized to false", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1448,7 +1471,7 @@ describe('Shutdown', () => {
       expect(manager.isInitialized()).toBe(false);
     });
 
-    test('should allow calling shutdown multiple times safely', async () => {
+    test("should allow calling shutdown multiple times safely", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1462,7 +1485,7 @@ describe('Shutdown', () => {
       expect(manager.isInitialized()).toBe(false);
     });
 
-    test('should throw when accessing instance after shutdown', async () => {
+    test("should throw when accessing instance after shutdown", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1477,7 +1500,7 @@ describe('Shutdown', () => {
       expect(() => getClusterManager()).toThrow();
     });
 
-    test('should handle component failures gracefully during shutdown', async () => {
+    test("should handle component failures gracefully during shutdown", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       const mockHealth = getMockHealth();
@@ -1486,7 +1509,7 @@ describe('Shutdown', () => {
       }
       if (mockHealth) {
         mockHealth.stopHealthChecks.mockImplementation(() => {
-          throw new Error('Health check stop failed');
+          throw new Error("Health check stop failed");
         });
       }
 
@@ -1496,7 +1519,7 @@ describe('Shutdown', () => {
       await expect(manager.shutdown()).resolves.not.toThrow();
     });
 
-    test('should complete shutdown within reasonable timeout', async () => {
+    test("should complete shutdown within reasonable timeout", async () => {
       const config = createTestConfig();
       const mockDiscovery = getMockDiscovery();
       if (mockDiscovery) {
@@ -1518,8 +1541,8 @@ describe('Shutdown', () => {
 // Test Suite: Integration
 // ============================================================================
 
-describe('Integration', () => {
-  test('should complete full initialization sequence', async () => {
+describe("Integration", () => {
+  test("should complete full initialization sequence", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockHealth = getMockHealth();
@@ -1536,7 +1559,7 @@ describe('Integration', () => {
     expect(mockCache?.initialize).toHaveBeenCalled();
   });
 
-  test('should route requests through cluster', async () => {
+  test("should route requests through cluster", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockRouter = getMockRouter();
@@ -1545,20 +1568,20 @@ describe('Integration', () => {
     }
     if (mockRouter) {
       mockRouter.selectNodeWithSticky.mockReturnValue({
-        nodeId: 'node-2' as NodeId,
-        reason: 'cache-affinity',
+        nodeId: "node-2" as NodeId,
+        reason: "cache-affinity",
         confidence: 0.9,
       });
     }
 
     const manager = await initializeCluster(config);
-    const node = manager.selectNode('hash-123', 'tools-456');
+    const node = manager.selectNode("hash-123", "tools-456");
 
     expect(node).not.toBeNull();
-    expect(node?.id).toBe('node-2');
+    expect(node?.id).toBe("node-2");
   });
 
-  test('should maintain session affinity across requests', async () => {
+  test("should maintain session affinity across requests", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockRouter = getMockRouter();
@@ -1568,26 +1591,26 @@ describe('Integration', () => {
     if (mockRouter) {
       mockRouter.selectNodeWithSticky
         .mockReturnValueOnce({
-          nodeId: 'node-1' as NodeId,
-          reason: 'new-session',
+          nodeId: "node-1" as NodeId,
+          reason: "new-session",
           confidence: 0.8,
         })
         .mockReturnValueOnce({
-          nodeId: 'node-1' as NodeId,
-          reason: 'sticky-session',
+          nodeId: "node-1" as NodeId,
+          reason: "sticky-session",
           confidence: 1.0,
         });
     }
 
     const manager = await initializeCluster(config);
-    const node1 = manager.selectNode('hash-123', 'tools-456', 'session-abc');
-    const node2 = manager.selectNode('hash-123', 'tools-456', 'session-abc');
+    const node1 = manager.selectNode("hash-123", "tools-456", "session-abc");
+    const node2 = manager.selectNode("hash-123", "tools-456", "session-abc");
 
-    expect(node1?.id).toBe('node-1');
-    expect(node2?.id).toBe('node-1');
+    expect(node1?.id).toBe("node-1");
+    expect(node2?.id).toBe("node-1");
   });
 
-  test('should update routing based on health tracking', async () => {
+  test("should update routing based on health tracking", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockHealth = getMockHealth();
@@ -1599,27 +1622,27 @@ describe('Integration', () => {
     const manager = await initializeCluster(config);
 
     // Record failure for node-1
-    manager.recordNodeFailure('node-1' as NodeId, new Error('Failed'));
+    manager.recordNodeFailure("node-1" as NodeId, new Error("Failed"));
 
     // Mock node-1 as unhealthy
     if (mockHealth) {
-      mockHealth.isHealthy.mockImplementation((nodeId) => nodeId !== 'node-1');
+      mockHealth.isHealthy.mockImplementation((nodeId) => nodeId !== "node-1");
     }
 
     // Mock router to select node-2 (healthy)
     if (mockRouter) {
       mockRouter.selectNodeWithSticky.mockReturnValue({
-        nodeId: 'node-2' as NodeId,
-        reason: 'health-based',
+        nodeId: "node-2" as NodeId,
+        reason: "health-based",
         confidence: 0.9,
       });
     }
 
-    const node = manager.selectNode('hash-123', 'tools-456');
-    expect(node?.id).toBe('node-2');
+    const node = manager.selectNode("hash-123", "tools-456");
+    expect(node?.id).toBe("node-2");
   });
 
-  test('should run cache initialization during cluster init', async () => {
+  test("should run cache initialization during cluster init", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockCache = getMockCache();
@@ -1632,7 +1655,7 @@ describe('Integration', () => {
     expect(mockCache?.initialize).toHaveBeenCalled();
   });
 
-  test('should reflect accurate status after routing operations', async () => {
+  test("should reflect accurate status after routing operations", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockRouter = getMockRouter();
@@ -1641,21 +1664,21 @@ describe('Integration', () => {
     }
     if (mockRouter) {
       mockRouter.selectNodeWithSticky.mockReturnValue({
-        nodeId: 'node-1' as NodeId,
-        reason: 'test',
+        nodeId: "node-1" as NodeId,
+        reason: "test",
         confidence: 0.9,
       });
     }
 
     const manager = await initializeCluster(config);
-    manager.selectNode('hash-123', 'tools-456');
+    manager.selectNode("hash-123", "tools-456");
 
     const status = manager.getStatus();
     expect(status.totalNodes).toBe(3);
     expect(status.initialized).toBe(true);
   });
 
-  test('should degrade gracefully when components fail', async () => {
+  test("should degrade gracefully when components fail", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockCache = getMockCache();
@@ -1664,7 +1687,7 @@ describe('Integration', () => {
     }
     if (mockCache) {
       // Cache initialization fails
-      mockCache.initialize.mockRejectedValue(new Error('Cache init failed'));
+      mockCache.initialize.mockRejectedValue(new Error("Cache init failed"));
     }
 
     // Should still initialize without cache
@@ -1672,7 +1695,7 @@ describe('Integration', () => {
     expect(manager.isInitialized()).toBe(true);
   });
 
-  test('should handle multiple shutdown/init cycles', async () => {
+  test("should handle multiple shutdown/init cycles", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     if (mockDiscovery) {
@@ -1687,7 +1710,7 @@ describe('Integration', () => {
     expect(manager2.isInitialized()).toBe(true);
   });
 
-  test('should coordinate all components during request flow', async () => {
+  test("should coordinate all components during request flow", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockRouter = getMockRouter();
@@ -1697,8 +1720,8 @@ describe('Integration', () => {
     }
     if (mockRouter) {
       mockRouter.selectNodeWithSticky.mockReturnValue({
-        nodeId: 'node-1' as NodeId,
-        reason: 'cache-affinity',
+        nodeId: "node-1" as NodeId,
+        reason: "cache-affinity",
         confidence: 0.9,
       });
     }
@@ -1706,12 +1729,12 @@ describe('Integration', () => {
     const manager = await initializeCluster(config);
 
     // Select node (uses router)
-    const node = manager.selectNode('hash-123', 'tools-456');
+    const node = manager.selectNode("hash-123", "tools-456");
     expect(node).not.toBeNull();
 
     // Record success (updates health)
     manager.recordNodeSuccess(node!.id, 120);
-    expect(mockHealth?.recordSuccess).toHaveBeenCalledWith('node-1', 120);
+    expect(mockHealth?.recordSuccess).toHaveBeenCalledWith("node-1", 120);
 
     // Get status (aggregates all components)
     const status = manager.getStatus();
@@ -1719,7 +1742,7 @@ describe('Integration', () => {
     expect(status.totalNodes).toBe(2);
   });
 
-  test('should provide working provider for selected node', async () => {
+  test("should provide working provider for selected node", async () => {
     const config = createTestConfig();
     const mockDiscovery = getMockDiscovery();
     const mockRouter = getMockRouter();
@@ -1728,14 +1751,14 @@ describe('Integration', () => {
     }
     if (mockRouter) {
       mockRouter.selectNodeWithSticky.mockReturnValue({
-        nodeId: 'node-1' as NodeId,
-        reason: 'test',
+        nodeId: "node-1" as NodeId,
+        reason: "test",
         confidence: 0.9,
       });
     }
 
     const manager = await initializeCluster(config);
-    const node = manager.selectNode('hash-123', 'tools-456');
+    const node = manager.selectNode("hash-123", "tools-456");
     const provider = manager.getNodeProvider(node!.id);
 
     expect(provider).not.toBeNull();

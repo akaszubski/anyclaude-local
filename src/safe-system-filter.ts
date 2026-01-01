@@ -31,13 +31,13 @@ import {
   validateCriticalPresence,
   ValidationResult as BaseValidationResult,
   detectCriticalSections,
-} from './critical-sections';
+} from "./critical-sections";
 import {
   parseIntoSections,
   reconstructPrompt,
   PromptSection,
-} from './prompt-section-parser';
-import { deduplicatePrompt } from './prompt-templates';
+} from "./prompt-section-parser";
+import { deduplicatePrompt } from "./prompt-templates";
 
 /**
  * Optimization tiers from least to most aggressive
@@ -52,13 +52,13 @@ import { deduplicatePrompt } from './prompt-templates';
  */
 export enum OptimizationTier {
   /** 12-15k tokens - Deduplication only, preserves all content */
-  MINIMAL = 'MINIMAL',
+  MINIMAL = "MINIMAL",
   /** 8-10k tokens - Deduplication + condense examples, removes tier 3 sections */
-  MODERATE = 'MODERATE',
+  MODERATE = "MODERATE",
   /** 4-6k tokens - Hierarchical filtering + summaries, removes tiers 2-3 */
-  AGGRESSIVE = 'AGGRESSIVE',
+  AGGRESSIVE = "AGGRESSIVE",
   /** 2-3k tokens - Core sections only, removes tiers 1-3, keeps critical patterns */
-  EXTREME = 'EXTREME'
+  EXTREME = "EXTREME",
 }
 
 /**
@@ -172,11 +172,14 @@ export function estimateTokens(text: string): number {
 /**
  * Convert BaseValidationResult to extended ValidationResult
  */
-function convertValidationResult(base: BaseValidationResult, prompt: string): ValidationResult {
+function convertValidationResult(
+  base: BaseValidationResult,
+  prompt: string
+): ValidationResult {
   // Get all matches to build present patterns list
   const matches = detectCriticalSections(prompt);
-  const presentPatterns = matches.map(m => m.section.name);
-  const missingPatterns = base.missingRequired.map(s => s.name);
+  const presentPatterns = matches.map((m) => m.section.name);
+  const missingPatterns = base.missingRequired.map((s) => s.name);
 
   return {
     isValid: base.isValid,
@@ -254,13 +257,13 @@ function filterSections(
 
     // Don't track removal of very short preambles (< 30 chars)
     // This handles identity-only preambles like "You are Claude Code."
-    if (section.id === 'preamble' && section.content.trim().length < 30) {
+    if (section.id === "preamble" && section.content.trim().length < 30) {
       // Just skip it - don't add to preserved or removed
       continue;
     }
 
     // Handle examples based on preserveExamples option (check BEFORE tier filtering)
-    if (section.id.includes('example')) {
+    if (section.id.includes("example")) {
       if (options.preserveExamples === true) {
         // Explicitly preserve examples
         preserved.push(section);
@@ -277,8 +280,11 @@ function filterSections(
     if (tierInclusion.includes(section.tier)) {
       // For example sections with no explicit preserveExamples option,
       // preserve in MINIMAL/MODERATE, remove in AGGRESSIVE/EXTREME
-      if (section.id.includes('example')) {
-        if (tier === OptimizationTier.MINIMAL || tier === OptimizationTier.MODERATE) {
+      if (section.id.includes("example")) {
+        if (
+          tier === OptimizationTier.MINIMAL ||
+          tier === OptimizationTier.MODERATE
+        ) {
           preserved.push(section);
         } else {
           removed.push(section);
@@ -288,7 +294,11 @@ function filterSections(
       }
     } else {
       // Tier not included - check if it's an example section that should be preserved anyway
-      if (section.id.includes('example') && (tier === OptimizationTier.MINIMAL || tier === OptimizationTier.MODERATE)) {
+      if (
+        section.id.includes("example") &&
+        (tier === OptimizationTier.MINIMAL ||
+          tier === OptimizationTier.MODERATE)
+      ) {
         preserved.push(section);
       } else {
         removed.push(section);
@@ -321,7 +331,7 @@ function applyDeduplication(prompt: string): string {
  */
 function condenseExamples(prompt: string): string {
   // Simple example condensing: keep only first 2 examples
-  const lines = prompt.split('\n');
+  const lines = prompt.split("\n");
   const condensed: string[] = [];
   let exampleCount = 0;
   let skipMode = false;
@@ -352,20 +362,27 @@ function condenseExamples(prompt: string): string {
     }
   }
 
-  return condensed.join('\n');
+  return condensed.join("\n");
 }
 
 /**
  * Apply tier-specific transformations
  */
-function applyTierTransformations(prompt: string, tier: OptimizationTier): string {
+function applyTierTransformations(
+  prompt: string,
+  tier: OptimizationTier
+): string {
   let result = prompt;
 
   // All tiers get deduplication
   result = applyDeduplication(result);
 
   // MODERATE and above: condense examples
-  if (tier === OptimizationTier.MODERATE || tier === OptimizationTier.AGGRESSIVE || tier === OptimizationTier.EXTREME) {
+  if (
+    tier === OptimizationTier.MODERATE ||
+    tier === OptimizationTier.AGGRESSIVE ||
+    tier === OptimizationTier.EXTREME
+  ) {
     result = condenseExamples(result);
   }
 
@@ -375,7 +392,10 @@ function applyTierTransformations(prompt: string, tier: OptimizationTier): strin
 /**
  * Trim prompt to maxTokens if specified
  */
-function trimToMaxTokens(prompt: string, maxTokens: number | undefined): string {
+function trimToMaxTokens(
+  prompt: string,
+  maxTokens: number | undefined
+): string {
   if (!maxTokens) {
     return prompt;
   }
@@ -405,10 +425,13 @@ function trimToMaxTokens(prompt: string, maxTokens: number | undefined): string 
  * @param options - Filter options including tier
  * @returns FilterResult with filtered prompt, stats, and validation
  */
-export function filterSystemPrompt(prompt: string, options: FilterOptions): FilterResult {
+export function filterSystemPrompt(
+  prompt: string,
+  options: FilterOptions
+): FilterResult {
   // Validate required options
   if (!options || !options.tier) {
-    throw new Error('FilterOptions.tier is required');
+    throw new Error("FilterOptions.tier is required");
   }
 
   const startTime = Date.now();
@@ -416,7 +439,10 @@ export function filterSystemPrompt(prompt: string, options: FilterOptions): Filt
 
   // Handle empty prompts
   if (!prompt || prompt.trim().length === 0) {
-    const validation = convertValidationResult(validateCriticalPresence(prompt), prompt);
+    const validation = convertValidationResult(
+      validateCriticalPresence(prompt),
+      prompt
+    );
     return {
       filteredPrompt: prompt,
       preservedSections: [],
@@ -443,7 +469,11 @@ export function filterSystemPrompt(prompt: string, options: FilterOptions): Filt
     const sections = parseIntoSections(prompt);
 
     // 2. Filter sections by tier (critical sections always preserved)
-    const { preserved, removed } = filterSections(sections, currentTier, options);
+    const { preserved, removed } = filterSections(
+      sections,
+      currentTier,
+      options
+    );
 
     // 3. Rebuild prompt from preserved sections
     let filteredPrompt = reconstructPrompt(preserved);
@@ -460,17 +490,18 @@ export function filterSystemPrompt(prompt: string, options: FilterOptions): Filt
 
     // Calculate stats
     const filteredTokens = estimateTokens(filteredPrompt);
-    const reductionPercent = originalTokens > 0
-      ? ((originalTokens - filteredTokens) / originalTokens) * 100
-      : 0;
+    const reductionPercent =
+      originalTokens > 0
+        ? ((originalTokens - filteredTokens) / originalTokens) * 100
+        : 0;
 
     // Ensure processing time is at least 1ms
     const processingTime = Math.max(1, Date.now() - startTime);
 
     result = {
       filteredPrompt,
-      preservedSections: preserved.map(s => s.id),
-      removedSections: removed.map(s => s.id),
+      preservedSections: preserved.map((s) => s.id),
+      removedSections: removed.map((s) => s.id),
       stats: {
         originalTokens,
         filteredTokens,

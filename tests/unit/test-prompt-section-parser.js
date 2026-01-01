@@ -120,7 +120,10 @@ let reconstructPrompt;
 
 try {
   // Try to import from compiled TypeScript
-  const modulePath = path.resolve(__dirname, "../../dist/prompt-section-parser.js");
+  const modulePath = path.resolve(
+    __dirname,
+    "../../dist/prompt-section-parser.js"
+  );
   const module = require(modulePath);
   parseIntoSections = module.parseIntoSections;
   classifySection = module.classifySection;
@@ -263,7 +266,7 @@ Section content.`;
   // Implementation decides which behavior is correct
   expect(sections.length).toBeGreaterThanOrEqual(1);
 
-  const firstSectionWithHeader = sections.find(s => s.header.startsWith("#"));
+  const firstSectionWithHeader = sections.find((s) => s.header.startsWith("#"));
   expect(firstSectionWithHeader).toBeTruthy();
   expect(firstSectionWithHeader.header).toBe("# First Section");
 });
@@ -455,7 +458,7 @@ Tier 2 content.`;
   const filtered = getSectionsByTier(sections, 0);
 
   expect(filtered.length).toBeGreaterThan(0);
-  filtered.forEach(section => {
+  filtered.forEach((section) => {
     expect(section.tier).toBe(0);
   });
 });
@@ -480,13 +483,13 @@ Tier 3 content.`;
   const sections = parseIntoSections(prompt);
   const filtered = getSectionsByTier(sections, 1);
 
-  filtered.forEach(section => {
+  filtered.forEach((section) => {
     expect(section.tier).toBeLessThan(2);
   });
 
-  const hasTier0 = filtered.some(s => s.tier === 0);
-  const hasTier1 = filtered.some(s => s.tier === 1);
-  const hasTier2 = filtered.some(s => s.tier === 2);
+  const hasTier0 = filtered.some((s) => s.tier === 0);
+  const hasTier1 = filtered.some((s) => s.tier === 1);
+  const hasTier2 = filtered.some((s) => s.tier === 2);
 
   expect(hasTier0).toBe(true);
   expect(hasTier1).toBe(true);
@@ -928,21 +931,21 @@ Here are verbose examples of various operations...`;
   expect(sections.length).toBeGreaterThanOrEqual(5);
 
   // Should classify tiers correctly
-  const toolUsageSection = sections.find(s => s.id === "tool-usage-policy");
+  const toolUsageSection = sections.find((s) => s.id === "tool-usage-policy");
   expect(toolUsageSection).toBeTruthy();
   expect(toolUsageSection.tier).toBe(0);
   expect(toolUsageSection.containsCritical).toBe(true);
 
-  const doingTasksSection = sections.find(s => s.id === "doing-tasks");
+  const doingTasksSection = sections.find((s) => s.id === "doing-tasks");
   expect(doingTasksSection).toBeTruthy();
   expect(doingTasksSection.tier).toBe(1);
 
-  const planningSection = sections.find(s => s.id.includes("planning"));
+  const planningSection = sections.find((s) => s.id.includes("planning"));
   if (planningSection) {
     expect(planningSection.tier).toBe(2);
   }
 
-  const examplesSection = sections.find(s => s.id.includes("example"));
+  const examplesSection = sections.find((s) => s.id.includes("example"));
   if (examplesSection) {
     expect(examplesSection.tier).toBe(3);
   }
@@ -1045,6 +1048,8 @@ if (failed > 0) {
 } else {
   console.log("🎉 All tests passed! (But they should FAIL in TDD RED phase)\n");
   console.log("Note: This is the RED phase of TDD - tests should fail until");
-  console.log("      the implementation is created in src/prompt-section-parser.ts");
+  console.log(
+    "      the implementation is created in src/prompt-section-parser.ts"
+  );
   process.exit(0);
 }

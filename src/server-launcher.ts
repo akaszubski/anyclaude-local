@@ -79,23 +79,82 @@ export function cleanupServerProcess(): void {
 
 /**
  * Check if a server is already running on a given port
+ * Returns the PID if found, or null if not running
  */
-export function isServerRunning(port: number): boolean {
+export function getProcessOnPort(port: number): number | null {
   try {
-    const result = spawnSync("lsof", ["-i", `-P`, `-n`, `-sTCP:LISTEN`], {
+    const result = spawnSync("lsof", ["-i", `:${port}`, "-sTCP:LISTEN", "-t"], {
       encoding: "utf8",
     });
 
-    if (result.stdout) {
-      const lines = result.stdout.split("\n");
-      return lines.some((line) => {
-        const match = line.match(`:${port}\s/`);
-        return match !== null;
-      });
+    if (result.stdout && result.stdout.trim()) {
+      const pid = parseInt(result.stdout.trim().split("\n")[0], 10);
+      if (!isNaN(pid)) {
+        return pid;
+      }
     }
+    return null;
+  } catch (error) {
+    debug(1, "[server-launcher] Could not check port:", error);
+    return null;
+  }
+}
+
+/**
+ * Check if a server is already running on a given port
+ */
+export function isServerRunning(port: number): boolean {
+  return getProcessOnPort(port) !== null;
+}
+
+/**
+ * Kill process on a given port (cleanup stale servers)
+ */
+export function killProcessOnPort(port: number): boolean {
+  const pid = getProcessOnPort(port);
+  if (pid === null) {
+    return false;
+  }
+
+  try {
+    console.log(
+      `[anyclaude] Found stale process (PID ${pid}) on port ${port}, cleaning up...`
+    );
+
+    // Try graceful termination first
+    process.kill(pid, "SIGTERM");
+
+    // Wait a bit and check if it's still running
+    const maxWait = 3000; // 3 seconds
+    const startTime = Date.now();
+    while (Date.now() - startTime < maxWait) {
+      if (getProcessOnPort(port) === null) {
+        console.log(`[anyclaude] ✓ Cleaned up stale process on port ${port}`);
+        return true;
+      }
+      // Sleep 100ms
+      spawnSync("sleep", ["0.1"]);
+    }
+
+    // Force kill if still running
+    console.log(`[anyclaude] Process didn't exit gracefully, force killing...`);
+    process.kill(pid, "SIGKILL");
+
+    // Wait a bit more
+    const forceKillWait = 1000;
+    const forceStartTime = Date.now();
+    while (Date.now() - forceStartTime < forceKillWait) {
+      if (getProcessOnPort(port) === null) {
+        console.log(`[anyclaude] ✓ Force killed process on port ${port}`);
+        return true;
+      }
+      spawnSync("sleep", ["0.1"]);
+    }
+
+    console.error(`[anyclaude] ✗ Could not kill process on port ${port}`);
     return false;
   } catch (error) {
-    debug(1, "[server-launcher] Could not check if server is running:", error);
+    debug(1, `[server-launcher] Error killing process on port ${port}:`, error);
     return false;
   }
 }
@@ -193,7 +252,8 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   }
 
   // Build command for mistral.rs
-  const command = `"${mistralrsBin}" --port ${port} --token-source none --isq Q4K plain -m "${modelPath}" -a ${architecture} 2>&1`;
+  // Use 'plain' subcommand for pre-quantized models (no additional ISQ needed)
+  const command = `"${mistralrsBin}" --port ${port} --token-source none plain --model-id "${modelPath}" --arch ${architecture} 2>&1`;
 
   const serverProcess = spawn("bash", ["-c", command], {
     stdio: ["ignore", "pipe", "pipe"],
@@ -323,8 +383,35 @@ export function launchBackendServer(
 
   // Check if server is already running
   if (isServerRunning(port)) {
-    console.log(`[anyclaude] ${mode} server already running on port ${port}`);
-    return;
+    const pid = getProcessOnPort(port);
+    console.log(
+      `[anyclaude] Found existing process (PID ${pid}) on port ${port}`
+    );
+
+    // For MLX backend, kill stale processes automatically
+    // For LMStudio, user might want to keep it running
+    if (mode === "mlx") {
+      console.log(`[anyclaude] Cleaning up stale MLX server...`);
+      const killed = killProcessOnPort(port);
+      if (!killed) {
+        console.error(
+          `[anyclaude] ✗ Could not cleanup process on port ${port}`
+        );
+        console.error(`[anyclaude] Please kill it manually: kill -9 ${pid}`);
+        process.exit(1);
+      }
+      // Continue to launch new server
+    } else if (mode === "lmstudio") {
+      console.log(
+        `[anyclaude] LMStudio server already running, will use existing instance`
+      );
+      return;
+    } else {
+      console.log(
+        `[anyclaude] ${mode} server already running, will use existing instance`
+      );
+      return;
+    }
   }
 
   // Launch appropriate server

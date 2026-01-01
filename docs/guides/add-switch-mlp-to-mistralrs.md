@@ -9,11 +9,13 @@
 ## TL;DR
 
 **Problem**: mistral.rs fails to load Qwen3 MoE MLX models because it expects:
+
 ```
 model.layers.0.mlp.gate_proj.weight
 ```
 
 But MLX models have:
+
 ```
 model.layers.0.mlp.switch_mlp.gate_proj.weight
 ```
@@ -29,6 +31,7 @@ model.layers.0.mlp.switch_mlp.gate_proj.weight
 File: `/tmp/mistral.rs/mistralrs-core/src/models/qwen3_moe.rs`
 
 The codebase already implements:
+
 - `FastMoeMlp` - Optimized for Metal with fused experts
 - `SlowMoeMlp` - CPU/CUDA version with individual experts
 - Expert routing and top-k selection
@@ -39,12 +42,14 @@ The codebase already implements:
 File: `/tmp/mlx-lm/mlx_lm/models/qwen3_moe.py`
 
 MLX implements `Qwen3MoeSparseMoeBlock` using:
+
 ```python
 self.gate = nn.Linear(dim, num_experts, bias=False)  # Router
 self.switch_mlp = SwitchGLU(dim, intermediate_size, num_experts)
 ```
 
 `SwitchGLU` wraps:
+
 ```python
 self.gate_proj = SwitchLinear(...)  # All experts' gate_proj stacked
 self.up_proj = SwitchLinear(...)    # All experts' up_proj stacked
@@ -82,6 +87,7 @@ impl FastMoeMlp {
 ```
 
 **This looks for**:
+
 - `model.layers.0.mlp.gate.weight` ✅ (found - router)
 - `model.layers.0.mlp.gate_proj.weight` ❌ (not found!)
 - `model.layers.0.mlp.up_proj.weight` ❌ (not found!)
@@ -155,11 +161,13 @@ let use_switch_mlp = {
 ```
 
 **Pros**:
+
 - ✅ Minimal code changes (~50 lines)
 - ✅ No architectural changes
 - ✅ Backward compatible
 
 **Cons**:
+
 - ⚠️ Hacky detection logic
 - ⚠️ Might break with different quantization formats
 
@@ -222,12 +230,14 @@ impl SwitchMoeMlp {
 ```
 
 **Pros**:
+
 - ✅ Clean architecture
 - ✅ Mirrors MLX implementation
 - ✅ Easier to maintain
 - ✅ Can support both formats explicitly
 
 **Cons**:
+
 - ⚠️ More code to write (~200-300 lines)
 - ⚠️ Need to update model selection logic
 
@@ -238,11 +248,13 @@ impl SwitchMoeMlp {
 ### Phase 1: Understanding the Codebase (1-2 days)
 
 **Files to study**:
+
 1. `/tmp/mistral.rs/mistralrs-core/src/models/qwen3_moe.rs` (current implementation)
 2. `/tmp/mistral.rs/mistralrs-quant/src/lib.rs` (quantization methods)
 3. `/tmp/mlx-lm/mlx_lm/models/qwen3_moe.py` (reference implementation)
 
 **Key concepts to understand**:
+
 - How `FusedExperts` works
 - How `ShardedVarBuilder` loads tensors
 - How `gather_forward_autocast` routes to experts
@@ -474,6 +486,7 @@ fn test_qwen3_moe_inference() {
 1. Clean up code
 2. Add documentation
 3. Write commit message:
+
    ```
    feat: add MLX switch_mlp support for Qwen3 MoE models
 
@@ -484,6 +497,7 @@ fn test_qwen3_moe_inference() {
 
    Fixes loading of Qwen3-30B-A3B MLX-quantized models
    ```
+
 4. Submit PR to `EricLBuehler/mistral.rs`
 
 ---
@@ -528,6 +542,7 @@ If you don't want to write clean code and just want it working NOW:
 **Edit**: `mistralrs-core/src/models/qwen3_moe.rs:392-402`
 
 Change:
+
 ```rust
 let FusedExperts {
     fused_gate_proj,
@@ -543,6 +558,7 @@ let FusedExperts {
 ```
 
 To:
+
 ```rust
 let FusedExperts {
     fused_gate_proj,
@@ -573,6 +589,7 @@ Rebuild and test. This is a **5-minute hack** but won't work for non-MLX models!
 ### Learning Rust for This
 
 If you're new to Rust:
+
 - [The Rust Book](https://doc.rust-lang.org/book/) - Chapters 1-10
 - [Rust by Example](https://doc.rust-lang.org/rust-by-example/) - Pattern matching, traits
 - Focus on: structs, traits, Result/Option, pattern matching
@@ -592,11 +609,13 @@ If you're new to Rust:
 **Is it hard?** Medium - requires Rust knowledge but the architecture is there.
 
 **Time estimate**:
+
 - **Quick hack**: 5 minutes (just add `pp("switch_mlp")`)
 - **Proper implementation**: 1-2 weeks part-time
 - **With tests + PR**: 2-4 weeks
 
 **Recommendation**:
+
 1. Try the quick hack first to verify it works
 2. If successful, implement the proper solution
 3. Submit a PR to help the community!

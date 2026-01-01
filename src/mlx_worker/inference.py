@@ -5,6 +5,8 @@ Handles model loading, token generation, and token counting using mlx_lm.
 """
 
 import mlx_lm
+from mlx_lm import stream_generate
+from mlx_lm.sample_utils import make_sampler
 from typing import Generator, List, Dict, Any, Tuple, Optional
 from pathlib import Path
 
@@ -70,6 +72,7 @@ def generate_stream(
     temperature: float = 0.7,
     top_p: float = 0.9,
     cache_prompt: bool = True,
+    tools: Optional[List[Dict[str, Any]]] = None,
     **kwargs
 ) -> Generator[str, None, None]:
     """
@@ -82,6 +85,7 @@ def generate_stream(
         temperature: Sampling temperature (0.0-1.0)
         top_p: Nucleus sampling parameter
         cache_prompt: Enable KV cache for prompt
+        tools: Optional list of tool definitions for function calling
         **kwargs: Additional generation parameters
 
     Yields:
@@ -98,22 +102,23 @@ def generate_stream(
         # Load model
         model, tokenizer = load_model(model_path)
 
-        # Format messages into prompt
-        prompt = _format_messages(messages, tokenizer)
+        # Format messages into prompt using chat template
+        prompt = _format_messages(messages, tokenizer, tools=tools)
 
-        # Generate tokens using mlx_lm
-        generation_kwargs = {
-            'max_tokens': max_tokens,
-            'temperature': temperature,
-            'top_p': top_p,
-            'cache_prompt': cache_prompt,
-            **kwargs
-        }
+        # Create sampler with temperature and top_p
+        sampler = make_sampler(temp=temperature, top_p=top_p)
 
-        # mlx_lm.generate returns a generator
+        # mlx_lm.stream_generate yields GenerationResponse objects
         try:
-            for token in model.generate(prompt, **generation_kwargs):
-                yield token
+            for response in stream_generate(
+                model,
+                tokenizer,
+                prompt,
+                max_tokens=max_tokens,
+                sampler=sampler,
+            ):
+                # GenerationResponse has .text attribute with generated text
+                yield response.text
         except Exception as e:
             raise InferenceError(f"Generation failed: {str(e)}")
 
@@ -153,33 +158,49 @@ def count_tokens(text: str, model_path: str = "current-model") -> int:
         raise InferenceError(f"Token counting failed: {str(e)}")
 
 
-def _format_messages(messages: List[Dict[str, str]], tokenizer: Any) -> str:
+def _format_messages(
+    messages: List[Dict[str, str]],
+    tokenizer: Any,
+    tools: Optional[List[Dict[str, Any]]] = None
+) -> str:
     """
-    Format messages into a prompt string.
+    Format messages into a prompt string using the model's chat template.
 
     Args:
         messages: List of message dicts
         tokenizer: Model tokenizer
+        tools: Optional list of tool definitions
 
     Returns:
         Formatted prompt string
     """
-    # Simple formatting - can be enhanced with chat template
-    formatted_parts = []
+    try:
+        # Use the tokenizer's chat template for proper formatting
+        # This enables native tool calling support for models like Qwen2.5
+        kwargs = {
+            "add_generation_prompt": True,
+            "tokenize": False,
+        }
+        if tools:
+            kwargs["tools"] = tools
 
-    for msg in messages:
-        role = msg.get('role', '')
-        content = msg.get('content', '')
+        return tokenizer.apply_chat_template(messages, **kwargs)
+    except Exception:
+        # Fallback to simple formatting if chat template fails
+        formatted_parts = []
 
-        if role == 'system':
-            formatted_parts.append(f"System: {content}")
-        elif role == 'user':
-            formatted_parts.append(f"User: {content}")
-        elif role == 'assistant':
-            formatted_parts.append(f"Assistant: {content}")
+        for msg in messages:
+            role = msg.get('role', '')
+            content = msg.get('content', '')
 
-    # End with Assistant: to prompt for response
-    if messages[-1]['role'] != 'assistant':
-        formatted_parts.append("Assistant:")
+            if role == 'system':
+                formatted_parts.append(f"System: {content}")
+            elif role == 'user':
+                formatted_parts.append(f"User: {content}")
+            elif role == 'assistant':
+                formatted_parts.append(f"Assistant: {content}")
 
-    return "\n\n".join(formatted_parts)
+        if messages[-1]['role'] != 'assistant':
+            formatted_parts.append("Assistant:")
+
+        return "\n\n".join(formatted_parts)

@@ -101,20 +101,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Path resolution (absolute and relative paths supported)
 
   - **Usage Example**:
-    ```typescript
-    import { parseClusterConfig, ClusterConfigError } from './cluster-config';
 
-    const result = parseClusterConfig('/etc/cluster.json');
+    ```typescript
+    import { parseClusterConfig, ClusterConfigError } from "./cluster-config";
+
+    const result = parseClusterConfig("/etc/cluster.json");
     if (result.success) {
-      console.log('Cluster configured:', result.config);
+      console.log("Cluster configured:", result.config);
     } else {
-      console.error('Config error:', result.error);
-      console.error('Code:', result.error.code);
+      console.error("Config error:", result.error);
+      console.error("Code:", result.error.code);
     }
 
     // Environment variable override
-    process.env.MLX_CLUSTER_STRATEGY = 'cache-aware';
-    const result2 = parseClusterConfig('/etc/cluster.json');
+    process.env.MLX_CLUSTER_STRATEGY = "cache-aware";
+    const result2 = parseClusterConfig("/etc/cluster.json");
     // result2.config.routing.strategy === 'cache-aware'
     ```
 
@@ -203,8 +204,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Debug-friendly error messages with context
 
   - **Usage Example**:
+
     ```typescript
-    import { ClusterDiscovery, DiscoveryCallbacks } from './cluster-discovery';
+    import { ClusterDiscovery, DiscoveryCallbacks } from "./cluster-discovery";
 
     const callbacks: DiscoveryCallbacks = {
       onNodeDiscovered: (nodeId, url) => {
@@ -220,10 +222,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
     const discovery = new ClusterDiscovery(
       {
-        mode: 'static',
+        mode: "static",
         staticNodes: [
-          { id: 'node-1', url: 'http://localhost:8080' },
-          { id: 'node-2', url: 'http://localhost:8081' },
+          { id: "node-1", url: "http://localhost:8080" },
+          { id: "node-2", url: "http://localhost:8081" },
         ],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 5000,
@@ -371,6 +373,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Callback notifications: Integrates with monitoring and alerting systems
 
   - **Circuit Breaker State Machine**
+
     ```
     INITIALIZING
         │
@@ -403,9 +406,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - multiplier: Exponential growth factor (default: 2.0)
 
   - **Usage Example**:
+
     ```typescript
-    import { ClusterHealth } from './cluster-health';
-    import { NodeStatus } from './cluster-types';
+    import { ClusterHealth } from "./cluster-health";
+    import { NodeStatus } from "./cluster-types";
 
     const health = new ClusterHealth(
       { checkIntervalMs: 5000, timeoutMs: 2000 },
@@ -413,30 +417,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       {
         onStatusChange: (nodeId, oldStatus, newStatus, metrics) => {
           console.log(`${nodeId}: ${oldStatus} → ${newStatus}`);
-          console.log(`Success rate: ${(metrics.successRate * 100).toFixed(1)}%`);
+          console.log(
+            `Success rate: ${(metrics.successRate * 100).toFixed(1)}%`
+          );
         },
         onHealthCheck: (nodeId, result) => {
           if (!result.success) {
-            console.error(`Health check failed for ${nodeId}:`, result.error?.message);
+            console.error(
+              `Health check failed for ${nodeId}:`,
+              result.error?.message
+            );
           }
         },
       }
     );
 
     const nodes = [
-      { id: 'node-1', url: 'http://localhost:8080/v1' },
-      { id: 'node-2', url: 'http://localhost:8081/v1' },
+      { id: "node-1", url: "http://localhost:8080/v1" },
+      { id: "node-2", url: "http://localhost:8081/v1" },
     ];
 
     health.startHealthChecks(nodes);
 
     // Later: record actual request results
-    health.recordSuccess('node-1', 125); // 125ms latency
-    health.recordFailure('node-2');
+    health.recordSuccess("node-1", 125); // 125ms latency
+    health.recordFailure("node-2");
 
     // Check health
-    if (health.isHealthy('node-1')) {
-      console.log('node-1 is healthy');
+    if (health.isHealthy("node-1")) {
+      console.log("node-1 is healthy");
     }
 
     const allHealth = health.getAllNodeHealth();
@@ -505,7 +514,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **CACHE_AWARE** (Primary): Score nodes based on cache affinity and health
       - Cache match: +50 points (systemPromptHash match)
       - Tools match: +20 points (only if cache matches)
-      - Health score: +25 * successRate (0-25)
+      - Health score: +25 \* successRate (0-25)
       - Availability: +15 points if requestsInFlight < 5
       - Recency: +10 points if cache updated within 60s
       - Maximum score: 120 points
@@ -529,23 +538,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       - onRoutingFailed(context, reason): Called when routing fails
 
   - **Sticky Session Example**:
+
     ```typescript
     const router = new ClusterRouter(config);
 
     // First request: creates session
-    const decision1 = router.selectNodeWithSticky(nodes, context, 'user-123');
+    const decision1 = router.selectNodeWithSticky(nodes, context, "user-123");
     // Returns routing decision, session pinned to selected node
 
     // Second request: uses same node while session valid
-    const decision2 = router.selectNodeWithSticky(nodes, context, 'user-123');
+    const decision2 = router.selectNodeWithSticky(nodes, context, "user-123");
     // Returns same node as decision1 (cache affinity!)
 
     // After 5 minutes: session expires
-    const decision3 = router.selectNodeWithSticky(nodes, context, 'user-123');
+    const decision3 = router.selectNodeWithSticky(nodes, context, "user-123");
     // Routes normally again (session expired, new session created)
     ```
 
   - **Cache-Aware Routing Example**:
+
     ```typescript
     const config: RoutingConfig = {
       strategy: LoadBalanceStrategy.CACHE_AWARE,
@@ -555,7 +566,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
     const router = new ClusterRouter(config);
     const context: RoutingContext = {
-      systemPromptHash: 'abc123...',
+      systemPromptHash: "abc123...",
       estimatedTokens: 5000,
     };
 
@@ -663,14 +674,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - minCacheHitRate: Minimum hit rate threshold (from config, for routing decisions)
 
   - **Usage Example**:
+
     ```typescript
-    import { ClusterCache, CacheWarmupOptions } from './cluster/cluster-cache';
+    import { ClusterCache, CacheWarmupOptions } from "./cluster/cluster-cache";
 
     const cacheCoordinator = new ClusterCache(
       { maxCacheAgeSec: 300 },
       {
-        onCacheWarmedUp: (result) => console.log('Node warmed:', result.nodeId),
-        onCacheSyncComplete: (stats) => console.log('Synced:', stats.syncedNodes, 'nodes'),
+        onCacheWarmedUp: (result) => console.log("Node warmed:", result.nodeId),
+        onCacheSyncComplete: (stats) =>
+          console.log("Synced:", stats.syncedNodes, "nodes"),
       }
     );
 
@@ -678,18 +691,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       concurrency: 4,
       timeoutMs: 30000,
       retryCount: 2,
-      systemPrompt: 'You are Claude...',
+      systemPrompt: "You are Claude...",
     };
 
     await cacheCoordinator.initialize(
-      [{ id: 'node-1', url: 'http://localhost:8000' }],
+      [{ id: "node-1", url: "http://localhost:8000" }],
       warmupOptions,
       30000 // syncIntervalMs
     );
 
     // Later: find nodes with matching cache
-    const nodes = cacheCoordinator.findNodesWithCache('abc123...');
-    console.log('Cache hits available on:', nodes.map(n => n.nodeId));
+    const nodes = cacheCoordinator.findNodesWithCache("abc123...");
+    console.log(
+      "Cache hits available on:",
+      nodes.map((n) => n.nodeId)
+    );
 
     // Shutdown
     cacheCoordinator.stop();
@@ -812,6 +828,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - NOT_INITIALIZED: getClusterManager() called before init
 
   - **Usage Example**:
+
     ```typescript
     import { initializeCluster, getClusterManager } from './cluster';
 
@@ -879,7 +896,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **cache.py** (166 lines): KV cache management with state tracking and warming
     - **health.py** (264 lines): Health monitoring with metrics and circuit breaker integration
     - **server.py** (366 lines): FastAPI HTTP server with OpenAI-compatible endpoints
-    - **__init__.py** (69 lines): Package exports and version info
+    - ****init**.py** (69 lines): Package exports and version info
     - **requirements.txt**: Dependencies (fastapi, uvicorn, mlx, mlx-lm, pydantic, pytest)
 
   - **Inference Engine** (src/mlx_worker/inference.py)
@@ -901,7 +918,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       - Returns integer token count
       - Raises: InferenceError
 
-    - **_format_messages(messages, tokenizer)**: Internal message formatting
+    - **\_format_messages(messages, tokenizer)**: Internal message formatting
       - Converts role-based messages to prompt text
       - Handles: system, user, assistant roles
       - Ends with "Assistant:" to prompt for response
@@ -965,7 +982,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   - **FastAPI Server** (src/mlx_worker/server.py)
     - **Endpoints**: OpenAI-compatible chat completions and cluster management
-
       1. **POST /v1/chat/completions** (ChatCompletionRequest)
          - Model: str (default: "current-model")
          - Messages: List[ChatMessage] (role, content)
@@ -1012,7 +1028,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       - ChatCompletionRequest: model, messages, max_tokens, temperature, top_p, stream
       - CacheWarmRequest: system_prompt
 
-    - **Streaming Response** (_stream_response async generator):
+    - **Streaming Response** (\_stream_response async generator):
       - Yields SSE-formatted events (data: {...}\n\n)
       - Chunk format: id, object, created, model, choices[{delta, finish_reason}]
       - Final chunk: finish_reason="stop"
@@ -1032,6 +1048,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - pytest>=7.4.0, pytest-asyncio>=0.21.0, httpx>=0.25.0: Testing
 
   - **Usage**:
+
     ```python
     import uvicorn
     from mlx_worker.server import app
@@ -1061,7 +1078,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - All public functions are thread-safe for concurrent requests
 
   - **Test Coverage**:
-    - Unit tests: tests/unit/test_mlx_worker_*.py (3 files)
+    - Unit tests: tests/unit/test*mlx_worker*\*.py (3 files)
     - Integration tests: tests/integration/test_mlx_worker_server.py
     - Test dependencies: tests/requirements-mlx-worker-tests.txt
 
@@ -1148,13 +1165,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Validates critical sections won't be removed (uses detectCriticalSections())
     - Enables tier-based prompt optimization (keep tiers 0-1, remove tiers 2-3)
   - **Usage Example**:
+
     ```typescript
-    import { parseIntoSections, getSectionsByTier, reconstructPrompt } from './prompt-section-parser';
+    import {
+      parseIntoSections,
+      getSectionsByTier,
+      reconstructPrompt,
+    } from "./prompt-section-parser";
 
     const sections = parseIntoSections(prompt);
     const important = getSectionsByTier(sections, 1); // Tiers 0-1 only
     const optimized = reconstructPrompt(important);
     ```
+
   - **Test Coverage**: 54/54 Unit Tests PASSING (100%)
     - File: `tests/unit/test-prompt-section-parser.js` (1050 lines)
     - Test suites:

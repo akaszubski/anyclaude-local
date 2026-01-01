@@ -21,16 +21,16 @@
  * @module cluster-config
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 import type {
   MLXClusterConfig,
   HealthConfig,
   CacheConfig,
   RoutingConfig,
   DiscoveryConfig,
-} from './cluster-types';
-import { LoadBalanceStrategy } from './cluster-types';
+} from "./cluster-types";
+import { LoadBalanceStrategy } from "./cluster-types";
 
 // ============================================================================
 // Error Types
@@ -67,7 +67,7 @@ export class ClusterConfigError extends Error {
     context?: Record<string, unknown>
   ) {
     super(message);
-    this.name = 'ClusterConfigError';
+    this.name = "ClusterConfigError";
     this.code = code;
     this.context = context;
 
@@ -168,7 +168,7 @@ const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
  * Static mode with undefined nodes - must be overridden by user.
  */
 const DEFAULT_DISCOVERY_CONFIG: Partial<DiscoveryConfig> = {
-  mode: 'static',
+  mode: "static",
   // nodes is intentionally undefined to allow validation to detect missing vs empty
 };
 
@@ -204,7 +204,7 @@ export function mergeWithDefaults(
     defaults: T,
     overrides: Partial<T> | null | undefined
   ): T {
-    if (!overrides || typeof overrides !== 'object') {
+    if (!overrides || typeof overrides !== "object") {
       return defaults;
     }
 
@@ -221,7 +221,10 @@ export function mergeWithDefaults(
   }
 
   return {
-    discovery: deepMerge(DEFAULT_DISCOVERY_CONFIG, partial.discovery) as DiscoveryConfig,
+    discovery: deepMerge(
+      DEFAULT_DISCOVERY_CONFIG,
+      partial.discovery
+    ) as DiscoveryConfig,
     health: deepMerge(DEFAULT_HEALTH_CONFIG, partial.health),
     cache: deepMerge(DEFAULT_CACHE_CONFIG, partial.cache),
     routing: deepMerge(DEFAULT_ROUTING_CONFIG, partial.routing),
@@ -262,22 +265,27 @@ export function validateClusterConfig(
 
   // Validate discovery configuration
   if (!config.discovery) {
-    missingRequired.push('discovery');
+    missingRequired.push("discovery");
   } else {
     const { discovery } = config;
 
     // For static mode, nodes are required
-    if (discovery.mode === 'static') {
+    if (discovery.mode === "static") {
       if (!discovery.nodes) {
         // Nodes field is completely missing
-        missingRequired.push('discovery.nodes');
+        missingRequired.push("discovery.nodes");
       } else if (discovery.nodes.length === 0) {
         // Nodes field exists but is empty
-        errors.push('Static discovery mode requires at least one node in nodes array');
+        errors.push(
+          "Static discovery mode requires at least one node in nodes array"
+        );
       } else {
         // Validate each node URL
         for (const node of discovery.nodes) {
-          if (!node.url.startsWith('http://') && !node.url.startsWith('https://')) {
+          if (
+            !node.url.startsWith("http://") &&
+            !node.url.startsWith("https://")
+          ) {
             errors.push(
               `Invalid URL for node ${node.id}: must start with http:// or https://`
             );
@@ -295,17 +303,17 @@ export function validateClusterConfig(
     const validStrategies = Object.values(LoadBalanceStrategy);
     if (!validStrategies.includes(routing.strategy as LoadBalanceStrategy)) {
       errors.push(
-        `Invalid load balance strategy: ${routing.strategy}. Must be one of: ${validStrategies.join(', ')}`
+        `Invalid load balance strategy: ${routing.strategy}. Must be one of: ${validStrategies.join(", ")}`
       );
     }
 
     // Validate retry values are non-negative
     if (routing.maxRetries < 0) {
-      errors.push('maxRetries must be non-negative');
+      errors.push("maxRetries must be non-negative");
     }
 
     if (routing.retryDelayMs < 0) {
-      errors.push('retryDelayMs must be non-negative');
+      errors.push("retryDelayMs must be non-negative");
     }
 
     // Warn if maxRetries is very high
@@ -322,20 +330,20 @@ export function validateClusterConfig(
 
     // All values must be positive
     if (health.checkIntervalMs <= 0) {
-      errors.push('checkIntervalMs must be positive');
+      errors.push("checkIntervalMs must be positive");
     }
 
     if (health.timeoutMs <= 0) {
-      errors.push('timeoutMs must be positive');
+      errors.push("timeoutMs must be positive");
     }
 
     if (health.maxConsecutiveFailures <= 0) {
-      errors.push('maxConsecutiveFailures must be positive');
+      errors.push("maxConsecutiveFailures must be positive");
     }
 
     // Threshold must be between 0 and 1
     if (health.unhealthyThreshold < 0 || health.unhealthyThreshold > 1) {
-      errors.push('unhealthy threshold must be between 0.0 and 1.0');
+      errors.push("unhealthy threshold must be between 0.0 and 1.0");
     }
 
     // Warn if check interval is very long (>= 60 seconds)
@@ -352,16 +360,16 @@ export function validateClusterConfig(
 
     // All values must be positive
     if (cache.maxCacheAgeSec <= 0) {
-      errors.push('maxCacheAgeSec must be positive');
+      errors.push("maxCacheAgeSec must be positive");
     }
 
     if (cache.maxCacheSizeTokens <= 0) {
-      errors.push('maxCacheSizeTokens must be positive');
+      errors.push("maxCacheSizeTokens must be positive");
     }
 
     // Cache hit rate threshold must be between 0 and 1
     if (cache.minCacheHitRate < 0 || cache.minCacheHitRate > 1) {
-      errors.push('minCacheHitRate must be between 0.0 and 1.0');
+      errors.push("minCacheHitRate must be between 0.0 and 1.0");
     }
   }
 
@@ -399,9 +407,7 @@ export function validateClusterConfig(
  * // config.routing.strategy === LoadBalanceStrategy.CACHE_AWARE
  * ```
  */
-export function applyEnvOverrides(
-  config: MLXClusterConfig
-): MLXClusterConfig {
+export function applyEnvOverrides(config: MLXClusterConfig): MLXClusterConfig {
   // Start with a copy of the config
   let discovery = { ...config.discovery };
   let health = { ...config.health };
@@ -414,7 +420,7 @@ export function applyEnvOverrides(
     try {
       const nodes = JSON.parse(process.env.MLX_CLUSTER_NODES);
       if (!Array.isArray(nodes)) {
-        throw new Error('MLX_CLUSTER_NODES must be a JSON array');
+        throw new Error("MLX_CLUSTER_NODES must be a JSON array");
       }
       discovery = {
         ...discovery,
@@ -434,7 +440,7 @@ export function applyEnvOverrides(
 
     if (!validStrategies.includes(strategy as LoadBalanceStrategy)) {
       throw new Error(
-        `Invalid MLX_CLUSTER_STRATEGY: ${strategy}. Must be one of: ${validStrategies.join(', ')}`
+        `Invalid MLX_CLUSTER_STRATEGY: ${strategy}. Must be one of: ${validStrategies.join(", ")}`
       );
     }
 
@@ -449,15 +455,11 @@ export function applyEnvOverrides(
     const interval = parseInt(process.env.MLX_CLUSTER_HEALTH_INTERVAL, 10);
 
     if (isNaN(interval)) {
-      throw new Error(
-        `Invalid MLX_CLUSTER_HEALTH_INTERVAL: must be a number`
-      );
+      throw new Error(`Invalid MLX_CLUSTER_HEALTH_INTERVAL: must be a number`);
     }
 
     if (interval <= 0) {
-      throw new Error(
-        `Invalid MLX_CLUSTER_HEALTH_INTERVAL: must be positive`
-      );
+      throw new Error(`Invalid MLX_CLUSTER_HEALTH_INTERVAL: must be positive`);
     }
 
     health = {
@@ -470,14 +472,12 @@ export function applyEnvOverrides(
   if (process.env.MLX_CLUSTER_ENABLED) {
     const enabledStr = process.env.MLX_CLUSTER_ENABLED.toLowerCase();
 
-    if (enabledStr === 'true') {
+    if (enabledStr === "true") {
       enabled = true;
-    } else if (enabledStr === 'false') {
+    } else if (enabledStr === "false") {
       enabled = false;
     } else {
-      throw new Error(
-        `Invalid MLX_CLUSTER_ENABLED: must be 'true' or 'false'`
-      );
+      throw new Error(`Invalid MLX_CLUSTER_ENABLED: must be 'true' or 'false'`);
     }
   }
 
@@ -537,7 +537,7 @@ export function parseClusterConfig(
         return {
           success: false,
           error: new ClusterConfigError(
-            'FILE_NOT_FOUND',
+            "FILE_NOT_FOUND",
             `Configuration file not found: ${configFilePath}`,
             { configPath: path.resolve(configFilePath) }
           ),
@@ -546,15 +546,15 @@ export function parseClusterConfig(
       }
 
       // Read and parse file
-      const fileContent = fs.readFileSync(configFilePath, 'utf-8');
+      const fileContent = fs.readFileSync(configFilePath, "utf-8");
 
       // Handle empty or whitespace-only files
       if (!fileContent.trim()) {
         return {
           success: false,
           error: new ClusterConfigError(
-            'PARSE_ERROR',
-            'Configuration file is empty',
+            "PARSE_ERROR",
+            "Configuration file is empty",
             { configPath: path.resolve(configFilePath) }
           ),
           warnings: [],
@@ -565,15 +565,15 @@ export function parseClusterConfig(
 
       // Validate it's an object
       if (
-        typeof parsedConfig !== 'object' ||
+        typeof parsedConfig !== "object" ||
         parsedConfig === null ||
         Array.isArray(parsedConfig)
       ) {
         return {
           success: false,
           error: new ClusterConfigError(
-            'PARSE_ERROR',
-            'Configuration must be a JSON object',
+            "PARSE_ERROR",
+            "Configuration must be a JSON object",
             { configPath: path.resolve(configFilePath) }
           ),
           warnings: [],
@@ -583,7 +583,7 @@ export function parseClusterConfig(
       return {
         success: false,
         error: new ClusterConfigError(
-          'PARSE_ERROR',
+          "PARSE_ERROR",
           `Failed to parse configuration file: ${err instanceof Error ? err.message : String(err)}`,
           { configPath: path.resolve(configFilePath) }
         ),
@@ -600,7 +600,7 @@ export function parseClusterConfig(
     return {
       success: false,
       error: new ClusterConfigError(
-        'INVALID_CONFIG',
+        "INVALID_CONFIG",
         `Failed to merge configuration with defaults: ${err instanceof Error ? err.message : String(err)}`
       ),
       warnings: [],
@@ -614,7 +614,7 @@ export function parseClusterConfig(
     return {
       success: false,
       error: new ClusterConfigError(
-        'INVALID_CONFIG',
+        "INVALID_CONFIG",
         `Failed to apply environment overrides: ${err instanceof Error ? err.message : String(err)}`
       ),
       warnings: [],
@@ -628,14 +628,16 @@ export function parseClusterConfig(
     // Construct error message from validation errors
     const errorMessages = [
       ...validation.errors,
-      ...validation.missingRequired.map((field) => `Missing required field: ${field}`),
+      ...validation.missingRequired.map(
+        (field) => `Missing required field: ${field}`
+      ),
     ];
 
     return {
       success: false,
       error: new ClusterConfigError(
-        'INVALID_CONFIG',
-        `Configuration validation failed: ${errorMessages.join(', ')}`,
+        "INVALID_CONFIG",
+        `Configuration validation failed: ${errorMessages.join(", ")}`,
         {
           errors: validation.errors,
           missingRequired: validation.missingRequired,

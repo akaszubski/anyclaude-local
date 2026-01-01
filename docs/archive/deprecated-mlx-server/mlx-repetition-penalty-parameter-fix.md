@@ -25,11 +25,13 @@ result = mlx_lm.generate(model, tokenizer, actual_prompt, **options)
 ```
 
 **Investigation**:
+
 ```bash
 $ python3 -c "from mlx_lm.generate import generate_step; help(generate_step)"
 ```
 
 The `generate_step()` function signature shows it accepts:
+
 - `max_tokens`
 - `sampler`
 - `logits_processors`
@@ -53,6 +55,7 @@ result = mlx_lm.generate(model, tokenizer, actual_prompt, **supported_options)
 ```
 
 **Changes**:
+
 1. ✅ Added parameter filtering in `_generate_safe()` (line 905-912)
 2. ✅ Updated comments to clarify these parameters aren't currently supported (line 1364-1366)
 
@@ -76,6 +79,7 @@ pkill -f mlx-server.py
 ```
 
 Expected output:
+
 - ✅ MLX server starts without errors
 - ✅ Model loads successfully
 - ✅ First request processes (may take 30-50s for cold start)

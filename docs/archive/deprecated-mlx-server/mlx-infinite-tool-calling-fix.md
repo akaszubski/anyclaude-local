@@ -46,6 +46,7 @@ elif options.get('max_tokens', 0) > 4096:
 ```
 
 **What it does**:
+
 - Sets default `max_tokens=2048` (enough for most tool calls)
 - Caps excessive limits at 4096 to prevent runaway generation
 - Provides hard upper bound on generation length
@@ -67,6 +68,7 @@ def _has_repetitive_tool_calls(self, text: str) -> bool:
 ```
 
 **What it does**:
+
 - Scans generated text for repeated tool call patterns
 - Triggers when same tool appears 3+ times consecutively
 - Supports multiple tool calling formats (LMStudio, Harmony, generic)
@@ -87,6 +89,7 @@ def _truncate_repetitive_tool_calls(self, text: str) -> str:
 ```
 
 **What it does**:
+
 - Finds the position where repetition begins
 - Keeps first 2 occurrences (legitimate use case)
 - Truncates everything after 2nd occurrence
@@ -111,6 +114,7 @@ Extract Tool Calls (Tier 2: Check for repetition)
 ## Testing
 
 **Before fix**:
+
 ```bash
 ./dist/main-cli.js --mode=mlx
 > read README.md and summarise
@@ -119,6 +123,7 @@ Extract Tool Calls (Tier 2: Check for repetition)
 ```
 
 **After fix**:
+
 ```bash
 ./dist/main-cli.js --mode=mlx
 > read README.md and summarise
@@ -130,11 +135,11 @@ Extract Tool Calls (Tier 2: Check for repetition)
 
 Our fix follows the same pattern as vLLM's solution to Issue #21026:
 
-| vLLM Fix | Our MLX Fix |
-|----------|-------------|
-| `--guided-decoding-disable-any-whitespace` | `max_tokens` cap at 4096 |
+| vLLM Fix                                   | Our MLX Fix                              |
+| ------------------------------------------ | ---------------------------------------- |
+| `--guided-decoding-disable-any-whitespace` | `max_tokens` cap at 4096                 |
 | PR #24108: Limit whitespace in JSON schema | `_has_repetitive_tool_calls()` detection |
-| Stop at valid JSON boundary | `_truncate_repetitive_tool_calls()` |
+| Stop at valid JSON boundary                | `_truncate_repetitive_tool_calls()`      |
 
 ## Related Issues
 
@@ -145,6 +150,7 @@ Our fix follows the same pattern as vLLM's solution to Issue #21026:
 ## Code Changes Summary
 
 **Files Modified**:
+
 - `scripts/mlx-server.py`
   - Line 920-929: Added `max_tokens` bounds
   - Line 1222-1227: Added repetition check in `_extract_tool_calls()`

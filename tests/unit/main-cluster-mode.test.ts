@@ -46,12 +46,12 @@
  * Expected: ALL TESTS FAIL (TDD red phase - implementation doesn't exist yet)
  */
 
-import type { AnyclaudeMode } from '../../src/trace-logger';
+import type { AnyclaudeMode } from "../../src/trace-logger";
 import type {
   MLXClusterConfig,
   NodeStatus,
   ClusterStatus,
-} from '../../src/cluster/cluster-types';
+} from "../../src/cluster/cluster-types";
 
 // ============================================================================
 // Test Helpers and Mocks
@@ -63,28 +63,35 @@ import type {
 const mockClusterManagerInstance = {
   shutdown: jest.fn().mockResolvedValue(undefined),
   getStatus: jest.fn().mockReturnValue({
-    overallStatus: 'healthy' as ClusterStatus,
+    overallStatus: "healthy" as ClusterStatus,
     totalNodes: 3,
     healthyNodes: 3,
     unhealthyNodes: 0,
     nodes: [
-      { nodeId: 'node1', status: 'healthy' as NodeStatus },
-      { nodeId: 'node2', status: 'healthy' as NodeStatus },
-      { nodeId: 'node3', status: 'healthy' as NodeStatus },
+      { nodeId: "node1", status: "healthy" as NodeStatus },
+      { nodeId: "node2", status: "healthy" as NodeStatus },
+      { nodeId: "node3", status: "healthy" as NodeStatus },
     ],
   }),
 };
 
-const mockInitializeCluster = jest.fn().mockResolvedValue(mockClusterManagerInstance);
-const mockGetClusterManager = jest.fn().mockReturnValue(mockClusterManagerInstance);
+const mockInitializeCluster = jest
+  .fn()
+  .mockResolvedValue(mockClusterManagerInstance);
+const mockGetClusterManager = jest
+  .fn()
+  .mockReturnValue(mockClusterManagerInstance);
 
-jest.mock('../../src/cluster/cluster-manager', () => ({
+jest.mock("../../src/cluster/cluster-manager", () => ({
   initializeCluster: mockInitializeCluster,
   getClusterManager: mockGetClusterManager,
   ClusterManagerError: class ClusterManagerError extends Error {
-    constructor(message: string, public code: string) {
+    constructor(
+      message: string,
+      public code: string
+    ) {
       super(message);
-      this.name = 'ClusterManagerError';
+      this.name = "ClusterManagerError";
     }
   },
 }));
@@ -98,21 +105,23 @@ const mockLoadConfig = jest.fn(() => mockConfig);
 /**
  * Mock console methods
  */
-const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
-const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
-const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
+const mockConsoleLog = jest.spyOn(console, "log").mockImplementation();
+const mockConsoleError = jest.spyOn(console, "error").mockImplementation();
+const mockConsoleWarn = jest.spyOn(console, "warn").mockImplementation();
 
 /**
  * Mock process.exit
  */
-const mockProcessExit = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
-  throw new Error(`process.exit(${code})`);
-});
+const mockProcessExit = jest
+  .spyOn(process, "exit")
+  .mockImplementation((code?: number) => {
+    throw new Error(`process.exit(${code})`);
+  });
 
 /**
  * Mock process.on for signal handlers
  */
-const mockProcessOn = jest.spyOn(process, 'on').mockImplementation();
+const mockProcessOn = jest.spyOn(process, "on").mockImplementation();
 
 /**
  * Helper to reset all mocks
@@ -122,7 +131,9 @@ function resetAllMocks() {
   mockConfig = {};
   mockClusterManagerInstance.shutdown.mockClear();
   mockClusterManagerInstance.getStatus.mockClear();
-  mockInitializeCluster.mockClear().mockResolvedValue(mockClusterManagerInstance);
+  mockInitializeCluster
+    .mockClear()
+    .mockResolvedValue(mockClusterManagerInstance);
   mockGetClusterManager.mockClear().mockReturnValue(mockClusterManagerInstance);
 }
 
@@ -130,22 +141,27 @@ function resetAllMocks() {
 // PART 1: AnyclaudeMode Type Tests
 // ============================================================================
 
-describe('AnyclaudeMode Type', () => {
-  test('should export AnyclaudeMode type from trace-logger', () => {
+describe("AnyclaudeMode Type", () => {
+  test("should export AnyclaudeMode type from trace-logger", () => {
     // This test verifies the type exists and can be imported
     // Note: Will fail until "mlx-cluster" is added to AnyclaudeMode type
-    const validModes: string[] = ['claude', 'lmstudio', 'openrouter', 'mlx-cluster'];
+    const validModes: string[] = [
+      "claude",
+      "lmstudio",
+      "openrouter",
+      "mlx-cluster",
+    ];
     expect(validModes).toHaveLength(4);
   });
 
   test('should accept "mlx-cluster" as a valid AnyclaudeMode', () => {
     // Note: Will fail until "mlx-cluster" is added to AnyclaudeMode type
-    const mode: string = 'mlx-cluster';
-    expect(mode).toBe('mlx-cluster');
+    const mode: string = "mlx-cluster";
+    expect(mode).toBe("mlx-cluster");
   });
 
-  test('should accept all original modes as valid', () => {
-    const modes: AnyclaudeMode[] = ['claude', 'lmstudio', 'openrouter'];
+  test("should accept all original modes as valid", () => {
+    const modes: AnyclaudeMode[] = ["claude", "lmstudio", "openrouter"];
     expect(modes).toHaveLength(3);
   });
 });
@@ -154,14 +170,14 @@ describe('AnyclaudeMode Type', () => {
 // PART 2: parseModeFromArgs() Tests
 // ============================================================================
 
-describe('parseModeFromArgs()', () => {
+describe("parseModeFromArgs()", () => {
   // Note: These tests require parseModeFromArgs to be exported from main.ts
   let parseModeFromArgs: (argv: string[]) => AnyclaudeMode | null;
 
   beforeAll(() => {
     // Dynamic import to avoid module loading issues
     try {
-      const main = require('../../src/main');
+      const main = require("../../src/main");
       parseModeFromArgs = main.parseModeFromArgs;
     } catch (error) {
       // Function not exported yet (expected in TDD red phase)
@@ -173,85 +189,91 @@ describe('parseModeFromArgs()', () => {
     resetAllMocks();
   });
 
-  describe('mlx-cluster mode parsing', () => {
+  describe("mlx-cluster mode parsing", () => {
     test('should return "mlx-cluster" for --mode=mlx-cluster', () => {
-      const argv = ['node', 'main.js', '--mode=mlx-cluster'];
+      const argv = ["node", "main.js", "--mode=mlx-cluster"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should handle lowercase mlx-cluster', () => {
-      const argv = ['node', 'main.js', '--mode=mlx-cluster'];
+    test("should handle lowercase mlx-cluster", () => {
+      const argv = ["node", "main.js", "--mode=mlx-cluster"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should handle uppercase MLX-CLUSTER', () => {
-      const argv = ['node', 'main.js', '--mode=MLX-CLUSTER'];
+    test("should handle uppercase MLX-CLUSTER", () => {
+      const argv = ["node", "main.js", "--mode=MLX-CLUSTER"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should handle mixed case MlX-cLuStEr', () => {
-      const argv = ['node', 'main.js', '--mode=MlX-cLuStEr'];
+    test("should handle mixed case MlX-cLuStEr", () => {
+      const argv = ["node", "main.js", "--mode=MlX-cLuStEr"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should work with space syntax --mode mlx-cluster', () => {
+    test("should work with space syntax --mode mlx-cluster", () => {
       // Note: space syntax requires argv to have separate elements
-      const argv = ['node', 'main.js', '--mode', 'mlx-cluster'];
+      const argv = ["node", "main.js", "--mode", "mlx-cluster"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should work when --mode is not first argument', () => {
-      const argv = ['node', 'main.js', '--check-setup', '--mode=mlx-cluster', '--test'];
+    test("should work when --mode is not first argument", () => {
+      const argv = [
+        "node",
+        "main.js",
+        "--check-setup",
+        "--mode=mlx-cluster",
+        "--test",
+      ];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
   });
 
-  describe('existing modes parsing (no regression)', () => {
+  describe("existing modes parsing (no regression)", () => {
     test('should return "lmstudio" for --mode=lmstudio', () => {
-      const argv = ['node', 'main.js', '--mode=lmstudio'];
+      const argv = ["node", "main.js", "--mode=lmstudio"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('lmstudio');
+      expect(result).toBe("lmstudio");
     });
 
     test('should return "openrouter" for --mode=openrouter', () => {
-      const argv = ['node', 'main.js', '--mode=openrouter'];
+      const argv = ["node", "main.js", "--mode=openrouter"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('openrouter');
+      expect(result).toBe("openrouter");
     });
 
     test('should return "claude" for --mode=claude', () => {
-      const argv = ['node', 'main.js', '--mode=claude'];
+      const argv = ["node", "main.js", "--mode=claude"];
       const result = parseModeFromArgs(argv);
-      expect(result).toBe('claude');
+      expect(result).toBe("claude");
     });
   });
 
-  describe('error handling', () => {
-    test('should reject invalid mode with helpful error', () => {
-      const argv = ['node', 'main.js', '--mode=invalid'];
+  describe("error handling", () => {
+    test("should reject invalid mode with helpful error", () => {
+      const argv = ["node", "main.js", "--mode=invalid"];
       expect(() => parseModeFromArgs(argv)).toThrow();
       expect(mockProcessExit).toHaveBeenCalledWith(1);
       expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid mode: invalid')
+        expect.stringContaining("Invalid mode: invalid")
       );
       expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('mlx-cluster')
+        expect.stringContaining("mlx-cluster")
       );
     });
 
-    test('should return null when --mode not present', () => {
-      const argv = ['node', 'main.js', '--check-setup'];
+    test("should return null when --mode not present", () => {
+      const argv = ["node", "main.js", "--check-setup"];
       const result = parseModeFromArgs(argv);
       expect(result).toBeNull();
     });
 
-    test('should return null for empty argv', () => {
+    test("should return null for empty argv", () => {
       const argv: string[] = [];
       const result = parseModeFromArgs(argv);
       expect(result).toBeNull();
@@ -263,18 +285,18 @@ describe('parseModeFromArgs()', () => {
 // PART 3: detectMode() Tests
 // ============================================================================
 
-describe('detectMode()', () => {
+describe("detectMode()", () => {
   // Note: These tests require detectMode to be exported from main.ts
   let detectMode: (config: any) => AnyclaudeMode;
 
   beforeAll(() => {
     // Dynamic import to avoid module loading issues
     try {
-      const main = require('../../src/main');
+      const main = require("../../src/main");
       detectMode = main.detectMode;
     } catch (error) {
       // Function not exported yet (expected in TDD red phase)
-      detectMode = () => 'lmstudio';
+      detectMode = () => "lmstudio";
     }
   });
 
@@ -284,124 +306,124 @@ describe('detectMode()', () => {
     mockConfig = {};
   });
 
-  describe('mlx-cluster mode detection', () => {
+  describe("mlx-cluster mode detection", () => {
     test('should return "mlx-cluster" from CLI args', () => {
       const originalArgv = process.argv;
-      process.argv = ['node', 'main.js', '--mode=mlx-cluster'];
+      process.argv = ["node", "main.js", "--mode=mlx-cluster"];
 
-      const config = { backend: 'lmstudio' };
+      const config = { backend: "lmstudio" };
       const result = detectMode(config);
 
       process.argv = originalArgv;
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
     test('should return "mlx-cluster" from ANYCLAUDE_MODE env var', () => {
-      process.env.ANYCLAUDE_MODE = 'mlx-cluster';
+      process.env.ANYCLAUDE_MODE = "mlx-cluster";
 
-      const config = { backend: 'lmstudio' };
+      const config = { backend: "lmstudio" };
       const result = detectMode(config);
 
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
     test('should return "mlx-cluster" from config.backend', () => {
-      const config = { backend: 'mlx-cluster' };
+      const config = { backend: "mlx-cluster" };
       const result = detectMode(config);
 
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should handle uppercase env var MLX-CLUSTER', () => {
-      process.env.ANYCLAUDE_MODE = 'MLX-CLUSTER';
+    test("should handle uppercase env var MLX-CLUSTER", () => {
+      process.env.ANYCLAUDE_MODE = "MLX-CLUSTER";
 
       const config = {};
       const result = detectMode(config);
 
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should handle lowercase env var mlx-cluster', () => {
-      process.env.ANYCLAUDE_MODE = 'mlx-cluster';
+    test("should handle lowercase env var mlx-cluster", () => {
+      process.env.ANYCLAUDE_MODE = "mlx-cluster";
 
       const config = {};
       const result = detectMode(config);
 
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
   });
 
-  describe('priority order (CLI > env > config > default)', () => {
-    test('should prioritize CLI over env var', () => {
+  describe("priority order (CLI > env > config > default)", () => {
+    test("should prioritize CLI over env var", () => {
       const originalArgv = process.argv;
-      process.argv = ['node', 'main.js', '--mode=mlx-cluster'];
-      process.env.ANYCLAUDE_MODE = 'openrouter';
+      process.argv = ["node", "main.js", "--mode=mlx-cluster"];
+      process.env.ANYCLAUDE_MODE = "openrouter";
 
-      const config = { backend: 'lmstudio' };
+      const config = { backend: "lmstudio" };
       const result = detectMode(config);
 
       process.argv = originalArgv;
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should prioritize CLI over config', () => {
+    test("should prioritize CLI over config", () => {
       const originalArgv = process.argv;
-      process.argv = ['node', 'main.js', '--mode=mlx-cluster'];
+      process.argv = ["node", "main.js", "--mode=mlx-cluster"];
 
-      const config = { backend: 'claude' };
+      const config = { backend: "claude" };
       const result = detectMode(config);
 
       process.argv = originalArgv;
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should prioritize env var over config', () => {
-      process.env.ANYCLAUDE_MODE = 'mlx-cluster';
+    test("should prioritize env var over config", () => {
+      process.env.ANYCLAUDE_MODE = "mlx-cluster";
 
-      const config = { backend: 'openrouter' };
+      const config = { backend: "openrouter" };
       const result = detectMode(config);
 
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should use config when no CLI or env var', () => {
-      const config = { backend: 'mlx-cluster' };
+    test("should use config when no CLI or env var", () => {
+      const config = { backend: "mlx-cluster" };
       const result = detectMode(config);
 
-      expect(result).toBe('mlx-cluster');
+      expect(result).toBe("mlx-cluster");
     });
 
-    test('should default to lmstudio when no mode specified', () => {
+    test("should default to lmstudio when no mode specified", () => {
       const config = {};
       const result = detectMode(config);
 
-      expect(result).toBe('lmstudio');
+      expect(result).toBe("lmstudio");
     });
   });
 
-  describe('existing modes detection (no regression)', () => {
-    test('should detect lmstudio mode from config', () => {
-      const config = { backend: 'lmstudio' };
+  describe("existing modes detection (no regression)", () => {
+    test("should detect lmstudio mode from config", () => {
+      const config = { backend: "lmstudio" };
       const result = detectMode(config);
-      expect(result).toBe('lmstudio');
+      expect(result).toBe("lmstudio");
     });
 
-    test('should detect openrouter mode from env', () => {
-      process.env.ANYCLAUDE_MODE = 'openrouter';
+    test("should detect openrouter mode from env", () => {
+      process.env.ANYCLAUDE_MODE = "openrouter";
       const config = {};
       const result = detectMode(config);
-      expect(result).toBe('openrouter');
+      expect(result).toBe("openrouter");
     });
 
-    test('should detect claude mode from CLI', () => {
+    test("should detect claude mode from CLI", () => {
       const originalArgv = process.argv;
-      process.argv = ['node', 'main.js', '--mode=claude'];
+      process.argv = ["node", "main.js", "--mode=claude"];
 
       const config = {};
       const result = detectMode(config);
 
       process.argv = originalArgv;
-      expect(result).toBe('claude');
+      expect(result).toBe("claude");
     });
   });
 });
@@ -410,7 +432,7 @@ describe('detectMode()', () => {
 // PART 4: Cluster Config Validation Tests
 // ============================================================================
 
-describe('Cluster Config Validation', () => {
+describe("Cluster Config Validation", () => {
   beforeEach(() => {
     resetAllMocks();
   });
@@ -418,15 +440,15 @@ describe('Cluster Config Validation', () => {
   // Note: Cluster config validation happens inside main.ts async IIFE
   // These tests verify the validation logic exists and behavior is correct
 
-  test('should validate that mlx-cluster config is accessed with correct key', () => {
+  test("should validate that mlx-cluster config is accessed with correct key", () => {
     // The config uses 'mlx-cluster' as the key (with hyphen)
     // Validation checks config.backends?.["mlx-cluster"]
     const config = {
-      backend: 'mlx-cluster',
+      backend: "mlx-cluster",
       backends: {
-        'mlx-cluster': {
+        "mlx-cluster": {
           enabled: true,
-          discovery: { mode: 'static', nodes: [] },
+          discovery: { mode: "static", nodes: [] },
           health: {},
           routing: {},
           cache: {},
@@ -435,16 +457,16 @@ describe('Cluster Config Validation', () => {
     };
 
     // Verify the config structure matches what main.ts expects
-    expect(config.backends['mlx-cluster']).toBeDefined();
-    expect(config.backends['mlx-cluster'].enabled).toBe(true);
+    expect(config.backends["mlx-cluster"]).toBeDefined();
+    expect(config.backends["mlx-cluster"].enabled).toBe(true);
   });
 
-  test('should validate cluster config has required sections', () => {
+  test("should validate cluster config has required sections", () => {
     // main.ts checks for: discovery, health, routing, cache
     const validConfig = {
-      discovery: { mode: 'static', nodes: [] },
+      discovery: { mode: "static", nodes: [] },
       health: { checkIntervalMs: 30000 },
-      routing: { strategy: 'cache-aware' },
+      routing: { strategy: "cache-aware" },
       cache: { enabled: true },
     };
 
@@ -454,25 +476,25 @@ describe('Cluster Config Validation', () => {
     expect(validConfig.cache).toBeDefined();
   });
 
-  test('should succeed with valid cluster config', async () => {
+  test("should succeed with valid cluster config", async () => {
     const config = {
-      backend: 'mlx-cluster',
+      backend: "mlx-cluster",
       backends: {
-        'mlx-cluster': {
+        "mlx-cluster": {
           enabled: true,
           discovery: {
-            mode: 'static',
-            nodes: [{ url: 'http://localhost:8001/v1', nodeId: 'node1' }],
+            mode: "static",
+            nodes: [{ url: "http://localhost:8001/v1", nodeId: "node1" }],
           },
           health: { checkIntervalMs: 30000 },
-          routing: { strategy: 'cache-aware' },
+          routing: { strategy: "cache-aware" },
           cache: { enabled: true },
         },
       },
     };
 
     // Verify config has correct structure
-    const clusterConfig = config.backends['mlx-cluster'];
+    const clusterConfig = config.backends["mlx-cluster"];
     expect(clusterConfig).toBeDefined();
     expect(clusterConfig.discovery).toBeDefined();
     expect(clusterConfig.health).toBeDefined();
@@ -480,12 +502,12 @@ describe('Cluster Config Validation', () => {
     expect(clusterConfig.cache).toBeDefined();
   });
 
-  test('should accept cluster config with minimal fields', async () => {
+  test("should accept cluster config with minimal fields", async () => {
     const config = {
-      backend: 'mlx-cluster',
+      backend: "mlx-cluster",
       backends: {
-        'mlx-cluster': {
-          discovery: { mode: 'static', nodes: [] },
+        "mlx-cluster": {
+          discovery: { mode: "static", nodes: [] },
           health: {},
           routing: {},
           cache: {},
@@ -494,7 +516,7 @@ describe('Cluster Config Validation', () => {
     };
 
     // Verify config is valid with minimal required sections
-    const clusterConfig = config.backends['mlx-cluster'];
+    const clusterConfig = config.backends["mlx-cluster"];
     expect(clusterConfig.discovery).toBeDefined();
     expect(clusterConfig.health).toBeDefined();
     expect(clusterConfig.routing).toBeDefined();
@@ -506,18 +528,18 @@ describe('Cluster Config Validation', () => {
 // PART 5: Cluster Initialization Tests
 // ============================================================================
 
-describe('Cluster Initialization', () => {
+describe("Cluster Initialization", () => {
   beforeEach(() => {
     resetAllMocks();
   });
 
-  test('should call initializeCluster with correct config', async () => {
+  test("should call initializeCluster with correct config", async () => {
     const clusterConfig: MLXClusterConfig = {
       discovery: {
-        mode: 'static',
+        mode: "static",
         nodes: [
-          { id: 'node1', url: 'http://localhost:8001/v1' },
-          { id: 'node2', url: 'http://localhost:8002/v1' },
+          { id: "node1", url: "http://localhost:8001/v1" },
+          { id: "node2", url: "http://localhost:8002/v1" },
         ],
       },
       health: {
@@ -532,7 +554,7 @@ describe('Cluster Initialization', () => {
         maxCacheSizeTokens: 100000,
       },
       routing: {
-        strategy: 'least-loaded' as any,
+        strategy: "least-loaded" as any,
         maxRetries: 3,
         retryDelayMs: 1000,
       },
@@ -545,15 +567,15 @@ describe('Cluster Initialization', () => {
     expect(mockInitializeCluster).toHaveBeenCalledTimes(1);
   });
 
-  test('should handle cluster initialization failure gracefully', async () => {
+  test("should handle cluster initialization failure gracefully", async () => {
     mockInitializeCluster.mockRejectedValueOnce(
-      new Error('Failed to connect to nodes')
+      new Error("Failed to connect to nodes")
     );
 
     const clusterConfig: MLXClusterConfig = {
       discovery: {
-        mode: 'static',
-        nodes: [{ id: 'node1', url: 'http://localhost:8001/v1' }],
+        mode: "static",
+        nodes: [{ id: "node1", url: "http://localhost:8001/v1" }],
       },
       health: {
         checkIntervalMs: 30000,
@@ -567,22 +589,22 @@ describe('Cluster Initialization', () => {
         maxCacheSizeTokens: 100000,
       },
       routing: {
-        strategy: 'least-loaded' as any,
+        strategy: "least-loaded" as any,
         maxRetries: 3,
         retryDelayMs: 1000,
       },
     };
 
     await expect(mockInitializeCluster(clusterConfig)).rejects.toThrow(
-      'Failed to connect to nodes'
+      "Failed to connect to nodes"
     );
   });
 
-  test('should continue startup after successful cluster init', async () => {
+  test("should continue startup after successful cluster init", async () => {
     const clusterConfig: MLXClusterConfig = {
       discovery: {
-        mode: 'static',
-        nodes: [{ id: 'node1', url: 'http://localhost:8001/v1' }],
+        mode: "static",
+        nodes: [{ id: "node1", url: "http://localhost:8001/v1" }],
       },
       health: {
         checkIntervalMs: 30000,
@@ -596,7 +618,7 @@ describe('Cluster Initialization', () => {
         maxCacheSizeTokens: 100000,
       },
       routing: {
-        strategy: 'least-loaded' as any,
+        strategy: "least-loaded" as any,
         maxRetries: 3,
         retryDelayMs: 1000,
       },
@@ -610,16 +632,18 @@ describe('Cluster Initialization', () => {
     expect(manager.shutdown).toBeDefined();
   });
 
-  test('should error if cluster init throws ClusterManagerError', async () => {
-    const { ClusterManagerError } = require('../../src/cluster/cluster-manager');
+  test("should error if cluster init throws ClusterManagerError", async () => {
+    const {
+      ClusterManagerError,
+    } = require("../../src/cluster/cluster-manager");
     mockInitializeCluster.mockRejectedValueOnce(
-      new ClusterManagerError('Discovery timeout', 'DISCOVERY_TIMEOUT')
+      new ClusterManagerError("Discovery timeout", "DISCOVERY_TIMEOUT")
     );
 
     const clusterConfig: MLXClusterConfig = {
       discovery: {
-        mode: 'static',
-        nodes: [{ id: 'node1', url: 'http://localhost:8001/v1' }],
+        mode: "static",
+        nodes: [{ id: "node1", url: "http://localhost:8001/v1" }],
       },
       health: {
         checkIntervalMs: 30000,
@@ -633,7 +657,7 @@ describe('Cluster Initialization', () => {
         maxCacheSizeTokens: 100000,
       },
       routing: {
-        strategy: 'least-loaded' as any,
+        strategy: "least-loaded" as any,
         maxRetries: 3,
         retryDelayMs: 1000,
       },
@@ -644,11 +668,11 @@ describe('Cluster Initialization', () => {
     );
   });
 
-  test('should initialize cluster only once', async () => {
+  test("should initialize cluster only once", async () => {
     const clusterConfig: MLXClusterConfig = {
       discovery: {
-        mode: 'static',
-        nodes: [{ id: 'node1', url: 'http://localhost:8001/v1' }],
+        mode: "static",
+        nodes: [{ id: "node1", url: "http://localhost:8001/v1" }],
       },
       health: {
         checkIntervalMs: 30000,
@@ -662,7 +686,7 @@ describe('Cluster Initialization', () => {
         maxCacheSizeTokens: 100000,
       },
       routing: {
-        strategy: 'least-loaded' as any,
+        strategy: "least-loaded" as any,
         maxRetries: 3,
         retryDelayMs: 1000,
       },
@@ -682,35 +706,35 @@ describe('Cluster Initialization', () => {
 // PART 6: Startup Logging Tests
 // ============================================================================
 
-describe('Startup Logging', () => {
+describe("Startup Logging", () => {
   beforeEach(() => {
     resetAllMocks();
   });
 
-  test('should log cluster node count on startup', async () => {
+  test("should log cluster node count on startup", async () => {
     const status = mockClusterManagerInstance.getStatus();
 
     // Simulate startup logging
     console.log(`[anyclaude] MLX Cluster: ${status.totalNodes} nodes`);
 
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('MLX Cluster')
+      expect.stringContaining("MLX Cluster")
     );
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('3 nodes')
+      expect.stringContaining("3 nodes")
     );
   });
 
-  test('should log load balancing strategy', async () => {
+  test("should log load balancing strategy", async () => {
     // Simulate startup logging with strategy
     console.log(`[anyclaude] Load balancing: least-loaded`);
 
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('Load balancing')
+      expect.stringContaining("Load balancing")
     );
   });
 
-  test('should log per-node health status', async () => {
+  test("should log per-node health status", async () => {
     const status = mockClusterManagerInstance.getStatus();
 
     // Simulate logging each node
@@ -719,26 +743,26 @@ describe('Startup Logging', () => {
     });
 
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('node1: healthy')
+      expect.stringContaining("node1: healthy")
     );
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('node2: healthy')
+      expect.stringContaining("node2: healthy")
     );
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('node3: healthy')
+      expect.stringContaining("node3: healthy")
     );
   });
 
-  test('should show warning when some nodes unhealthy', async () => {
+  test("should show warning when some nodes unhealthy", async () => {
     mockClusterManagerInstance.getStatus.mockReturnValueOnce({
-      overallStatus: 'degraded',
+      overallStatus: "degraded",
       totalNodes: 3,
       healthyNodes: 2,
       unhealthyNodes: 1,
       nodes: [
-        { nodeId: 'node1', status: 'healthy' },
-        { nodeId: 'node2', status: 'healthy' },
-        { nodeId: 'node3', status: 'unhealthy' },
+        { nodeId: "node1", status: "healthy" },
+        { nodeId: "node2", status: "healthy" },
+        { nodeId: "node3", status: "unhealthy" },
       ],
     });
 
@@ -750,17 +774,17 @@ describe('Startup Logging', () => {
     }
 
     expect(mockConsoleWarn).toHaveBeenCalledWith(
-      expect.stringContaining('Warning')
+      expect.stringContaining("Warning")
     );
     expect(mockConsoleWarn).toHaveBeenCalledWith(
-      expect.stringContaining('1 node(s) unhealthy')
+      expect.stringContaining("1 node(s) unhealthy")
     );
   });
 
-  test('should log cluster initialization time', async () => {
+  test("should log cluster initialization time", async () => {
     const startTime = Date.now();
     await mockInitializeCluster({
-      nodes: [{ nodeId: 'node1', baseUrl: 'http://localhost:8001/v1' }],
+      nodes: [{ nodeId: "node1", baseUrl: "http://localhost:8001/v1" }],
     });
     const endTime = Date.now();
 
@@ -776,23 +800,23 @@ describe('Startup Logging', () => {
 // PART 7: Shutdown Handling Tests
 // ============================================================================
 
-describe('Shutdown Handling', () => {
+describe("Shutdown Handling", () => {
   beforeEach(() => {
     resetAllMocks();
   });
 
-  test('should call clusterManager.shutdown() on SIGTERM', async () => {
+  test("should call clusterManager.shutdown() on SIGTERM", async () => {
     // Simulate signal handler registration
     let sigtermHandler: any;
     mockProcessOn.mockImplementation((signal, handler) => {
-      if (signal === 'SIGTERM') {
+      if (signal === "SIGTERM") {
         sigtermHandler = handler;
       }
       return process;
     });
 
     // Register handlers (would happen in main())
-    process.on('SIGTERM', async () => {
+    process.on("SIGTERM", async () => {
       const manager = mockGetClusterManager();
       if (manager) {
         await manager.shutdown();
@@ -805,18 +829,18 @@ describe('Shutdown Handling', () => {
     expect(mockClusterManagerInstance.shutdown).toHaveBeenCalledTimes(1);
   });
 
-  test('should call clusterManager.shutdown() on SIGINT', async () => {
+  test("should call clusterManager.shutdown() on SIGINT", async () => {
     // Simulate signal handler registration
     let sigintHandler: any;
     mockProcessOn.mockImplementation((signal, handler) => {
-      if (signal === 'SIGINT') {
+      if (signal === "SIGINT") {
         sigintHandler = handler;
       }
       return process;
     });
 
     // Register handlers (would happen in main())
-    process.on('SIGINT', async () => {
+    process.on("SIGINT", async () => {
       const manager = mockGetClusterManager();
       if (manager) {
         await manager.shutdown();
@@ -829,7 +853,7 @@ describe('Shutdown Handling', () => {
     expect(mockClusterManagerInstance.shutdown).toHaveBeenCalledTimes(1);
   });
 
-  test('should handle shutdown gracefully when cluster not initialized', async () => {
+  test("should handle shutdown gracefully when cluster not initialized", async () => {
     mockGetClusterManager.mockReturnValueOnce(null);
 
     // Simulate shutdown handler
@@ -842,18 +866,18 @@ describe('Shutdown Handling', () => {
     expect(mockClusterManagerInstance.shutdown).not.toHaveBeenCalled();
   });
 
-  test('should log shutdown completion', async () => {
+  test("should log shutdown completion", async () => {
     await mockClusterManagerInstance.shutdown();
-    console.log('[anyclaude] Cluster shutdown complete');
+    console.log("[anyclaude] Cluster shutdown complete");
 
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('Cluster shutdown complete')
+      expect.stringContaining("Cluster shutdown complete")
     );
   });
 
-  test('should handle shutdown error gracefully', async () => {
+  test("should handle shutdown error gracefully", async () => {
     mockClusterManagerInstance.shutdown.mockRejectedValueOnce(
-      new Error('Shutdown failed')
+      new Error("Shutdown failed")
     );
 
     try {
@@ -863,17 +887,17 @@ describe('Shutdown Handling', () => {
     }
 
     expect(mockConsoleError).toHaveBeenCalledWith(
-      expect.stringContaining('Error during shutdown')
+      expect.stringContaining("Error during shutdown")
     );
   });
 
-  test('should shutdown cluster before exiting process', async () => {
+  test("should shutdown cluster before exiting process", async () => {
     const shutdownSequence: string[] = [];
 
     // Simulate shutdown sequence
     const manager = mockGetClusterManager();
     await manager.shutdown();
-    shutdownSequence.push('cluster');
+    shutdownSequence.push("cluster");
 
     // Note: In actual code, process.exit() is called after shutdown completes
     // We verify the order by checking that cluster shutdown happens first
@@ -881,11 +905,11 @@ describe('Shutdown Handling', () => {
       process.exit(0);
     } catch (e) {
       // Expected: mock throws to prevent actual exit
-      shutdownSequence.push('exit');
+      shutdownSequence.push("exit");
     }
 
     // Cluster shutdown should happen before process.exit
-    expect(shutdownSequence).toEqual(['cluster', 'exit']);
+    expect(shutdownSequence).toEqual(["cluster", "exit"]);
     expect(mockClusterManagerInstance.shutdown).toHaveBeenCalled();
   });
 });
@@ -894,56 +918,56 @@ describe('Shutdown Handling', () => {
 // PART 8: No Regression Tests (Existing Modes)
 // ============================================================================
 
-describe('No Regression - Existing Modes', () => {
+describe("No Regression - Existing Modes", () => {
   beforeEach(() => {
     resetAllMocks();
   });
 
-  test('should still support lmstudio mode', () => {
-    const config = { backend: 'lmstudio' };
+  test("should still support lmstudio mode", () => {
+    const config = { backend: "lmstudio" };
     // detectMode should return 'lmstudio'
     // This verifies we didn't break existing mode detection
   });
 
-  test('should still support openrouter mode', () => {
-    const config = { backend: 'openrouter' };
+  test("should still support openrouter mode", () => {
+    const config = { backend: "openrouter" };
     // detectMode should return 'openrouter'
   });
 
-  test('should still support claude mode', () => {
-    const config = { backend: 'claude' };
+  test("should still support claude mode", () => {
+    const config = { backend: "claude" };
     // detectMode should return 'claude'
   });
 
-  test('should still default to lmstudio when no mode specified', () => {
+  test("should still default to lmstudio when no mode specified", () => {
     const config = {};
     // detectMode should return 'lmstudio'
   });
 
-  test('should still support ANYCLAUDE_MODE env var for lmstudio', () => {
-    process.env.ANYCLAUDE_MODE = 'lmstudio';
+  test("should still support ANYCLAUDE_MODE env var for lmstudio", () => {
+    process.env.ANYCLAUDE_MODE = "lmstudio";
     const config = {};
     // detectMode should return 'lmstudio'
   });
 
-  test('should still support --mode=claude CLI arg', () => {
+  test("should still support --mode=claude CLI arg", () => {
     const originalArgv = process.argv;
-    process.argv = ['node', 'main.js', '--mode=claude'];
+    process.argv = ["node", "main.js", "--mode=claude"];
     const config = {};
     // detectMode should return 'claude'
     process.argv = originalArgv;
   });
 
-  test('should not initialize cluster for non-cluster modes', async () => {
-    const config = { backend: 'lmstudio' };
+  test("should not initialize cluster for non-cluster modes", async () => {
+    const config = { backend: "lmstudio" };
 
     // initializeCluster should NOT be called for lmstudio mode
     // (only called when mode === 'mlx-cluster')
     expect(mockInitializeCluster).not.toHaveBeenCalled();
   });
 
-  test('should not register cluster shutdown handlers for non-cluster modes', () => {
-    const config = { backend: 'openrouter' };
+  test("should not register cluster shutdown handlers for non-cluster modes", () => {
+    const config = { backend: "openrouter" };
 
     // Cluster shutdown logic should not be added to signal handlers
     // when mode !== 'mlx-cluster'
@@ -954,19 +978,19 @@ describe('No Regression - Existing Modes', () => {
 // PART 9: Integration Tests
 // ============================================================================
 
-describe('Integration - Full Cluster Mode Startup', () => {
+describe("Integration - Full Cluster Mode Startup", () => {
   beforeEach(() => {
     resetAllMocks();
   });
 
-  test('should complete full startup sequence for mlx-cluster mode', async () => {
+  test("should complete full startup sequence for mlx-cluster mode", async () => {
     const config = {
-      backend: 'mlx-cluster',
+      backend: "mlx-cluster",
       backends: {
         mlxCluster: {
           nodes: [
-            { nodeId: 'node1', baseUrl: 'http://localhost:8001/v1' },
-            { nodeId: 'node2', baseUrl: 'http://localhost:8002/v1' },
+            { nodeId: "node1", baseUrl: "http://localhost:8001/v1" },
+            { nodeId: "node2", baseUrl: "http://localhost:8002/v1" },
           ],
         },
       },
@@ -990,20 +1014,18 @@ describe('Integration - Full Cluster Mode Startup', () => {
     expect(mockInitializeCluster).toHaveBeenCalled();
     expect(mockClusterManagerInstance.getStatus).toHaveBeenCalled();
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('mlx-cluster')
+      expect.stringContaining("mlx-cluster")
     );
   });
 
-  test('should handle startup failure and exit gracefully', async () => {
-    mockInitializeCluster.mockRejectedValueOnce(
-      new Error('All nodes offline')
-    );
+  test("should handle startup failure and exit gracefully", async () => {
+    mockInitializeCluster.mockRejectedValueOnce(new Error("All nodes offline"));
 
     const config = {
-      backend: 'mlx-cluster',
+      backend: "mlx-cluster",
       backends: {
         mlxCluster: {
-          nodes: [{ nodeId: 'node1', baseUrl: 'http://localhost:8001/v1' }],
+          nodes: [{ nodeId: "node1", baseUrl: "http://localhost:8001/v1" }],
         },
       },
     };
@@ -1020,7 +1042,7 @@ describe('Integration - Full Cluster Mode Startup', () => {
     }
 
     expect(mockConsoleError).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to start cluster')
+      expect.stringContaining("Failed to start cluster")
     );
     expect(mockProcessExit).toHaveBeenCalledWith(1);
   });
@@ -1030,8 +1052,8 @@ describe('Integration - Full Cluster Mode Startup', () => {
 // Summary
 // ============================================================================
 
-describe('Test Suite Summary', () => {
-  test('all tests should initially fail (TDD red phase)', () => {
+describe("Test Suite Summary", () => {
+  test("all tests should initially fail (TDD red phase)", () => {
     // This test documents that we're in TDD red phase
     // All tests above are expected to fail until implementation is complete
     expect(true).toBe(true);

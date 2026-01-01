@@ -10,12 +10,14 @@
 ## Executive Summary
 
 **The Good News** 🎉:
+
 1. ✅ **PagedAttention kernels for Metal already exist** (Eric Buehler, 2025)
 2. ✅ **77-131% throughput improvements demonstrated** on M3 Max
 3. ✅ **MLX's unified memory architecture is ideal** for PagedAttention
 4. ✅ **Community interest is high** (multiple issues, active development)
 
 **The Challenges** ⚠️:
+
 1. ❌ vLLM is deeply tied to CUDA/HIP (thousands of GPU kernel calls)
 2. ❌ No official Apple Silicon support planned by vLLM team
 3. ⚠️ Would require massive rewrite (~50-80% of codebase)
@@ -28,11 +30,13 @@
 ## Part 1: Current State of vLLM on macOS
 
 ### What Works
+
 - ✅ **CPU-only mode** (experimental, from source)
 - ✅ **Basic inference** without GPU acceleration
 - ⚠️ **Very slow** (10-50x slower than CUDA)
 
 ### What Doesn't Work
+
 - ❌ **Metal/MPS backend** (not implemented)
 - ❌ **GPU acceleration** on Apple Silicon
 - ❌ **PagedAttention** (CUDA-only)
@@ -42,12 +46,14 @@
 ### Why vLLM Doesn't Support Apple Silicon
 
 **Technical Blockers**:
+
 1. **CUDA Dependency**: vLLM's core is built on CUDA graphs and kernels
 2. **FlashAttention**: CUDA-specific implementation (no Metal port)
 3. **PagedAttention**: Original implementation uses CUDA unified memory
 4. **Kernel Fusion**: Thousands of optimized CUDA kernels throughout codebase
 
 **Organizational**:
+
 - GitHub Issue #16653 closed as "NOT_PLANNED" (April 2025)
 - Community requests stale after 90 days
 - No official support from vLLM maintainers
@@ -59,11 +65,13 @@
 ### What Is PagedAttention?
 
 PagedAttention is vLLM's **killer feature** - the algorithm that enables:
+
 - 📉 2-4x lower memory usage (vs traditional attention)
 - 📈 10-100x higher throughput (continuous batching)
 - 🔄 Dynamic memory allocation (no pre-allocation needed)
 
 **How it works**:
+
 ```
 Traditional Attention:
 Request 1: ████████████████ (allocates full KV cache upfront)
@@ -86,12 +94,13 @@ Request 3: ████████░░░░
 
 **Performance** (mistralrs-server vs llama.cpp on M3 Max):
 
-| Model | llama.cpp | mistralrs (MLX+PagedAttn) | Improvement |
-|-------|-----------|---------------------------|-------------|
-| **Qwen 3 30B (4-bit)** | 9.24 tok/s | 16.34 tok/s | **+77%** 🔥 |
-| **Llama 3.2 3B (8-bit)** | 10.08 tok/s | 23.28 tok/s | **+131%** 🔥🔥 |
+| Model                    | llama.cpp   | mistralrs (MLX+PagedAttn) | Improvement    |
+| ------------------------ | ----------- | ------------------------- | -------------- |
+| **Qwen 3 30B (4-bit)**   | 9.24 tok/s  | 16.34 tok/s               | **+77%** 🔥    |
+| **Llama 3.2 3B (8-bit)** | 10.08 tok/s | 23.28 tok/s               | **+131%** 🔥🔥 |
 
 **Status**:
+
 - ✅ Kernels implemented and working
 - ⚠️ Not integrated into MLX core library
 - 🏗️ Available via community kernels project (Hugging Face)
@@ -103,6 +112,7 @@ Request 3: ████████░░░░
 ### Apple's Unified Memory Architecture
 
 **Traditional GPUs** (NVIDIA/AMD):
+
 ```
 CPU Memory: ████████
     ↓ (PCIe transfer)
@@ -111,6 +121,7 @@ GPU Memory: ████████
 ```
 
 **Apple Silicon** (M1/M2/M3/M4):
+
 ```
 Unified Memory: ████████████████
      ↓              ↓
@@ -146,12 +157,14 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 ```
 
 **vLLM's PagedAttention on CUDA**:
+
 - Must manage CPU ↔ GPU transfers
 - Block table lives in CPU memory
 - KV blocks live in GPU memory
 - Expensive synchronization overhead
 
 **PagedAttention on MLX**:
+
 - Block table and KV blocks share unified memory
 - Zero transfer overhead
 - Simpler implementation
@@ -167,19 +180,20 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 
 **What Needs Porting**:
 
-| Component | CUDA Code | Metal Port Difficulty | Estimated Effort |
-|-----------|-----------|----------------------|------------------|
-| PagedAttention | ✅ Exists (Eric B.) | 🟢 Done | 0 weeks |
-| FlashAttention | CUDA kernels | 🔴 Very Hard | 12-16 weeks |
-| CUDA Graphs | Graph capture/replay | 🔴 Metal doesn't support | N/A (use alt) |
-| KV Cache Manager | CUDA malloc | 🟡 Medium | 4-6 weeks |
-| Scheduler | CUDA streams | 🟡 Medium | 6-8 weeks |
-| Model Execution | CUDA kernels | 🟢 Easy (MLX has) | 2-3 weeks |
-| Continuous Batching | CUDA async | 🟡 Medium | 8-10 weeks |
-| Quantization (GPTQ/AWQ) | CUDA kernels | 🔴 Hard | 10-12 weeks |
-| **Total** | - | - | **42-55 weeks** |
+| Component               | CUDA Code            | Metal Port Difficulty    | Estimated Effort |
+| ----------------------- | -------------------- | ------------------------ | ---------------- |
+| PagedAttention          | ✅ Exists (Eric B.)  | 🟢 Done                  | 0 weeks          |
+| FlashAttention          | CUDA kernels         | 🔴 Very Hard             | 12-16 weeks      |
+| CUDA Graphs             | Graph capture/replay | 🔴 Metal doesn't support | N/A (use alt)    |
+| KV Cache Manager        | CUDA malloc          | 🟡 Medium                | 4-6 weeks        |
+| Scheduler               | CUDA streams         | 🟡 Medium                | 6-8 weeks        |
+| Model Execution         | CUDA kernels         | 🟢 Easy (MLX has)        | 2-3 weeks        |
+| Continuous Batching     | CUDA async           | 🟡 Medium                | 8-10 weeks       |
+| Quantization (GPTQ/AWQ) | CUDA kernels         | 🔴 Hard                  | 10-12 weeks      |
+| **Total**               | -                    | -                        | **42-55 weeks**  |
 
 **Blockers**:
+
 1. **CUDA Graphs**: Metal doesn't have direct equivalent
 2. **FlashAttention**: Would need complete Metal rewrite
 3. **Kernel Fusion**: Thousands of small optimizations to port
@@ -195,19 +209,20 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 
 **What To Build**:
 
-| Feature | Complexity | Uses Existing | Estimated Effort |
-|---------|-----------|---------------|------------------|
-| **PagedAttention** | 🟢 Easy | ✅ Eric's kernels | 2-3 weeks |
-| **Block Manager** | 🟡 Medium | New code | 3-4 weeks |
-| **FIFO Scheduler** | 🟢 Easy | New code | 2-3 weeks |
-| **Continuous Batching** | 🟡 Medium | MLX batch support | 4-6 weeks |
-| **Request Queue** | 🟢 Easy | AsyncIO | 1-2 weeks |
-| **KV Cache Sharing** | 🟡 Medium | Our ram_cache.py | 2-3 weeks |
-| **Grammar Constraints** | 🔴 Hard | Port xgrammar? | 8-12 weeks |
-| **Tool Call Stops** | 🟢 Easy | Our truncation code | 1 week |
-| **Total** | - | - | **23-34 weeks** |
+| Feature                 | Complexity | Uses Existing       | Estimated Effort |
+| ----------------------- | ---------- | ------------------- | ---------------- |
+| **PagedAttention**      | 🟢 Easy    | ✅ Eric's kernels   | 2-3 weeks        |
+| **Block Manager**       | 🟡 Medium  | New code            | 3-4 weeks        |
+| **FIFO Scheduler**      | 🟢 Easy    | New code            | 2-3 weeks        |
+| **Continuous Batching** | 🟡 Medium  | MLX batch support   | 4-6 weeks        |
+| **Request Queue**       | 🟢 Easy    | AsyncIO             | 1-2 weeks        |
+| **KV Cache Sharing**    | 🟡 Medium  | Our ram_cache.py    | 2-3 weeks        |
+| **Grammar Constraints** | 🔴 Hard    | Port xgrammar?      | 8-12 weeks       |
+| **Tool Call Stops**     | 🟢 Easy    | Our truncation code | 1 week           |
+| **Total**               | -          | -                   | **23-34 weeks**  |
 
 **Advantages**:
+
 - ✅ **Leverage existing MLX ecosystem** (no CUDA porting)
 - ✅ **Use proven Metal kernels** (PagedAttention already works)
 - ✅ **Smaller scope** (~40% effort vs full port)
@@ -225,12 +240,14 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 **Goal**: Integrate Eric Buehler's PagedAttention kernels into MLX-LM
 
 **Tasks**:
+
 1. Import PagedAttention kernels from community repo
 2. Implement block table manager (allocate/free KV blocks)
 3. Update `mlx_lm.generate()` to use paged KV cache
 4. Add block scheduling logic (FIFO to start)
 
 **Success Metrics**:
+
 - Single-request inference works with PagedAttention
 - Memory usage 2-4x lower than current MLX-LM
 - Performance matches or beats current implementation
@@ -244,17 +261,20 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 **Goal**: Process multiple requests concurrently (like vLLM)
 
 **Tasks**:
+
 1. Implement request queue with AsyncIO
 2. Add FIFO scheduler (batches pending requests)
 3. Support dynamic batch sizes (add/remove requests mid-batch)
 4. Handle variable sequence lengths with padding/masking
 
 **Success Metrics**:
+
 - Process 5-10 concurrent requests
 - Throughput 5-10x higher than sequential
 - No attention mask bugs (solve MLX-LM Issue #178!)
 
 **Challenges**:
+
 - MLX batch attention has bugs (see Issue #178)
 - Need proper mask handling with padding
 - Dynamic batch reshaping is tricky
@@ -266,12 +286,14 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 **Goal**: Prevent infinite loops, ensure valid JSON (our bug!)
 
 **Tasks**:
+
 1. Research xgrammar Metal port feasibility
 2. If infeasible, build lightweight JSON validator
 3. Integrate grammar checks into sampling loop
 4. Add `tool_choice` parameter support
 
 **Success Metrics**:
+
 - Guaranteed valid tool calls (no infinite loops!)
 - JSON schema validation for outputs
 - `tool_choice="required"` works like vLLM
@@ -285,6 +307,7 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 **Goal**: Make it production-ready
 
 **Tasks**:
+
 1. Add metrics/monitoring (request latency, throughput, etc.)
 2. Error handling and recovery (OOM, timeout, etc.)
 3. Request prioritization (not just FIFO)
@@ -292,6 +315,7 @@ z = mx.matmul(x, x.T)  # Runs on GPU
 5. Multi-model support (load balancing across models)
 
 **Success Metrics**:
+
 - Handles 50+ concurrent requests
 - Graceful degradation under load
 - Auto-recovery from errors
@@ -304,38 +328,38 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 
 ### Current State (Your MLX Setup)
 
-| Metric | Current Performance |
-|--------|-------------------|
-| **Single Request** | ~10-15 tok/s (Qwen 30B) |
-| **Concurrent Requests** | 1 (sequential only) |
-| **Throughput** | 10-15 tok/s total |
-| **Memory Efficiency** | ~40GB for 30B model |
+| Metric                  | Current Performance     |
+| ----------------------- | ----------------------- |
+| **Single Request**      | ~10-15 tok/s (Qwen 30B) |
+| **Concurrent Requests** | 1 (sequential only)     |
+| **Throughput**          | 10-15 tok/s total       |
+| **Memory Efficiency**   | ~40GB for 30B model     |
 
 ### After Phase 1 (PagedAttention)
 
-| Metric | Projected Performance | Improvement |
-|--------|---------------------|-------------|
-| **Single Request** | ~15-20 tok/s | +30-50% |
-| **Concurrent Requests** | 1 (still sequential) | 0% |
-| **Throughput** | 15-20 tok/s total | +30-50% |
-| **Memory Efficiency** | ~15-20GB for 30B | **2-3x better!** |
+| Metric                  | Projected Performance | Improvement      |
+| ----------------------- | --------------------- | ---------------- |
+| **Single Request**      | ~15-20 tok/s          | +30-50%          |
+| **Concurrent Requests** | 1 (still sequential)  | 0%               |
+| **Throughput**          | 15-20 tok/s total     | +30-50%          |
+| **Memory Efficiency**   | ~15-20GB for 30B      | **2-3x better!** |
 
 ### After Phase 2 (Continuous Batching)
 
-| Metric | Projected Performance | Improvement |
-|--------|---------------------|-------------|
-| **Single Request** | ~15-20 tok/s | +30-50% |
-| **Concurrent Requests** | 5-10 | **10x!** |
-| **Throughput** | **150-200 tok/s total** | **10-15x!** |
-| **Memory Efficiency** | ~15-20GB for 30B | 2-3x better |
+| Metric                  | Projected Performance   | Improvement |
+| ----------------------- | ----------------------- | ----------- |
+| **Single Request**      | ~15-20 tok/s            | +30-50%     |
+| **Concurrent Requests** | 5-10                    | **10x!**    |
+| **Throughput**          | **150-200 tok/s total** | **10-15x!** |
+| **Memory Efficiency**   | ~15-20GB for 30B        | 2-3x better |
 
 ### After Phase 3 (Grammar Constraints)
 
-| Metric | Projected Performance | Improvement |
-|--------|---------------------|-------------|
-| **Tool Call Quality** | 100% valid JSON | ∞ (no more loops!) |
-| **Latency** | Slightly slower (validation) | -5-10% |
-| **Reliability** | Production-grade | **Huge!** |
+| Metric                | Projected Performance        | Improvement        |
+| --------------------- | ---------------------------- | ------------------ |
+| **Tool Call Quality** | 100% valid JSON              | ∞ (no more loops!) |
+| **Latency**           | Slightly slower (validation) | -5-10%             |
+| **Reliability**       | Production-grade             | **Huge!**          |
 
 ---
 
@@ -344,6 +368,7 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 **What Is It?**: Rust-based inference server with MLX backend + PagedAttention (by Eric Buehler)
 
 **Advantages**:
+
 - ✅ **Already has PagedAttention** (+77-131% throughput)
 - ✅ **Continuous batching** support (`--max-seqs` parameter)
 - ✅ **OpenAI-compatible API** (drop-in replacement)
@@ -351,11 +376,13 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 - ✅ **Maintained** (active development)
 
 **Disadvantages**:
+
 - ⚠️ Rust codebase (harder to customize than Python)
 - ⚠️ Less mature than vLLM (newer project)
 - ⚠️ Smaller community (vs vLLM/MLX)
 
 **Integration with anyclaude**:
+
 ```json
 // .anyclauderc.json
 {
@@ -377,17 +404,17 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 
 ## Part 8: Comparison Matrix
 
-| Feature | vLLM (CUDA) | mistralrs (MLX) | Our MLX Setup | vLLM-MLX (Proposed) |
-|---------|------------|-----------------|---------------|---------------------|
-| **PagedAttention** | 🟢 Yes | 🟢 Yes | 🔴 No | 🟢 Yes (Phase 1) |
-| **Continuous Batching** | 🟢 Yes | 🟢 Yes | 🔴 No | 🟢 Yes (Phase 2) |
-| **Grammar Constraints** | 🟢 xgrammar | 🟡 Limited | 🟡 Truncation | 🟢 Yes (Phase 3) |
-| **Tool Call Stops** | 🟢 Native | 🟡 Basic | 🟡 Workaround | 🟢 Native (Phase 3) |
-| **RAM KV Cache** | 🔴 No | 🔴 No | 🟢 Yes (200x!) | 🟢 Yes (keep ours!) |
-| **Multi-GPU** | 🟢 Yes | 🔴 No | 🔴 No | 🔴 No (Apple limit) |
-| **Throughput** | 🟢 500+ tok/s | 🟡 20-50 tok/s | 🟡 10-15 tok/s | 🟢 150-200 tok/s |
-| **Platform** | 🟡 NVIDIA only | 🟢 Apple Silicon | 🟢 Apple Silicon | 🟢 Apple Silicon |
-| **Maintenance** | 🟢 Active | 🟢 Active | 🟡 DIY | 🟡 DIY |
+| Feature                 | vLLM (CUDA)    | mistralrs (MLX)  | Our MLX Setup    | vLLM-MLX (Proposed) |
+| ----------------------- | -------------- | ---------------- | ---------------- | ------------------- |
+| **PagedAttention**      | 🟢 Yes         | 🟢 Yes           | 🔴 No            | 🟢 Yes (Phase 1)    |
+| **Continuous Batching** | 🟢 Yes         | 🟢 Yes           | 🔴 No            | 🟢 Yes (Phase 2)    |
+| **Grammar Constraints** | 🟢 xgrammar    | 🟡 Limited       | 🟡 Truncation    | 🟢 Yes (Phase 3)    |
+| **Tool Call Stops**     | 🟢 Native      | 🟡 Basic         | 🟡 Workaround    | 🟢 Native (Phase 3) |
+| **RAM KV Cache**        | 🔴 No          | 🔴 No            | 🟢 Yes (200x!)   | 🟢 Yes (keep ours!) |
+| **Multi-GPU**           | 🟢 Yes         | 🔴 No            | 🔴 No            | 🔴 No (Apple limit) |
+| **Throughput**          | 🟢 500+ tok/s  | 🟡 20-50 tok/s   | 🟡 10-15 tok/s   | 🟢 150-200 tok/s    |
+| **Platform**            | 🟡 NVIDIA only | 🟢 Apple Silicon | 🟢 Apple Silicon | 🟢 Apple Silicon    |
+| **Maintenance**         | 🟢 Active      | 🟢 Active        | 🟡 DIY           | 🟡 DIY              |
 
 ---
 
@@ -396,6 +423,7 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 ### When to Port vLLM → MLX Backend
 
 **Do This If**:
+
 - ❌ You need 100% vLLM API compatibility
 - ❌ You want to run exact same code on CUDA + Metal
 - ❌ You have 1+ year and 2-3 engineers
@@ -407,6 +435,7 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 ### When to Add vLLM Features to MLX-LM
 
 **Do This If**:
+
 - ✅ You want vLLM-like performance on Apple Silicon
 - ✅ You're willing to invest 3-6 months of development
 - ✅ You can leverage existing PagedAttention kernels
@@ -419,6 +448,7 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 ### When to Use mistralrs-server
 
 **Do This If**:
+
 - ✅ You need PagedAttention **today**
 - ✅ You're okay with Rust codebase
 - ✅ You want +77-131% throughput immediately
@@ -433,6 +463,7 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 ### Immediate Actions (Next 2 Weeks)
 
 1. ✅ **Test mistralrs-server** with your models
+
    ```bash
    # Install mistralrs
    cargo install mistralrs-server
@@ -461,6 +492,7 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 **If mistralrs works**: ✅ Use it! Focus on other features.
 
 **If mistralrs doesn't work**:
+
 1. Start **Phase 1: PagedAttention Integration**
 2. Import Eric Buehler's kernels
 3. Build block manager for MLX-LM
@@ -469,11 +501,13 @@ Based on Eric Buehler's benchmarks + vLLM's reported improvements:
 ### Long-Term (6-12 Months)
 
 **If building vLLM-MLX**:
+
 - Complete Phases 1-4 (PagedAttention → Grammar)
 - Publish as open-source MLX-LM enhancement
 - Contribute upstream to ml-explore/mlx-lm
 
 **If using mistralrs**:
+
 - Contribute improvements upstream
 - Focus on anyclaude features (debugging, caching, etc.)
 - Monitor MLX-LM for native PagedAttention support

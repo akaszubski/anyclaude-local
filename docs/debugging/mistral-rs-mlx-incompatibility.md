@@ -16,6 +16,7 @@ Attempted to use mistral.rs with MLX-quantized models:
 ```
 
 **Error:**
+
 ```
 Error: cannot find tensor model.layers.0.mlp.gate_proj.weight
 ```
@@ -23,10 +24,12 @@ Error: cannot find tensor model.layers.0.mlp.gate_proj.weight
 ## Root Cause
 
 **mistral.rs uses Candle framework**, which expects:
+
 - GGUF format (from llama.cpp)
 - Standard safetensors (unquantized or GPTQ/AWQ)
 
 **MLX models use Apple's MLX framework**, which has its own quantization format:
+
 - Incompatible tensor names/structure
 - Different quantization metadata
 - MLX-specific optimizations
@@ -77,26 +80,28 @@ anyclaude  # Uses custom MLX server with your MLX models
 
 ## Framework Comparison
 
-| Feature | mistral.rs (Candle) | Custom MLX Server |
-|---------|-------------------|-------------------|
-| **Language** | Rust | Python |
-| **Framework** | Candle + Metal | MLX |
-| **Model Formats** | GGUF, safetensors | MLX-quantized |
-| **Your Models** | ❌ Incompatible | ✅ Compatible |
-| **PagedAttention** | ✅ Yes | ❌ No |
-| **RAM KV Cache** | ❌ No | ✅ Yes (100-200x speedup) |
-| **Memory Usage** | Lower (Rust) | Higher (Python) |
-| **Tool Calling** | ✅ Yes | ✅ Yes |
+| Feature            | mistral.rs (Candle) | Custom MLX Server         |
+| ------------------ | ------------------- | ------------------------- |
+| **Language**       | Rust                | Python                    |
+| **Framework**      | Candle + Metal      | MLX                       |
+| **Model Formats**  | GGUF, safetensors   | MLX-quantized             |
+| **Your Models**    | ❌ Incompatible     | ✅ Compatible             |
+| **PagedAttention** | ✅ Yes              | ❌ No                     |
+| **RAM KV Cache**   | ❌ No               | ✅ Yes (100-200x speedup) |
+| **Memory Usage**   | Lower (Rust)        | Higher (Python)           |
+| **Tool Calling**   | ✅ Yes              | ✅ Yes                    |
 
 ## Recommendation
 
 **For now:** Stick with your custom MLX server
+
 - ✅ Works with your existing models
 - ✅ Has working RAM KV cache
 - ✅ Tool calling works
 - ✅ You've already invested time debugging it
 
 **Future:** Try mistral.rs if you want to explore alternatives
+
 - Download a GGUF model (~4GB for 7B Q4)
 - Test performance with PagedAttention
 - Compare against MLX server

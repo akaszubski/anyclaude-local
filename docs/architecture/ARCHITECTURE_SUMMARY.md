@@ -479,6 +479,39 @@ Before running in production:
 
 ---
 
+## Cluster System (Issue #22)
+
+For scaling beyond single-server deployments, anyclaude includes a comprehensive cluster system architecture:
+
+**See**: `docs/architecture/mlx-cluster-system.md` for complete cluster design
+
+### Key Features
+
+- **Node Health Monitoring**: Automatic detection and failover for unhealthy nodes
+- **Cache-Aware Routing**: Route requests to nodes with matching cached system prompts (key optimization!)
+- **Multiple Load Balancing Strategies**: Round-robin, least-loaded, cache-aware, latency-based
+- **Flexible Node Discovery**: Static config, DNS SRV records, or Kubernetes API
+- **Comprehensive Metrics**: Track cluster health, node latency, cache hit rates
+
+### Type System Foundation (COMPLETE)
+
+The cluster type system includes:
+
+- **Node States**: INITIALIZING, HEALTHY, DEGRADED, UNHEALTHY, OFFLINE
+- **Cluster Status**: STARTING, HEALTHY, DEGRADED, CRITICAL, OFFLINE
+- **Core Interfaces**: MLXNode, NodeHealth, NodeCacheState, NodeMetrics
+- **Configuration**: DiscoveryConfig, HealthConfig, CacheConfig, RoutingConfig
+- **Routing**: RoutingContext, RoutingDecision
+
+See `src/cluster/cluster-types.ts` (319 lines) for complete type definitions.
+
+**Implementation Roadmap**:
+
+1. ✅ **Phase 1**: Type system and validation (Issue #22 - COMPLETE)
+2. 📅 **Phase 2**: Load balancer implementation (planned)
+3. 📅 **Phase 3**: Integration with proxy (planned)
+4. 📅 **Phase 4**: Production hardening (planned)
+
 ## Future Enhancements
 
 ### Short Term (1-2 weeks)
@@ -495,6 +528,7 @@ Before running in production:
 - [ ] Health check dashboard
 - [ ] Configuration validation
 - [ ] Tool versioning system
+- [ ] Cluster load balancer implementation (Phase 2)
 
 ### Long Term (2-3 months)
 
@@ -503,6 +537,7 @@ Before running in production:
 - [ ] Load balancing multiple backends
 - [ ] Advanced request routing (model selection)
 - [ ] Webhook integration for tool execution
+- [ ] Kubernetes operator for auto-deployment
 
 ---
 

@@ -49,84 +49,84 @@ import {
   RoutingContext,
   ClusterMetrics,
   ClusterState,
-} from '../../src/cluster/cluster-types';
+} from "../../src/cluster/cluster-types";
 
 // ============================================================================
 // ENUM TESTS - Verify enum string values
 // ============================================================================
 
-describe('NodeStatus Enum', () => {
-  test('should have INITIALIZING status', () => {
-    expect(NodeStatus.INITIALIZING).toBe('initializing');
+describe("NodeStatus Enum", () => {
+  test("should have INITIALIZING status", () => {
+    expect(NodeStatus.INITIALIZING).toBe("initializing");
   });
 
-  test('should have HEALTHY status', () => {
-    expect(NodeStatus.HEALTHY).toBe('healthy');
+  test("should have HEALTHY status", () => {
+    expect(NodeStatus.HEALTHY).toBe("healthy");
   });
 
-  test('should have DEGRADED status', () => {
-    expect(NodeStatus.DEGRADED).toBe('degraded');
+  test("should have DEGRADED status", () => {
+    expect(NodeStatus.DEGRADED).toBe("degraded");
   });
 
-  test('should have UNHEALTHY status', () => {
-    expect(NodeStatus.UNHEALTHY).toBe('unhealthy');
+  test("should have UNHEALTHY status", () => {
+    expect(NodeStatus.UNHEALTHY).toBe("unhealthy");
   });
 
-  test('should have OFFLINE status', () => {
-    expect(NodeStatus.OFFLINE).toBe('offline');
+  test("should have OFFLINE status", () => {
+    expect(NodeStatus.OFFLINE).toBe("offline");
   });
 
-  test('should have exactly 5 status values', () => {
+  test("should have exactly 5 status values", () => {
     const values = Object.values(NodeStatus);
     expect(values).toHaveLength(5);
   });
 });
 
-describe('LoadBalanceStrategy Enum', () => {
-  test('should have ROUND_ROBIN strategy', () => {
-    expect(LoadBalanceStrategy.ROUND_ROBIN).toBe('round-robin');
+describe("LoadBalanceStrategy Enum", () => {
+  test("should have ROUND_ROBIN strategy", () => {
+    expect(LoadBalanceStrategy.ROUND_ROBIN).toBe("round-robin");
   });
 
-  test('should have LEAST_LOADED strategy', () => {
-    expect(LoadBalanceStrategy.LEAST_LOADED).toBe('least-loaded');
+  test("should have LEAST_LOADED strategy", () => {
+    expect(LoadBalanceStrategy.LEAST_LOADED).toBe("least-loaded");
   });
 
-  test('should have CACHE_AWARE strategy', () => {
-    expect(LoadBalanceStrategy.CACHE_AWARE).toBe('cache-aware');
+  test("should have CACHE_AWARE strategy", () => {
+    expect(LoadBalanceStrategy.CACHE_AWARE).toBe("cache-aware");
   });
 
-  test('should have LATENCY_BASED strategy', () => {
-    expect(LoadBalanceStrategy.LATENCY_BASED).toBe('latency-based');
+  test("should have LATENCY_BASED strategy", () => {
+    expect(LoadBalanceStrategy.LATENCY_BASED).toBe("latency-based");
   });
 
-  test('should have exactly 4 strategy values', () => {
+  test("should have exactly 4 strategy values", () => {
     const values = Object.values(LoadBalanceStrategy);
     expect(values).toHaveLength(4);
   });
 });
 
-describe('ClusterStatus Enum', () => {
-  test('should have STARTING status', () => {
-    expect(ClusterStatus.STARTING).toBe('starting');
+describe("ClusterStatus Enum", () => {
+  test("should have STARTING status", () => {
+    expect(ClusterStatus.STARTING).toBe("starting");
   });
 
-  test('should have HEALTHY status', () => {
-    expect(ClusterStatus.HEALTHY).toBe('healthy');
+  test("should have HEALTHY status", () => {
+    expect(ClusterStatus.HEALTHY).toBe("healthy");
   });
 
-  test('should have DEGRADED status', () => {
-    expect(ClusterStatus.DEGRADED).toBe('degraded');
+  test("should have DEGRADED status", () => {
+    expect(ClusterStatus.DEGRADED).toBe("degraded");
   });
 
-  test('should have CRITICAL status', () => {
-    expect(ClusterStatus.CRITICAL).toBe('critical');
+  test("should have CRITICAL status", () => {
+    expect(ClusterStatus.CRITICAL).toBe("critical");
   });
 
-  test('should have OFFLINE status', () => {
-    expect(ClusterStatus.OFFLINE).toBe('offline');
+  test("should have OFFLINE status", () => {
+    expect(ClusterStatus.OFFLINE).toBe("offline");
   });
 
-  test('should have exactly 5 status values', () => {
+  test("should have exactly 5 status values", () => {
     const values = Object.values(ClusterStatus);
     expect(values).toHaveLength(5);
   });
@@ -136,20 +136,20 @@ describe('ClusterStatus Enum', () => {
 // TYPE ALIAS TESTS - NodeId
 // ============================================================================
 
-describe('NodeId Type', () => {
-  test('should accept string values', () => {
-    const nodeId: NodeId = 'node-1';
-    expect(typeof nodeId).toBe('string');
+describe("NodeId Type", () => {
+  test("should accept string values", () => {
+    const nodeId: NodeId = "node-1";
+    expect(typeof nodeId).toBe("string");
   });
 
-  test('should accept UUID-style strings', () => {
-    const nodeId: NodeId = '550e8400-e29b-41d4-a716-446655440000';
+  test("should accept UUID-style strings", () => {
+    const nodeId: NodeId = "550e8400-e29b-41d4-a716-446655440000";
     expect(nodeId).toMatch(/^[0-9a-f-]+$/i);
   });
 
-  test('should accept descriptive node names', () => {
-    const nodeId: NodeId = 'mlx-worker-prod-01';
-    expect(nodeId).toContain('mlx-worker');
+  test("should accept descriptive node names", () => {
+    const nodeId: NodeId = "mlx-worker-prod-01";
+    expect(nodeId).toContain("mlx-worker");
   });
 });
 
@@ -157,8 +157,8 @@ describe('NodeId Type', () => {
 // INTERFACE TESTS - NodeHealth
 // ============================================================================
 
-describe('NodeHealth Interface', () => {
-  test('should create valid NodeHealth object with all fields', () => {
+describe("NodeHealth Interface", () => {
+  test("should create valid NodeHealth object with all fields", () => {
     const health: NodeHealth = {
       lastCheck: Date.now(),
       consecutiveFailures: 0,
@@ -172,7 +172,7 @@ describe('NodeHealth Interface', () => {
     expect(health.errorRate).toBe(0.01);
   });
 
-  test('should allow high consecutive failures', () => {
+  test("should allow high consecutive failures", () => {
     const health: NodeHealth = {
       lastCheck: Date.now(),
       consecutiveFailures: 5,
@@ -183,7 +183,7 @@ describe('NodeHealth Interface', () => {
     expect(health.consecutiveFailures).toBe(5);
   });
 
-  test('should handle zero response time', () => {
+  test("should handle zero response time", () => {
     const health: NodeHealth = {
       lastCheck: Date.now(),
       consecutiveFailures: 0,
@@ -194,7 +194,7 @@ describe('NodeHealth Interface', () => {
     expect(health.avgResponseTime).toBe(0);
   });
 
-  test('should handle 100% error rate', () => {
+  test("should handle 100% error rate", () => {
     const health: NodeHealth = {
       lastCheck: Date.now(),
       consecutiveFailures: 10,
@@ -210,34 +210,34 @@ describe('NodeHealth Interface', () => {
 // INTERFACE TESTS - NodeCacheState
 // ============================================================================
 
-describe('NodeCacheState Interface', () => {
-  test('should create valid NodeCacheState with all fields', () => {
+describe("NodeCacheState Interface", () => {
+  test("should create valid NodeCacheState with all fields", () => {
     const cacheState: NodeCacheState = {
       tokens: 2048,
-      systemPromptHash: 'sha256:abc123',
+      systemPromptHash: "sha256:abc123",
       lastUpdated: Date.now(),
     };
 
     expect(cacheState.tokens).toBe(2048);
-    expect(cacheState.systemPromptHash).toBe('sha256:abc123');
+    expect(cacheState.systemPromptHash).toBe("sha256:abc123");
     expect(cacheState.lastUpdated).toBeGreaterThan(0);
   });
 
-  test('should handle empty cache (0 tokens)', () => {
+  test("should handle empty cache (0 tokens)", () => {
     const cacheState: NodeCacheState = {
       tokens: 0,
-      systemPromptHash: '',
+      systemPromptHash: "",
       lastUpdated: Date.now(),
     };
 
     expect(cacheState.tokens).toBe(0);
-    expect(cacheState.systemPromptHash).toBe('');
+    expect(cacheState.systemPromptHash).toBe("");
   });
 
-  test('should handle large cache sizes', () => {
+  test("should handle large cache sizes", () => {
     const cacheState: NodeCacheState = {
       tokens: 128000,
-      systemPromptHash: 'sha256:' + 'a'.repeat(64),
+      systemPromptHash: "sha256:" + "a".repeat(64),
       lastUpdated: Date.now(),
     };
 
@@ -245,14 +245,14 @@ describe('NodeCacheState Interface', () => {
     expect(cacheState.systemPromptHash).toHaveLength(71); // 'sha256:' + 64 chars
   });
 
-  test('should accept different hash formats', () => {
+  test("should accept different hash formats", () => {
     const cacheState: NodeCacheState = {
       tokens: 4096,
-      systemPromptHash: 'md5:5d41402abc4b2a76b9719d911017c592',
+      systemPromptHash: "md5:5d41402abc4b2a76b9719d911017c592",
       lastUpdated: Date.now(),
     };
 
-    expect(cacheState.systemPromptHash).toContain('md5:');
+    expect(cacheState.systemPromptHash).toContain("md5:");
   });
 });
 
@@ -260,8 +260,8 @@ describe('NodeCacheState Interface', () => {
 // INTERFACE TESTS - NodeMetrics
 // ============================================================================
 
-describe('NodeMetrics Interface', () => {
-  test('should create valid NodeMetrics with all required fields', () => {
+describe("NodeMetrics Interface", () => {
+  test("should create valid NodeMetrics with all required fields", () => {
     const metrics: NodeMetrics = {
       requestsInFlight: 2,
       totalRequests: 100,
@@ -275,7 +275,7 @@ describe('NodeMetrics Interface', () => {
     expect(metrics.avgLatency).toBe(200);
   });
 
-  test('should handle zero requests in flight', () => {
+  test("should handle zero requests in flight", () => {
     const metrics: NodeMetrics = {
       requestsInFlight: 0,
       totalRequests: 1000,
@@ -286,7 +286,7 @@ describe('NodeMetrics Interface', () => {
     expect(metrics.requestsInFlight).toBe(0);
   });
 
-  test('should handle 100% cache hit rate', () => {
+  test("should handle 100% cache hit rate", () => {
     const metrics: NodeMetrics = {
       requestsInFlight: 5,
       totalRequests: 500,
@@ -297,7 +297,7 @@ describe('NodeMetrics Interface', () => {
     expect(metrics.cacheHitRate).toBe(1.0);
   });
 
-  test('should handle 0% cache hit rate', () => {
+  test("should handle 0% cache hit rate", () => {
     const metrics: NodeMetrics = {
       requestsInFlight: 3,
       totalRequests: 50,
@@ -308,7 +308,7 @@ describe('NodeMetrics Interface', () => {
     expect(metrics.cacheHitRate).toBe(0.0);
   });
 
-  test('should handle high load scenarios', () => {
+  test("should handle high load scenarios", () => {
     const metrics: NodeMetrics = {
       requestsInFlight: 100,
       totalRequests: 10000,
@@ -325,11 +325,11 @@ describe('NodeMetrics Interface', () => {
 // INTERFACE TESTS - MLXNode (Complex Integration)
 // ============================================================================
 
-describe('MLXNode Interface', () => {
-  test('should create valid MLXNode with all required fields', () => {
+describe("MLXNode Interface", () => {
+  test("should create valid MLXNode with all required fields", () => {
     const node: MLXNode = {
-      id: 'node-1',
-      url: 'http://localhost:8080',
+      id: "node-1",
+      url: "http://localhost:8080",
       status: NodeStatus.HEALTHY,
       health: {
         lastCheck: Date.now(),
@@ -339,7 +339,7 @@ describe('MLXNode Interface', () => {
       },
       cache: {
         tokens: 2048,
-        systemPromptHash: 'sha256:abc123',
+        systemPromptHash: "sha256:abc123",
         lastUpdated: Date.now(),
       },
       metrics: {
@@ -350,18 +350,18 @@ describe('MLXNode Interface', () => {
       },
     };
 
-    expect(node.id).toBe('node-1');
-    expect(node.url).toBe('http://localhost:8080');
+    expect(node.id).toBe("node-1");
+    expect(node.url).toBe("http://localhost:8080");
     expect(node.status).toBe(NodeStatus.HEALTHY);
     expect(node.health).toBeDefined();
     expect(node.cache).toBeDefined();
     expect(node.metrics).toBeDefined();
   });
 
-  test('should create node with INITIALIZING status', () => {
+  test("should create node with INITIALIZING status", () => {
     const node: MLXNode = {
-      id: 'node-2',
-      url: 'http://localhost:8081',
+      id: "node-2",
+      url: "http://localhost:8081",
       status: NodeStatus.INITIALIZING,
       health: {
         lastCheck: Date.now(),
@@ -371,7 +371,7 @@ describe('MLXNode Interface', () => {
       },
       cache: {
         tokens: 0,
-        systemPromptHash: '',
+        systemPromptHash: "",
         lastUpdated: Date.now(),
       },
       metrics: {
@@ -386,10 +386,10 @@ describe('MLXNode Interface', () => {
     expect(node.metrics.totalRequests).toBe(0);
   });
 
-  test('should create node with UNHEALTHY status', () => {
+  test("should create node with UNHEALTHY status", () => {
     const node: MLXNode = {
-      id: 'node-3',
-      url: 'http://localhost:8082',
+      id: "node-3",
+      url: "http://localhost:8082",
       status: NodeStatus.UNHEALTHY,
       health: {
         lastCheck: Date.now(),
@@ -399,7 +399,7 @@ describe('MLXNode Interface', () => {
       },
       cache: {
         tokens: 1024,
-        systemPromptHash: 'sha256:old',
+        systemPromptHash: "sha256:old",
         lastUpdated: Date.now() - 60000,
       },
       metrics: {
@@ -414,10 +414,10 @@ describe('MLXNode Interface', () => {
     expect(node.health.consecutiveFailures).toBe(5);
   });
 
-  test('should handle different URL formats', () => {
+  test("should handle different URL formats", () => {
     const node: MLXNode = {
-      id: 'node-4',
-      url: 'https://mlx-worker-01.example.com:443/v1',
+      id: "node-4",
+      url: "https://mlx-worker-01.example.com:443/v1",
       status: NodeStatus.HEALTHY,
       health: {
         lastCheck: Date.now(),
@@ -427,7 +427,7 @@ describe('MLXNode Interface', () => {
       },
       cache: {
         tokens: 4096,
-        systemPromptHash: 'sha256:xyz789',
+        systemPromptHash: "sha256:xyz789",
         lastUpdated: Date.now(),
       },
       metrics: {
@@ -438,8 +438,8 @@ describe('MLXNode Interface', () => {
       },
     };
 
-    expect(node.url).toContain('https://');
-    expect(node.url).toContain(':443');
+    expect(node.url).toContain("https://");
+    expect(node.url).toContain(":443");
   });
 });
 
@@ -447,8 +447,8 @@ describe('MLXNode Interface', () => {
 // INTERFACE TESTS - HealthConfig
 // ============================================================================
 
-describe('HealthConfig Interface', () => {
-  test('should create valid HealthConfig with all fields', () => {
+describe("HealthConfig Interface", () => {
+  test("should create valid HealthConfig with all fields", () => {
     const config: HealthConfig = {
       checkIntervalMs: 5000,
       timeoutMs: 2000,
@@ -462,7 +462,7 @@ describe('HealthConfig Interface', () => {
     expect(config.unhealthyThreshold).toBe(0.5);
   });
 
-  test('should handle aggressive health checking', () => {
+  test("should handle aggressive health checking", () => {
     const config: HealthConfig = {
       checkIntervalMs: 1000,
       timeoutMs: 500,
@@ -474,7 +474,7 @@ describe('HealthConfig Interface', () => {
     expect(config.maxConsecutiveFailures).toBe(1);
   });
 
-  test('should handle lenient health checking', () => {
+  test("should handle lenient health checking", () => {
     const config: HealthConfig = {
       checkIntervalMs: 30000,
       timeoutMs: 10000,
@@ -491,8 +491,8 @@ describe('HealthConfig Interface', () => {
 // INTERFACE TESTS - CacheConfig
 // ============================================================================
 
-describe('CacheConfig Interface', () => {
-  test('should create valid CacheConfig with all fields', () => {
+describe("CacheConfig Interface", () => {
+  test("should create valid CacheConfig with all fields", () => {
     const config: CacheConfig = {
       maxCacheAgeSec: 3600,
       minCacheHitRate: 0.5,
@@ -504,7 +504,7 @@ describe('CacheConfig Interface', () => {
     expect(config.maxCacheSizeTokens).toBe(128000);
   });
 
-  test('should handle small cache configuration', () => {
+  test("should handle small cache configuration", () => {
     const config: CacheConfig = {
       maxCacheAgeSec: 60,
       minCacheHitRate: 0.1,
@@ -515,7 +515,7 @@ describe('CacheConfig Interface', () => {
     expect(config.maxCacheSizeTokens).toBe(2048);
   });
 
-  test('should handle large cache configuration', () => {
+  test("should handle large cache configuration", () => {
     const config: CacheConfig = {
       maxCacheAgeSec: 86400,
       minCacheHitRate: 0.95,
@@ -531,60 +531,60 @@ describe('CacheConfig Interface', () => {
 // INTERFACE TESTS - DiscoveryConfig
 // ============================================================================
 
-describe('DiscoveryConfig Interface', () => {
-  test('should create valid DiscoveryConfig with static nodes', () => {
+describe("DiscoveryConfig Interface", () => {
+  test("should create valid DiscoveryConfig with static nodes", () => {
     const config: DiscoveryConfig = {
-      mode: 'static' as const,
+      mode: "static" as const,
       nodes: [
-        { url: 'http://localhost:8080', id: 'node-1' },
-        { url: 'http://localhost:8081', id: 'node-2' },
+        { url: "http://localhost:8080", id: "node-1" },
+        { url: "http://localhost:8081", id: "node-2" },
       ],
     };
 
-    expect(config.mode).toBe('static');
+    expect(config.mode).toBe("static");
     expect(config.nodes).toHaveLength(2);
-    expect(config.nodes![0].url).toBe('http://localhost:8080');
+    expect(config.nodes![0].url).toBe("http://localhost:8080");
   });
 
-  test('should create DiscoveryConfig with empty nodes array', () => {
+  test("should create DiscoveryConfig with empty nodes array", () => {
     const config: DiscoveryConfig = {
-      mode: 'static' as const,
+      mode: "static" as const,
       nodes: [],
     };
 
     expect(config.nodes).toHaveLength(0);
   });
 
-  test('should create DiscoveryConfig with DNS mode', () => {
+  test("should create DiscoveryConfig with DNS mode", () => {
     const config: DiscoveryConfig = {
-      mode: 'dns' as const,
-      dnsName: 'mlx-cluster.local',
+      mode: "dns" as const,
+      dnsName: "mlx-cluster.local",
       port: 8080,
     };
 
-    expect(config.mode).toBe('dns');
-    expect(config.dnsName).toBe('mlx-cluster.local');
+    expect(config.mode).toBe("dns");
+    expect(config.dnsName).toBe("mlx-cluster.local");
     expect(config.port).toBe(8080);
   });
 
-  test('should create DiscoveryConfig with Kubernetes mode', () => {
+  test("should create DiscoveryConfig with Kubernetes mode", () => {
     const config: DiscoveryConfig = {
-      mode: 'kubernetes' as const,
-      namespace: 'mlx-production',
-      serviceLabel: 'app=mlx-worker',
+      mode: "kubernetes" as const,
+      namespace: "mlx-production",
+      serviceLabel: "app=mlx-worker",
     };
 
-    expect(config.mode).toBe('kubernetes');
-    expect(config.namespace).toBe('mlx-production');
-    expect(config.serviceLabel).toBe('app=mlx-worker');
+    expect(config.mode).toBe("kubernetes");
+    expect(config.namespace).toBe("mlx-production");
+    expect(config.serviceLabel).toBe("app=mlx-worker");
   });
 
-  test('should allow optional fields to be undefined', () => {
+  test("should allow optional fields to be undefined", () => {
     const config: DiscoveryConfig = {
-      mode: 'static' as const,
+      mode: "static" as const,
     };
 
-    expect(config.mode).toBe('static');
+    expect(config.mode).toBe("static");
     expect(config.nodes).toBeUndefined();
   });
 });
@@ -593,8 +593,8 @@ describe('DiscoveryConfig Interface', () => {
 // INTERFACE TESTS - RoutingConfig
 // ============================================================================
 
-describe('RoutingConfig Interface', () => {
-  test('should create valid RoutingConfig with default strategy', () => {
+describe("RoutingConfig Interface", () => {
+  test("should create valid RoutingConfig with default strategy", () => {
     const config: RoutingConfig = {
       strategy: LoadBalanceStrategy.ROUND_ROBIN,
       maxRetries: 3,
@@ -606,7 +606,7 @@ describe('RoutingConfig Interface', () => {
     expect(config.retryDelayMs).toBe(1000);
   });
 
-  test('should support LEAST_LOADED strategy', () => {
+  test("should support LEAST_LOADED strategy", () => {
     const config: RoutingConfig = {
       strategy: LoadBalanceStrategy.LEAST_LOADED,
       maxRetries: 2,
@@ -616,7 +616,7 @@ describe('RoutingConfig Interface', () => {
     expect(config.strategy).toBe(LoadBalanceStrategy.LEAST_LOADED);
   });
 
-  test('should support CACHE_AWARE strategy', () => {
+  test("should support CACHE_AWARE strategy", () => {
     const config: RoutingConfig = {
       strategy: LoadBalanceStrategy.CACHE_AWARE,
       maxRetries: 1,
@@ -626,7 +626,7 @@ describe('RoutingConfig Interface', () => {
     expect(config.strategy).toBe(LoadBalanceStrategy.CACHE_AWARE);
   });
 
-  test('should support LATENCY_BASED strategy', () => {
+  test("should support LATENCY_BASED strategy", () => {
     const config: RoutingConfig = {
       strategy: LoadBalanceStrategy.LATENCY_BASED,
       maxRetries: 5,
@@ -636,7 +636,7 @@ describe('RoutingConfig Interface', () => {
     expect(config.strategy).toBe(LoadBalanceStrategy.LATENCY_BASED);
   });
 
-  test('should handle zero retries configuration', () => {
+  test("should handle zero retries configuration", () => {
     const config: RoutingConfig = {
       strategy: LoadBalanceStrategy.ROUND_ROBIN,
       maxRetries: 0,
@@ -652,14 +652,12 @@ describe('RoutingConfig Interface', () => {
 // INTERFACE TESTS - MLXClusterConfig (Integration)
 // ============================================================================
 
-describe('MLXClusterConfig Interface', () => {
-  test('should create valid cluster config with all sections', () => {
+describe("MLXClusterConfig Interface", () => {
+  test("should create valid cluster config with all sections", () => {
     const config: MLXClusterConfig = {
       discovery: {
-        mode: 'static' as const,
-        nodes: [
-          { url: 'http://localhost:8080', id: 'node-1' },
-        ],
+        mode: "static" as const,
+        nodes: [{ url: "http://localhost:8080", id: "node-1" }],
       },
       health: {
         checkIntervalMs: 5000,
@@ -679,18 +677,18 @@ describe('MLXClusterConfig Interface', () => {
       },
     };
 
-    expect(config.discovery.mode).toBe('static');
+    expect(config.discovery.mode).toBe("static");
     expect(config.health.checkIntervalMs).toBe(5000);
     expect(config.cache.maxCacheAgeSec).toBe(3600);
     expect(config.routing.strategy).toBe(LoadBalanceStrategy.CACHE_AWARE);
   });
 
-  test('should create production-ready cluster config', () => {
+  test("should create production-ready cluster config", () => {
     const config: MLXClusterConfig = {
       discovery: {
-        mode: 'kubernetes' as const,
-        namespace: 'production',
-        serviceLabel: 'app=mlx-worker',
+        mode: "kubernetes" as const,
+        namespace: "production",
+        serviceLabel: "app=mlx-worker",
       },
       health: {
         checkIntervalMs: 10000,
@@ -710,16 +708,16 @@ describe('MLXClusterConfig Interface', () => {
       },
     };
 
-    expect(config.discovery.mode).toBe('kubernetes');
+    expect(config.discovery.mode).toBe("kubernetes");
     expect(config.health.maxConsecutiveFailures).toBe(2);
     expect(config.cache.minCacheHitRate).toBe(0.8);
   });
 
-  test('should create development cluster config', () => {
+  test("should create development cluster config", () => {
     const config: MLXClusterConfig = {
       discovery: {
-        mode: 'static' as const,
-        nodes: [{ url: 'http://localhost:8080', id: 'dev-node' }],
+        mode: "static" as const,
+        nodes: [{ url: "http://localhost:8080", id: "dev-node" }],
       },
       health: {
         checkIntervalMs: 30000,
@@ -748,48 +746,48 @@ describe('MLXClusterConfig Interface', () => {
 // INTERFACE TESTS - RoutingDecision
 // ============================================================================
 
-describe('RoutingDecision Interface', () => {
-  test('should create valid routing decision with selected node', () => {
+describe("RoutingDecision Interface", () => {
+  test("should create valid routing decision with selected node", () => {
     const decision: RoutingDecision = {
-      nodeId: 'node-1',
-      reason: 'cache-hit',
+      nodeId: "node-1",
+      reason: "cache-hit",
       confidence: 0.95,
     };
 
-    expect(decision.nodeId).toBe('node-1');
-    expect(decision.reason).toBe('cache-hit');
+    expect(decision.nodeId).toBe("node-1");
+    expect(decision.reason).toBe("cache-hit");
     expect(decision.confidence).toBe(0.95);
   });
 
-  test('should handle low confidence decisions', () => {
+  test("should handle low confidence decisions", () => {
     const decision: RoutingDecision = {
-      nodeId: 'node-2',
-      reason: 'fallback-available',
+      nodeId: "node-2",
+      reason: "fallback-available",
       confidence: 0.2,
     };
 
     expect(decision.confidence).toBe(0.2);
   });
 
-  test('should handle perfect confidence', () => {
+  test("should handle perfect confidence", () => {
     const decision: RoutingDecision = {
-      nodeId: 'node-3',
-      reason: 'exact-cache-match',
+      nodeId: "node-3",
+      reason: "exact-cache-match",
       confidence: 1.0,
     };
 
     expect(decision.confidence).toBe(1.0);
   });
 
-  test('should allow descriptive reasons', () => {
+  test("should allow descriptive reasons", () => {
     const decision: RoutingDecision = {
-      nodeId: 'node-4',
-      reason: 'lowest-latency-and-cache-hit',
+      nodeId: "node-4",
+      reason: "lowest-latency-and-cache-hit",
       confidence: 0.85,
     };
 
-    expect(decision.reason).toContain('latency');
-    expect(decision.reason).toContain('cache-hit');
+    expect(decision.reason).toContain("latency");
+    expect(decision.reason).toContain("cache-hit");
   });
 });
 
@@ -797,55 +795,55 @@ describe('RoutingDecision Interface', () => {
 // INTERFACE TESTS - RoutingContext
 // ============================================================================
 
-describe('RoutingContext Interface', () => {
-  test('should create valid routing context with all fields', () => {
+describe("RoutingContext Interface", () => {
+  test("should create valid routing context with all fields", () => {
     const context: RoutingContext = {
-      systemPromptHash: 'sha256:abc123',
+      systemPromptHash: "sha256:abc123",
       estimatedTokens: 2048,
-      userPriority: 'normal' as const,
+      userPriority: "normal" as const,
     };
 
-    expect(context.systemPromptHash).toBe('sha256:abc123');
+    expect(context.systemPromptHash).toBe("sha256:abc123");
     expect(context.estimatedTokens).toBe(2048);
-    expect(context.userPriority).toBe('normal');
+    expect(context.userPriority).toBe("normal");
   });
 
-  test('should support high priority requests', () => {
+  test("should support high priority requests", () => {
     const context: RoutingContext = {
-      systemPromptHash: 'sha256:urgent',
+      systemPromptHash: "sha256:urgent",
       estimatedTokens: 512,
-      userPriority: 'high' as const,
+      userPriority: "high" as const,
     };
 
-    expect(context.userPriority).toBe('high');
+    expect(context.userPriority).toBe("high");
   });
 
-  test('should support low priority requests', () => {
+  test("should support low priority requests", () => {
     const context: RoutingContext = {
-      systemPromptHash: 'sha256:batch',
+      systemPromptHash: "sha256:batch",
       estimatedTokens: 8192,
-      userPriority: 'low' as const,
+      userPriority: "low" as const,
     };
 
-    expect(context.userPriority).toBe('low');
+    expect(context.userPriority).toBe("low");
     expect(context.estimatedTokens).toBe(8192);
   });
 
-  test('should handle small token estimates', () => {
+  test("should handle small token estimates", () => {
     const context: RoutingContext = {
-      systemPromptHash: 'sha256:small',
+      systemPromptHash: "sha256:small",
       estimatedTokens: 10,
-      userPriority: 'normal' as const,
+      userPriority: "normal" as const,
     };
 
     expect(context.estimatedTokens).toBe(10);
   });
 
-  test('should handle large token estimates', () => {
+  test("should handle large token estimates", () => {
     const context: RoutingContext = {
-      systemPromptHash: 'sha256:large',
+      systemPromptHash: "sha256:large",
       estimatedTokens: 100000,
-      userPriority: 'normal' as const,
+      userPriority: "normal" as const,
     };
 
     expect(context.estimatedTokens).toBe(100000);
@@ -856,8 +854,8 @@ describe('RoutingContext Interface', () => {
 // INTERFACE TESTS - ClusterMetrics (Aggregated)
 // ============================================================================
 
-describe('ClusterMetrics Interface', () => {
-  test('should create valid cluster metrics with all fields', () => {
+describe("ClusterMetrics Interface", () => {
+  test("should create valid cluster metrics with all fields", () => {
     const metrics: ClusterMetrics = {
       totalNodes: 3,
       healthyNodes: 2,
@@ -873,7 +871,7 @@ describe('ClusterMetrics Interface', () => {
     expect(metrics.overallCacheHitRate).toBe(0.75);
   });
 
-  test('should handle fully healthy cluster', () => {
+  test("should handle fully healthy cluster", () => {
     const metrics: ClusterMetrics = {
       totalNodes: 5,
       healthyNodes: 5,
@@ -886,7 +884,7 @@ describe('ClusterMetrics Interface', () => {
     expect(metrics.overallCacheHitRate).toBe(0.95);
   });
 
-  test('should handle fully degraded cluster', () => {
+  test("should handle fully degraded cluster", () => {
     const metrics: ClusterMetrics = {
       totalNodes: 4,
       healthyNodes: 0,
@@ -899,7 +897,7 @@ describe('ClusterMetrics Interface', () => {
     expect(metrics.avgClusterLatency).toBe(5000);
   });
 
-  test('should handle new cluster with no requests', () => {
+  test("should handle new cluster with no requests", () => {
     const metrics: ClusterMetrics = {
       totalNodes: 2,
       healthyNodes: 2,
@@ -912,7 +910,7 @@ describe('ClusterMetrics Interface', () => {
     expect(metrics.avgClusterLatency).toBe(0);
   });
 
-  test('should calculate partial health correctly', () => {
+  test("should calculate partial health correctly", () => {
     const metrics: ClusterMetrics = {
       totalNodes: 10,
       healthyNodes: 7,
@@ -930,14 +928,14 @@ describe('ClusterMetrics Interface', () => {
 // INTERFACE TESTS - ClusterState (Complete State)
 // ============================================================================
 
-describe('ClusterState Interface', () => {
-  test('should create valid cluster state with all components', () => {
+describe("ClusterState Interface", () => {
+  test("should create valid cluster state with all components", () => {
     const state: ClusterState = {
       status: ClusterStatus.HEALTHY,
       nodes: [
         {
-          id: 'node-1',
-          url: 'http://localhost:8080',
+          id: "node-1",
+          url: "http://localhost:8080",
           status: NodeStatus.HEALTHY,
           health: {
             lastCheck: Date.now(),
@@ -947,7 +945,7 @@ describe('ClusterState Interface', () => {
           },
           cache: {
             tokens: 2048,
-            systemPromptHash: 'sha256:abc123',
+            systemPromptHash: "sha256:abc123",
             lastUpdated: Date.now(),
           },
           metrics: {
@@ -974,13 +972,13 @@ describe('ClusterState Interface', () => {
     expect(state.lastUpdated).toBeGreaterThan(0);
   });
 
-  test('should represent degraded cluster state', () => {
+  test("should represent degraded cluster state", () => {
     const state: ClusterState = {
       status: ClusterStatus.DEGRADED,
       nodes: [
         {
-          id: 'node-1',
-          url: 'http://localhost:8080',
+          id: "node-1",
+          url: "http://localhost:8080",
           status: NodeStatus.HEALTHY,
           health: {
             lastCheck: Date.now(),
@@ -990,7 +988,7 @@ describe('ClusterState Interface', () => {
           },
           cache: {
             tokens: 2048,
-            systemPromptHash: 'sha256:abc123',
+            systemPromptHash: "sha256:abc123",
             lastUpdated: Date.now(),
           },
           metrics: {
@@ -1001,8 +999,8 @@ describe('ClusterState Interface', () => {
           },
         },
         {
-          id: 'node-2',
-          url: 'http://localhost:8081',
+          id: "node-2",
+          url: "http://localhost:8081",
           status: NodeStatus.UNHEALTHY,
           health: {
             lastCheck: Date.now(),
@@ -1012,7 +1010,7 @@ describe('ClusterState Interface', () => {
           },
           cache: {
             tokens: 0,
-            systemPromptHash: '',
+            systemPromptHash: "",
             lastUpdated: Date.now() - 60000,
           },
           metrics: {
@@ -1038,7 +1036,7 @@ describe('ClusterState Interface', () => {
     expect(state.metrics.healthyNodes).toBe(1);
   });
 
-  test('should represent starting cluster state', () => {
+  test("should represent starting cluster state", () => {
     const state: ClusterState = {
       status: ClusterStatus.STARTING,
       nodes: [],
@@ -1056,13 +1054,13 @@ describe('ClusterState Interface', () => {
     expect(state.nodes).toHaveLength(0);
   });
 
-  test('should represent offline cluster state', () => {
+  test("should represent offline cluster state", () => {
     const state: ClusterState = {
       status: ClusterStatus.OFFLINE,
       nodes: [
         {
-          id: 'node-1',
-          url: 'http://localhost:8080',
+          id: "node-1",
+          url: "http://localhost:8080",
           status: NodeStatus.OFFLINE,
           health: {
             lastCheck: Date.now() - 300000,
@@ -1072,7 +1070,7 @@ describe('ClusterState Interface', () => {
           },
           cache: {
             tokens: 0,
-            systemPromptHash: '',
+            systemPromptHash: "",
             lastUpdated: Date.now() - 300000,
           },
           metrics: {
@@ -1102,8 +1100,8 @@ describe('ClusterState Interface', () => {
 // TYPE COMPATIBILITY TESTS - Partial<T>, Required<T> patterns
 // ============================================================================
 
-describe('Type Compatibility - Partial and Required', () => {
-  test('should support Partial<MLXClusterConfig>', () => {
+describe("Type Compatibility - Partial and Required", () => {
+  test("should support Partial<MLXClusterConfig>", () => {
     const partialConfig: Partial<MLXClusterConfig> = {
       routing: {
         strategy: LoadBalanceStrategy.ROUND_ROBIN,
@@ -1116,7 +1114,7 @@ describe('Type Compatibility - Partial and Required', () => {
     expect(partialConfig.discovery).toBeUndefined();
   });
 
-  test('should support Partial<NodeMetrics>', () => {
+  test("should support Partial<NodeMetrics>", () => {
     const partialMetrics: Partial<NodeMetrics> = {
       requestsInFlight: 5,
     };
@@ -1125,14 +1123,14 @@ describe('Type Compatibility - Partial and Required', () => {
     expect(partialMetrics.totalRequests).toBeUndefined();
   });
 
-  test('should support Required<DiscoveryConfig>', () => {
+  test("should support Required<DiscoveryConfig>", () => {
     const requiredDiscovery: Required<DiscoveryConfig> = {
-      mode: 'static' as const,
-      nodes: [{ url: 'http://localhost:8080', id: 'node-1' }],
-      dnsName: 'mlx.local',
+      mode: "static" as const,
+      nodes: [{ url: "http://localhost:8080", id: "node-1" }],
+      dnsName: "mlx.local",
       port: 8080,
-      namespace: 'default',
-      serviceLabel: 'app=mlx',
+      namespace: "default",
+      serviceLabel: "app=mlx",
     };
 
     expect(requiredDiscovery.nodes).toBeDefined();
@@ -1140,7 +1138,7 @@ describe('Type Compatibility - Partial and Required', () => {
     expect(requiredDiscovery.namespace).toBeDefined();
   });
 
-  test('should support Partial<ClusterState> for updates', () => {
+  test("should support Partial<ClusterState> for updates", () => {
     const stateUpdate: Partial<ClusterState> = {
       status: ClusterStatus.DEGRADED,
       lastUpdated: Date.now(),
@@ -1155,8 +1153,8 @@ describe('Type Compatibility - Partial and Required', () => {
 // EDGE CASES AND ERROR CONDITIONS
 // ============================================================================
 
-describe('Edge Cases - Empty and Extreme Values', () => {
-  test('should handle empty cluster state', () => {
+describe("Edge Cases - Empty and Extreme Values", () => {
+  test("should handle empty cluster state", () => {
     const state: ClusterState = {
       status: ClusterStatus.STARTING,
       nodes: [],
@@ -1174,17 +1172,17 @@ describe('Edge Cases - Empty and Extreme Values', () => {
     expect(state.metrics.totalNodes).toBe(0);
   });
 
-  test('should handle very large token counts', () => {
+  test("should handle very large token counts", () => {
     const cache: NodeCacheState = {
       tokens: Number.MAX_SAFE_INTEGER,
-      systemPromptHash: 'sha256:huge',
+      systemPromptHash: "sha256:huge",
       lastUpdated: Date.now(),
     };
 
     expect(cache.tokens).toBe(Number.MAX_SAFE_INTEGER);
   });
 
-  test('should handle zero latency (impossible but type-safe)', () => {
+  test("should handle zero latency (impossible but type-safe)", () => {
     const metrics: NodeMetrics = {
       requestsInFlight: 100,
       totalRequests: 1000,
@@ -1195,12 +1193,13 @@ describe('Edge Cases - Empty and Extreme Values', () => {
     expect(metrics.avgLatency).toBe(0);
   });
 
-  test('should handle long node IDs', () => {
-    const longId: NodeId = 'mlx-worker-production-us-east-1a-instance-' + 'x'.repeat(100);
+  test("should handle long node IDs", () => {
+    const longId: NodeId =
+      "mlx-worker-production-us-east-1a-instance-" + "x".repeat(100);
     expect(longId.length).toBeGreaterThan(100);
   });
 
-  test('should handle fractional error rates', () => {
+  test("should handle fractional error rates", () => {
     const health: NodeHealth = {
       lastCheck: Date.now(),
       consecutiveFailures: 0,
@@ -1216,14 +1215,14 @@ describe('Edge Cases - Empty and Extreme Values', () => {
 // INTEGRATION TESTS - Types Working Together
 // ============================================================================
 
-describe('Integration - Types Working Together', () => {
-  test('should build complete cluster from config', () => {
+describe("Integration - Types Working Together", () => {
+  test("should build complete cluster from config", () => {
     const config: MLXClusterConfig = {
       discovery: {
-        mode: 'static' as const,
+        mode: "static" as const,
         nodes: [
-          { url: 'http://localhost:8080', id: 'node-1' },
-          { url: 'http://localhost:8081', id: 'node-2' },
+          { url: "http://localhost:8080", id: "node-1" },
+          { url: "http://localhost:8081", id: "node-2" },
         ],
       },
       health: {
@@ -1244,28 +1243,30 @@ describe('Integration - Types Working Together', () => {
       },
     };
 
-    const nodes: MLXNode[] = config.discovery.nodes!.map((nodeConfig: { id: string; url: string }) => ({
-      id: nodeConfig.id,
-      url: nodeConfig.url,
-      status: NodeStatus.INITIALIZING,
-      health: {
-        lastCheck: Date.now(),
-        consecutiveFailures: 0,
-        avgResponseTime: 0,
-        errorRate: 0,
-      },
-      cache: {
-        tokens: 0,
-        systemPromptHash: '',
-        lastUpdated: Date.now(),
-      },
-      metrics: {
-        requestsInFlight: 0,
-        totalRequests: 0,
-        cacheHitRate: 0,
-        avgLatency: 0,
-      },
-    }));
+    const nodes: MLXNode[] = config.discovery.nodes!.map(
+      (nodeConfig: { id: string; url: string }) => ({
+        id: nodeConfig.id,
+        url: nodeConfig.url,
+        status: NodeStatus.INITIALIZING,
+        health: {
+          lastCheck: Date.now(),
+          consecutiveFailures: 0,
+          avgResponseTime: 0,
+          errorRate: 0,
+        },
+        cache: {
+          tokens: 0,
+          systemPromptHash: "",
+          lastUpdated: Date.now(),
+        },
+        metrics: {
+          requestsInFlight: 0,
+          totalRequests: 0,
+          cacheHitRate: 0,
+          avgLatency: 0,
+        },
+      })
+    );
 
     const state: ClusterState = {
       status: ClusterStatus.STARTING,
@@ -1284,27 +1285,27 @@ describe('Integration - Types Working Together', () => {
     expect(state.status).toBe(ClusterStatus.STARTING);
   });
 
-  test('should route request using context', () => {
+  test("should route request using context", () => {
     const context: RoutingContext = {
-      systemPromptHash: 'sha256:abc123',
+      systemPromptHash: "sha256:abc123",
       estimatedTokens: 2048,
-      userPriority: 'high' as const,
+      userPriority: "high" as const,
     };
 
     const decision: RoutingDecision = {
-      nodeId: 'node-1',
-      reason: 'cache-hit-high-priority',
+      nodeId: "node-1",
+      reason: "cache-hit-high-priority",
       confidence: 0.9,
     };
 
-    expect(decision.nodeId).toBe('node-1');
-    expect(decision.reason).toContain('high-priority');
+    expect(decision.nodeId).toBe("node-1");
+    expect(decision.reason).toContain("high-priority");
   });
 
-  test('should update node status based on health', () => {
+  test("should update node status based on health", () => {
     const node: MLXNode = {
-      id: 'node-1',
-      url: 'http://localhost:8080',
+      id: "node-1",
+      url: "http://localhost:8080",
       status: NodeStatus.HEALTHY,
       health: {
         lastCheck: Date.now(),
@@ -1314,7 +1315,7 @@ describe('Integration - Types Working Together', () => {
       },
       cache: {
         tokens: 2048,
-        systemPromptHash: 'sha256:abc123',
+        systemPromptHash: "sha256:abc123",
         lastUpdated: Date.now(),
       },
       metrics: {

@@ -4,6 +4,9 @@ MLX Worker FastAPI Server
 Provides OpenAI-compatible chat completions endpoint and cluster health monitoring.
 """
 
+import os
+import re
+import json
 import time
 import uuid
 from typing import List, Dict, Any, Optional, Union
@@ -13,6 +16,9 @@ from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 import uvicorn
+
+# Get model path from environment - this is the actual filesystem path
+MLX_MODEL_PATH = os.environ.get("MLX_MODEL_PATH", "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit")
 
 from .inference import generate_stream, InferenceError
 from .cache import (
@@ -50,6 +56,89 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = Field(0.7, ge=0.0, le=2.0)
     top_p: Optional[float] = Field(0.9, ge=0.0, le=1.0)
     stream: Optional[bool] = False
+    tools: Optional[List[Dict[str, Any]]] = None
+
+
+def parse_tool_calls(content: str) -> tuple[str, List[Dict[str, Any]]]:
+    """
+    Parse tool calls from model output.
+
+    Qwen2.5 outputs tool calls in various XML formats:
+    1. <tool_call>{"name": "func", "arguments": {...}}</tool_call>
+    2. <tools>{"name": "func", "arguments": {...}}</tools>
+    3. <function name="func" arguments='{...}'/>
+
+    Returns:
+        Tuple of (text_content, tool_calls)
+    """
+    tool_calls = []
+    text_parts = []
+    last_end = 0
+
+    # Pattern 1: <tool_call> or <tools> with JSON body
+    pattern1 = r'<(?:tool_call|tools)>\s*(.*?)\s*</(?:tool_call|tools)>'
+    for match in re.finditer(pattern1, content, re.DOTALL):
+        text_parts.append(content[last_end:match.start()])
+        last_end = match.end()
+        try:
+            tool_json = json.loads(match.group(1))
+            tool_calls.append({
+                "id": f"call_{uuid.uuid4().hex[:8]}",
+                "type": "function",
+                "function": {
+                    "name": tool_json.get("name", ""),
+                    "arguments": json.dumps(tool_json.get("arguments", {}))
+                }
+            })
+        except json.JSONDecodeError:
+            text_parts.append(match.group(0))
+
+    # Pattern 2: <function name="..." arguments='...'/>
+    pattern2 = r'<function\s+name=["\']([^"\']+)["\']\s+arguments=["\'](.+?)["\']\s*/>'
+    for match in re.finditer(pattern2, content, re.DOTALL):
+        if match.start() >= last_end:
+            text_parts.append(content[last_end:match.start()])
+            last_end = match.end()
+            try:
+                args = json.loads(match.group(2))
+                tool_calls.append({
+                    "id": f"call_{uuid.uuid4().hex[:8]}",
+                    "type": "function",
+                    "function": {
+                        "name": match.group(1),
+                        "arguments": json.dumps(args)
+                    }
+                })
+            except json.JSONDecodeError:
+                text_parts.append(match.group(0))
+
+    # Pattern 3: <{json}> format (another Qwen variation)
+    pattern3 = r'<(\{[^>]+\})>'
+    for match in re.finditer(pattern3, content, re.DOTALL):
+        if match.start() >= last_end:
+            text_parts.append(content[last_end:match.start()])
+            last_end = match.end()
+            try:
+                tool_json = json.loads(match.group(1))
+                tool_calls.append({
+                    "id": f"call_{uuid.uuid4().hex[:8]}",
+                    "type": "function",
+                    "function": {
+                        "name": tool_json.get("name", ""),
+                        "arguments": json.dumps(tool_json.get("arguments", {}))
+                    }
+                })
+            except json.JSONDecodeError:
+                text_parts.append(match.group(0))
+
+    # Add remaining text
+    text_parts.append(content[last_end:])
+
+    # Clean up markdown code blocks that might wrap tool calls
+    final_text = "".join(text_parts).strip()
+    final_text = re.sub(r'```(?:xml)?\s*```', '', final_text).strip()
+
+    return final_text, tool_calls
 
 
 class CacheWarmRequest(BaseModel):
@@ -136,18 +225,30 @@ async def chat_completions(
             try:
                 for token in generate_stream(
                     messages,
-                    model_path=request.model,
+                    model_path=MLX_MODEL_PATH,  # Use env var, not request.model
                     max_tokens=request.max_tokens,
                     temperature=request.temperature,
                     top_p=request.top_p,
+                    tools=request.tools,
                 ):
                     tokens.append(token)
 
-                content = "".join(tokens)
+                raw_content = "".join(tokens)
+
+                # Parse tool calls from response
+                content, tool_calls = parse_tool_calls(raw_content)
 
                 # Record success
                 latency = (time.time() - start_time) * 1000
                 record_request(success=True, latency=latency)
+
+                # Build message with optional tool_calls
+                message = {
+                    "role": "assistant",
+                    "content": content if content else None,
+                }
+                if tool_calls:
+                    message["tool_calls"] = tool_calls
 
                 return JSONResponse(
                     content={
@@ -158,11 +259,8 @@ async def chat_completions(
                         "choices": [
                             {
                                 "index": 0,
-                                "message": {
-                                    "role": "assistant",
-                                    "content": content,
-                                },
-                                "finish_reason": "stop",
+                                "message": message,
+                                "finish_reason": "tool_calls" if tool_calls else "stop",
                             }
                         ],
                     },
@@ -219,16 +317,17 @@ async def _stream_response(
     try:
         for token in generate_stream(
             messages,
-            model_path=request.model,
+            model_path=MLX_MODEL_PATH,  # Use env var, not request.model
             max_tokens=request.max_tokens,
             temperature=request.temperature,
             top_p=request.top_p,
+            tools=request.tools,
         ):
             chunk = {
                 "id": completion_id,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": request.model,
+                "model": MLX_MODEL_PATH,
                 "choices": [
                     {
                         "index": 0,

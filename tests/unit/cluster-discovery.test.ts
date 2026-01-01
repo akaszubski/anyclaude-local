@@ -33,8 +33,8 @@ import {
   DiscoveryConfig,
   DiscoveryCallbacks,
   DiscoveryError,
-} from '../../src/cluster/cluster-discovery';
-import { NodeId } from '../../src/cluster/cluster-types';
+} from "../../src/cluster/cluster-discovery";
+import { NodeId } from "../../src/cluster/cluster-types";
 
 // ============================================================================
 // Test Helpers and Mocks
@@ -50,10 +50,8 @@ global.fetch = jest.fn();
  */
 function createMinimalConfig(): DiscoveryConfig {
   return {
-    mode: 'static',
-    staticNodes: [
-      { url: 'http://localhost:8080', id: 'node-1' },
-    ],
+    mode: "static",
+    staticNodes: [{ url: "http://localhost:8080", id: "node-1" }],
     refreshIntervalMs: 30000,
     validationTimeoutMs: 2000,
   };
@@ -64,11 +62,11 @@ function createMinimalConfig(): DiscoveryConfig {
  */
 function createMultiNodeConfig(): DiscoveryConfig {
   return {
-    mode: 'static',
+    mode: "static",
     staticNodes: [
-      { url: 'http://localhost:8080', id: 'node-1' },
-      { url: 'http://localhost:8081', id: 'node-2' },
-      { url: 'http://localhost:8082', id: 'node-3' },
+      { url: "http://localhost:8080", id: "node-1" },
+      { url: "http://localhost:8081", id: "node-2" },
+      { url: "http://localhost:8082", id: "node-3" },
     ],
     refreshIntervalMs: 30000,
     validationTimeoutMs: 2000,
@@ -94,9 +92,7 @@ function createSuccessfulModelsResponse() {
     ok: true,
     status: 200,
     json: async () => ({
-      data: [
-        { id: 'test-model', object: 'model' },
-      ],
+      data: [{ id: "test-model", object: "model" }],
     }),
   } as Response;
 }
@@ -108,7 +104,7 @@ function createFailedResponse(status: number = 500) {
   return {
     ok: false,
     status,
-    json: async () => ({ error: 'Internal Server Error' }),
+    json: async () => ({ error: "Internal Server Error" }),
   } as Response;
 }
 
@@ -116,8 +112,8 @@ function createFailedResponse(status: number = 500) {
  * Helper to create a timeout error
  */
 function createTimeoutError() {
-  const error = new Error('Request timeout');
-  error.name = 'TimeoutError';
+  const error = new Error("Request timeout");
+  error.name = "TimeoutError";
   return error;
 }
 
@@ -148,55 +144,57 @@ afterEach(() => {
 // Test Suite: DiscoveryError
 // ============================================================================
 
-describe('DiscoveryError', () => {
-  describe('Error construction', () => {
-    test('should create error with code and message', () => {
-      const error = new DiscoveryError('VALIDATION_FAILED', 'Node validation failed');
+describe("DiscoveryError", () => {
+  describe("Error construction", () => {
+    test("should create error with code and message", () => {
+      const error = new DiscoveryError(
+        "VALIDATION_FAILED",
+        "Node validation failed"
+      );
 
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(DiscoveryError);
-      expect(error.code).toBe('VALIDATION_FAILED');
-      expect(error.message).toBe('Node validation failed');
+      expect(error.code).toBe("VALIDATION_FAILED");
+      expect(error.message).toBe("Node validation failed");
     });
 
-    test('should create error with nodeId context', () => {
+    test("should create error with nodeId context", () => {
+      const error = new DiscoveryError("NODE_TIMEOUT", "Node did not respond", {
+        nodeId: "node-1",
+      });
+
+      expect(error.code).toBe("NODE_TIMEOUT");
+      expect(error.message).toBe("Node did not respond");
+      expect(error.nodeId).toBe("node-1");
+    });
+
+    test("should create error with url context", () => {
+      const error = new DiscoveryError("INVALID_URL", "URL is not valid", {
+        url: "http://invalid",
+      });
+
+      expect(error.url).toBe("http://invalid");
+    });
+
+    test("should create error without context", () => {
       const error = new DiscoveryError(
-        'NODE_TIMEOUT',
-        'Node did not respond',
-        { nodeId: 'node-1' }
+        "UNKNOWN_ERROR",
+        "Unknown error occurred"
       );
 
-      expect(error.code).toBe('NODE_TIMEOUT');
-      expect(error.message).toBe('Node did not respond');
-      expect(error.nodeId).toBe('node-1');
-    });
-
-    test('should create error with url context', () => {
-      const error = new DiscoveryError(
-        'INVALID_URL',
-        'URL is not valid',
-        { url: 'http://invalid' }
-      );
-
-      expect(error.url).toBe('http://invalid');
-    });
-
-    test('should create error without context', () => {
-      const error = new DiscoveryError('UNKNOWN_ERROR', 'Unknown error occurred');
-
-      expect(error.code).toBe('UNKNOWN_ERROR');
+      expect(error.code).toBe("UNKNOWN_ERROR");
       expect(error.nodeId).toBeUndefined();
       expect(error.url).toBeUndefined();
     });
 
-    test('should have proper error name', () => {
-      const error = new DiscoveryError('TEST_ERROR', 'Test');
-      expect(error.name).toBe('DiscoveryError');
+    test("should have proper error name", () => {
+      const error = new DiscoveryError("TEST_ERROR", "Test");
+      expect(error.name).toBe("DiscoveryError");
     });
 
-    test('should be catchable as Error', () => {
+    test("should be catchable as Error", () => {
       try {
-        throw new DiscoveryError('TEST', 'Test error');
+        throw new DiscoveryError("TEST", "Test error");
       } catch (err) {
         expect(err).toBeInstanceOf(Error);
         expect(err).toBeInstanceOf(DiscoveryError);
@@ -204,30 +202,33 @@ describe('DiscoveryError', () => {
     });
   });
 
-  describe('Error codes', () => {
-    test('should support VALIDATION_FAILED code', () => {
-      const error = new DiscoveryError('VALIDATION_FAILED', 'Validation failed');
-      expect(error.code).toBe('VALIDATION_FAILED');
+  describe("Error codes", () => {
+    test("should support VALIDATION_FAILED code", () => {
+      const error = new DiscoveryError(
+        "VALIDATION_FAILED",
+        "Validation failed"
+      );
+      expect(error.code).toBe("VALIDATION_FAILED");
     });
 
-    test('should support NODE_TIMEOUT code', () => {
-      const error = new DiscoveryError('NODE_TIMEOUT', 'Request timed out');
-      expect(error.code).toBe('NODE_TIMEOUT');
+    test("should support NODE_TIMEOUT code", () => {
+      const error = new DiscoveryError("NODE_TIMEOUT", "Request timed out");
+      expect(error.code).toBe("NODE_TIMEOUT");
     });
 
-    test('should support INVALID_URL code', () => {
-      const error = new DiscoveryError('INVALID_URL', 'Invalid URL format');
-      expect(error.code).toBe('INVALID_URL');
+    test("should support INVALID_URL code", () => {
+      const error = new DiscoveryError("INVALID_URL", "Invalid URL format");
+      expect(error.code).toBe("INVALID_URL");
     });
 
-    test('should support HTTP_ERROR code', () => {
-      const error = new DiscoveryError('HTTP_ERROR', 'HTTP request failed');
-      expect(error.code).toBe('HTTP_ERROR');
+    test("should support HTTP_ERROR code", () => {
+      const error = new DiscoveryError("HTTP_ERROR", "HTTP request failed");
+      expect(error.code).toBe("HTTP_ERROR");
     });
 
-    test('should support NETWORK_ERROR code', () => {
-      const error = new DiscoveryError('NETWORK_ERROR', 'Network unreachable');
-      expect(error.code).toBe('NETWORK_ERROR');
+    test("should support NETWORK_ERROR code", () => {
+      const error = new DiscoveryError("NETWORK_ERROR", "Network unreachable");
+      expect(error.code).toBe("NETWORK_ERROR");
     });
   });
 });
@@ -236,16 +237,16 @@ describe('DiscoveryError', () => {
 // Test Suite: ClusterDiscovery - Constructor
 // ============================================================================
 
-describe('ClusterDiscovery - Constructor', () => {
-  describe('Initialization', () => {
-    test('should create instance with minimal config', () => {
+describe("ClusterDiscovery - Constructor", () => {
+  describe("Initialization", () => {
+    test("should create instance with minimal config", () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       expect(discovery).toBeInstanceOf(ClusterDiscovery);
     });
 
-    test('should create instance with callbacks', () => {
+    test("should create instance with callbacks", () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
@@ -253,21 +254,21 @@ describe('ClusterDiscovery - Constructor', () => {
       expect(discovery).toBeInstanceOf(ClusterDiscovery);
     });
 
-    test('should create instance without callbacks', () => {
+    test("should create instance without callbacks", () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       expect(discovery).toBeInstanceOf(ClusterDiscovery);
     });
 
-    test('should start in stopped state', () => {
+    test("should start in stopped state", () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       expect(discovery.isRunning()).toBe(false);
     });
 
-    test('should have empty discovered nodes initially', () => {
+    test("should have empty discovered nodes initially", () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
@@ -276,10 +277,10 @@ describe('ClusterDiscovery - Constructor', () => {
     });
   });
 
-  describe('Config validation', () => {
-    test('should throw on invalid mode', () => {
+  describe("Config validation", () => {
+    test("should throw on invalid mode", () => {
       const config: any = {
-        mode: 'invalid-mode',
+        mode: "invalid-mode",
         staticNodes: [],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
@@ -288,9 +289,9 @@ describe('ClusterDiscovery - Constructor', () => {
       expect(() => new ClusterDiscovery(config)).toThrow();
     });
 
-    test('should throw on missing staticNodes for static mode', () => {
+    test("should throw on missing staticNodes for static mode", () => {
       const config: any = {
-        mode: 'static',
+        mode: "static",
         // Missing staticNodes
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
@@ -299,10 +300,10 @@ describe('ClusterDiscovery - Constructor', () => {
       expect(() => new ClusterDiscovery(config)).toThrow();
     });
 
-    test('should throw on negative refreshIntervalMs', () => {
+    test("should throw on negative refreshIntervalMs", () => {
       const config: any = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://localhost:8080', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://localhost:8080", id: "node-1" }],
         refreshIntervalMs: -1000,
         validationTimeoutMs: 2000,
       };
@@ -310,10 +311,10 @@ describe('ClusterDiscovery - Constructor', () => {
       expect(() => new ClusterDiscovery(config)).toThrow();
     });
 
-    test('should throw on negative validationTimeoutMs', () => {
+    test("should throw on negative validationTimeoutMs", () => {
       const config: any = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://localhost:8080', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://localhost:8080", id: "node-1" }],
         refreshIntervalMs: 30000,
         validationTimeoutMs: -500,
       };
@@ -321,9 +322,9 @@ describe('ClusterDiscovery - Constructor', () => {
       expect(() => new ClusterDiscovery(config)).toThrow();
     });
 
-    test('should throw on empty staticNodes array', () => {
+    test("should throw on empty staticNodes array", () => {
       const config: any = {
-        mode: 'static',
+        mode: "static",
         staticNodes: [],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
@@ -338,9 +339,9 @@ describe('ClusterDiscovery - Constructor', () => {
 // Test Suite: ClusterDiscovery - Lifecycle Management
 // ============================================================================
 
-describe('ClusterDiscovery - Lifecycle', () => {
-  describe('start()', () => {
-    test('should set isRunning to true', async () => {
+describe("ClusterDiscovery - Lifecycle", () => {
+  describe("start()", () => {
+    test("should set isRunning to true", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
@@ -349,11 +350,13 @@ describe('ClusterDiscovery - Lifecycle', () => {
       expect(discovery.isRunning()).toBe(true);
     });
 
-    test('should create refresh timer', async () => {
+    test("should create refresh timer", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
@@ -361,61 +364,72 @@ describe('ClusterDiscovery - Lifecycle', () => {
       expect(jest.getTimerCount()).toBeGreaterThan(0);
     });
 
-    test('should perform initial discovery immediately', async () => {
+    test("should perform initial discovery immediately", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       // Should have discovered the node
-      expect(callbacks.onNodeDiscovered).toHaveBeenCalledWith('node-1', 'http://localhost:8080');
+      expect(callbacks.onNodeDiscovered).toHaveBeenCalledWith(
+        "node-1",
+        "http://localhost:8080"
+      );
     });
 
-    test('should throw if already running', async () => {
+    test("should throw if already running", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
-      await expect(discovery.start()).rejects.toThrow('already running');
+      await expect(discovery.start()).rejects.toThrow("already running");
     });
 
-    test('should validate all configured nodes on start', async () => {
+    test("should validate all configured nodes on start", async () => {
       const config = createMultiNodeConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       // Should have validated all 3 nodes
       expect(global.fetch).toHaveBeenCalledTimes(3);
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/v1/models',
+        "http://localhost:8080/v1/models",
         expect.any(Object)
       );
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:8081/v1/models',
+        "http://localhost:8081/v1/models",
         expect.any(Object)
       );
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:8082/v1/models',
+        "http://localhost:8082/v1/models",
         expect.any(Object)
       );
     });
   });
 
-  describe('stop()', () => {
-    test('should set isRunning to false', async () => {
+  describe("stop()", () => {
+    test("should set isRunning to false", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       discovery.stop();
@@ -423,11 +437,13 @@ describe('ClusterDiscovery - Lifecycle', () => {
       expect(discovery.isRunning()).toBe(false);
     });
 
-    test('should clear refresh timer', async () => {
+    test("should clear refresh timer", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       const timerCountBefore = jest.getTimerCount();
@@ -438,19 +454,21 @@ describe('ClusterDiscovery - Lifecycle', () => {
       expect(timerCountAfter).toBeLessThan(timerCountBefore);
     });
 
-    test('should not throw if already stopped', () => {
+    test("should not throw if already stopped", () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       expect(() => discovery.stop()).not.toThrow();
     });
 
-    test('should not trigger callbacks after stop', async () => {
+    test("should not trigger callbacks after stop", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       callbacks.onNodeDiscovered?.mockClear();
@@ -464,11 +482,13 @@ describe('ClusterDiscovery - Lifecycle', () => {
       expect(callbacks.onNodeDiscovered).not.toHaveBeenCalled();
     });
 
-    test('should prevent new discovery after stop', async () => {
+    test("should prevent new discovery after stop", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       const fetchCountBefore = (global.fetch as jest.Mock).mock.calls.length;
@@ -483,30 +503,34 @@ describe('ClusterDiscovery - Lifecycle', () => {
     });
   });
 
-  describe('isRunning()', () => {
-    test('should return false initially', () => {
+  describe("isRunning()", () => {
+    test("should return false initially", () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       expect(discovery.isRunning()).toBe(false);
     });
 
-    test('should return true after start', async () => {
+    test("should return true after start", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       expect(discovery.isRunning()).toBe(true);
     });
 
-    test('should return false after stop', async () => {
+    test("should return false after stop", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       discovery.stop();
@@ -514,12 +538,15 @@ describe('ClusterDiscovery - Lifecycle', () => {
       expect(discovery.isRunning()).toBe(false);
     });
 
-    test('should return true during discovery', async () => {
+    test("should return true during discovery", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(createSuccessfulModelsResponse()), 100))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(createSuccessfulModelsResponse()), 100)
+          )
       );
 
       const startPromise = discovery.start();
@@ -535,50 +562,56 @@ describe('ClusterDiscovery - Lifecycle', () => {
 // Test Suite: ClusterDiscovery - Static Node Discovery
 // ============================================================================
 
-describe('ClusterDiscovery - Static Discovery', () => {
-  describe('Reading static nodes', () => {
-    test('should discover single static node', async () => {
+describe("ClusterDiscovery - Static Discovery", () => {
+  describe("Reading static nodes", () => {
+    test("should discover single static node", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
       expect(nodes).toHaveLength(1);
-      expect(nodes[0].id).toBe('node-1');
-      expect(nodes[0].url).toBe('http://localhost:8080');
+      expect(nodes[0].id).toBe("node-1");
+      expect(nodes[0].url).toBe("http://localhost:8080");
     });
 
-    test('should discover multiple static nodes', async () => {
+    test("should discover multiple static nodes", async () => {
       const config = createMultiNodeConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
       expect(nodes).toHaveLength(3);
-      expect(nodes.map((n) => n.id)).toEqual(['node-1', 'node-2', 'node-3']);
+      expect(nodes.map((n) => n.id)).toEqual(["node-1", "node-2", "node-3"]);
     });
 
-    test('should preserve node order from config', async () => {
+    test("should preserve node order from config", async () => {
       const config = createMultiNodeConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
-      expect(nodes[0].id).toBe('node-1');
-      expect(nodes[1].id).toBe('node-2');
-      expect(nodes[2].id).toBe('node-3');
+      expect(nodes[0].id).toBe("node-1");
+      expect(nodes[1].id).toBe("node-2");
+      expect(nodes[2].id).toBe("node-3");
     });
 
-    test('should filter out nodes that fail validation', async () => {
+    test("should filter out nodes that fail validation", async () => {
       const config = createMultiNodeConfig();
       const discovery = new ClusterDiscovery(config);
 
@@ -591,10 +624,10 @@ describe('ClusterDiscovery - Static Discovery', () => {
 
       const nodes = discovery.getDiscoveredNodes();
       expect(nodes).toHaveLength(2);
-      expect(nodes.map((n) => n.id)).toEqual(['node-1', 'node-3']);
+      expect(nodes.map((n) => n.id)).toEqual(["node-1", "node-3"]);
     });
 
-    test('should handle all nodes failing validation', async () => {
+    test("should handle all nodes failing validation", async () => {
       const config = createMultiNodeConfig();
       const discovery = new ClusterDiscovery(config);
 
@@ -607,13 +640,13 @@ describe('ClusterDiscovery - Static Discovery', () => {
     });
   });
 
-  describe('Node deduplication', () => {
-    test('should deduplicate nodes with same ID', async () => {
+  describe("Node deduplication", () => {
+    test("should deduplicate nodes with same ID", async () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
+        mode: "static",
         staticNodes: [
-          { url: 'http://localhost:8080', id: 'node-1' },
-          { url: 'http://localhost:8081', id: 'node-1' }, // Duplicate ID
+          { url: "http://localhost:8080", id: "node-1" },
+          { url: "http://localhost:8081", id: "node-1" }, // Duplicate ID
         ],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
@@ -621,21 +654,23 @@ describe('ClusterDiscovery - Static Discovery', () => {
 
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
       // Should only have one node with id 'node-1'
-      expect(nodes.filter((n) => n.id === 'node-1')).toHaveLength(1);
+      expect(nodes.filter((n) => n.id === "node-1")).toHaveLength(1);
     });
 
-    test('should deduplicate nodes with same URL', async () => {
+    test("should deduplicate nodes with same URL", async () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
+        mode: "static",
         staticNodes: [
-          { url: 'http://localhost:8080', id: 'node-1' },
-          { url: 'http://localhost:8080', id: 'node-2' }, // Duplicate URL
+          { url: "http://localhost:8080", id: "node-1" },
+          { url: "http://localhost:8080", id: "node-2" }, // Duplicate URL
         ],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
@@ -643,13 +678,17 @@ describe('ClusterDiscovery - Static Discovery', () => {
 
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
       // Should only have one node with url 'http://localhost:8080'
-      expect(nodes.filter((n) => n.url === 'http://localhost:8080')).toHaveLength(1);
+      expect(
+        nodes.filter((n) => n.url === "http://localhost:8080")
+      ).toHaveLength(1);
     });
   });
 });
@@ -658,30 +697,34 @@ describe('ClusterDiscovery - Static Discovery', () => {
 // Test Suite: ClusterDiscovery - Node Validation
 // ============================================================================
 
-describe('ClusterDiscovery - Node Validation', () => {
-  describe('HTTP validation', () => {
-    test('should validate via GET /v1/models', async () => {
+describe("ClusterDiscovery - Node Validation", () => {
+  describe("HTTP validation", () => {
+    test("should validate via GET /v1/models", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/v1/models',
+        "http://localhost:8080/v1/models",
         expect.objectContaining({
-          method: 'GET',
+          method: "GET",
           signal: expect.any(AbortSignal),
         })
       );
     });
 
-    test('should include timeout in request', async () => {
+    test("should include timeout in request", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
@@ -689,11 +732,13 @@ describe('ClusterDiscovery - Node Validation', () => {
       expect(call[1].signal).toBeInstanceOf(AbortSignal);
     });
 
-    test('should accept 200 OK response', async () => {
+    test("should accept 200 OK response", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
@@ -701,7 +746,7 @@ describe('ClusterDiscovery - Node Validation', () => {
       expect(nodes).toHaveLength(1);
     });
 
-    test('should reject 404 response', async () => {
+    test("should reject 404 response", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
@@ -713,7 +758,7 @@ describe('ClusterDiscovery - Node Validation', () => {
       expect(nodes).toHaveLength(0);
     });
 
-    test('should reject 500 response', async () => {
+    test("should reject 500 response", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
@@ -725,14 +770,14 @@ describe('ClusterDiscovery - Node Validation', () => {
       expect(nodes).toHaveLength(0);
     });
 
-    test('should validate response JSON structure', async () => {
+    test("should validate response JSON structure", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({ invalid: 'response' }),
+        json: async () => ({ invalid: "response" }),
       } as Response);
 
       await discovery.start();
@@ -743,14 +788,17 @@ describe('ClusterDiscovery - Node Validation', () => {
     });
   });
 
-  describe('Timeout handling', () => {
-    test('should timeout after validationTimeoutMs', async () => {
+  describe("Timeout handling", () => {
+    test("should timeout after validationTimeoutMs", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(createSuccessfulModelsResponse()), 10000))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(createSuccessfulModelsResponse()), 10000)
+          )
       );
 
       await discovery.start();
@@ -760,19 +808,21 @@ describe('ClusterDiscovery - Node Validation', () => {
       expect(nodes).toHaveLength(0);
       expect(callbacks.onDiscoveryError).toHaveBeenCalledWith(
         expect.objectContaining({
-          code: 'NODE_TIMEOUT',
+          code: "NODE_TIMEOUT",
         })
       );
     });
 
-    test('should abort fetch on timeout', async () => {
+    test("should abort fetch on timeout", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       const abortSpy = jest.fn();
       (global.fetch as jest.Mock).mockImplementation((url, options) => {
-        options.signal.addEventListener('abort', abortSpy);
-        return new Promise((resolve) => setTimeout(() => resolve(createSuccessfulModelsResponse()), 10000));
+        options.signal.addEventListener("abort", abortSpy);
+        return new Promise((resolve) =>
+          setTimeout(() => resolve(createSuccessfulModelsResponse()), 10000)
+        );
       });
 
       await discovery.start();
@@ -781,13 +831,13 @@ describe('ClusterDiscovery - Node Validation', () => {
     });
   });
 
-  describe('Network error handling', () => {
-    test('should handle network errors', async () => {
+  describe("Network error handling", () => {
+    test("should handle network errors", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
 
       await discovery.start();
 
@@ -796,31 +846,31 @@ describe('ClusterDiscovery - Node Validation', () => {
       expect(callbacks.onDiscoveryError).toHaveBeenCalled();
     });
 
-    test('should handle DNS errors', async () => {
+    test("should handle DNS errors", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      const dnsError = new Error('getaddrinfo ENOTFOUND');
-      dnsError.name = 'DNSError';
+      const dnsError = new Error("getaddrinfo ENOTFOUND");
+      dnsError.name = "DNSError";
       (global.fetch as jest.Mock).mockRejectedValue(dnsError);
 
       await discovery.start();
 
       expect(callbacks.onDiscoveryError).toHaveBeenCalledWith(
         expect.objectContaining({
-          code: 'NETWORK_ERROR',
+          code: "NETWORK_ERROR",
         })
       );
     });
 
-    test('should handle connection refused', async () => {
+    test("should handle connection refused", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      const connError = new Error('connect ECONNREFUSED');
-      connError.name = 'ConnectionError';
+      const connError = new Error("connect ECONNREFUSED");
+      connError.name = "ConnectionError";
       (global.fetch as jest.Mock).mockRejectedValue(connError);
 
       await discovery.start();
@@ -834,13 +884,15 @@ describe('ClusterDiscovery - Node Validation', () => {
 // Test Suite: ClusterDiscovery - Refresh Logic
 // ============================================================================
 
-describe('ClusterDiscovery - Refresh Logic', () => {
-  describe('Periodic refresh', () => {
-    test('should refresh nodes at configured interval', async () => {
+describe("ClusterDiscovery - Refresh Logic", () => {
+  describe("Periodic refresh", () => {
+    test("should refresh nodes at configured interval", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       (global.fetch as jest.Mock).mockClear();
@@ -854,11 +906,13 @@ describe('ClusterDiscovery - Refresh Logic', () => {
       expect(global.fetch).toHaveBeenCalled();
     });
 
-    test('should not refresh before interval elapsed', async () => {
+    test("should not refresh before interval elapsed", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       (global.fetch as jest.Mock).mockClear();
@@ -869,11 +923,13 @@ describe('ClusterDiscovery - Refresh Logic', () => {
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    test('should continue refreshing until stopped', async () => {
+    test("should continue refreshing until stopped", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       (global.fetch as jest.Mock).mockClear();
@@ -888,8 +944,8 @@ describe('ClusterDiscovery - Refresh Logic', () => {
     });
   });
 
-  describe('Node change detection', () => {
-    test('should detect newly available nodes', async () => {
+  describe("Node change detection", () => {
+    test("should detect newly available nodes", async () => {
       const config = createMultiNodeConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
@@ -897,8 +953,8 @@ describe('ClusterDiscovery - Refresh Logic', () => {
       // First discovery: only node-1 is available
       (global.fetch as jest.Mock)
         .mockResolvedValueOnce(createSuccessfulModelsResponse()) // node-1
-        .mockRejectedValueOnce(new Error('Connection refused')) // node-2
-        .mockRejectedValueOnce(new Error('Connection refused')); // node-3
+        .mockRejectedValueOnce(new Error("Connection refused")) // node-2
+        .mockRejectedValueOnce(new Error("Connection refused")); // node-3
 
       await discovery.start();
       callbacks.onNodeDiscovered?.mockClear();
@@ -907,21 +963,26 @@ describe('ClusterDiscovery - Refresh Logic', () => {
       (global.fetch as jest.Mock)
         .mockResolvedValueOnce(createSuccessfulModelsResponse()) // node-1
         .mockResolvedValueOnce(createSuccessfulModelsResponse()) // node-2 (NEW!)
-        .mockRejectedValueOnce(new Error('Connection refused')); // node-3
+        .mockRejectedValueOnce(new Error("Connection refused")); // node-3
 
       jest.advanceTimersByTime(config.refreshIntervalMs);
       await Promise.resolve();
 
-      expect(callbacks.onNodeDiscovered).toHaveBeenCalledWith('node-2', 'http://localhost:8081');
+      expect(callbacks.onNodeDiscovered).toHaveBeenCalledWith(
+        "node-2",
+        "http://localhost:8081"
+      );
     });
 
-    test('should detect lost nodes', async () => {
+    test("should detect lost nodes", async () => {
       const config = createMultiNodeConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       // First discovery: all nodes available
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       callbacks.onNodeLost?.mockClear();
@@ -929,28 +990,35 @@ describe('ClusterDiscovery - Refresh Logic', () => {
       // Second discovery: node-2 goes offline
       (global.fetch as jest.Mock)
         .mockResolvedValueOnce(createSuccessfulModelsResponse()) // node-1
-        .mockRejectedValueOnce(new Error('Connection refused')) // node-2 (LOST!)
+        .mockRejectedValueOnce(new Error("Connection refused")) // node-2 (LOST!)
         .mockResolvedValueOnce(createSuccessfulModelsResponse()); // node-3
 
       jest.advanceTimersByTime(config.refreshIntervalMs);
       await Promise.resolve();
 
-      expect(callbacks.onNodeLost).toHaveBeenCalledWith('node-2', 'http://localhost:8081');
+      expect(callbacks.onNodeLost).toHaveBeenCalledWith(
+        "node-2",
+        "http://localhost:8081"
+      );
     });
 
-    test('should detect multiple new nodes', async () => {
+    test("should detect multiple new nodes", async () => {
       const config = createMultiNodeConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       // First discovery: no nodes available
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Connection refused'));
+      (global.fetch as jest.Mock).mockRejectedValue(
+        new Error("Connection refused")
+      );
 
       await discovery.start();
       callbacks.onNodeDiscovered?.mockClear();
 
       // Second discovery: all nodes become available
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       jest.advanceTimersByTime(config.refreshIntervalMs);
       await Promise.resolve();
@@ -958,19 +1026,23 @@ describe('ClusterDiscovery - Refresh Logic', () => {
       expect(callbacks.onNodeDiscovered).toHaveBeenCalledTimes(3);
     });
 
-    test('should detect multiple lost nodes', async () => {
+    test("should detect multiple lost nodes", async () => {
       const config = createMultiNodeConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       // First discovery: all nodes available
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       callbacks.onNodeLost?.mockClear();
 
       // Second discovery: all nodes go offline
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Connection refused'));
+      (global.fetch as jest.Mock).mockRejectedValue(
+        new Error("Connection refused")
+      );
 
       jest.advanceTimersByTime(config.refreshIntervalMs);
       await Promise.resolve();
@@ -979,14 +1051,17 @@ describe('ClusterDiscovery - Refresh Logic', () => {
     });
   });
 
-  describe('Concurrent refresh prevention', () => {
-    test('should prevent overlapping refresh operations', async () => {
+  describe("Concurrent refresh prevention", () => {
+    test("should prevent overlapping refresh operations", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       // Make validation slow
       (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(createSuccessfulModelsResponse()), 5000))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(createSuccessfulModelsResponse()), 5000)
+          )
       );
 
       await discovery.start();
@@ -1002,11 +1077,13 @@ describe('ClusterDiscovery - Refresh Logic', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
-    test('should allow refresh after previous completes', async () => {
+    test("should allow refresh after previous completes", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       (global.fetch as jest.Mock).mockClear();
@@ -1028,98 +1105,118 @@ describe('ClusterDiscovery - Refresh Logic', () => {
 // Test Suite: ClusterDiscovery - Callbacks
 // ============================================================================
 
-describe('ClusterDiscovery - Callbacks', () => {
-  describe('onNodeDiscovered callback', () => {
-    test('should invoke on new node discovered', async () => {
+describe("ClusterDiscovery - Callbacks", () => {
+  describe("onNodeDiscovered callback", () => {
+    test("should invoke on new node discovered", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
-      expect(callbacks.onNodeDiscovered).toHaveBeenCalledWith('node-1', 'http://localhost:8080');
+      expect(callbacks.onNodeDiscovered).toHaveBeenCalledWith(
+        "node-1",
+        "http://localhost:8080"
+      );
     });
 
-    test('should invoke for each discovered node', async () => {
+    test("should invoke for each discovered node", async () => {
       const config = createMultiNodeConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       expect(callbacks.onNodeDiscovered).toHaveBeenCalledTimes(3);
     });
 
-    test('should not invoke if callback not provided', async () => {
+    test("should not invoke if callback not provided", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config); // No callbacks
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       // Should not throw
       await expect(discovery.start()).resolves.not.toThrow();
     });
 
-    test('should handle callback errors gracefully', async () => {
+    test("should handle callback errors gracefully", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       callbacks.onNodeDiscovered?.mockImplementation(() => {
-        throw new Error('Callback error');
+        throw new Error("Callback error");
       });
 
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       // Should not throw even if callback throws
       await expect(discovery.start()).resolves.not.toThrow();
     });
   });
 
-  describe('onNodeLost callback', () => {
-    test('should invoke when node becomes unavailable', async () => {
+  describe("onNodeLost callback", () => {
+    test("should invoke when node becomes unavailable", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       // First: node available
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
       await discovery.start();
 
       callbacks.onNodeLost?.mockClear();
 
       // Second: node unavailable
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Connection refused'));
+      (global.fetch as jest.Mock).mockRejectedValue(
+        new Error("Connection refused")
+      );
       jest.advanceTimersByTime(config.refreshIntervalMs);
       await Promise.resolve();
 
-      expect(callbacks.onNodeLost).toHaveBeenCalledWith('node-1', 'http://localhost:8080');
+      expect(callbacks.onNodeLost).toHaveBeenCalledWith(
+        "node-1",
+        "http://localhost:8080"
+      );
     });
 
-    test('should not invoke if node was never discovered', async () => {
+    test("should not invoke if node was never discovered", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       // Node never available
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Connection refused'));
+      (global.fetch as jest.Mock).mockRejectedValue(
+        new Error("Connection refused")
+      );
 
       await discovery.start();
 
       expect(callbacks.onNodeLost).not.toHaveBeenCalled();
     });
 
-    test('should not invoke if callback not provided', async () => {
+    test("should not invoke if callback not provided", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       (global.fetch as jest.Mock)
         .mockResolvedValueOnce(createSuccessfulModelsResponse())
-        .mockRejectedValueOnce(new Error('Connection refused'));
+        .mockRejectedValueOnce(new Error("Connection refused"));
 
       await discovery.start();
       jest.advanceTimersByTime(config.refreshIntervalMs);
@@ -1129,43 +1226,46 @@ describe('ClusterDiscovery - Callbacks', () => {
     });
   });
 
-  describe('onDiscoveryError callback', () => {
-    test('should invoke on validation timeout', async () => {
+  describe("onDiscoveryError callback", () => {
+    test("should invoke on validation timeout", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(createSuccessfulModelsResponse()), 10000))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(createSuccessfulModelsResponse()), 10000)
+          )
       );
 
       await discovery.start();
 
       expect(callbacks.onDiscoveryError).toHaveBeenCalledWith(
         expect.objectContaining({
-          code: 'NODE_TIMEOUT',
-          nodeId: 'node-1',
+          code: "NODE_TIMEOUT",
+          nodeId: "node-1",
         })
       );
     });
 
-    test('should invoke on network error', async () => {
+    test("should invoke on network error", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
 
       await discovery.start();
 
       expect(callbacks.onDiscoveryError).toHaveBeenCalledWith(
         expect.objectContaining({
-          code: 'NETWORK_ERROR',
+          code: "NETWORK_ERROR",
         })
       );
     });
 
-    test('should invoke on HTTP error', async () => {
+    test("should invoke on HTTP error", async () => {
       const config = createMinimalConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
@@ -1176,28 +1276,28 @@ describe('ClusterDiscovery - Callbacks', () => {
 
       expect(callbacks.onDiscoveryError).toHaveBeenCalledWith(
         expect.objectContaining({
-          code: 'HTTP_ERROR',
+          code: "HTTP_ERROR",
         })
       );
     });
 
-    test('should not invoke if callback not provided', async () => {
+    test("should not invoke if callback not provided", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
 
       // Should not throw
       await expect(discovery.start()).resolves.not.toThrow();
     });
 
-    test('should continue discovery after error', async () => {
+    test("should continue discovery after error", async () => {
       const config = createMultiNodeConfig();
       const callbacks = createMockCallbacks();
       const discovery = new ClusterDiscovery(config, callbacks);
 
       (global.fetch as jest.Mock)
-        .mockRejectedValueOnce(new Error('Error')) // node-1: error
+        .mockRejectedValueOnce(new Error("Error")) // node-1: error
         .mockResolvedValueOnce(createSuccessfulModelsResponse()) // node-2: success
         .mockResolvedValueOnce(createSuccessfulModelsResponse()); // node-3: success
 
@@ -1214,9 +1314,9 @@ describe('ClusterDiscovery - Callbacks', () => {
 // Test Suite: ClusterDiscovery - getDiscoveredNodes()
 // ============================================================================
 
-describe('ClusterDiscovery - getDiscoveredNodes()', () => {
-  describe('Return value', () => {
-    test('should return empty array initially', () => {
+describe("ClusterDiscovery - getDiscoveredNodes()", () => {
+  describe("Return value", () => {
+    test("should return empty array initially", () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
@@ -1225,11 +1325,13 @@ describe('ClusterDiscovery - getDiscoveredNodes()', () => {
       expect(nodes).toEqual([]);
     });
 
-    test('should return discovered nodes', async () => {
+    test("should return discovered nodes", async () => {
       const config = createMultiNodeConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
@@ -1237,16 +1339,18 @@ describe('ClusterDiscovery - getDiscoveredNodes()', () => {
 
       expect(nodes).toHaveLength(3);
       expect(nodes[0]).toMatchObject({
-        id: 'node-1',
-        url: 'http://localhost:8080',
+        id: "node-1",
+        url: "http://localhost:8080",
       });
     });
 
-    test('should return immutable copy', async () => {
+    test("should return immutable copy", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
@@ -1257,19 +1361,23 @@ describe('ClusterDiscovery - getDiscoveredNodes()', () => {
       expect(nodes1).toEqual(nodes2); // Same content
     });
 
-    test('should reflect current state', async () => {
+    test("should reflect current state", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       // First: node available
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
       await discovery.start();
 
       let nodes = discovery.getDiscoveredNodes();
       expect(nodes).toHaveLength(1);
 
       // Second: node unavailable
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Connection refused'));
+      (global.fetch as jest.Mock).mockRejectedValue(
+        new Error("Connection refused")
+      );
       jest.advanceTimersByTime(config.refreshIntervalMs);
       await Promise.resolve();
 
@@ -1278,47 +1386,53 @@ describe('ClusterDiscovery - getDiscoveredNodes()', () => {
     });
   });
 
-  describe('Node structure', () => {
-    test('should include node ID', async () => {
+  describe("Node structure", () => {
+    test("should include node ID", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
 
       expect(nodes[0].id).toBeDefined();
-      expect(typeof nodes[0].id).toBe('string');
+      expect(typeof nodes[0].id).toBe("string");
     });
 
-    test('should include node URL', async () => {
+    test("should include node URL", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
 
       expect(nodes[0].url).toBeDefined();
-      expect(typeof nodes[0].url).toBe('string');
+      expect(typeof nodes[0].url).toBe("string");
     });
 
-    test('should include lastSeen timestamp', async () => {
+    test("should include lastSeen timestamp", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       const nodes = discovery.getDiscoveredNodes();
 
       expect(nodes[0].lastSeen).toBeDefined();
-      expect(typeof nodes[0].lastSeen).toBe('number');
+      expect(typeof nodes[0].lastSeen).toBe("number");
       expect(nodes[0].lastSeen).toBeGreaterThan(0);
     });
   });
@@ -1328,13 +1442,15 @@ describe('ClusterDiscovery - getDiscoveredNodes()', () => {
 // Test Suite: ClusterDiscovery - Memory Management
 // ============================================================================
 
-describe('ClusterDiscovery - Memory Management', () => {
-  describe('Timer cleanup', () => {
-    test('should clear timer on stop', async () => {
+describe("ClusterDiscovery - Memory Management", () => {
+  describe("Timer cleanup", () => {
+    test("should clear timer on stop", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       const timersBefore = jest.getTimerCount();
@@ -1345,11 +1461,13 @@ describe('ClusterDiscovery - Memory Management', () => {
       expect(timersAfter).toBeLessThan(timersBefore);
     });
 
-    test('should clear timer on multiple start/stop cycles', async () => {
+    test("should clear timer on multiple start/stop cycles", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       // Start/stop 3 times
       for (let i = 0; i < 3; i++) {
@@ -1362,12 +1480,14 @@ describe('ClusterDiscovery - Memory Management', () => {
     });
   });
 
-  describe('State cleanup', () => {
-    test('should clear discovered nodes on stop', async () => {
+  describe("State cleanup", () => {
+    test("should clear discovered nodes on stop", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
       discovery.stop();
@@ -1376,11 +1496,13 @@ describe('ClusterDiscovery - Memory Management', () => {
       expect(nodes).toHaveLength(0);
     });
 
-    test('should reset state on restart', async () => {
+    test("should reset state on restart", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       // First run
       await discovery.start();
@@ -1401,12 +1523,12 @@ describe('ClusterDiscovery - Memory Management', () => {
 // Test Suite: ClusterDiscovery - Edge Cases
 // ============================================================================
 
-describe('ClusterDiscovery - Edge Cases', () => {
-  describe('Configuration edge cases', () => {
-    test('should handle zero refresh interval', () => {
+describe("ClusterDiscovery - Edge Cases", () => {
+  describe("Configuration edge cases", () => {
+    test("should handle zero refresh interval", () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://localhost:8080', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://localhost:8080", id: "node-1" }],
         refreshIntervalMs: 0,
         validationTimeoutMs: 2000,
       };
@@ -1414,17 +1536,19 @@ describe('ClusterDiscovery - Edge Cases', () => {
       expect(() => new ClusterDiscovery(config)).toThrow();
     });
 
-    test('should handle very short refresh interval', async () => {
+    test("should handle very short refresh interval", async () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://localhost:8080', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://localhost:8080", id: "node-1" }],
         refreshIntervalMs: 100,
         validationTimeoutMs: 50,
       };
 
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
@@ -1435,17 +1559,19 @@ describe('ClusterDiscovery - Edge Cases', () => {
       discovery.stop();
     });
 
-    test('should handle very long refresh interval', async () => {
+    test("should handle very long refresh interval", async () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://localhost:8080', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://localhost:8080", id: "node-1" }],
         refreshIntervalMs: 3600000, // 1 hour
         validationTimeoutMs: 2000,
       };
 
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
@@ -1455,76 +1581,85 @@ describe('ClusterDiscovery - Edge Cases', () => {
     });
   });
 
-  describe('URL edge cases', () => {
-    test('should handle URLs with trailing slash', async () => {
+  describe("URL edge cases", () => {
+    test("should handle URLs with trailing slash", async () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://localhost:8080/', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://localhost:8080/", id: "node-1" }],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
       };
 
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       // Should normalize URL
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/v1/models'),
+        expect.stringContaining("/v1/models"),
         expect.any(Object)
       );
     });
 
-    test('should handle URLs with path', async () => {
+    test("should handle URLs with path", async () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://localhost:8080/api', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://localhost:8080/api", id: "node-1" }],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
       };
 
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/api/v1/models',
+        "http://localhost:8080/api/v1/models",
         expect.any(Object)
       );
     });
 
-    test('should handle IPv6 URLs', async () => {
+    test("should handle IPv6 URLs", async () => {
       const config: DiscoveryConfig = {
-        mode: 'static',
-        staticNodes: [{ url: 'http://[::1]:8080', id: 'node-1' }],
+        mode: "static",
+        staticNodes: [{ url: "http://[::1]:8080", id: "node-1" }],
         refreshIntervalMs: 30000,
         validationTimeoutMs: 2000,
       };
 
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://[::1]:8080/v1/models',
+        "http://[::1]:8080/v1/models",
         expect.any(Object)
       );
     });
   });
 
-  describe('Concurrent operations', () => {
-    test('should handle stop during initial discovery', async () => {
+  describe("Concurrent operations", () => {
+    test("should handle stop during initial discovery", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
       (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(createSuccessfulModelsResponse()), 1000))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(createSuccessfulModelsResponse()), 1000)
+          )
       );
 
       const startPromise = discovery.start();
@@ -1535,11 +1670,13 @@ describe('ClusterDiscovery - Edge Cases', () => {
       await expect(startPromise).rejects.toThrow();
     });
 
-    test('should handle multiple getDiscoveredNodes calls', async () => {
+    test("should handle multiple getDiscoveredNodes calls", async () => {
       const config = createMinimalConfig();
       const discovery = new ClusterDiscovery(config);
 
-      (global.fetch as jest.Mock).mockResolvedValue(createSuccessfulModelsResponse());
+      (global.fetch as jest.Mock).mockResolvedValue(
+        createSuccessfulModelsResponse()
+      );
 
       await discovery.start();
 

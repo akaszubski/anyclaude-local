@@ -41,7 +41,7 @@ import {
   CacheWarmupResult,
   CacheCallbacks,
   CacheWarmupOptions,
-} from '../../src/cluster/cluster-cache';
+} from "../../src/cluster/cluster-cache";
 
 // ============================================================================
 // Test Helpers and Mocks
@@ -67,7 +67,7 @@ function createCacheEntry(
   return {
     nodeId,
     nodeUrl: `http://localhost:8080`,
-    systemPromptHash: 'hash-abc123',
+    systemPromptHash: "hash-abc123",
     tokens: 1000,
     lastUpdated: Date.now(),
     hitRate: 0.8,
@@ -78,7 +78,9 @@ function createCacheEntry(
 /**
  * Helper to create test cache config
  */
-function createCacheConfig(overrides?: Partial<TestCacheConfig>): TestCacheConfig {
+function createCacheConfig(
+  overrides?: Partial<TestCacheConfig>
+): TestCacheConfig {
   return {
     maxCacheAgeSec: 300, // 5 minutes
     minCacheHitRate: 0.5,
@@ -97,7 +99,7 @@ function createWarmupOptions(
     concurrency: 3,
     timeoutMs: 5000,
     retryCount: 1,
-    systemPrompt: 'Test system prompt for warmup',
+    systemPrompt: "Test system prompt for warmup",
     ...overrides,
   };
 }
@@ -151,7 +153,7 @@ function mockFetchError(status: number, message: string) {
 
 function mockFetchTimeout() {
   return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Timeout')), 100)
+    setTimeout(() => reject(new Error("Timeout")), 100)
   );
 }
 
@@ -159,42 +161,42 @@ function mockFetchTimeout() {
 // CacheError Tests (5 tests)
 // ============================================================================
 
-describe('CacheError', () => {
-  test('creates error with code and message', () => {
-    const error = new CacheError('CACHE_WARMUP_FAILED', 'Warmup failed');
-    expect(error.code).toBe('CACHE_WARMUP_FAILED');
-    expect(error.message).toBe('Warmup failed');
+describe("CacheError", () => {
+  test("creates error with code and message", () => {
+    const error = new CacheError("CACHE_WARMUP_FAILED", "Warmup failed");
+    expect(error.code).toBe("CACHE_WARMUP_FAILED");
+    expect(error.message).toBe("Warmup failed");
   });
 
-  test('creates error with nodeId context', () => {
-    const error = new CacheError('NODE_OFFLINE', 'Node is offline', {
-      nodeId: 'node-1',
+  test("creates error with nodeId context", () => {
+    const error = new CacheError("NODE_OFFLINE", "Node is offline", {
+      nodeId: "node-1",
     });
-    expect(error.code).toBe('NODE_OFFLINE');
-    expect(error.nodeId).toBe('node-1');
+    expect(error.code).toBe("NODE_OFFLINE");
+    expect(error.nodeId).toBe("node-1");
   });
 
-  test('creates error with hash context', () => {
-    const error = new CacheError('HASH_MISMATCH', 'Hash mismatch detected', {
-      hash: 'hash-abc123',
+  test("creates error with hash context", () => {
+    const error = new CacheError("HASH_MISMATCH", "Hash mismatch detected", {
+      hash: "hash-abc123",
     });
-    expect(error.code).toBe('HASH_MISMATCH');
-    expect(error.hash).toBe('hash-abc123');
+    expect(error.code).toBe("HASH_MISMATCH");
+    expect(error.hash).toBe("hash-abc123");
   });
 
-  test('creates error with both nodeId and hash', () => {
-    const error = new CacheError('CACHE_INVALID', 'Cache is invalid', {
-      nodeId: 'node-2',
-      hash: 'hash-xyz789',
+  test("creates error with both nodeId and hash", () => {
+    const error = new CacheError("CACHE_INVALID", "Cache is invalid", {
+      nodeId: "node-2",
+      hash: "hash-xyz789",
     });
-    expect(error.nodeId).toBe('node-2');
-    expect(error.hash).toBe('hash-xyz789');
+    expect(error.nodeId).toBe("node-2");
+    expect(error.hash).toBe("hash-xyz789");
   });
 
-  test('inherits from Error class', () => {
-    const error = new CacheError('TEST_ERROR', 'Test error');
+  test("inherits from Error class", () => {
+    const error = new CacheError("TEST_ERROR", "Test error");
     expect(error).toBeInstanceOf(Error);
-    expect(error.name).toBe('CacheError');
+    expect(error.name).toBe("CacheError");
     expect(error.stack).toBeDefined();
   });
 });
@@ -203,7 +205,7 @@ describe('CacheError', () => {
 // CacheRegistry Tests (20 tests)
 // ============================================================================
 
-describe('CacheRegistry', () => {
+describe("CacheRegistry", () => {
   let config: TestCacheConfig;
   let registry: CacheRegistry;
 
@@ -212,142 +214,142 @@ describe('CacheRegistry', () => {
     registry = new CacheRegistry(config);
   });
 
-  describe('Basic CRUD operations', () => {
-    test('set and get entry', () => {
-      const entry = createCacheEntry('node-1');
+  describe("Basic CRUD operations", () => {
+    test("set and get entry", () => {
+      const entry = createCacheEntry("node-1");
       registry.set(entry);
-      const retrieved = registry.get('node-1');
+      const retrieved = registry.get("node-1");
       expect(retrieved).toEqual(entry);
     });
 
-    test('get returns undefined for non-existent entry', () => {
-      const retrieved = registry.get('node-999');
+    test("get returns undefined for non-existent entry", () => {
+      const retrieved = registry.get("node-999");
       expect(retrieved).toBeUndefined();
     });
 
-    test('delete removes entry', () => {
-      const entry = createCacheEntry('node-1');
+    test("delete removes entry", () => {
+      const entry = createCacheEntry("node-1");
       registry.set(entry);
-      registry.delete('node-1');
-      expect(registry.get('node-1')).toBeUndefined();
+      registry.delete("node-1");
+      expect(registry.get("node-1")).toBeUndefined();
     });
 
-    test('delete on non-existent entry does not throw', () => {
-      expect(() => registry.delete('node-999')).not.toThrow();
+    test("delete on non-existent entry does not throw", () => {
+      expect(() => registry.delete("node-999")).not.toThrow();
     });
 
-    test('clear removes all entries', () => {
-      registry.set(createCacheEntry('node-1'));
-      registry.set(createCacheEntry('node-2'));
-      registry.set(createCacheEntry('node-3'));
+    test("clear removes all entries", () => {
+      registry.set(createCacheEntry("node-1"));
+      registry.set(createCacheEntry("node-2"));
+      registry.set(createCacheEntry("node-3"));
       registry.clear();
       expect(registry.getNodeCount()).toBe(0);
       expect(registry.getCacheCount()).toBe(0);
     });
 
-    test('update existing entry replaces old data', () => {
-      registry.set(createCacheEntry('node-1', { tokens: 1000 }));
-      registry.set(createCacheEntry('node-1', { tokens: 2000 }));
-      const entry = registry.get('node-1');
+    test("update existing entry replaces old data", () => {
+      registry.set(createCacheEntry("node-1", { tokens: 1000 }));
+      registry.set(createCacheEntry("node-1", { tokens: 2000 }));
+      const entry = registry.get("node-1");
       expect(entry?.tokens).toBe(2000);
     });
   });
 
-  describe('Hash indexing', () => {
-    test('findNodesWithCache returns empty array when no matches', () => {
-      registry.set(createCacheEntry('node-1', { systemPromptHash: 'hash-a' }));
-      const nodes = registry.findNodesWithCache('hash-b');
+  describe("Hash indexing", () => {
+    test("findNodesWithCache returns empty array when no matches", () => {
+      registry.set(createCacheEntry("node-1", { systemPromptHash: "hash-a" }));
+      const nodes = registry.findNodesWithCache("hash-b");
       expect(nodes).toEqual([]);
     });
 
-    test('findNodesWithCache returns single matching node', () => {
-      const entry = createCacheEntry('node-1', { systemPromptHash: 'hash-a' });
+    test("findNodesWithCache returns single matching node", () => {
+      const entry = createCacheEntry("node-1", { systemPromptHash: "hash-a" });
       registry.set(entry);
-      const nodes = registry.findNodesWithCache('hash-a');
+      const nodes = registry.findNodesWithCache("hash-a");
       expect(nodes).toHaveLength(1);
       expect(nodes[0]).toEqual(entry);
     });
 
-    test('findNodesWithCache returns multiple matching nodes', () => {
-      const entry1 = createCacheEntry('node-1', {
-        systemPromptHash: 'hash-a',
+    test("findNodesWithCache returns multiple matching nodes", () => {
+      const entry1 = createCacheEntry("node-1", {
+        systemPromptHash: "hash-a",
       });
-      const entry2 = createCacheEntry('node-2', {
-        systemPromptHash: 'hash-a',
+      const entry2 = createCacheEntry("node-2", {
+        systemPromptHash: "hash-a",
       });
-      const entry3 = createCacheEntry('node-3', {
-        systemPromptHash: 'hash-b',
+      const entry3 = createCacheEntry("node-3", {
+        systemPromptHash: "hash-b",
       });
       registry.set(entry1);
       registry.set(entry2);
       registry.set(entry3);
 
-      const nodes = registry.findNodesWithCache('hash-a');
+      const nodes = registry.findNodesWithCache("hash-a");
       expect(nodes).toHaveLength(2);
       expect(nodes).toContainEqual(entry1);
       expect(nodes).toContainEqual(entry2);
     });
 
-    test('hash index updated when entry deleted', () => {
-      registry.set(createCacheEntry('node-1', { systemPromptHash: 'hash-a' }));
-      registry.delete('node-1');
-      const nodes = registry.findNodesWithCache('hash-a');
+    test("hash index updated when entry deleted", () => {
+      registry.set(createCacheEntry("node-1", { systemPromptHash: "hash-a" }));
+      registry.delete("node-1");
+      const nodes = registry.findNodesWithCache("hash-a");
       expect(nodes).toEqual([]);
     });
 
-    test('hash index updated when entry hash changes', () => {
-      registry.set(createCacheEntry('node-1', { systemPromptHash: 'hash-a' }));
-      registry.set(createCacheEntry('node-1', { systemPromptHash: 'hash-b' }));
+    test("hash index updated when entry hash changes", () => {
+      registry.set(createCacheEntry("node-1", { systemPromptHash: "hash-a" }));
+      registry.set(createCacheEntry("node-1", { systemPromptHash: "hash-b" }));
 
-      const nodesA = registry.findNodesWithCache('hash-a');
-      const nodesB = registry.findNodesWithCache('hash-b');
+      const nodesA = registry.findNodesWithCache("hash-a");
+      const nodesB = registry.findNodesWithCache("hash-b");
 
       expect(nodesA).toEqual([]);
       expect(nodesB).toHaveLength(1);
     });
 
-    test('getAllCachedHashes returns all unique hashes', () => {
-      registry.set(createCacheEntry('node-1', { systemPromptHash: 'hash-a' }));
-      registry.set(createCacheEntry('node-2', { systemPromptHash: 'hash-a' }));
-      registry.set(createCacheEntry('node-3', { systemPromptHash: 'hash-b' }));
+    test("getAllCachedHashes returns all unique hashes", () => {
+      registry.set(createCacheEntry("node-1", { systemPromptHash: "hash-a" }));
+      registry.set(createCacheEntry("node-2", { systemPromptHash: "hash-a" }));
+      registry.set(createCacheEntry("node-3", { systemPromptHash: "hash-b" }));
 
       const hashes = registry.getAllCachedHashes();
       expect(hashes).toHaveLength(2);
-      expect(hashes).toContain('hash-a');
-      expect(hashes).toContain('hash-b');
+      expect(hashes).toContain("hash-a");
+      expect(hashes).toContain("hash-b");
     });
 
-    test('getAllCachedHashes returns empty array when registry empty', () => {
+    test("getAllCachedHashes returns empty array when registry empty", () => {
       const hashes = registry.getAllCachedHashes();
       expect(hashes).toEqual([]);
     });
   });
 
-  describe('Counting and stats', () => {
-    test('getNodeCount returns correct count', () => {
+  describe("Counting and stats", () => {
+    test("getNodeCount returns correct count", () => {
       expect(registry.getNodeCount()).toBe(0);
-      registry.set(createCacheEntry('node-1'));
+      registry.set(createCacheEntry("node-1"));
       expect(registry.getNodeCount()).toBe(1);
-      registry.set(createCacheEntry('node-2'));
+      registry.set(createCacheEntry("node-2"));
       expect(registry.getNodeCount()).toBe(2);
     });
 
-    test('getCacheCount returns correct count', () => {
+    test("getCacheCount returns correct count", () => {
       expect(registry.getCacheCount()).toBe(0);
-      registry.set(createCacheEntry('node-1'));
+      registry.set(createCacheEntry("node-1"));
       expect(registry.getCacheCount()).toBe(1);
-      registry.set(createCacheEntry('node-2'));
+      registry.set(createCacheEntry("node-2"));
       expect(registry.getCacheCount()).toBe(2);
     });
 
-    test('getCacheCount equals getNodeCount (each node has one cache)', () => {
-      registry.set(createCacheEntry('node-1'));
-      registry.set(createCacheEntry('node-2'));
+    test("getCacheCount equals getNodeCount (each node has one cache)", () => {
+      registry.set(createCacheEntry("node-1"));
+      registry.set(createCacheEntry("node-2"));
       expect(registry.getCacheCount()).toBe(registry.getNodeCount());
     });
   });
 
-  describe('Expiration', () => {
+  describe("Expiration", () => {
     beforeEach(() => {
       jest.useFakeTimers();
     });
@@ -356,13 +358,13 @@ describe('CacheRegistry', () => {
       jest.useRealTimers();
     });
 
-    test('expireStaleEntries removes old entries', () => {
+    test("expireStaleEntries removes old entries", () => {
       const now = Date.now();
       jest.setSystemTime(now);
 
       // Add entry that's already expired
       registry.set(
-        createCacheEntry('node-1', {
+        createCacheEntry("node-1", {
           lastUpdated: now - config.maxCacheAgeSec * 1000 - 1000,
         })
       );
@@ -372,29 +374,29 @@ describe('CacheRegistry', () => {
       expect(registry.getNodeCount()).toBe(0);
     });
 
-    test('expireStaleEntries keeps fresh entries', () => {
+    test("expireStaleEntries keeps fresh entries", () => {
       const now = Date.now();
       jest.setSystemTime(now);
 
-      registry.set(createCacheEntry('node-1', { lastUpdated: now - 1000 }));
+      registry.set(createCacheEntry("node-1", { lastUpdated: now - 1000 }));
 
       const expired = registry.expireStaleEntries();
       expect(expired).toBe(0);
       expect(registry.getNodeCount()).toBe(1);
     });
 
-    test('expireStaleEntries handles mixed fresh and stale', () => {
+    test("expireStaleEntries handles mixed fresh and stale", () => {
       const now = Date.now();
       jest.setSystemTime(now);
 
       registry.set(
-        createCacheEntry('node-1', {
+        createCacheEntry("node-1", {
           lastUpdated: now - config.maxCacheAgeSec * 1000 - 1000,
         })
       );
-      registry.set(createCacheEntry('node-2', { lastUpdated: now - 1000 }));
+      registry.set(createCacheEntry("node-2", { lastUpdated: now - 1000 }));
       registry.set(
-        createCacheEntry('node-3', {
+        createCacheEntry("node-3", {
           lastUpdated: now - config.maxCacheAgeSec * 1000 - 2000,
         })
       );
@@ -402,22 +404,22 @@ describe('CacheRegistry', () => {
       const expired = registry.expireStaleEntries();
       expect(expired).toBe(2);
       expect(registry.getNodeCount()).toBe(1);
-      expect(registry.get('node-2')).toBeDefined();
+      expect(registry.get("node-2")).toBeDefined();
     });
 
-    test('expireStaleEntries updates hash index', () => {
+    test("expireStaleEntries updates hash index", () => {
       const now = Date.now();
       jest.setSystemTime(now);
 
       registry.set(
-        createCacheEntry('node-1', {
-          systemPromptHash: 'hash-a',
+        createCacheEntry("node-1", {
+          systemPromptHash: "hash-a",
           lastUpdated: now - config.maxCacheAgeSec * 1000 - 1000,
         })
       );
 
       registry.expireStaleEntries();
-      const nodes = registry.findNodesWithCache('hash-a');
+      const nodes = registry.findNodesWithCache("hash-a");
       expect(nodes).toEqual([]);
     });
   });
@@ -427,7 +429,7 @@ describe('CacheRegistry', () => {
 // CacheWarmup Tests (15 tests)
 // ============================================================================
 
-describe('CacheWarmup', () => {
+describe("CacheWarmup", () => {
   let options: CacheWarmupOptions;
   let callbacks: CacheCallbacks;
   let warmup: CacheWarmup;
@@ -443,94 +445,92 @@ describe('CacheWarmup', () => {
     jest.restoreAllMocks();
   });
 
-  describe('Hash generation', () => {
-    test('generateHash returns consistent SHA256 hash', () => {
-      const prompt = 'Test system prompt';
+  describe("Hash generation", () => {
+    test("generateHash returns consistent SHA256 hash", () => {
+      const prompt = "Test system prompt";
       const hash1 = warmup.generateHash(prompt);
       const hash2 = warmup.generateHash(prompt);
       expect(hash1).toBe(hash2);
       expect(hash1).toMatch(/^[a-f0-9]{64}$/); // SHA256 hex format
     });
 
-    test('generateHash returns different hashes for different prompts', () => {
-      const hash1 = warmup.generateHash('Prompt A');
-      const hash2 = warmup.generateHash('Prompt B');
+    test("generateHash returns different hashes for different prompts", () => {
+      const hash1 = warmup.generateHash("Prompt A");
+      const hash2 = warmup.generateHash("Prompt B");
       expect(hash1).not.toBe(hash2);
     });
 
-    test('generateHash handles empty string', () => {
-      const hash = warmup.generateHash('');
+    test("generateHash handles empty string", () => {
+      const hash = warmup.generateHash("");
       expect(hash).toMatch(/^[a-f0-9]{64}$/);
     });
 
-    test('generateHash handles very long prompts', () => {
-      const longPrompt = 'A'.repeat(100000);
+    test("generateHash handles very long prompts", () => {
+      const longPrompt = "A".repeat(100000);
       const hash = warmup.generateHash(longPrompt);
       expect(hash).toMatch(/^[a-f0-9]{64}$/);
     });
   });
 
-  describe('Single node warmup', () => {
-    test('warmUpNodes with single success returns correct result', async () => {
-      const nodes = [{ id: 'node-1', url: 'http://localhost:8080' }];
+  describe("Single node warmup", () => {
+    test("warmUpNodes with single success returns correct result", async () => {
+      const nodes = [{ id: "node-1", url: "http://localhost:8080" }];
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       const results = await warmup.warmUpNodes(nodes);
 
       expect(results).toHaveLength(1);
-      expect(results[0].nodeId).toBe('node-1');
+      expect(results[0].nodeId).toBe("node-1");
       expect(results[0].success).toBe(true);
-      expect(results[0].hash).toBe('hash-abc123');
+      expect(results[0].hash).toBe("hash-abc123");
       expect(results[0].tokens).toBe(5000);
       expect(results[0].durationMs).toBeGreaterThanOrEqual(0);
     });
 
-    test('warmUpNodes with timeout returns error result', async () => {
-      const nodes = [{ id: 'node-1', url: 'http://localhost:8080' }];
+    test("warmUpNodes with timeout returns error result", async () => {
+      const nodes = [{ id: "node-1", url: "http://localhost:8080" }];
       (global.fetch as jest.Mock).mockReturnValue(mockFetchTimeout());
 
       const results = await warmup.warmUpNodes(nodes);
 
       expect(results).toHaveLength(1);
-      expect(results[0].nodeId).toBe('node-1');
+      expect(results[0].nodeId).toBe("node-1");
       expect(results[0].success).toBe(false);
-      expect(results[0].error).toContain('Timeout');
+      expect(results[0].error).toContain("Timeout");
     });
 
-    test('warmUpNodes with HTTP error returns error result', async () => {
-      const nodes = [{ id: 'node-1', url: 'http://localhost:8080' }];
+    test("warmUpNodes with HTTP error returns error result", async () => {
+      const nodes = [{ id: "node-1", url: "http://localhost:8080" }];
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchError(500, 'Internal Server Error')
+        mockFetchError(500, "Internal Server Error")
       );
 
       const results = await warmup.warmUpNodes(nodes);
 
       expect(results).toHaveLength(1);
-      expect(results[0].nodeId).toBe('node-1');
+      expect(results[0].nodeId).toBe("node-1");
       expect(results[0].success).toBe(false);
       expect(results[0].error).toBeDefined();
     });
 
-    test('warmUpNodes with network error returns error result', async () => {
-      const nodes = [{ id: 'node-1', url: 'http://localhost:8080' }];
-      (global.fetch as jest.Mock).mockRejectedValue(
-        new Error('Network error')
-      );
+    test("warmUpNodes with network error returns error result", async () => {
+      const nodes = [{ id: "node-1", url: "http://localhost:8080" }];
+      (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
 
       const results = await warmup.warmUpNodes(nodes);
 
       expect(results[0].success).toBe(false);
-      expect(results[0].error).toContain('Network error');
+      expect(results[0].error).toContain("Network error");
     });
   });
 
-  describe('Multiple node warmup', () => {
-    test('warmUpNodes with all success', async () => {
+  describe("Multiple node warmup", () => {
+    test("warmUpNodes with all success", async () => {
       const nodes = createTestNodes(3);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       const results = await warmup.warmUpNodes(nodes);
@@ -539,12 +539,12 @@ describe('CacheWarmup', () => {
       expect(results.every((r) => r.success)).toBe(true);
     });
 
-    test('warmUpNodes with some failures', async () => {
+    test("warmUpNodes with some failures", async () => {
       const nodes = createTestNodes(3);
       (global.fetch as jest.Mock)
-        .mockReturnValueOnce(mockFetchSuccess('hash-abc123', 5000))
-        .mockReturnValueOnce(mockFetchError(500, 'Server error'))
-        .mockReturnValueOnce(mockFetchSuccess('hash-abc123', 5000));
+        .mockReturnValueOnce(mockFetchSuccess("hash-abc123", 5000))
+        .mockReturnValueOnce(mockFetchError(500, "Server error"))
+        .mockReturnValueOnce(mockFetchSuccess("hash-abc123", 5000));
 
       const results = await warmup.warmUpNodes(nodes);
 
@@ -554,7 +554,7 @@ describe('CacheWarmup', () => {
       expect(results[2].success).toBe(true);
     });
 
-    test('warmUpNodes respects concurrency limit', async () => {
+    test("warmUpNodes respects concurrency limit", async () => {
       const nodes = createTestNodes(10);
       const concurrentCalls: number[] = [];
       let currentConcurrent = 0;
@@ -565,7 +565,7 @@ describe('CacheWarmup', () => {
         return new Promise((resolve) => {
           setTimeout(() => {
             currentConcurrent--;
-            resolve(mockFetchSuccess('hash-abc123', 5000));
+            resolve(mockFetchSuccess("hash-abc123", 5000));
           }, 10);
         });
       });
@@ -577,7 +577,7 @@ describe('CacheWarmup', () => {
       expect(maxConcurrent).toBeLessThanOrEqual(options.concurrency);
     });
 
-    test('warmUpNodes processes nodes in batches', async () => {
+    test("warmUpNodes processes nodes in batches", async () => {
       const nodes = createTestNodes(7);
       const concurrency = 3;
       const warmupWithConcurrency = new CacheWarmup({
@@ -586,7 +586,7 @@ describe('CacheWarmup', () => {
       });
 
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       const results = await warmupWithConcurrency.warmUpNodes(nodes);
@@ -596,11 +596,11 @@ describe('CacheWarmup', () => {
     });
   });
 
-  describe('Callbacks', () => {
-    test('onCacheWarmedUp called on successful warmup', async () => {
-      const nodes = [{ id: 'node-1', url: 'http://localhost:8080' }];
+  describe("Callbacks", () => {
+    test("onCacheWarmedUp called on successful warmup", async () => {
+      const nodes = [{ id: "node-1", url: "http://localhost:8080" }];
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       await warmup.warmUpNodes(nodes);
@@ -608,18 +608,18 @@ describe('CacheWarmup', () => {
       expect(callbacks.onCacheWarmedUp).toHaveBeenCalledTimes(1);
       expect(callbacks.onCacheWarmedUp).toHaveBeenCalledWith(
         expect.objectContaining({
-          nodeId: 'node-1',
+          nodeId: "node-1",
           success: true,
-          hash: 'hash-abc123',
+          hash: "hash-abc123",
           tokens: 5000,
         })
       );
     });
 
-    test('onCacheWarmupFailed called on warmup failure', async () => {
-      const nodes = [{ id: 'node-1', url: 'http://localhost:8080' }];
+    test("onCacheWarmupFailed called on warmup failure", async () => {
+      const nodes = [{ id: "node-1", url: "http://localhost:8080" }];
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchError(500, 'Server error')
+        mockFetchError(500, "Server error")
       );
 
       await warmup.warmUpNodes(nodes);
@@ -627,18 +627,18 @@ describe('CacheWarmup', () => {
       expect(callbacks.onCacheWarmupFailed).toHaveBeenCalledTimes(1);
       expect(callbacks.onCacheWarmupFailed).toHaveBeenCalledWith(
         expect.objectContaining({
-          nodeId: 'node-1',
+          nodeId: "node-1",
           success: false,
           error: expect.any(String),
         })
       );
     });
 
-    test('callbacks work without being provided', async () => {
+    test("callbacks work without being provided", async () => {
       const warmupNoCallbacks = new CacheWarmup(options);
-      const nodes = [{ id: 'node-1', url: 'http://localhost:8080' }];
+      const nodes = [{ id: "node-1", url: "http://localhost:8080" }];
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       await expect(warmupNoCallbacks.warmUpNodes(nodes)).resolves.not.toThrow();
@@ -650,7 +650,7 @@ describe('CacheWarmup', () => {
 // CacheSynchronizer Tests (15 tests)
 // ============================================================================
 
-describe('CacheSynchronizer', () => {
+describe("CacheSynchronizer", () => {
   let config: TestCacheConfig;
   let registry: CacheRegistry;
   let callbacks: CacheCallbacks;
@@ -671,11 +671,11 @@ describe('CacheSynchronizer', () => {
     jest.restoreAllMocks();
   });
 
-  describe('Start and stop', () => {
-    test('start begins periodic sync', () => {
+  describe("Start and stop", () => {
+    test("start begins periodic sync", () => {
       const nodes = createTestNodes(2);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       synchronizer.start(nodes, 1000);
@@ -683,7 +683,7 @@ describe('CacheSynchronizer', () => {
       expect(synchronizer.isRunning()).toBe(true);
     });
 
-    test('stop cancels sync timer', () => {
+    test("stop cancels sync timer", () => {
       const nodes = createTestNodes(2);
       synchronizer.start(nodes, 1000);
       synchronizer.stop();
@@ -691,17 +691,17 @@ describe('CacheSynchronizer', () => {
       expect(synchronizer.isRunning()).toBe(false);
     });
 
-    test('isRunning returns false initially', () => {
+    test("isRunning returns false initially", () => {
       expect(synchronizer.isRunning()).toBe(false);
     });
 
-    test('isRunning returns true after start', () => {
+    test("isRunning returns true after start", () => {
       const nodes = createTestNodes(2);
       synchronizer.start(nodes, 1000);
       expect(synchronizer.isRunning()).toBe(true);
     });
 
-    test('stop can be called multiple times safely', () => {
+    test("stop can be called multiple times safely", () => {
       const nodes = createTestNodes(2);
       synchronizer.start(nodes, 1000);
       synchronizer.stop();
@@ -711,39 +711,39 @@ describe('CacheSynchronizer', () => {
     });
   });
 
-  describe('Cache state synchronization', () => {
-    test('syncCacheState updates registry with node responses', async () => {
+  describe("Cache state synchronization", () => {
+    test("syncCacheState updates registry with node responses", async () => {
       const nodes = createTestNodes(2);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       await synchronizer.syncCacheState(nodes);
 
       expect(registry.getNodeCount()).toBe(2);
-      expect(registry.get('node-1')).toBeDefined();
-      expect(registry.get('node-2')).toBeDefined();
+      expect(registry.get("node-1")).toBeDefined();
+      expect(registry.get("node-2")).toBeDefined();
     });
 
-    test('syncCacheState handles node errors gracefully', async () => {
+    test("syncCacheState handles node errors gracefully", async () => {
       const nodes = createTestNodes(3);
       (global.fetch as jest.Mock)
-        .mockReturnValueOnce(mockFetchSuccess('hash-abc123', 5000))
-        .mockReturnValueOnce(mockFetchError(500, 'Server error'))
-        .mockReturnValueOnce(mockFetchSuccess('hash-xyz789', 3000));
+        .mockReturnValueOnce(mockFetchSuccess("hash-abc123", 5000))
+        .mockReturnValueOnce(mockFetchError(500, "Server error"))
+        .mockReturnValueOnce(mockFetchSuccess("hash-xyz789", 3000));
 
       await synchronizer.syncCacheState(nodes);
 
       // Two successful syncs
       expect(registry.getNodeCount()).toBe(2);
-      expect(registry.get('node-1')).toBeDefined();
-      expect(registry.get('node-3')).toBeDefined();
+      expect(registry.get("node-1")).toBeDefined();
+      expect(registry.get("node-3")).toBeDefined();
     });
 
-    test('syncCacheState handles timeouts', async () => {
+    test("syncCacheState handles timeouts", async () => {
       const nodes = createTestNodes(1);
       // Mock a network timeout that rejects immediately (no timer delay)
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Timeout'));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error("Timeout"));
 
       await synchronizer.syncCacheState(nodes);
 
@@ -751,34 +751,34 @@ describe('CacheSynchronizer', () => {
       expect(registry.getNodeCount()).toBe(0);
     });
 
-    test('syncCacheState removes stale entries', async () => {
+    test("syncCacheState removes stale entries", async () => {
       const now = Date.now();
       jest.setSystemTime(now);
 
       // Add stale entry
       registry.set(
-        createCacheEntry('node-stale', {
+        createCacheEntry("node-stale", {
           lastUpdated: now - config.maxCacheAgeSec * 1000 - 1000,
         })
       );
 
       const nodes = createTestNodes(1);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       await synchronizer.syncCacheState(nodes);
 
       // Stale entry should be removed
-      expect(registry.get('node-stale')).toBeUndefined();
+      expect(registry.get("node-stale")).toBeUndefined();
     });
   });
 
-  describe('Periodic sync', () => {
-    test('periodic sync triggers at interval', async () => {
+  describe("Periodic sync", () => {
+    test("periodic sync triggers at interval", async () => {
       const nodes = createTestNodes(1);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       synchronizer.start(nodes, 1000);
@@ -792,7 +792,7 @@ describe('CacheSynchronizer', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    test('periodic sync does not overlap', async () => {
+    test("periodic sync does not overlap", async () => {
       const nodes = createTestNodes(1);
       let resolveFirstSync: any;
       const firstSyncPromise = new Promise((resolve) => {
@@ -813,13 +813,13 @@ describe('CacheSynchronizer', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
 
       // Complete first sync
-      resolveFirstSync(mockFetchSuccess('hash-abc123', 5000));
+      resolveFirstSync(mockFetchSuccess("hash-abc123", 5000));
     });
 
-    test('stop prevents further periodic syncs', async () => {
+    test("stop prevents further periodic syncs", async () => {
       const nodes = createTestNodes(1);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       synchronizer.start(nodes, 1000);
@@ -835,11 +835,11 @@ describe('CacheSynchronizer', () => {
     });
   });
 
-  describe('Callbacks', () => {
-    test('onCacheSyncComplete called on successful sync', async () => {
+  describe("Callbacks", () => {
+    test("onCacheSyncComplete called on successful sync", async () => {
       const nodes = createTestNodes(2);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       await synchronizer.syncCacheState(nodes);
@@ -852,12 +852,12 @@ describe('CacheSynchronizer', () => {
       });
     });
 
-    test('onCacheSyncComplete includes failure count', async () => {
+    test("onCacheSyncComplete includes failure count", async () => {
       const nodes = createTestNodes(3);
       (global.fetch as jest.Mock)
-        .mockReturnValueOnce(mockFetchSuccess('hash-abc123', 5000))
-        .mockReturnValueOnce(mockFetchError(500, 'Server error'))
-        .mockReturnValueOnce(mockFetchSuccess('hash-xyz789', 3000));
+        .mockReturnValueOnce(mockFetchSuccess("hash-abc123", 5000))
+        .mockReturnValueOnce(mockFetchError(500, "Server error"))
+        .mockReturnValueOnce(mockFetchSuccess("hash-xyz789", 3000));
 
       await synchronizer.syncCacheState(nodes);
 
@@ -868,10 +868,10 @@ describe('CacheSynchronizer', () => {
       });
     });
 
-    test('onCacheSyncError called on sync errors', async () => {
+    test("onCacheSyncError called on sync errors", async () => {
       const nodes = createTestNodes(1);
       (global.fetch as jest.Mock).mockRejectedValue(
-        new Error('Critical sync error')
+        new Error("Critical sync error")
       );
 
       await synchronizer.syncCacheState(nodes);
@@ -879,11 +879,11 @@ describe('CacheSynchronizer', () => {
       expect(callbacks.onCacheSyncError).toHaveBeenCalledTimes(1);
     });
 
-    test('callbacks work without being provided', async () => {
+    test("callbacks work without being provided", async () => {
       const synchronizerNoCallbacks = new CacheSynchronizer(registry, config);
       const nodes = createTestNodes(1);
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       await expect(
@@ -897,7 +897,7 @@ describe('CacheSynchronizer', () => {
 // ClusterCache Integration Tests (15 tests)
 // ============================================================================
 
-describe('ClusterCache', () => {
+describe("ClusterCache", () => {
   let config: TestCacheConfig;
   let callbacks: CacheCallbacks;
   let clusterCache: ClusterCache;
@@ -916,115 +916,115 @@ describe('ClusterCache', () => {
     jest.restoreAllMocks();
   });
 
-  describe('Initialization', () => {
-    test('initialize runs warmup then starts sync', async () => {
+  describe("Initialization", () => {
+    test("initialize runs warmup then starts sync", async () => {
       const nodes = createTestNodes(2);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       expect(clusterCache.isRunning()).toBe(true);
       expect(callbacks.onCacheWarmedUp).toHaveBeenCalled();
     });
 
-    test('initialize handles warmup failures gracefully', async () => {
+    test("initialize handles warmup failures gracefully", async () => {
       const nodes = createTestNodes(2);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock)
-        .mockReturnValueOnce(mockFetchSuccess('hash-abc123', 5000))
-        .mockReturnValueOnce(mockFetchError(500, 'Server error'));
+        .mockReturnValueOnce(mockFetchSuccess("hash-abc123", 5000))
+        .mockReturnValueOnce(mockFetchError(500, "Server error"));
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       // Should still start sync even if some warmups failed
       expect(clusterCache.isRunning()).toBe(true);
     });
 
-    test('initialize adds warmed nodes to registry', async () => {
+    test("initialize adds warmed nodes to registry", async () => {
       const nodes = createTestNodes(2);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       const stats = clusterCache.getCacheStats();
       expect(stats.nodeCount).toBe(2);
     });
 
-    test('initialize with zero nodes does not start sync', async () => {
+    test("initialize with zero nodes does not start sync", async () => {
       const nodes: Array<{ id: string; url: string }> = [];
       const warmupOptions = createWarmupOptions();
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       expect(clusterCache.isRunning()).toBe(false);
     });
   });
 
-  describe('Registry delegation', () => {
-    test('findNodesWithCache delegates to registry', async () => {
+  describe("Registry delegation", () => {
+    test("findNodesWithCache delegates to registry", async () => {
       const nodes = createTestNodes(2);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
-      const foundNodes = clusterCache.findNodesWithCache('hash-abc123');
+      const foundNodes = clusterCache.findNodesWithCache("hash-abc123");
       expect(foundNodes).toHaveLength(2);
     });
 
-    test('getCacheRegistry returns all entries', async () => {
+    test("getCacheRegistry returns all entries", async () => {
       const nodes = createTestNodes(3);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       const registry = clusterCache.getCacheRegistry();
       expect(registry.size).toBe(3);
-      expect(registry.has('node-1')).toBe(true);
-      expect(registry.has('node-2')).toBe(true);
-      expect(registry.has('node-3')).toBe(true);
+      expect(registry.has("node-1")).toBe(true);
+      expect(registry.has("node-2")).toBe(true);
+      expect(registry.has("node-3")).toBe(true);
     });
 
-    test('getNodeCacheState returns single entry', async () => {
+    test("getNodeCacheState returns single entry", async () => {
       const nodes = createTestNodes(2);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
-      const state = clusterCache.getNodeCacheState('node-1');
+      const state = clusterCache.getNodeCacheState("node-1");
       expect(state).toBeDefined();
-      expect(state?.nodeId).toBe('node-1');
+      expect(state?.nodeId).toBe("node-1");
     });
 
-    test('getNodeCacheState returns undefined for non-existent node', () => {
-      const state = clusterCache.getNodeCacheState('node-999');
+    test("getNodeCacheState returns undefined for non-existent node", () => {
+      const state = clusterCache.getNodeCacheState("node-999");
       expect(state).toBeUndefined();
     });
   });
 
-  describe('Statistics', () => {
-    test('getCacheStats returns correct counts', async () => {
+  describe("Statistics", () => {
+    test("getCacheStats returns correct counts", async () => {
       const nodes = createTestNodes(3);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       const stats = clusterCache.getCacheStats();
       expect(stats.nodeCount).toBe(3);
@@ -1032,21 +1032,21 @@ describe('ClusterCache', () => {
       expect(stats.uniqueHashes).toBe(1);
     });
 
-    test('getCacheStats with multiple unique hashes', async () => {
+    test("getCacheStats with multiple unique hashes", async () => {
       const nodes = createTestNodes(3);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock)
-        .mockReturnValueOnce(mockFetchSuccess('hash-a', 5000))
-        .mockReturnValueOnce(mockFetchSuccess('hash-b', 5000))
-        .mockReturnValueOnce(mockFetchSuccess('hash-a', 5000));
+        .mockReturnValueOnce(mockFetchSuccess("hash-a", 5000))
+        .mockReturnValueOnce(mockFetchSuccess("hash-b", 5000))
+        .mockReturnValueOnce(mockFetchSuccess("hash-a", 5000));
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       const stats = clusterCache.getCacheStats();
       expect(stats.uniqueHashes).toBe(2);
     });
 
-    test('getCacheStats returns zeros when not initialized', () => {
+    test("getCacheStats returns zeros when not initialized", () => {
       const stats = clusterCache.getCacheStats();
       expect(stats.nodeCount).toBe(0);
       expect(stats.cacheCount).toBe(0);
@@ -1054,62 +1054,62 @@ describe('ClusterCache', () => {
     });
   });
 
-  describe('Lifecycle management', () => {
-    test('stop stops synchronizer', async () => {
+  describe("Lifecycle management", () => {
+    test("stop stops synchronizer", async () => {
       const nodes = createTestNodes(2);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
       clusterCache.stop();
 
       expect(clusterCache.isRunning()).toBe(false);
     });
 
-    test('isRunning reflects synchronizer state', async () => {
+    test("isRunning reflects synchronizer state", async () => {
       const nodes = createTestNodes(2);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
       expect(clusterCache.isRunning()).toBe(false);
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
       expect(clusterCache.isRunning()).toBe(true);
 
       clusterCache.stop();
       expect(clusterCache.isRunning()).toBe(false);
     });
 
-    test('stop can be called before initialize', () => {
+    test("stop can be called before initialize", () => {
       expect(() => clusterCache.stop()).not.toThrow();
     });
   });
 
-  describe('Callback propagation', () => {
-    test('warmup callbacks flow through correctly', async () => {
+  describe("Callback propagation", () => {
+    test("warmup callbacks flow through correctly", async () => {
       const nodes = createTestNodes(1);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       expect(callbacks.onCacheWarmedUp).toHaveBeenCalledTimes(1);
     });
 
-    test('sync callbacks flow through correctly', async () => {
+    test("sync callbacks flow through correctly", async () => {
       const nodes = createTestNodes(1);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchSuccess('hash-abc123', 5000)
+        mockFetchSuccess("hash-abc123", 5000)
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 100);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 100);
 
       // Advance timer to trigger sync
       await jest.advanceTimersByTimeAsync(100);
@@ -1117,14 +1117,14 @@ describe('ClusterCache', () => {
       expect(callbacks.onCacheSyncComplete).toHaveBeenCalled();
     });
 
-    test('failure callbacks flow through correctly', async () => {
+    test("failure callbacks flow through correctly", async () => {
       const nodes = createTestNodes(1);
       const warmupOptions = createWarmupOptions();
       (global.fetch as jest.Mock).mockReturnValue(
-        mockFetchError(500, 'Server error')
+        mockFetchError(500, "Server error")
       );
 
-      await clusterCache.initialize(nodes, 'Test prompt', warmupOptions, 1000);
+      await clusterCache.initialize(nodes, "Test prompt", warmupOptions, 1000);
 
       expect(callbacks.onCacheWarmupFailed).toHaveBeenCalledTimes(1);
     });

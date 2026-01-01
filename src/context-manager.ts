@@ -289,7 +289,7 @@ export function truncateMessages(
  */
 export function logContextWarning(
   stats: ContextStats,
-  mode?: "claude" | "lmstudio" | "mlx" | "openrouter"
+  mode?: "claude" | "lmstudio" | "mlx" | "openrouter" | "mlx-cluster"
 ): void {
   // Skip warnings for cloud models with large context windows
   if (mode === "claude" || mode === "openrouter") {

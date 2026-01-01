@@ -75,12 +75,12 @@ Handle errors gracefully.`;
 // Helper to simulate proxy options
 function createMockProxyOptions(overrides = {}) {
   return {
-    mode: 'lmstudio',
+    mode: "lmstudio",
     smartSystemPrompt: false,
     truncateSystemPrompt: false,
     safeSystemFilter: false,
-    filterTier: 'auto',
-    ...overrides
+    filterTier: "auto",
+    ...overrides,
   };
 }
 
@@ -105,18 +105,21 @@ function test_1_1_safe_filter_enabled_explicitly() {
 
   try {
     // This will fail until shouldUseSafeFilter() is implemented
-    const { shouldUseSafeFilter } = require('../../dist/anthropic-proxy.js');
+    const { shouldUseSafeFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
       smartSystemPrompt: false,
-      truncateSystemPrompt: false
+      truncateSystemPrompt: false,
     });
 
     const result = shouldUseSafeFilter(options);
 
-    assert.strictEqual(result, true,
-      "Should use safe filter when explicitly enabled");
+    assert.strictEqual(
+      result,
+      true,
+      "Should use safe filter when explicitly enabled"
+    );
 
     console.log("   ✅ PASS: Safe filter enabled explicitly");
     passed++;
@@ -130,21 +133,26 @@ function test_1_1_safe_filter_enabled_explicitly() {
  * Test 1.2: Safe filter disabled when smartSystemPrompt is active
  */
 function test_1_2_safe_filter_disabled_with_smart_prompt() {
-  console.log("\n✓ Test 1.2: Safe filter disabled when smartSystemPrompt active");
+  console.log(
+    "\n✓ Test 1.2: Safe filter disabled when smartSystemPrompt active"
+  );
 
   try {
-    const { shouldUseSafeFilter } = require('../../dist/anthropic-proxy.js');
+    const { shouldUseSafeFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      smartSystemPrompt: true,  // Takes priority
-      truncateSystemPrompt: false
+      smartSystemPrompt: true, // Takes priority
+      truncateSystemPrompt: false,
     });
 
     const result = shouldUseSafeFilter(options);
 
-    assert.strictEqual(result, false,
-      "Should NOT use safe filter when smartSystemPrompt is active");
+    assert.strictEqual(
+      result,
+      false,
+      "Should NOT use safe filter when smartSystemPrompt is active"
+    );
 
     console.log("   ✅ PASS: Smart prompt takes priority over safe filter");
     passed++;
@@ -161,19 +169,22 @@ function test_1_3_safe_filter_default_lmstudio() {
   console.log("\n✓ Test 1.3: Safe filter enabled by default for LMStudio");
 
   try {
-    const { shouldUseSafeFilter } = require('../../dist/anthropic-proxy.js');
+    const { shouldUseSafeFilter } = require("../../dist/anthropic-proxy.js");
 
     // Default LMStudio config (safeSystemFilter: undefined)
     const options = createMockProxyOptions({
-      mode: 'lmstudio',
+      mode: "lmstudio",
       safeSystemFilter: undefined,
-      smartSystemPrompt: false
+      smartSystemPrompt: false,
     });
 
     const result = shouldUseSafeFilter(options);
 
-    assert.strictEqual(result, true,
-      "Should use safe filter by default for LMStudio");
+    assert.strictEqual(
+      result,
+      true,
+      "Should use safe filter by default for LMStudio"
+    );
 
     console.log("   ✅ PASS: Safe filter enabled by default for LMStudio");
     passed++;
@@ -190,18 +201,21 @@ function test_1_4_safe_filter_default_openrouter() {
   console.log("\n✓ Test 1.4: Safe filter disabled by default for OpenRouter");
 
   try {
-    const { shouldUseSafeFilter } = require('../../dist/anthropic-proxy.js');
+    const { shouldUseSafeFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
-      mode: 'openrouter',
+      mode: "openrouter",
       safeSystemFilter: undefined,
-      smartSystemPrompt: false
+      smartSystemPrompt: false,
     });
 
     const result = shouldUseSafeFilter(options);
 
-    assert.strictEqual(result, false,
-      "Should NOT use safe filter by default for OpenRouter");
+    assert.strictEqual(
+      result,
+      false,
+      "Should NOT use safe filter by default for OpenRouter"
+    );
 
     console.log("   ✅ PASS: Safe filter disabled by default for OpenRouter");
     passed++;
@@ -218,18 +232,21 @@ function test_1_5_safe_filter_default_claude() {
   console.log("\n✓ Test 1.5: Safe filter disabled by default for Claude mode");
 
   try {
-    const { shouldUseSafeFilter } = require('../../dist/anthropic-proxy.js');
+    const { shouldUseSafeFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
-      mode: 'claude',
+      mode: "claude",
       safeSystemFilter: undefined,
-      smartSystemPrompt: false
+      smartSystemPrompt: false,
     });
 
     const result = shouldUseSafeFilter(options);
 
-    assert.strictEqual(result, false,
-      "Should NOT use safe filter by default for Claude mode");
+    assert.strictEqual(
+      result,
+      false,
+      "Should NOT use safe filter by default for Claude mode"
+    );
 
     console.log("   ✅ PASS: Safe filter disabled by default for Claude mode");
     passed++;
@@ -246,18 +263,21 @@ function test_1_6_safe_filter_explicit_disable() {
   console.log("\n✓ Test 1.6: Explicit disable overrides defaults");
 
   try {
-    const { shouldUseSafeFilter } = require('../../dist/anthropic-proxy.js');
+    const { shouldUseSafeFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
-      mode: 'lmstudio',
-      safeSystemFilter: false,  // Explicit disable
-      smartSystemPrompt: false
+      mode: "lmstudio",
+      safeSystemFilter: false, // Explicit disable
+      smartSystemPrompt: false,
     });
 
     const result = shouldUseSafeFilter(options);
 
-    assert.strictEqual(result, false,
-      "Should NOT use safe filter when explicitly disabled");
+    assert.strictEqual(
+      result,
+      false,
+      "Should NOT use safe filter when explicitly disabled"
+    );
 
     console.log("   ✅ PASS: Explicit disable overrides defaults");
     passed++;
@@ -282,47 +302,57 @@ function test_2_1_optimization_chain_priority() {
   console.log("\n✓ Test 2.1: Optimization chain priority order");
 
   try {
-    const { getOptimizationStrategy } = require('../../dist/anthropic-proxy.js');
+    const {
+      getOptimizationStrategy,
+    } = require("../../dist/anthropic-proxy.js");
 
     // Test 1: smartSystemPrompt takes priority
     let options = createMockProxyOptions({
       smartSystemPrompt: true,
       safeSystemFilter: true,
-      truncateSystemPrompt: true
+      truncateSystemPrompt: true,
     });
     let strategy = getOptimizationStrategy(options);
-    assert.strictEqual(strategy, 'smart',
-      "Smart prompt should take priority");
+    assert.strictEqual(strategy, "smart", "Smart prompt should take priority");
 
     // Test 2: safeSystemFilter takes priority when smart is disabled
     options = createMockProxyOptions({
       smartSystemPrompt: false,
       safeSystemFilter: true,
-      truncateSystemPrompt: true
+      truncateSystemPrompt: true,
     });
     strategy = getOptimizationStrategy(options);
-    assert.strictEqual(strategy, 'safe',
-      "Safe filter should take priority when smart is disabled");
+    assert.strictEqual(
+      strategy,
+      "safe",
+      "Safe filter should take priority when smart is disabled"
+    );
 
     // Test 3: truncate takes priority when safe is disabled
     options = createMockProxyOptions({
       smartSystemPrompt: false,
       safeSystemFilter: false,
-      truncateSystemPrompt: true
+      truncateSystemPrompt: true,
     });
     strategy = getOptimizationStrategy(options);
-    assert.strictEqual(strategy, 'truncate',
-      "Truncate should take priority when safe is disabled");
+    assert.strictEqual(
+      strategy,
+      "truncate",
+      "Truncate should take priority when safe is disabled"
+    );
 
     // Test 4: passthrough when all disabled
     options = createMockProxyOptions({
       smartSystemPrompt: false,
       safeSystemFilter: false,
-      truncateSystemPrompt: false
+      truncateSystemPrompt: false,
     });
     strategy = getOptimizationStrategy(options);
-    assert.strictEqual(strategy, 'passthrough',
-      "Passthrough when all optimizations disabled");
+    assert.strictEqual(
+      strategy,
+      "passthrough",
+      "Passthrough when all optimizations disabled"
+    );
 
     console.log("   ✅ PASS: Optimization chain priority correct");
     passed++;
@@ -339,11 +369,11 @@ function test_2_2_safe_filter_applied_to_system_prompt() {
   console.log("\n✓ Test 2.2: Safe filter applied to system prompt");
 
   try {
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      filterTier: 'moderate'
+      filterTier: "moderate",
     });
 
     const result = applySafeSystemFilter(CLAUDE_SYSTEM_PROMPT, options);
@@ -351,10 +381,15 @@ function test_2_2_safe_filter_applied_to_system_prompt() {
     assert.ok(result.filteredPrompt, "Should return filtered prompt");
     assert.ok(result.stats, "Should return stats");
     assert.ok(result.validation, "Should return validation");
-    assert.strictEqual(result.validation.isValid, true,
-      "Should pass validation");
-    assert.ok(result.stats.filteredTokens < result.stats.originalTokens,
-      "Should reduce token count");
+    assert.strictEqual(
+      result.validation.isValid,
+      true,
+      "Should pass validation"
+    );
+    assert.ok(
+      result.stats.filteredTokens < result.stats.originalTokens,
+      "Should reduce token count"
+    );
 
     console.log("   ✅ PASS: Safe filter applied successfully");
     passed++;
@@ -368,27 +403,31 @@ function test_2_2_safe_filter_applied_to_system_prompt() {
  * Test 2.3: Fallback to truncate when safe filter validation fails
  */
 function test_2_3_fallback_to_truncate_on_validation_failure() {
-  console.log("\n✓ Test 2.3: Fallback to truncate when safe filter validation fails");
+  console.log(
+    "\n✓ Test 2.3: Fallback to truncate when safe filter validation fails"
+  );
 
   try {
-    const { optimizeSystemPrompt } = require('../../dist/anthropic-proxy.js');
+    const { optimizeSystemPrompt } = require("../../dist/anthropic-proxy.js");
 
     // Create a prompt that will fail validation with EXTREME tier
     const invalidPrompt = "You are an AI.";
 
     const options = createMockProxyOptions({
-      mode: 'lmstudio',
+      mode: "lmstudio",
       safeSystemFilter: true,
-      filterTier: 'extreme',
+      filterTier: "extreme",
       truncateSystemPrompt: true,
-      systemPromptMaxTokens: 2000
+      systemPromptMaxTokens: 2000,
     });
 
     const result = optimizeSystemPrompt(invalidPrompt, options);
 
     // Should fallback to truncate when validation fails
-    assert.ok(result.strategy === 'truncate' || result.strategy === 'safe',
-      "Should use truncate or safe (with fallback) when validation fails");
+    assert.ok(
+      result.strategy === "truncate" || result.strategy === "safe",
+      "Should use truncate or safe (with fallback) when validation fails"
+    );
 
     console.log("   ✅ PASS: Fallback to truncate on validation failure");
     passed++;
@@ -413,31 +452,39 @@ function test_3_1_auto_tier_selection() {
   console.log("\n✓ Test 3.1: Auto tier selection based on prompt size");
 
   try {
-    const { selectOptimizationTier } = require('../../dist/anthropic-proxy.js');
+    const { selectOptimizationTier } = require("../../dist/anthropic-proxy.js");
 
     // Small prompt → MINIMAL
     let prompt = "You are Claude.";
-    let tier = selectOptimizationTier(prompt, 'auto');
-    assert.strictEqual(tier, 'MINIMAL',
-      "Small prompt should use MINIMAL tier");
+    let tier = selectOptimizationTier(prompt, "auto");
+    assert.strictEqual(tier, "MINIMAL", "Small prompt should use MINIMAL tier");
 
     // Medium prompt (8k tokens) → MODERATE
     prompt = "X".repeat(32000);
-    tier = selectOptimizationTier(prompt, 'auto');
-    assert.strictEqual(tier, 'MODERATE',
-      "Medium prompt should use MODERATE tier");
+    tier = selectOptimizationTier(prompt, "auto");
+    assert.strictEqual(
+      tier,
+      "MODERATE",
+      "Medium prompt should use MODERATE tier"
+    );
 
     // Large prompt (15k tokens) → AGGRESSIVE
     prompt = "X".repeat(60000);
-    tier = selectOptimizationTier(prompt, 'auto');
-    assert.strictEqual(tier, 'AGGRESSIVE',
-      "Large prompt should use AGGRESSIVE tier");
+    tier = selectOptimizationTier(prompt, "auto");
+    assert.strictEqual(
+      tier,
+      "AGGRESSIVE",
+      "Large prompt should use AGGRESSIVE tier"
+    );
 
     // Very large prompt (20k+ tokens) → EXTREME
     prompt = "X".repeat(80000);
-    tier = selectOptimizationTier(prompt, 'auto');
-    assert.strictEqual(tier, 'EXTREME',
-      "Very large prompt should use EXTREME tier");
+    tier = selectOptimizationTier(prompt, "auto");
+    assert.strictEqual(
+      tier,
+      "EXTREME",
+      "Very large prompt should use EXTREME tier"
+    );
 
     console.log("   ✅ PASS: Auto tier selection works correctly");
     passed++;
@@ -454,14 +501,17 @@ function test_3_2_explicit_tier_override() {
   console.log("\n✓ Test 3.2: Explicit tier selection overrides auto");
 
   try {
-    const { selectOptimizationTier } = require('../../dist/anthropic-proxy.js');
+    const { selectOptimizationTier } = require("../../dist/anthropic-proxy.js");
 
     const prompt = "X".repeat(80000); // Large prompt
 
     // Explicit tier should override auto
-    const tier = selectOptimizationTier(prompt, 'minimal');
-    assert.strictEqual(tier, 'MINIMAL',
-      "Explicit tier should override auto selection");
+    const tier = selectOptimizationTier(prompt, "minimal");
+    assert.strictEqual(
+      tier,
+      "MINIMAL",
+      "Explicit tier should override auto selection"
+    );
 
     console.log("   ✅ PASS: Explicit tier overrides auto");
     passed++;
@@ -478,14 +528,16 @@ function test_3_3_invalid_tier_defaults_to_auto() {
   console.log("\n✓ Test 3.3: Invalid tier defaults to auto");
 
   try {
-    const { selectOptimizationTier } = require('../../dist/anthropic-proxy.js');
+    const { selectOptimizationTier } = require("../../dist/anthropic-proxy.js");
 
     const prompt = "You are Claude.";
 
     // Invalid tier should default to auto
-    const tier = selectOptimizationTier(prompt, 'invalid_tier');
-    assert.ok(['MINIMAL', 'MODERATE', 'AGGRESSIVE', 'EXTREME'].includes(tier),
-      "Invalid tier should default to auto selection");
+    const tier = selectOptimizationTier(prompt, "invalid_tier");
+    assert.ok(
+      ["MINIMAL", "MODERATE", "AGGRESSIVE", "EXTREME"].includes(tier),
+      "Invalid tier should default to auto selection"
+    );
 
     console.log("   ✅ PASS: Invalid tier defaults to auto");
     passed++;
@@ -511,28 +563,33 @@ function test_4_1_debug_level_1_basic_logging() {
 
   try {
     // Set debug level 1
-    process.env.ANYCLAUDE_DEBUG = '1';
+    process.env.ANYCLAUDE_DEBUG = "1";
 
     const logs = [];
     const originalLog = console.log;
-    console.log = (...args) => logs.push(args.join(' '));
+    console.log = (...args) => logs.push(args.join(" "));
 
     try {
-      const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+      const {
+        applySafeSystemFilter,
+      } = require("../../dist/anthropic-proxy.js");
 
       const options = createMockProxyOptions({
         safeSystemFilter: true,
-        filterTier: 'moderate'
+        filterTier: "moderate",
       });
 
       applySafeSystemFilter(CLAUDE_SYSTEM_PROMPT, options);
 
       // Should log basic info about filtering
-      const hasFilterLog = logs.some(log =>
-        log.includes('Safe System Filter') || log.includes('filtering')
+      const hasFilterLog = logs.some(
+        (log) => log.includes("Safe System Filter") || log.includes("filtering")
       );
 
-      assert.ok(hasFilterLog, "Should log basic filter information at debug level 1");
+      assert.ok(
+        hasFilterLog,
+        "Should log basic filter information at debug level 1"
+      );
 
       console.log = originalLog;
       console.log("   ✅ PASS: Debug level 1 logging works");
@@ -555,25 +612,27 @@ function test_4_2_debug_level_2_verbose_logging() {
 
   try {
     // Set debug level 2
-    process.env.ANYCLAUDE_DEBUG = '2';
+    process.env.ANYCLAUDE_DEBUG = "2";
 
     const logs = [];
     const originalLog = console.log;
-    console.log = (...args) => logs.push(args.join(' '));
+    console.log = (...args) => logs.push(args.join(" "));
 
     try {
-      const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+      const {
+        applySafeSystemFilter,
+      } = require("../../dist/anthropic-proxy.js");
 
       const options = createMockProxyOptions({
         safeSystemFilter: true,
-        filterTier: 'moderate'
+        filterTier: "moderate",
       });
 
       applySafeSystemFilter(CLAUDE_SYSTEM_PROMPT, options);
 
       // Should log detailed stats
-      const hasStatsLog = logs.some(log =>
-        log.includes('tokens') || log.includes('reduction')
+      const hasStatsLog = logs.some(
+        (log) => log.includes("tokens") || log.includes("reduction")
       );
 
       assert.ok(hasStatsLog, "Should log detailed stats at debug level 2");
@@ -599,25 +658,28 @@ function test_4_3_debug_level_3_trace_logging() {
 
   try {
     // Set debug level 3
-    process.env.ANYCLAUDE_DEBUG = '3';
+    process.env.ANYCLAUDE_DEBUG = "3";
 
     const logs = [];
     const originalLog = console.log;
-    console.log = (...args) => logs.push(args.join(' '));
+    console.log = (...args) => logs.push(args.join(" "));
 
     try {
-      const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+      const {
+        applySafeSystemFilter,
+      } = require("../../dist/anthropic-proxy.js");
 
       const options = createMockProxyOptions({
         safeSystemFilter: true,
-        filterTier: 'moderate'
+        filterTier: "moderate",
       });
 
       applySafeSystemFilter(CLAUDE_SYSTEM_PROMPT, options);
 
       // Should log full prompt details
-      const hasPromptLog = logs.some(log =>
-        log.includes('Tool usage policy') || log.includes('Claude Code')
+      const hasPromptLog = logs.some(
+        (log) =>
+          log.includes("Tool usage policy") || log.includes("Claude Code")
       );
 
       assert.ok(hasPromptLog, "Should log full prompt at debug level 3");
@@ -650,11 +712,11 @@ function test_5_1_processing_time_under_10ms() {
   console.log("\n✓ Test 5.1: Processing time < 10ms for typical prompt");
 
   try {
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      filterTier: 'moderate'
+      filterTier: "moderate",
     });
 
     const startTime = Date.now();
@@ -663,8 +725,10 @@ function test_5_1_processing_time_under_10ms() {
 
     const processingTime = endTime - startTime;
 
-    assert.ok(processingTime < 10,
-      `Processing time should be < 10ms, got ${processingTime}ms`);
+    assert.ok(
+      processingTime < 10,
+      `Processing time should be < 10ms, got ${processingTime}ms`
+    );
 
     console.log(`   ✅ PASS: Processing time ${processingTime}ms < 10ms`);
     passed++;
@@ -681,14 +745,14 @@ function test_5_2_large_prompt_processing_time() {
   console.log("\n✓ Test 5.2: Large prompt processing time < 50ms");
 
   try {
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     // Create a very large prompt (20k+ tokens)
     const largePrompt = CLAUDE_SYSTEM_PROMPT.repeat(10);
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      filterTier: 'aggressive'
+      filterTier: "aggressive",
     });
 
     const startTime = Date.now();
@@ -697,10 +761,14 @@ function test_5_2_large_prompt_processing_time() {
 
     const processingTime = endTime - startTime;
 
-    assert.ok(processingTime < 50,
-      `Large prompt processing should be < 50ms, got ${processingTime}ms`);
+    assert.ok(
+      processingTime < 50,
+      `Large prompt processing should be < 50ms, got ${processingTime}ms`
+    );
 
-    console.log(`   ✅ PASS: Large prompt processing ${processingTime}ms < 50ms`);
+    console.log(
+      `   ✅ PASS: Large prompt processing ${processingTime}ms < 50ms`
+    );
     passed++;
   } catch (err) {
     console.log(`   ❌ FAIL: ${err.message}`);
@@ -723,22 +791,29 @@ function test_6_1_preserves_tool_calling_instructions() {
   console.log("\n✓ Test 6.1: Safe filter preserves tool calling instructions");
 
   try {
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      filterTier: 'aggressive'  // Even aggressive should preserve tool calling
+      filterTier: "aggressive", // Even aggressive should preserve tool calling
     });
 
     const result = applySafeSystemFilter(CLAUDE_SYSTEM_PROMPT, options);
 
     // Should preserve critical tool calling sections
-    assert.ok(result.filteredPrompt.includes('Tool usage policy'),
-      "Should preserve tool usage policy");
-    assert.ok(result.filteredPrompt.includes('parameters'),
-      "Should preserve parameter instructions");
-    assert.strictEqual(result.validation.isValid, true,
-      "Should pass validation (critical sections present)");
+    assert.ok(
+      result.filteredPrompt.includes("Tool usage policy"),
+      "Should preserve tool usage policy"
+    );
+    assert.ok(
+      result.filteredPrompt.includes("parameters"),
+      "Should preserve parameter instructions"
+    );
+    assert.strictEqual(
+      result.validation.isValid,
+      true,
+      "Should pass validation (critical sections present)"
+    );
 
     console.log("   ✅ PASS: Tool calling instructions preserved");
     passed++;
@@ -756,18 +831,21 @@ function test_6_2_no_streaming_interference() {
 
   try {
     // Safe filter should only modify system prompt, not streaming logic
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      filterTier: 'moderate'
+      filterTier: "moderate",
     });
 
     const result = applySafeSystemFilter(CLAUDE_SYSTEM_PROMPT, options);
 
     // Result should be a plain string, not affect streaming
-    assert.strictEqual(typeof result.filteredPrompt, 'string',
-      "Should return plain string that doesn't interfere with streaming");
+    assert.strictEqual(
+      typeof result.filteredPrompt,
+      "string",
+      "Should return plain string that doesn't interfere with streaming"
+    );
 
     console.log("   ✅ PASS: No streaming interference");
     passed++;
@@ -792,18 +870,20 @@ function test_7_1_empty_prompt_handling() {
   console.log("\n✓ Test 7.1: Empty prompt handling");
 
   try {
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      filterTier: 'moderate'
+      filterTier: "moderate",
     });
 
-    const result = applySafeSystemFilter('', options);
+    const result = applySafeSystemFilter("", options);
 
     // Should handle empty prompt gracefully
-    assert.ok(result.filteredPrompt !== null,
-      "Should handle empty prompt without crashing");
+    assert.ok(
+      result.filteredPrompt !== null,
+      "Should handle empty prompt without crashing"
+    );
 
     console.log("   ✅ PASS: Empty prompt handled gracefully");
     passed++;
@@ -820,18 +900,20 @@ function test_7_2_invalid_configuration_handling() {
   console.log("\n✓ Test 7.2: Invalid configuration handling");
 
   try {
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     const options = {
       safeSystemFilter: true,
-      filterTier: null  // Invalid tier
+      filterTier: null, // Invalid tier
     };
 
     // Should handle invalid config gracefully (fallback to auto)
     const result = applySafeSystemFilter(CLAUDE_SYSTEM_PROMPT, options);
 
-    assert.ok(result.filteredPrompt,
-      "Should handle invalid config without crashing");
+    assert.ok(
+      result.filteredPrompt,
+      "Should handle invalid config without crashing"
+    );
 
     console.log("   ✅ PASS: Invalid configuration handled gracefully");
     passed++;
@@ -848,21 +930,23 @@ function test_7_3_validation_failure_triggers_fallback() {
   console.log("\n✓ Test 7.3: Validation failure triggers fallback");
 
   try {
-    const { applySafeSystemFilter } = require('../../dist/anthropic-proxy.js');
+    const { applySafeSystemFilter } = require("../../dist/anthropic-proxy.js");
 
     // Minimal prompt that will fail validation with aggressive filtering
     const minimalPrompt = "You are an AI assistant.";
 
     const options = createMockProxyOptions({
       safeSystemFilter: true,
-      filterTier: 'extreme'
+      filterTier: "extreme",
     });
 
     const result = applySafeSystemFilter(minimalPrompt, options);
 
     // Should fallback to less aggressive tier
-    assert.ok(result.fallbackOccurred === true || result.validation.isValid === true,
-      "Should trigger fallback or pass validation");
+    assert.ok(
+      result.fallbackOccurred === true || result.validation.isValid === true,
+      "Should trigger fallback or pass validation"
+    );
 
     console.log("   ✅ PASS: Validation failure triggers fallback");
     passed++;

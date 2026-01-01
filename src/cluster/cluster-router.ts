@@ -32,11 +32,11 @@ import type {
   RoutingContext,
   NodeId,
   RoutingConfig,
-} from './cluster-types';
-import { LoadBalanceStrategy, NodeStatus } from './cluster-types';
+} from "./cluster-types";
+import { LoadBalanceStrategy, NodeStatus } from "./cluster-types";
 
 // Re-export RoutingConfig so tests can import it from this module
-export type { RoutingConfig } from './cluster-types';
+export type { RoutingConfig } from "./cluster-types";
 
 /**
  * Sticky session data structure.
@@ -129,7 +129,7 @@ export class StickySessionManager {
    */
   constructor(ttlMs: number, callbacks?: RouterCallbacks) {
     if (ttlMs <= 0) {
-      throw new Error('TTL must be greater than 0');
+      throw new Error("TTL must be greater than 0");
     }
 
     this.ttlMs = ttlMs;
@@ -366,9 +366,9 @@ export class ClusterRouter {
 
     if (eligibleNodes.length === 0) {
       this.safeCallback(() => {
-        this.sessionManager['callbacks']?.onRoutingFailed?.(
+        this.sessionManager["callbacks"]?.onRoutingFailed?.(
           context,
-          'No healthy nodes available'
+          "No healthy nodes available"
         );
       });
       return null;
@@ -400,13 +400,13 @@ export class ClusterRouter {
 
     if (decision) {
       this.safeCallback(() => {
-        this.sessionManager['callbacks']?.onNodeSelected?.(decision!);
+        this.sessionManager["callbacks"]?.onNodeSelected?.(decision!);
       });
     } else {
       this.safeCallback(() => {
-        this.sessionManager['callbacks']?.onRoutingFailed?.(
+        this.sessionManager["callbacks"]?.onRoutingFailed?.(
           context,
-          'Strategy returned no decision'
+          "Strategy returned no decision"
         );
       });
     }
@@ -521,7 +521,7 @@ export class ClusterRouter {
    * @returns True if cleanup timer is active
    */
   isRunning(): boolean {
-    return this.sessionManager['cleanupTimer'] !== null;
+    return this.sessionManager["cleanupTimer"] !== null;
   }
 
   /**
@@ -563,7 +563,7 @@ export class ClusterRouter {
 
     return {
       nodeId: node.id,
-      reason: 'round-robin selection',
+      reason: "round-robin selection",
       confidence: 0.8,
     };
   }
@@ -677,7 +677,8 @@ export class ClusterRouter {
       const recency = age < 60000 ? 10 : 0;
 
       // Total score
-      const total = cacheMatch + toolsMatch + healthScore + availability + recency;
+      const total =
+        cacheMatch + toolsMatch + healthScore + availability + recency;
 
       scores.push({
         nodeId: node.id,

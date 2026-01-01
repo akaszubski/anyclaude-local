@@ -11,6 +11,7 @@
 The cluster health monitoring module provides comprehensive health tracking for MLX cluster nodes using a circuit breaker pattern. It enables intelligent routing by monitoring node reliability over time and automatically managing node availability based on health metrics.
 
 **Key Features**:
+
 - Time-windowed success rate and latency tracking
 - Circuit breaker state machine with automatic failover
 - Exponential backoff for unhealthy nodes
@@ -34,10 +35,12 @@ new RollingWindowMetrics(
 ```
 
 **Constructor Parameters**:
+
 - `windowSizeMs`: Time window in milliseconds (must be > 0)
 - `maxSamples`: Maximum samples to store before circular buffer wraps (must be > 0)
 
 **Throws**:
+
 - `Error` if windowSizeMs or maxSamples <= 0
 
 **Methods**:
@@ -47,12 +50,14 @@ new RollingWindowMetrics(
 Records a successful operation.
 
 **Parameters**:
+
 - `latencyMs` (optional): Response latency in milliseconds
 
 **Example**:
+
 ```typescript
 metrics.recordSuccess(125); // 125ms response
-metrics.recordSuccess();    // Success with no latency tracked
+metrics.recordSuccess(); // Success with no latency tracked
 ```
 
 ---
@@ -62,6 +67,7 @@ metrics.recordSuccess();    // Success with no latency tracked
 Records a failed operation.
 
 **Example**:
+
 ```typescript
 metrics.recordFailure();
 ```
@@ -73,19 +79,21 @@ metrics.recordFailure();
 Calculates aggregated health metrics based on samples within the time window.
 
 **Returns**: HealthMetrics object with:
+
 ```typescript
 {
-  successRate: number;              // 0.0-1.0
-  avgLatencyMs: number;             // Average latency (0 if no samples)
-  totalSamples: number;             // Number of valid samples
-  consecutiveSuccesses: number;     // Successes from most recent samples
-  consecutiveFailures: number;      // Failures from most recent samples
+  successRate: number; // 0.0-1.0
+  avgLatencyMs: number; // Average latency (0 if no samples)
+  totalSamples: number; // Number of valid samples
+  consecutiveSuccesses: number; // Successes from most recent samples
+  consecutiveFailures: number; // Failures from most recent samples
 }
 ```
 
 **Note**: Only samples within the time window are included. Old samples are automatically excluded.
 
 **Example**:
+
 ```typescript
 const metrics = rollingMetrics.getMetrics();
 console.log(`Success rate: ${(metrics.successRate * 100).toFixed(1)}%`);
@@ -100,6 +108,7 @@ console.log(`Consecutive successes: ${metrics.consecutiveSuccesses}`);
 Clears all recorded samples.
 
 **Example**:
+
 ```typescript
 metrics.reset();
 ```
@@ -119,11 +128,13 @@ new NodeHealthTracker(
 ```
 
 **Constructor Parameters**:
+
 - `nodeId`: Node identifier for tracking
 - `config` (optional): Health check configuration (uses defaults if omitted)
 - `backoffConfig` (optional): Exponential backoff configuration (uses defaults if omitted)
 
 **Configuration Defaults**:
+
 ```typescript
 // Health config
 {
@@ -149,15 +160,18 @@ new NodeHealthTracker(
 Records a successful health check and updates state machine.
 
 **Parameters**:
+
 - `latencyMs` (optional): Health check latency in milliseconds
 
 **State Transitions**:
+
 - INITIALIZING to HEALTHY (on first success)
 - DEGRADED to HEALTHY (with sufficient consecutive successes)
 - UNHEALTHY to HEALTHY (with sufficient consecutive successes)
 - OFFLINE to HEALTHY (with sufficient consecutive successes)
 
 **Example**:
+
 ```typescript
 tracker.recordSuccess(125);
 ```
@@ -169,17 +183,20 @@ tracker.recordSuccess(125);
 Records a failed health check and updates state machine.
 
 **Parameters**:
+
 - `error` (optional): Error object from health check
 
 **State Transitions**:
+
 - INITIALIZING to UNHEALTHY (on max consecutive failures)
 - HEALTHY to DEGRADED (when success rate drops below degradedThreshold)
 - DEGRADED to UNHEALTHY (when success rate drops below unhealthyThreshold)
 - UNHEALTHY to OFFLINE (after too many failures, with exponential backoff)
 
 **Example**:
+
 ```typescript
-tracker.recordFailure(new Error('Connection timeout'));
+tracker.recordFailure(new Error("Connection timeout"));
 ```
 
 ---
@@ -189,6 +206,7 @@ tracker.recordFailure(new Error('Connection timeout'));
 Returns the current health status.
 
 **Returns**: One of:
+
 - `NodeStatus.INITIALIZING`: Node starting up
 - `NodeStatus.HEALTHY`: Node fully operational
 - `NodeStatus.DEGRADED`: Node operational but experiencing issues
@@ -196,9 +214,10 @@ Returns the current health status.
 - `NodeStatus.OFFLINE`: Node unreachable or shut down
 
 **Example**:
+
 ```typescript
 if (tracker.getStatus() === NodeStatus.HEALTHY) {
-  console.log('Node is healthy');
+  console.log("Node is healthy");
 }
 ```
 
@@ -211,6 +230,7 @@ Returns aggregated health metrics for the node.
 **Returns**: HealthMetrics object (see RollingWindowMetrics.getMetrics())
 
 **Example**:
+
 ```typescript
 const health = tracker.getHealth();
 console.log(`Success rate: ${(health.successRate * 100).toFixed(1)}%`);
@@ -227,6 +247,7 @@ Checks if the node is eligible for retry (not in backoff cooldown).
 **Use Case**: For routing logic to respect exponential backoff
 
 **Example**:
+
 ```typescript
 if (tracker.isEligibleForRetry()) {
   // Safe to route to this node
@@ -244,6 +265,7 @@ Returns the current exponential backoff delay in milliseconds.
 **Returns**: Current backoff delay (0 if not in backoff)
 
 **Example**:
+
 ```typescript
 const delay = tracker.getBackoffDelayMs();
 console.log(`Node will retry in ${delay}ms`);
@@ -264,11 +286,13 @@ new ClusterHealth(
 ```
 
 **Constructor Parameters**:
+
 - `config` (optional): Health check configuration
 - `backoffConfig` (optional): Exponential backoff configuration
 - `callbacks` (optional): Status change and check result callbacks
 
 **Example**:
+
 ```typescript
 const health = new ClusterHealth(
   { checkIntervalMs: 5000, timeoutMs: 2000 },
@@ -283,7 +307,7 @@ const health = new ClusterHealth(
       } else {
         console.error(`${nodeId} health check failed:`, result.error?.message);
       }
-    }
+    },
   }
 );
 ```
@@ -295,21 +319,25 @@ const health = new ClusterHealth(
 Starts periodic health checks for the given nodes.
 
 **Parameters**:
+
 - `nodes`: Array of nodes to monitor
 
 **Throws**:
+
 - `Error` if health checks are already running
 
 **Behavior**:
+
 - Initializes health trackers for each node
 - Schedules periodic health check for each node
 - Sets running flag to true
 
 **Example**:
+
 ```typescript
 const nodes = [
-  { id: 'node-1', url: 'http://localhost:8080/v1' },
-  { id: 'node-2', url: 'http://localhost:8081/v1' },
+  { id: "node-1", url: "http://localhost:8080/v1" },
+  { id: "node-2", url: "http://localhost:8081/v1" },
 ];
 
 health.startHealthChecks(nodes);
@@ -322,11 +350,13 @@ health.startHealthChecks(nodes);
 Stops all periodic health checks and cleans up timers.
 
 **Behavior**:
+
 - Clears all scheduled timers
 - Sets running flag to false
 - Does not reset metrics or status
 
 **Example**:
+
 ```typescript
 health.stopHealthChecks();
 ```
@@ -338,16 +368,19 @@ health.stopHealthChecks();
 Checks if a specific node is healthy.
 
 **Parameters**:
+
 - `nodeId`: Node identifier
 
 **Returns**: `true` if node status is HEALTHY, `false` otherwise
 
 **Throws**:
+
 - `Error` if node is unknown
 
 **Example**:
+
 ```typescript
-if (health.isHealthy('node-1')) {
+if (health.isHealthy("node-1")) {
   // Route to this node
 } else {
   // Try another node
@@ -361,16 +394,19 @@ if (health.isHealthy('node-1')) {
 Gets health status and metrics for a specific node.
 
 **Parameters**:
+
 - `nodeId`: Node identifier
 
 **Returns**: Object with status and metrics
 
 **Throws**:
+
 - `Error` if node is unknown
 
 **Example**:
+
 ```typescript
-const { status, metrics } = health.getNodeHealth('node-1');
+const { status, metrics } = health.getNodeHealth("node-1");
 console.log(`${status}: ${(metrics.successRate * 100).toFixed(1)}%`);
 ```
 
@@ -383,6 +419,7 @@ Gets health status and metrics for all nodes.
 **Returns**: Map of nodeId to {status, metrics}
 
 **Example**:
+
 ```typescript
 const allHealth = health.getAllNodeHealth();
 for (const [nodeId, { status, metrics }] of allHealth) {
@@ -397,10 +434,12 @@ for (const [nodeId, { status, metrics }] of allHealth) {
 Manually records a successful request for a node.
 
 **Parameters**:
+
 - `nodeId`: Node identifier
 - `latencyMs`: Request latency in milliseconds
 
 **Behavior**:
+
 - Updates node health metrics
 - May trigger state transitions
 - Ignores if node is unknown
@@ -408,9 +447,10 @@ Manually records a successful request for a node.
 **Use Case**: Recording results from actual request routing (not just periodic health checks)
 
 **Example**:
+
 ```typescript
 // After successfully routing a request to node-1
-health.recordSuccess('node-1', 125);
+health.recordSuccess("node-1", 125);
 ```
 
 ---
@@ -420,10 +460,12 @@ health.recordSuccess('node-1', 125);
 Manually records a failed request for a node.
 
 **Parameters**:
+
 - `nodeId`: Node identifier
 - `error` (optional): Error from the request
 
 **Behavior**:
+
 - Updates node health metrics
 - May trigger state transitions
 - Ignores if node is unknown
@@ -431,9 +473,10 @@ Manually records a failed request for a node.
 **Use Case**: Recording results from actual request routing
 
 **Example**:
+
 ```typescript
 // Request to node-1 failed
-health.recordFailure('node-1', new Error('Connection timeout'));
+health.recordFailure("node-1", new Error("Connection timeout"));
 ```
 
 ---
@@ -449,11 +492,13 @@ new HealthCheckTimeoutError(nodeId: string, timeoutMs: number)
 ```
 
 **Properties**:
+
 - `nodeId`: Node ID that timed out
 - `timeoutMs`: Timeout duration
 - `message`: Human-readable error message
 
 **Example**:
+
 ```typescript
 try {
   // Health check code
@@ -479,11 +524,13 @@ new HealthCheckFailedError(
 ```
 
 **Properties**:
+
 - `nodeId`: Node ID that failed
 - `statusCode`: HTTP status code (e.g., 500)
 - `statusText`: HTTP status text (e.g., 'Internal Server Error')
 
 **Example**:
+
 ```typescript
 try {
   // Health check code
@@ -505,10 +552,12 @@ new HealthCheckNetworkError(nodeId: string, cause: Error)
 ```
 
 **Properties**:
+
 - `nodeId`: Node ID that failed
 - `cause`: Original error from the network request
 
 **Example**:
+
 ```typescript
 try {
   // Health check code
@@ -536,6 +585,7 @@ interface HealthCheckResult {
 ```
 
 **Fields**:
+
 - `success`: Whether the health check passed
 - `latencyMs`: Response time (only if success)
 - `error`: Error object (only if !success)
@@ -548,14 +598,14 @@ Aggregated health metrics for a node.
 
 ```typescript
 interface HealthMetrics {
-  readonly successRate: number;           // 0.0-1.0
-  readonly avgLatencyMs: number;          // Average latency
-  readonly totalSamples: number;          // Number of valid samples
-  readonly consecutiveSuccesses: number;  // Successes from recent samples
-  readonly consecutiveFailures: number;   // Failures from recent samples
-  readonly status?: NodeStatus;           // Current status (optional)
-  readonly lastError?: Error;             // Last error (optional)
-  readonly lastCheckTime?: number;        // Timestamp of last check
+  readonly successRate: number; // 0.0-1.0
+  readonly avgLatencyMs: number; // Average latency
+  readonly totalSamples: number; // Number of valid samples
+  readonly consecutiveSuccesses: number; // Successes from recent samples
+  readonly consecutiveFailures: number; // Failures from recent samples
+  readonly status?: NodeStatus; // Current status (optional)
+  readonly lastError?: Error; // Last error (optional)
+  readonly lastCheckTime?: number; // Timestamp of last check
 }
 ```
 
@@ -571,10 +621,11 @@ type HealthCallback = (
   oldStatus: NodeStatus,
   newStatus: NodeStatus,
   metrics: HealthMetrics
-) => void
+) => void;
 ```
 
 **Parameters**:
+
 - `nodeId`: Node that changed status
 - `oldStatus`: Previous status
 - `newStatus`: New status
@@ -587,13 +638,11 @@ type HealthCallback = (
 Callback invoked after each health check.
 
 ```typescript
-type HealthCheckCallback = (
-  nodeId: string,
-  result: HealthCheckResult
-) => void
+type HealthCheckCallback = (nodeId: string, result: HealthCheckResult) => void;
 ```
 
 **Parameters**:
+
 - `nodeId`: Node that was checked
 - `result`: Health check result (success, latency, or error)
 
@@ -618,13 +667,14 @@ Configuration for exponential backoff.
 
 ```typescript
 interface BackoffConfig {
-  readonly initialDelayMs: number;  // Starting delay (default: 1000)
-  readonly maxDelayMs: number;      // Maximum delay (default: 60000)
-  readonly multiplier: number;      // Growth factor (default: 2)
+  readonly initialDelayMs: number; // Starting delay (default: 1000)
+  readonly maxDelayMs: number; // Maximum delay (default: 60000)
+  readonly multiplier: number; // Growth factor (default: 2)
 }
 ```
 
 **Examples**:
+
 ```typescript
 // Fast backoff (for quick recovery testing)
 { initialDelayMs: 100, maxDelayMs: 5000, multiplier: 2 }
@@ -681,26 +731,26 @@ HEALTHY <--> DEGRADED
 ### Basic Health Monitoring
 
 ```typescript
-import { ClusterHealth } from './cluster-health';
-import { NodeStatus } from './cluster-types';
+import { ClusterHealth } from "./cluster-health";
+import { NodeStatus } from "./cluster-types";
 
 const health = new ClusterHealth();
 const nodes = [
-  { id: 'node-1', url: 'http://localhost:8080/v1' },
-  { id: 'node-2', url: 'http://localhost:8081/v1' },
+  { id: "node-1", url: "http://localhost:8080/v1" },
+  { id: "node-2", url: "http://localhost:8081/v1" },
 ];
 
 health.startHealthChecks(nodes);
 
 // Later: record request results
-health.recordSuccess('node-1', 125);
-health.recordFailure('node-2');
+health.recordSuccess("node-1", 125);
+health.recordFailure("node-2");
 
 // Check health before routing
-if (health.isHealthy('node-1')) {
-  routeRequestToNode('node-1');
+if (health.isHealthy("node-1")) {
+  routeRequestToNode("node-1");
 } else {
-  routeRequestToNode('node-2');
+  routeRequestToNode("node-2");
 }
 
 health.stopHealthChecks();
@@ -724,9 +774,12 @@ const health = new ClusterHealth(
     },
     onHealthCheck: (nodeId, result) => {
       if (!result.success) {
-        console.warn(`Health check failed for ${nodeId}:`, result.error?.message);
+        console.warn(
+          `Health check failed for ${nodeId}:`,
+          result.error?.message
+        );
       }
-    }
+    },
   }
 );
 
@@ -738,11 +791,11 @@ health.startHealthChecks(nodes);
 ```typescript
 function selectNode(nodes: MLXNode[], health: ClusterHealth): MLXNode | null {
   // Find all healthy nodes
-  const healthyNodes = nodes.filter(n => health.isHealthy(n.id));
+  const healthyNodes = nodes.filter((n) => health.isHealthy(n.id));
 
   if (healthyNodes.length === 0) {
     // No healthy nodes, fall back to degraded
-    const degradedNodes = nodes.filter(n => {
+    const degradedNodes = nodes.filter((n) => {
       const { status } = health.getNodeHealth(n.id);
       return status === NodeStatus.DEGRADED;
     });
@@ -772,19 +825,20 @@ The health monitoring module integrates with other cluster components:
 
 ## Performance Characteristics
 
-| Operation | Complexity | Notes |
-|-----------|-----------|-------|
-| recordSuccess/recordFailure | O(1) | Amortized constant time |
-| getMetrics() | O(n) | Filters samples by time window |
-| startHealthChecks() | O(m) | m = number of nodes |
-| recordSuccess (all nodes) | O(m) | Per-node recording |
-| getAllNodeHealth() | O(m * n) | m = nodes, n = samples per node |
+| Operation                   | Complexity | Notes                           |
+| --------------------------- | ---------- | ------------------------------- |
+| recordSuccess/recordFailure | O(1)       | Amortized constant time         |
+| getMetrics()                | O(n)       | Filters samples by time window  |
+| startHealthChecks()         | O(m)       | m = number of nodes             |
+| recordSuccess (all nodes)   | O(m)       | Per-node recording              |
+| getAllNodeHealth()          | O(m \* n)  | m = nodes, n = samples per node |
 
 ---
 
 ## Testing
 
 The module includes 150+ comprehensive unit tests covering:
+
 - Rolling window metrics and circular buffer behavior
 - Circuit breaker state transitions
 - Exponential backoff timing
@@ -793,6 +847,7 @@ The module includes 150+ comprehensive unit tests covering:
 - Integration scenarios
 
 Run tests with:
+
 ```bash
 npm test -- tests/unit/cluster-health.test.ts
 ```

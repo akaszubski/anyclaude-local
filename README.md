@@ -468,6 +468,7 @@ anyclaude --mode=mlx-cluster
 ```
 
 **Benefits**:
+
 - Scale inference across multiple machines
 - Distribute load with intelligent routing
 - Maximize cache hit rate with cache-aware balancing

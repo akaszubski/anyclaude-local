@@ -18,7 +18,7 @@
  * @module cluster-cache
  */
 
-import crypto from 'crypto';
+import crypto from "crypto";
 
 // ============================================================================
 // Error Classes
@@ -34,9 +34,13 @@ export class CacheError extends Error {
   readonly nodeId?: string;
   readonly hash?: string;
 
-  constructor(code: string, message: string, context?: { nodeId?: string; hash?: string }) {
+  constructor(
+    code: string,
+    message: string,
+    context?: { nodeId?: string; hash?: string }
+  ) {
     super(message);
-    this.name = 'CacheError';
+    this.name = "CacheError";
     this.code = code;
     this.nodeId = context?.nodeId;
     this.hash = context?.hash;
@@ -87,7 +91,11 @@ export interface CacheWarmupOptions {
 export interface CacheCallbacks {
   readonly onCacheWarmedUp?: (result: CacheWarmupResult) => void;
   readonly onCacheWarmupFailed?: (result: CacheWarmupResult) => void;
-  readonly onCacheSyncComplete?: (stats: { syncedNodes: number; failedNodes: number; totalNodes: number }) => void;
+  readonly onCacheSyncComplete?: (stats: {
+    syncedNodes: number;
+    failedNodes: number;
+    totalNodes: number;
+  }) => void;
   readonly onCacheSyncError?: (error: Error) => void;
 }
 
@@ -122,7 +130,10 @@ export class CacheRegistry {
     const existingEntry = this.entries.get(entry.nodeId);
 
     // Remove old hash index if updating existing entry
-    if (existingEntry && existingEntry.systemPromptHash !== entry.systemPromptHash) {
+    if (
+      existingEntry &&
+      existingEntry.systemPromptHash !== entry.systemPromptHash
+    ) {
       const oldHashSet = this.hashIndex.get(existingEntry.systemPromptHash);
       if (oldHashSet) {
         oldHashSet.delete(entry.nodeId);
@@ -269,7 +280,7 @@ export class CacheWarmup {
    * Used to identify cached prompts.
    */
   generateHash(prompt: string): string {
-    return crypto.createHash('sha256').update(prompt).digest('hex');
+    return crypto.createHash("sha256").update(prompt).digest("hex");
   }
 
   /**
@@ -277,13 +288,17 @@ export class CacheWarmup {
    *
    * Processes nodes in batches to avoid overwhelming the cluster.
    */
-  async warmUpNodes(nodes: Array<{ id: string; url: string }>): Promise<CacheWarmupResult[]> {
+  async warmUpNodes(
+    nodes: Array<{ id: string; url: string }>
+  ): Promise<CacheWarmupResult[]> {
     const results: CacheWarmupResult[] = [];
 
     // Process nodes in batches based on concurrency limit
     for (let i = 0; i < nodes.length; i += this.options.concurrency) {
       const batch = nodes.slice(i, i + this.options.concurrency);
-      const batchResults = await Promise.all(batch.map(node => this.warmUpSingleNode(node)));
+      const batchResults = await Promise.all(
+        batch.map((node) => this.warmUpSingleNode(node))
+      );
       results.push(...batchResults);
     }
 
@@ -294,21 +309,27 @@ export class CacheWarmup {
    * Warm up a single node's cache.
    * Uses finally block to ensure timer cleanup even on failure (prevents memory leak).
    */
-  private async warmUpSingleNode(node: { id: string; url: string }): Promise<CacheWarmupResult> {
+  private async warmUpSingleNode(node: {
+    id: string;
+    url: string;
+  }): Promise<CacheWarmupResult> {
     const startTime = Date.now();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.options.timeoutMs);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      this.options.timeoutMs
+    );
 
     try {
       const response = await Promise.race([
         fetch(`${node.url}/v1/cluster/cache/warm`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ systemPrompt: this.options.systemPrompt }),
           signal: controller.signal,
         }),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), this.options.timeoutMs)
+          setTimeout(() => reject(new Error("Timeout")), this.options.timeoutMs)
         ),
       ]);
 
@@ -324,7 +345,10 @@ export class CacheWarmup {
         return result;
       }
 
-      const data = await response.json() as { systemPromptHash: string; tokens: number };
+      const data = (await response.json()) as {
+        systemPromptHash: string;
+        tokens: number;
+      };
       const durationMs = Date.now() - startTime;
       const result: CacheWarmupResult = {
         nodeId: node.id,
@@ -440,7 +464,9 @@ export class CacheSynchronizer {
   /**
    * Synchronize cache state for all nodes.
    */
-  async syncCacheState(nodes: Array<{ id: string; url: string }>): Promise<void> {
+  async syncCacheState(
+    nodes: Array<{ id: string; url: string }>
+  ): Promise<void> {
     if (this.syncInProgress) {
       return; // Prevent overlap
     }
@@ -454,11 +480,11 @@ export class CacheSynchronizer {
 
       // Poll all nodes in parallel
       const results = await Promise.allSettled(
-        nodes.map(node => this.syncSingleNode(node))
+        nodes.map((node) => this.syncSingleNode(node))
       );
 
       for (const result of results) {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           if (result.value.success) {
             syncedNodes++;
           } else {
@@ -487,7 +513,9 @@ export class CacheSynchronizer {
         totalNodes: nodes.length,
       });
     } catch (error) {
-      this.notifySyncError(error instanceof Error ? error : new Error(String(error)));
+      this.notifySyncError(
+        error instanceof Error ? error : new Error(String(error))
+      );
     } finally {
       this.syncInProgress = false;
     }
@@ -496,9 +524,10 @@ export class CacheSynchronizer {
   /**
    * Synchronize cache state for a single node.
    */
-  private async syncSingleNode(
-    node: { id: string; url: string }
-  ): Promise<{ success: boolean; error?: Error }> {
+  private async syncSingleNode(node: {
+    id: string;
+    url: string;
+  }): Promise<{ success: boolean; error?: Error }> {
     try {
       const response = await fetch(`${node.url}/v1/cluster/cache`);
 
@@ -506,7 +535,7 @@ export class CacheSynchronizer {
         return { success: false };
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         systemPromptHash: string;
         tokens: number;
         hitRate?: number;
@@ -536,7 +565,10 @@ export class CacheSynchronizer {
   /**
    * Schedule next sync using recursive setTimeout.
    */
-  private scheduleSyncRecursive(nodes: Array<{ id: string; url: string }>, intervalMs: number): void {
+  private scheduleSyncRecursive(
+    nodes: Array<{ id: string; url: string }>,
+    intervalMs: number
+  ): void {
     if (!this.running) {
       return;
     }
@@ -557,7 +589,11 @@ export class CacheSynchronizer {
   /**
    * Notify sync completion callback.
    */
-  private notifySyncComplete(stats: { syncedNodes: number; failedNodes: number; totalNodes: number }): void {
+  private notifySyncComplete(stats: {
+    syncedNodes: number;
+    failedNodes: number;
+    totalNodes: number;
+  }): void {
     if (this.callbacks?.onCacheSyncComplete) {
       try {
         this.callbacks.onCacheSyncComplete(stats);
@@ -630,7 +666,7 @@ export class ClusterCache {
     // Step 2: Add successful warmups to registry
     for (const result of results) {
       if (result.success && result.hash && result.tokens !== undefined) {
-        const node = nodes.find(n => n.id === result.nodeId);
+        const node = nodes.find((n) => n.id === result.nodeId);
         if (node) {
           const entry: CacheEntry = {
             nodeId: result.nodeId,
@@ -673,7 +709,7 @@ export class ClusterCache {
    * Get all cache registry entries.
    */
   getCacheRegistry(): Map<string, CacheEntry> {
-    return new Map(this.registry['entries']);
+    return new Map(this.registry["entries"]);
   }
 
   /**
@@ -686,7 +722,11 @@ export class ClusterCache {
   /**
    * Get cache statistics.
    */
-  getCacheStats(): { nodeCount: number; cacheCount: number; uniqueHashes: number } {
+  getCacheStats(): {
+    nodeCount: number;
+    cacheCount: number;
+    uniqueHashes: number;
+  } {
     return {
       nodeCount: this.registry.getNodeCount(),
       cacheCount: this.registry.getCacheCount(),

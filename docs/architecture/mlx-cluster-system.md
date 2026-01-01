@@ -67,6 +67,7 @@ Request 4 → Node 1 (cycle repeats)
 **Best For**: Uniform workloads, no cache affinity, simple deployments
 
 **Characteristics**:
+
 - O(1) routing decision
 - No state tracking required beyond node list
 - Fair distribution across healthy nodes
@@ -84,6 +85,7 @@ Node 3: 5 in-flight requests
 **Best For**: Variable workload durations, burst handling
 
 **Characteristics**:
+
 - Minimizes queue depth
 - Reduces worst-case latency
 - Tracks active requests per node
@@ -103,6 +105,7 @@ Node 3: cache_hash = abc123def456 ← Route here (cache hit!)
 **Best For**: Repeated interactions with same system prompt (Claude Code)
 
 **Characteristics**:
+
 - Maximizes KV cache hit rate
 - Reduces prompt processing overhead
 - Falls back to least-loaded if no exact match
@@ -121,6 +124,7 @@ Node 3: avg latency = 400ms
 **Best For**: Performance-critical applications, SLA-driven routing
 
 **Characteristics**:
+
 - Adapts to per-node performance variations
 - Helps maintain consistent user experience
 - Requires historical latency tracking
@@ -131,10 +135,10 @@ Health is monitored through key metrics:
 
 ```typescript
 interface NodeHealth {
-  lastCheck: number;           // Timestamp of most recent check (ms)
+  lastCheck: number; // Timestamp of most recent check (ms)
   consecutiveFailures: number; // Sequential failed health checks
-  avgResponseTime: number;     // Average latency (ms)
-  errorRate: number;           // Fraction of failed requests (0.0-1.0)
+  avgResponseTime: number; // Average latency (ms)
+  errorRate: number; // Fraction of failed requests (0.0-1.0)
 }
 ```
 
@@ -180,9 +184,9 @@ Tracks what's cached on each node to enable cache-aware routing:
 
 ```typescript
 interface NodeCacheState {
-  tokens: number;              // Tokens currently in KV cache
-  systemPromptHash: string;    // Hash of cached system prompt
-  lastUpdated: number;         // Timestamp of last cache update
+  tokens: number; // Tokens currently in KV cache
+  systemPromptHash: string; // Hash of cached system prompt
+  lastUpdated: number; // Timestamp of last cache update
 }
 ```
 
@@ -195,8 +199,9 @@ function findCacheMatch(
 ): MLXNode | null {
   // Look for exact cache match
   const match = nodes.find(
-    n => n.status === NodeStatus.HEALTHY &&
-         n.cache.systemPromptHash === systemPromptHash
+    (n) =>
+      n.status === NodeStatus.HEALTHY &&
+      n.cache.systemPromptHash === systemPromptHash
   );
 
   // If found, use it (avoid cache miss overhead)
@@ -240,20 +245,24 @@ The registry tracks which nodes have which cached prompts using two indexes:
 
 ```typescript
 // Primary index: nodeId → CacheEntry
-entries: Map<string, {
-  nodeId: string;
-  nodeUrl: string;
-  systemPromptHash: string;
-  tokens: number;
-  lastUpdated: number;
-  hitRate?: number;
-}>
+entries: Map<
+  string,
+  {
+    nodeId: string;
+    nodeUrl: string;
+    systemPromptHash: string;
+    tokens: number;
+    lastUpdated: number;
+    hitRate?: number;
+  }
+>;
 
 // Hash index: systemPromptHash → Set<nodeId>
-hashIndex: Map<string, Set<string>>
+hashIndex: Map<string, Set<string>>;
 ```
 
 This dual-index design enables:
+
 - **O(1) node lookup**: `registry.get(nodeId)` returns cache state instantly
 - **O(1) cache lookup**: `registry.findNodesWithCache(hash)` finds all nodes with specific cache
 - **Automatic synchronization**: Hash index updates automatically on set/delete operations
@@ -286,7 +295,7 @@ Cache coordination enables efficient routing:
 ```typescript
 // Router receives routing context with system prompt hash
 const context: RoutingContext = {
-  systemPromptHash: 'abc123def456...',
+  systemPromptHash: "abc123def456...",
   estimatedTokens: 5000,
 };
 
@@ -308,9 +317,9 @@ Cache coordination is configured via `CacheConfig`:
 
 ```typescript
 interface CacheConfig {
-  maxCacheAgeSec: number;        // TTL before cache entry expires (default: 300s)
-  maxCacheSizeTokens: number;    // Maximum tokens per cache (default: 1M)
-  minCacheHitRate: number;       // Minimum acceptable hit rate (default: 0.7)
+  maxCacheAgeSec: number; // TTL before cache entry expires (default: 300s)
+  maxCacheSizeTokens: number; // Maximum tokens per cache (default: 1M)
+  minCacheHitRate: number; // Minimum acceptable hit rate (default: 0.7)
 }
 ```
 
@@ -323,17 +332,21 @@ interface CacheConfig {
 #### Example: Cache-Aware Cluster Initialization
 
 ```typescript
-import { ClusterCache } from './cluster/cluster-cache';
+import { ClusterCache } from "./cluster/cluster-cache";
 
 // 1. Create cache coordinator
 const cacheCoordinator = new ClusterCache(
   { maxCacheAgeSec: 300 },
   {
     onCacheWarmedUp: (result) => {
-      console.log(`[Cache] Node ${result.nodeId} warmed up in ${result.durationMs}ms`);
+      console.log(
+        `[Cache] Node ${result.nodeId} warmed up in ${result.durationMs}ms`
+      );
     },
     onCacheSyncComplete: (stats) => {
-      console.log(`[Cache] Synced ${stats.syncedNodes}/${stats.totalNodes} nodes`);
+      console.log(
+        `[Cache] Synced ${stats.syncedNodes}/${stats.totalNodes} nodes`
+      );
     },
   }
 );
@@ -344,12 +357,12 @@ await cacheCoordinator.initialize(
   nodes,
   systemPrompt,
   {
-    concurrency: 4,           // Warm 4 nodes at a time
-    timeoutMs: 30000,         // 30 second timeout per node
-    retryCount: 2,            // Retry failed warmups up to 2 times
+    concurrency: 4, // Warm 4 nodes at a time
+    timeoutMs: 30000, // 30 second timeout per node
+    retryCount: 2, // Retry failed warmups up to 2 times
     systemPrompt,
   },
-  30000  // Sync every 30 seconds
+  30000 // Sync every 30 seconds
 );
 
 // 3. Use in routing decisions
@@ -358,7 +371,9 @@ const context = {
   estimatedTokens: 5000,
 };
 
-const cachedNodes = cacheCoordinator.findNodesWithCache(context.systemPromptHash);
+const cachedNodes = cacheCoordinator.findNodesWithCache(
+  context.systemPromptHash
+);
 if (cachedNodes.length > 0) {
   console.log(`Cache hit on ${cachedNodes.length} nodes!`);
   // Route to cached node for performance
@@ -507,6 +522,7 @@ consecutiveFailures = 0
 ```
 
 **Benefits**:
+
 - O(1) recording (circular buffer append)
 - O(n) metric calculation (filters by time window)
 - Automatic age-out of old samples
@@ -533,6 +549,7 @@ Attempt 4: Fail
 ```
 
 **Configuration**:
+
 ```typescript
 {
   initialDelayMs: 1000,      // Starting delay
@@ -542,6 +559,7 @@ Attempt 4: Fail
 ```
 
 **Purpose**:
+
 - Prevent hammering recovering nodes
 - Allow time for transient issues to resolve
 - Reduce resource usage on unstable nodes
@@ -554,17 +572,19 @@ The router uses health metrics to make intelligent decisions:
 // Example: Cache-aware routing with health fallback
 function selectNode(nodes, health, systemPromptHash) {
   // Prefer healthy nodes with cache match
-  const healthy = nodes.filter(n => health.isHealthy(n.id));
-  const cached = healthy.find(n => n.cache.systemPromptHash === systemPromptHash);
+  const healthy = nodes.filter((n) => health.isHealthy(n.id));
+  const cached = healthy.find(
+    (n) => n.cache.systemPromptHash === systemPromptHash
+  );
   if (cached) return cached;
 
   // Fall back to any healthy node
   if (healthy.length > 0) return healthy[0];
 
   // Last resort: degraded node (not UNHEALTHY or OFFLINE)
-  const degraded = nodes.filter(n => {
+  const degraded = nodes.filter((n) => {
     const status = health.getNodeHealth(n.id).status;
-    return status === 'DEGRADED';
+    return status === "DEGRADED";
   });
   return degraded[0] || null;
 }
@@ -587,12 +607,14 @@ Health monitoring is configured via HealthConfig:
 ### Components
 
 **src/cluster/cluster-health.ts** (967 lines):
+
 1. **RollingWindowMetrics** - Circular buffer for metric tracking
 2. **NodeHealthTracker** - Per-node circuit breaker implementation
 3. **ClusterHealth** - Orchestrator for all nodes
 4. **Error classes** - HealthCheckTimeoutError, HealthCheckFailedError, HealthCheckNetworkError
 
 **Test Coverage**: 150+ comprehensive unit tests covering:
+
 - State transitions and thresholds
 - Exponential backoff timing
 - Time-window metric calculations
@@ -615,7 +637,7 @@ enum NodeStatus {
   HEALTHY,
   DEGRADED,
   UNHEALTHY,
-  OFFLINE
+  OFFLINE,
 }
 
 // Cluster status enum
@@ -624,7 +646,7 @@ enum ClusterStatus {
   HEALTHY,
   DEGRADED,
   CRITICAL,
-  OFFLINE
+  OFFLINE,
 }
 
 // Load balancing strategies
@@ -632,7 +654,7 @@ enum LoadBalanceStrategy {
   ROUND_ROBIN,
   LEAST_LOADED,
   CACHE_AWARE,
-  LATENCY_BASED
+  LATENCY_BASED,
 }
 ```
 
@@ -640,12 +662,12 @@ enum LoadBalanceStrategy {
 
 ```typescript
 interface MLXNode {
-  id: NodeId;                  // Unique identifier
-  url: string;                 // HTTP endpoint
-  status: NodeStatus;          // Current operational state
-  health: NodeHealth;          // Health metrics
-  cache: NodeCacheState;       // KV cache state
-  metrics: NodeMetrics;        // Performance metrics
+  id: NodeId; // Unique identifier
+  url: string; // HTTP endpoint
+  status: NodeStatus; // Current operational state
+  health: NodeHealth; // Health metrics
+  cache: NodeCacheState; // KV cache state
+  metrics: NodeMetrics; // Performance metrics
 }
 ```
 
@@ -653,10 +675,10 @@ interface MLXNode {
 
 ```typescript
 interface MLXClusterConfig {
-  discovery: DiscoveryConfig;  // How to find nodes
-  health: HealthConfig;        // Health check settings
-  cache: CacheConfig;          // Cache management settings
-  routing: RoutingConfig;      // Load balancing settings
+  discovery: DiscoveryConfig; // How to find nodes
+  health: HealthConfig; // Health check settings
+  cache: CacheConfig; // Cache management settings
+  routing: RoutingConfig; // Load balancing settings
 }
 ```
 
@@ -666,10 +688,10 @@ The cluster maintains a complete state snapshot:
 
 ```typescript
 interface ClusterState {
-  status: ClusterStatus;       // Overall cluster health
-  nodes: MLXNode[];            // All nodes with current state
-  metrics: ClusterMetrics;     // Aggregated metrics
-  lastUpdated: number;         // Snapshot timestamp
+  status: ClusterStatus; // Overall cluster health
+  nodes: MLXNode[]; // All nodes with current state
+  metrics: ClusterMetrics; // Aggregated metrics
+  lastUpdated: number; // Snapshot timestamp
 }
 ```
 
@@ -688,10 +710,10 @@ The ClusterMetrics interface provides visibility:
 
 ```typescript
 interface ClusterMetrics {
-  totalNodes: number;          // Total configured nodes
-  healthyNodes: number;        // Currently healthy nodes
-  totalRequests: number;       // Cumulative request count
-  avgClusterLatency: number;   // Average response time (ms)
+  totalNodes: number; // Total configured nodes
+  healthyNodes: number; // Currently healthy nodes
+  totalRequests: number; // Cumulative request count
+  avgClusterLatency: number; // Average response time (ms)
   overallCacheHitRate: number; // Cache hit rate (0.0-1.0)
 }
 ```
@@ -761,6 +783,7 @@ ClusterManager initialization follows a precise sequence:
 ```
 
 Each step integrates with the next:
+
 - Discovery provides node list for providers and health checks
 - Providers are created immediately to avoid delays during routing
 - Health checks monitor discovered nodes
@@ -783,6 +806,7 @@ resetClusterManager();
 ```
 
 Key guarantees:
+
 - **Single instance**: Only one ClusterManager per process
 - **Prevent concurrent initialization**: Throws if already initializing
 - **Graceful reset**: Safe to call resetClusterManager() multiple times
@@ -797,12 +821,14 @@ const node = manager.selectNode(systemPromptHash, toolsHash, sessionId);
 ```
 
 Selection process:
+
 1. **Filter discovered nodes** to only healthy ones
 2. **Build routing context** with prompt/tools hashes
 3. **Call router** with session ID (for sticky routing)
 4. **Return selected node** or null if no healthy nodes
 
 The router integrates:
+
 - **Health filtering**: Only routes to HEALTHY or DEGRADED nodes
 - **Cache affinity**: Prioritizes nodes with matching cache
 - **Session affinity**: Routes subsequent requests to same node
@@ -815,12 +841,13 @@ For each node, ClusterManager creates an AI SDK provider:
 ```typescript
 const provider = manager.getNodeProvider(node.id);
 const result = await generateText({
-  model: provider('qwen2.5-coder:7b'),
-  prompt: 'Your prompt...'
+  model: provider("qwen2.5-coder:7b"),
+  prompt: "Your prompt...",
 });
 ```
 
 Provider creation (createProviderForNode):
+
 - Uses `@ai-sdk/openai` for OpenAI-compatible servers
 - Implements custom fetch for LMStudio compatibility
 - Maps `max_tokens` → `max_completion_tokens`
@@ -847,6 +874,7 @@ const status = manager.getStatus();
 ```
 
 Status includes:
+
 - **Initialization status**: Whether manager is ready
 - **Node counts**: Total vs healthy
 - **Per-node details**: Health, latency, error counts
@@ -862,6 +890,7 @@ resetClusterManager();
 ```
 
 Cleanup sequence (order matters!):
+
 1. **Stop discovery** - No new nodes discovered
 2. **Stop health checks** - No more health updates
 3. **Stop cache** - Cache synchronization stops
@@ -870,6 +899,7 @@ Cleanup sequence (order matters!):
 6. **Set initialized = false** - Ready for re-initialization
 
 The sequence prevents ordering issues:
+
 - Discovery stops first (no race with health checks)
 - Health stops before cache (cache depends on health state)
 - Router destroys before providers (router may use providers)
@@ -886,6 +916,7 @@ ClusterManager uses typed errors with descriptive codes:
 - **NOT_INITIALIZED**: getClusterManager() called before init
 
 All errors inherit from `ClusterManagerError` with:
+
 - `code`: Machine-readable error identifier
 - `message`: Human-readable description
 - `cause`: Original error (if wrapped)
@@ -980,12 +1011,14 @@ process.on('SIGTERM', async () => {
 The cluster system is being built in layered phases with comprehensive testing at each stage:
 
 ### Phase 1: Types (COMPLETE - Issue #22)
+
 - Comprehensive TypeScript interfaces
 - Enum definitions for states and strategies
 - 100+ unit tests for type validation
 - Documentation with examples
 
 ### Phase 2: Core Infrastructure (COMPLETE)
+
 - **Issue #23**: Configuration Parser (654 lines, 97 tests)
   - File-based and environment variable configuration
   - Comprehensive validation with error reporting
@@ -1023,6 +1056,7 @@ The cluster system is being built in layered phases with comprehensive testing a
   - Graceful shutdown with proper cleanup sequencing
 
 ### Phase 3: Integration (IN PROGRESS - Issue #28)
+
 - Central cluster orchestration providing unified API
 - Integrates all cluster subsystems (discovery, health, cache, routing)
 - Provider management for per-node AI SDK instances
@@ -1034,6 +1068,7 @@ The cluster system is being built in layered phases with comprehensive testing a
 - Planned: Observability dashboard with metrics visualization
 
 ### Phase 4: Production Hardening (Planned)
+
 - Load testing and performance optimization
 - Advanced auto-recovery mechanisms
 - Cluster rebalancing strategies
@@ -1051,47 +1086,47 @@ import {
   HealthConfig,
   CacheConfig,
   RoutingConfig,
-  LoadBalanceStrategy
-} from './cluster/cluster-types';
+  LoadBalanceStrategy,
+} from "./cluster/cluster-types";
 
 const config: MLXClusterConfig = {
   discovery: {
-    mode: 'static',
+    mode: "static",
     nodes: [
-      { id: 'node-1', url: 'http://10.0.1.10:8082/v1' },
-      { id: 'node-2', url: 'http://10.0.1.11:8082/v1' },
-      { id: 'node-3', url: 'http://10.0.1.12:8082/v1' }
-    ]
+      { id: "node-1", url: "http://10.0.1.10:8082/v1" },
+      { id: "node-2", url: "http://10.0.1.11:8082/v1" },
+      { id: "node-3", url: "http://10.0.1.12:8082/v1" },
+    ],
   },
   health: {
     checkIntervalMs: 5000,
     timeoutMs: 3000,
     maxConsecutiveFailures: 3,
-    unhealthyThreshold: 0.15
+    unhealthyThreshold: 0.15,
   },
   cache: {
     maxCacheAgeSec: 3600,
     minCacheHitRate: 0.6,
-    maxCacheSizeTokens: 32768
+    maxCacheSizeTokens: 32768,
   },
   routing: {
     strategy: LoadBalanceStrategy.CACHE_AWARE,
     maxRetries: 2,
-    retryDelayMs: 100
-  }
+    retryDelayMs: 100,
+  },
 };
 ```
 
 ### Routing a Request
 
 ```typescript
-import { RoutingContext, LoadBalanceStrategy } from './cluster/cluster-types';
-import { ClusterRouter } from './cluster/cluster-router';
+import { RoutingContext, LoadBalanceStrategy } from "./cluster/cluster-types";
+import { ClusterRouter } from "./cluster/cluster-router";
 
 const config: RoutingConfig = {
   strategy: LoadBalanceStrategy.CACHE_AWARE,
   maxRetries: 3,
-  retryDelayMs: 100
+  retryDelayMs: 100,
 };
 
 const router = new ClusterRouter(config, 300000, {
@@ -1100,13 +1135,13 @@ const router = new ClusterRouter(config, 300000, {
   },
   onRoutingFailed: (context, reason) => {
     console.error(`Routing failed: ${reason}`);
-  }
+  },
 });
 
 const context: RoutingContext = {
-  systemPromptHash: 'abc123def456',
+  systemPromptHash: "abc123def456",
   estimatedTokens: 15000,
-  userPriority: 'normal'
+  userPriority: "normal",
 };
 
 // Stateless routing (e.g., one-off requests)
@@ -1117,7 +1152,7 @@ if (decision) {
 }
 
 // Session-based routing (e.g., multi-turn conversations)
-const decision2 = router.selectNodeWithSticky(nodes, context, 'user-123');
+const decision2 = router.selectNodeWithSticky(nodes, context, "user-123");
 // Next request from user-123 will use same node (while session valid)
 ```
 
@@ -1136,7 +1171,7 @@ The `ClusterRouter` class provides intelligent request routing with multiple str
 2. **Cache-Affinity Scoring** (CACHE_AWARE strategy):
    - Cache match: +50 points (if systemPromptHash matches)
    - Tools match: +20 points (only if cache matches)
-   - Health score: +25 * successRate (0-25 points)
+   - Health score: +25 \* successRate (0-25 points)
    - Availability: +15 points if requestsInFlight < 5
    - Recency: +10 points if cache updated within 60 seconds
    - **Total maximum: 120 points**
@@ -1192,13 +1227,13 @@ The cluster system integrates with:
 
 ## Performance Characteristics
 
-| Operation | Complexity | Notes |
-|-----------|-----------|-------|
-| Node selection (round-robin) | O(1) | Increment counter modulo node count |
-| Node selection (least-loaded) | O(n) | Linear scan through nodes |
-| Node selection (cache-aware) | O(n) | Hash lookup + least-loaded fallback |
-| Health check | O(1) per node | Independent operations |
-| Cluster state update | O(n) | Aggregate metrics across all nodes |
+| Operation                     | Complexity    | Notes                               |
+| ----------------------------- | ------------- | ----------------------------------- |
+| Node selection (round-robin)  | O(1)          | Increment counter modulo node count |
+| Node selection (least-loaded) | O(n)          | Linear scan through nodes           |
+| Node selection (cache-aware)  | O(n)          | Hash lookup + least-loaded fallback |
+| Health check                  | O(1) per node | Independent operations              |
+| Cluster state update          | O(n)          | Aggregate metrics across all nodes  |
 
 ## Testing
 

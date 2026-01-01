@@ -47,6 +47,7 @@ def _hash_prompt(self, prompt: str) -> str:
 ```
 
 **What this means**:
+
 - ✅ If prefix is **100% identical** → Cache HIT (e.g., same system prompt, same tools, same history)
 - ❌ If **ONE character changes** → Completely different hash → Cache MISS
 
@@ -158,17 +159,17 @@ Request 3:  System identical BUT MORE history → new prefix
 
 ### Theoretical (What We Claimed)
 
-| Metric | Without Cache | With RAM Cache | Claimed Speedup |
-|--------|--------------|----------------|-----------------|
-| System Prompt | 3000ms | **30ms** | **100x** |
-| Follow-up Request | 3000ms | **30ms** | **100x** |
+| Metric            | Without Cache | With RAM Cache | Claimed Speedup |
+| ----------------- | ------------- | -------------- | --------------- |
+| System Prompt     | 3000ms        | **30ms**       | **100x**        |
+| Follow-up Request | 3000ms        | **30ms**       | **100x**        |
 
 ### Actual (Reality)
 
-| Metric | Without Cache | With RAM Cache | Actual Result |
-|--------|--------------|----------------|---------------|
-| System Prompt | 3000ms | 3000ms | **0x** (cache miss) |
-| Follow-up Request | 3000ms | 3000ms | **0x** (cache miss) |
+| Metric            | Without Cache | With RAM Cache | Actual Result       |
+| ----------------- | ------------- | -------------- | ------------------- |
+| System Prompt     | 3000ms        | 3000ms         | **0x** (cache miss) |
+| Follow-up Request | 3000ms        | 3000ms         | **0x** (cache miss) |
 
 **Cache hit rate in real usage**: **~0-5%** (only if EXACT same prefix!)
 
@@ -250,6 +251,7 @@ user_tokens = tokenize("What about 3+3?")          # 10 tokens
 **Current**: Hash of entire prefix (system + tools + history)
 
 **Should Be**: Separate hashes for each part
+
 - `system_hash` → System prompt KV blocks
 - `tools_hash` → Tool definitions KV blocks
 - `history_hash` → Conversation history KV blocks
@@ -259,6 +261,7 @@ user_tokens = tokenize("What about 3+3?")          # 10 tokens
 **Current**: Store entire KV cache as one blob
 
 **Should Be**: Store KV cache as individual blocks (like PagedAttention)
+
 - Block 0-99: System prompt
 - Block 100-150: Tool definitions
 - Block 151-200: Message 1
@@ -270,6 +273,7 @@ user_tokens = tokenize("What about 3+3?")          # 10 tokens
 **Current**: Exact match only (SHA256 comparison)
 
 **Should Be**: Longest common prefix matching
+
 - Find longest matching prefix of tokens
 - Reuse those blocks
 - Compute only new tokens
@@ -291,6 +295,7 @@ OVERALL STATISTICS
 ```
 
 **This looked okay** because:
+
 1. Only 5 requests (small sample)
 2. 20% hit rate seems "not terrible"
 3. No breakdown of **why** misses happened
@@ -308,13 +313,13 @@ CACHE MISS REASONS:
 
 ## 📊 Comparison: Our Cache vs PagedAttention
 
-| Feature | Our RAM Cache | PagedAttention | Impact |
-|---------|--------------|----------------|--------|
-| **Granularity** | Full prefix | Token blocks | 🔴 We lose 95% of reuse |
-| **Prefix Matching** | Exact only | Longest common | 🔴 We miss partial matches |
-| **Multi-Turn** | ❌ Breaks | ✅ Works | 🔴 Critical for Claude Code |
-| **Memory Efficiency** | ❌ Duplicate prefixes | ✅ Shared blocks | 🔴 Wastes memory |
-| **Hit Rate (Real)** | ~5% | ~80-95% | 🔴 **16-19x worse!** |
+| Feature               | Our RAM Cache         | PagedAttention   | Impact                      |
+| --------------------- | --------------------- | ---------------- | --------------------------- |
+| **Granularity**       | Full prefix           | Token blocks     | 🔴 We lose 95% of reuse     |
+| **Prefix Matching**   | Exact only            | Longest common   | 🔴 We miss partial matches  |
+| **Multi-Turn**        | ❌ Breaks             | ✅ Works         | 🔴 Critical for Claude Code |
+| **Memory Efficiency** | ❌ Duplicate prefixes | ✅ Shared blocks | 🔴 Wastes memory            |
+| **Hit Rate (Real)**   | ~5%                   | ~80-95%          | 🔴 **16-19x worse!**        |
 
 ---
 
@@ -358,6 +363,7 @@ mistralrs-server \
 Rewrite to match PagedAttention architecture:
 
 **Phase 1**: Token-level hashing
+
 ```python
 # Instead of:
 prefix_hash = hash(entire_prefix_string)
@@ -368,6 +374,7 @@ block_hashes = [hash(block) for block in token_blocks]
 ```
 
 **Phase 2**: Block storage
+
 ```python
 # Instead of:
 cache[prefix_hash] = entire_kv_cache
@@ -378,6 +385,7 @@ for i, block_hash in enumerate(block_hashes):
 ```
 
 **Phase 3**: Prefix matching
+
 ```python
 # Find longest matching prefix
 matched_blocks = []
@@ -397,11 +405,13 @@ for block_hash in request_block_hashes:
 Just delete the RAM cache and document that MLX lacks proper caching.
 
 **Advantages**:
+
 - ✅ Honest about limitations
 - ✅ No false performance claims
 - ✅ Simpler codebase
 
 **Disadvantages**:
+
 - ❌ Lose the ~5% hit rate we do get
 - ❌ No unique selling point
 

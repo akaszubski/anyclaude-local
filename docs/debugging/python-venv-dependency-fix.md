@@ -13,6 +13,7 @@ ModuleNotFoundError: No module named 'fastapi'
 ```
 
 This happened because:
+
 1. macOS Python 3.14 is an "externally managed environment" (PEP 668)
 2. Installing packages system-wide requires `--break-system-packages` or using a venv
 3. anyclaude's server launcher was calling `python3` directly instead of the venv Python
@@ -29,6 +30,7 @@ python3 -m pip install fastapi uvicorn mlx-lm
 ```
 
 This installs:
+
 - `fastapi` - Web framework for the server
 - `uvicorn` - ASGI server for FastAPI
 - `mlx-lm` - MLX language model utilities
@@ -50,7 +52,7 @@ Add `pythonVenv` to your `.anyclauderc.json`:
       "model": "Qwen3-Coder-30B-A3B-Instruct-MLX-4bit",
       "modelPath": "/path/to/your/model",
       "serverScript": "scripts/mlx-server.py",
-      "pythonVenv": ".venv",  // ← Add this!
+      "pythonVenv": ".venv", // ← Add this!
       "maxTokens": 32768
     }
   }
@@ -97,7 +99,7 @@ startVLLMMLXServer({
   model: backendConfig.model,
   modelPath: backendConfig.modelPath,
   serverScript: backendConfig.serverScript,
-  pythonVenv: backendConfig.pythonVenv || config.pythonVenv,  // ← Support both locations
+  pythonVenv: backendConfig.pythonVenv || config.pythonVenv, // ← Support both locations
 });
 ```
 
