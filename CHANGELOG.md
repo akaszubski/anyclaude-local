@@ -97,7 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - <18k tokens → MINIMAL (no reduction needed)
     - 18k-25k tokens → MODERATE (condense examples)
     - 25k-40k tokens → AGGRESSIVE (hierarchical filtering)
-    - >40k tokens → EXTREME (maximum reduction)
+    - > 40k tokens → EXTREME (maximum reduction)
 
   **4. Tier Configuration Constants** (`TIER_CONFIGS`)
   - Each tier has explicit token budgets (min/target/max)
@@ -163,11 +163,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Unknown: Falls back to GenericAdapter (no-op)
 
   **Usage Example**:
+
   ```typescript
-  import { getPromptAdapter } from './src/prompt-adapter';
+  import { getPromptAdapter } from "./src/prompt-adapter";
 
   // Get adapter for model
-  const adapter = getPromptAdapter('qwen2.5-coder-7b');
+  const adapter = getPromptAdapter("qwen2.5-coder-7b");
 
   // Adapt system prompt
   const adapted = await adapter.adaptSystemPrompt(systemPrompt);
@@ -181,6 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ```
 
   **Configuration** (in `.anyclauderc.json`):
+
   ```json
   {
     "backends": {
@@ -262,15 +264,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Each step reports effectiveness for debugging
 
   **Configuration** (in `.anyclauderc.json`):
+
   ```json
   {
     "backends": {
       "lmstudio": {
         "contextManager": {
-          "compressAt": 0.75,              // Trigger compression at 75% context usage
-          "keepRecentTurns": 3,            // Keep 3 most recent turns verbatim
-          "toolResultMaxTokens": 500,      // Compress tool results >500 tokens
-          "enableSummarization": false,    // Disable summary (resource-intensive)
+          "compressAt": 0.75, // Trigger compression at 75% context usage
+          "keepRecentTurns": 3, // Keep 3 most recent turns verbatim
+          "toolResultMaxTokens": 500, // Compress tool results >500 tokens
+          "enableSummarization": false, // Disable summary (resource-intensive)
           "enableObservationMasking": true // Replace old outputs with placeholders
         }
       }
@@ -284,17 +287,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ANYCLAUDE_TOOL_RESULT_MAX`: Max tokens for tool results (default: 500)
 
   **Usage Example** (TypeScript):
+
   ```typescript
-  import { ContextManager } from './src/context-manager';
+  import { ContextManager } from "./src/context-manager";
 
   // Create manager with custom config
-  const manager = new ContextManager({
-    compressAt: 0.75,
-    keepRecentTurns: 3,
-    toolResultMaxTokens: 500,
-    enableSummarization: false,
-    enableObservationMasking: true
-  }, 'qwen2.5-coder-7b');
+  const manager = new ContextManager(
+    {
+      compressAt: 0.75,
+      keepRecentTurns: 3,
+      toolResultMaxTokens: 500,
+      enableSummarization: false,
+      enableObservationMasking: true,
+    },
+    "qwen2.5-coder-7b"
+  );
 
   // Get usage statistics
   const usage = manager.getUsage(messages, system, tools);
@@ -306,14 +313,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     compressed: result.compressed,
     summarized: result.summarized,
     truncated: result.truncated,
-    reduction: `${result.reductionPercent}%`
+    reduction: `${result.reductionPercent}%`,
   });
 
   // Use managed messages in API request
   const response = await callModel({
     messages: result.messages,
     system: system,
-    tools: tools
+    tools: tools,
   });
   ```
 
@@ -339,6 +346,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Throws error if system + tools alone exceed context
 
   **Debug Logging** (with ANYCLAUDE_DEBUG=2+):
+
   ```
   [Context] Usage at 75%, triggering compression (threshold: 75%)
   [Context] After compression: 8000 tokens (65%)
@@ -384,15 +392,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `getBackendLogPrefix(mode)` - Returns bracketed prefix for logging (e.g., "[LMStudio]")
 
   **Usage Examples**:
+
   ```typescript
-  import { getBackendDisplayName, getBackendLogPrefix } from './src/utils/backend-display';
+  import {
+    getBackendDisplayName,
+    getBackendLogPrefix,
+  } from "./src/utils/backend-display";
 
   // Get display name
-  getBackendDisplayName('lmstudio') // Returns: "LMStudio"
-  getBackendDisplayName('mlx-cluster') // Returns: "MLX Cluster"
+  getBackendDisplayName("lmstudio"); // Returns: "LMStudio"
+  getBackendDisplayName("mlx-cluster"); // Returns: "MLX Cluster"
 
   // Use in logs
-  debug(1, `${getBackendLogPrefix(mode)} context length: ${contextLength} tokens`);
+  debug(
+    1,
+    `${getBackendLogPrefix(mode)} context length: ${contextLength} tokens`
+  );
   // Output: "[LMStudio] context length: 4096 tokens"
   ```
 
@@ -411,6 +426,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Files Added**:
   - `src/utils/backend-display.ts` (48 lines) - Backend display utilities
   - `tests/unit/test_backend_display.js` (new, 121 lines) - 15 passing tests covering display names and log prefixes
+
+- **Issue #39: Auto-detect Model Context Length from MLX Worker** - Intelligent context length detection across multiple backend types.
+
+  **Purpose**: Eliminate the need for manual context length configuration by automatically detecting it from backend responses (MLX, LMStudio, etc.).
+
+  **Key Features**:
+
+  **1. Multi-Backend Context Detection** (`src/backend-client.ts`)
+  - **MLX Support**: Extracts `context_length` from model info response
+  - **LMStudio Support**: Extracts `loaded_context_length` from model info response
+  - **Fallback Support**: Uses `max_context_length` if primary fields unavailable
+  - Priority-ordered extraction: `loaded_context_length` > `context_length` > `max_context_length`
+
+  **2. Context Validation** (`isValidContext()` method)
+  - Validates context values are positive integers
+  - Rejects undefined, null, NaN, or non-finite values
+  - Prevents zero or negative context lengths
+  - Type-safe number checking
+
+  **3. Interface Extensions** (`BackendModelInfo`)
+  - Added `context_length?: number` for MLX compatibility
+  - Added `loaded_context_length?: number` for LMStudio compatibility
+  - Added `max_context_length?: number` for fallback support
+  - Maintains backward compatibility with existing backends
+
+  **Updated Methods**:
+  - `getModelInfo()` - Enhanced to extract and return context length from multiple sources
+  - Previously returned `context: null` (indicating unavailable context)
+  - Now returns actual context length when available
+
+  **Benefits**:
+  - ✅ No manual configuration needed for context length
+  - ✅ Works across MLX, LMStudio, and other backends
+  - ✅ Intelligent fallback chain prevents missing values
+  - ✅ Robust validation prevents invalid context usage
+  - ✅ Backward compatible with existing configurations
+
+  **Files Changed**:
+  - `src/backend-client.ts` (34 lines) - Added context detection with multi-backend support and validation
+  - `tests/unit/test_backend_client.js` - Updated tests for context detection
 
 ### Documentation
 

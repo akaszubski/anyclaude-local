@@ -8,6 +8,9 @@ export interface BackendModelInfo {
   object: string;
   created?: number;
   owned_by?: string;
+  context_length?: number;         // MLX support
+  loaded_context_length?: number;  // LMStudio support
+  max_context_length?: number;     // Fallback
 }
 
 export interface BackendModelsResponse {
@@ -53,9 +56,11 @@ export class BackendClient {
   }
 
   /**
-   * Get model name and estimated context length
-   * Note: OpenAI-compatible /v1/models doesn't always include context length,
-   * so this may return null for context and we'll fall back to config/lookup
+   * Get model name and context length
+   * Extracts context from MLX (context_length), LMStudio (loaded_context_length),
+   * or fallback (max_context_length) fields.
+   *
+   * Priority order: loaded_context_length > context_length > max_context_length
    */
   async getModelInfo(): Promise<{
     name: string;
@@ -64,9 +69,38 @@ export class BackendClient {
     const model = await this.getFirstModel();
     if (!model) return null;
 
+    // Extract context with priority order
+    let context: number | null = null;
+
+    // Priority 1: loaded_context_length (LMStudio)
+    if (this.isValidContext(model.loaded_context_length)) {
+      context = model.loaded_context_length!;
+    }
+    // Priority 2: context_length (MLX)
+    else if (this.isValidContext(model.context_length)) {
+      context = model.context_length!;
+    }
+    // Priority 3: max_context_length (fallback)
+    else if (this.isValidContext(model.max_context_length)) {
+      context = model.max_context_length!;
+    }
+
     return {
       name: model.id,
-      context: null, // OpenAI /v1/models doesn't include context length
+      context,
     };
+  }
+
+  /**
+   * Validate context length value
+   * Must be: positive number, finite, not NaN
+   */
+  private isValidContext(value: number | undefined | null): boolean {
+    if (value === undefined || value === null) return false;
+    if (typeof value !== "number") return false;
+    if (isNaN(value)) return false;
+    if (!isFinite(value)) return false;
+    if (value <= 0) return false;
+    return true;
   }
 }
