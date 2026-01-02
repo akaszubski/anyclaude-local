@@ -84,14 +84,26 @@ class TestQwenToolParserInitialization:
         assert parser.timeout_ms == 200
 
     def test_parser_has_format_patterns(self):
-        """Test parser registers all 4 Qwen format patterns"""
+        """Test parser registers all 13 format patterns"""
         parser = QwenToolParser()
         assert hasattr(parser, 'patterns')
-        assert len(parser.patterns) == 4
+        assert len(parser.patterns) == 13
+        # Core formats
         assert 'tool_call' in parser.patterns
         assert 'tools' in parser.patterns
         assert 'function' in parser.patterns
         assert 'json_bracket' in parser.patterns
+        # Additional formats
+        assert 'function_call' in parser.patterns
+        assert 'response' in parser.patterns
+        assert 'tag_with_attrs' in parser.patterns
+        assert 'function_attrs' in parser.patterns
+        assert 'raw_json_block' in parser.patterns
+        assert 'bare_json' in parser.patterns
+        assert 'function_equals' in parser.patterns
+        # New formats (Issue #40)
+        assert 'phi4_functools' in parser.patterns
+        assert 'gemma_function_call' in parser.patterns
 
 
 class TestQwenFormat1ToolCall:
@@ -592,6 +604,340 @@ class TestQwenPerformance:
         assert len(result) == 100
         # Should process 100 tool calls in reasonable time
         assert elapsed_ms < 500  # 500ms for 100 calls = 5ms per call
+
+
+class TestQwenFormat11FunctionEquals:
+    """Test Format 11: <function=ToolName><parameter=key>value (Qwen3-Coder format)"""
+
+    @pytest.fixture
+    def parser(self):
+        return QwenToolParser()
+
+    def test_can_parse_function_equals_format(self, parser):
+        """Test can_parse() detects <function=Name> format"""
+        response = '<function=Read><parameter=file_path>/tmp/test.txt'
+        assert parser.can_parse(response) is True
+
+    def test_parse_function_equals_single_param(self, parser):
+        """Test parse() extracts single parameter"""
+        response = '<function=Read><parameter=file_path>/Users/test/PROJECT.md'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]['name'] == 'Read'
+        assert result[0]['arguments']['file_path'] == '/Users/test/PROJECT.md'
+
+    def test_parse_function_equals_multiple_params(self, parser):
+        """Test parse() extracts multiple parameters"""
+        response = '<function=Write><parameter=file_path>/tmp/test.txt<parameter=content>Hello World'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Write'
+        assert result[0]['arguments']['file_path'] == '/tmp/test.txt'
+        assert result[0]['arguments']['content'] == 'Hello World'
+
+    def test_parse_function_equals_with_json_value(self, parser):
+        """Test parse() handles JSON values in parameters"""
+        response = '<function=Bash><parameter=command>ls -la<parameter=timeout>5000'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Bash'
+        assert result[0]['arguments']['command'] == 'ls -la'
+        # JSON number should be parsed
+        assert result[0]['arguments']['timeout'] == 5000
+
+    def test_parse_function_equals_multiple_tool_calls(self, parser):
+        """Test parse() extracts multiple function= calls"""
+        response = '<function=Read><parameter=file_path>/tmp/1.txt<function=Read><parameter=file_path>/tmp/2.txt'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 2
+        assert result[0]['arguments']['file_path'] == '/tmp/1.txt'
+        assert result[1]['arguments']['file_path'] == '/tmp/2.txt'
+
+    def test_parse_function_equals_with_text_around(self, parser):
+        """Test parse() handles text before/after function call"""
+        response = 'I will read the file for you.\n\n<function=Read><parameter=file_path>/tmp/test.txt\n\nHere is what I found.'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Read'
+
+    def test_parse_function_equals_preserves_path_with_spaces(self, parser):
+        """Test parse() preserves paths with spaces"""
+        response = '<function=Read><parameter=file_path>/Users/name/My Documents/file.txt'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['arguments']['file_path'] == '/Users/name/My Documents/file.txt'
+
+    def test_parse_function_equals_empty_value(self, parser):
+        """Test parse() handles empty parameter value"""
+        response = '<function=Glob><parameter=pattern>'
+        result = parser.parse(response)
+
+        # Should still parse but with empty value
+        assert result is not None
+        assert result[0]['name'] == 'Glob'
+        assert result[0]['arguments']['pattern'] == ''
+
+
+class TestQwenFormat6TagWithAttrs:
+    """Test Format 6: <ToolName arg="value"/> (XML tag with attributes)"""
+
+    @pytest.fixture
+    def parser(self):
+        return QwenToolParser()
+
+    def test_can_parse_tag_with_attrs_format(self, parser):
+        """Test can_parse() detects <ToolName arg="value"/> format"""
+        response = '<Read file_path="/tmp/test.txt"/>'
+        assert parser.can_parse(response) is True
+
+    def test_parse_tag_with_attrs_single_arg(self, parser):
+        """Test parse() extracts single attribute"""
+        response = '<Read file_path="/tmp/test.txt"/>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Read'
+        assert result[0]['arguments']['file_path'] == '/tmp/test.txt'
+
+    def test_parse_tag_with_attrs_multiple_args(self, parser):
+        """Test parse() extracts multiple attributes"""
+        response = '<Write file_path="/tmp/out.txt" content="Hello World"/>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Write'
+        assert result[0]['arguments']['file_path'] == '/tmp/out.txt'
+        assert result[0]['arguments']['content'] == 'Hello World'
+
+    def test_parse_tag_with_attrs_self_closing(self, parser):
+        """Test parse() handles self-closing tag"""
+        response = '<Bash command="ls -la" />'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Bash'
+        assert result[0]['arguments']['command'] == 'ls -la'
+
+
+class TestQwenFormat8RawJsonBlock:
+    """Test Format 8: ```json {...}``` (JSON in code block)"""
+
+    @pytest.fixture
+    def parser(self):
+        return QwenToolParser()
+
+    def test_can_parse_json_code_block(self, parser):
+        """Test can_parse() detects ```json {...}``` format"""
+        response = '```json\n{"name": "Read", "arguments": {"file_path": "/tmp/test.txt"}}\n```'
+        assert parser.can_parse(response) is True
+
+    def test_parse_json_code_block(self, parser):
+        """Test parse() extracts tool call from code block"""
+        response = '```json\n{"name": "Glob", "arguments": {"pattern": "*.py"}}\n```'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Glob'
+        assert result[0]['arguments']['pattern'] == '*.py'
+
+
+class TestQwenFormat10BareJson:
+    """Test Format 10: {"name": "func", "arguments": {...}} (bare JSON)"""
+
+    @pytest.fixture
+    def parser(self):
+        return QwenToolParser()
+
+    def test_can_parse_bare_json(self, parser):
+        """Test can_parse() detects bare JSON tool call"""
+        response = '{"name": "Read", "arguments": {"file_path": "/tmp/test.txt"}}'
+        assert parser.can_parse(response) is True
+
+    def test_parse_bare_json(self, parser):
+        """Test parse() extracts bare JSON tool call"""
+        response = '{"name": "Grep", "arguments": {"pattern": "TODO", "path": "/src"}}'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Grep'
+        assert result[0]['arguments']['pattern'] == 'TODO'
+
+
+class TestQwenFormat12Phi4Functools:
+    """Test Format 12: functools[...] (Phi-4 functools format)"""
+
+    @pytest.fixture
+    def parser(self):
+        return QwenToolParser()
+
+    def test_can_parse_phi4_functools_format(self, parser):
+        """Test can_parse() detects functools[...] format"""
+        response = 'functools[{"name": "Read", "arguments": {"file_path": "/tmp/test.txt"}}]'
+        assert parser.can_parse(response) is True
+
+    def test_parse_phi4_functools_single_tool(self, parser):
+        """Test parse() extracts single tool from functools[]"""
+        response = 'functools[{"name": "Read", "arguments": {"file_path": "/tmp/test.txt"}}]'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Read'
+        assert result[0]['arguments']['file_path'] == '/tmp/test.txt'
+
+    def test_parse_phi4_functools_multiple_tools(self, parser):
+        """Test parse() extracts multiple tools from functools[]"""
+        response = '''functools[
+            {"name": "Read", "arguments": {"file_path": "/tmp/1.txt"}},
+            {"name": "Write", "arguments": {"file_path": "/tmp/2.txt", "content": "hello"}}
+        ]'''
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 2
+        assert result[0]['name'] == 'Read'
+        assert result[1]['name'] == 'Write'
+        assert result[1]['arguments']['content'] == 'hello'
+
+    def test_parse_phi4_functools_with_text(self, parser):
+        """Test parse() handles text around functools[]"""
+        response = 'I will call the function: functools[{"name": "Bash", "arguments": {"command": "ls"}}] done!'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Bash'
+        assert result[0]['arguments']['command'] == 'ls'
+
+    def test_parse_phi4_functools_with_spaces(self, parser):
+        """Test parse() handles spaces after functools keyword"""
+        response = 'functools [{"name": "Glob", "arguments": {"pattern": "*.py"}}]'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Glob'
+
+    def test_parse_phi4_functools_complex_arguments(self, parser):
+        """Test parse() handles complex nested arguments"""
+        response = '''functools[{
+            "name": "Write",
+            "arguments": {
+                "file_path": "/tmp/config.json",
+                "content": "{\\"key\\": \\"value\\"}",
+                "options": {"append": false, "encoding": "utf-8"}
+            }
+        }]'''
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Write'
+        assert result[0]['arguments']['options']['append'] is False
+
+
+class TestQwenFormat13GemmaFunctionCall:
+    """Test Format 13: <start_function_call>...<end_function_call> (FunctionGemma format)"""
+
+    @pytest.fixture
+    def parser(self):
+        return QwenToolParser()
+
+    def test_can_parse_gemma_function_call_format(self, parser):
+        """Test can_parse() detects <start_function_call> format"""
+        response = '<start_function_call>call:Read{file_path:/tmp/test.txt}<end_function_call>'
+        assert parser.can_parse(response) is True
+
+    def test_parse_gemma_function_call_single_arg(self, parser):
+        """Test parse() extracts single argument"""
+        response = '<start_function_call>call:Read{file_path:/tmp/test.txt}<end_function_call>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Read'
+        assert result[0]['arguments']['file_path'] == '/tmp/test.txt'
+
+    def test_parse_gemma_function_call_multiple_args(self, parser):
+        """Test parse() extracts multiple arguments"""
+        response = '<start_function_call>call:Write{file_path:/tmp/out.txt content:Hello World}<end_function_call>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Write'
+        assert result[0]['arguments']['file_path'] == '/tmp/out.txt'
+        assert result[0]['arguments']['content'] == 'Hello World'
+
+    def test_parse_gemma_function_call_with_escape(self, parser):
+        """Test parse() handles <escape>...</escape> wrappers"""
+        response = '<start_function_call>call:Grep{pattern:<escape>*.py</escape> path:/src}<end_function_call>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Grep'
+        assert result[0]['arguments']['pattern'] == '*.py'
+        assert result[0]['arguments']['path'] == '/src'
+
+    def test_parse_gemma_function_call_multiple_calls(self, parser):
+        """Test parse() extracts multiple function calls"""
+        response = '''<start_function_call>call:Read{file_path:/tmp/1.txt}<end_function_call>
+        <start_function_call>call:Read{file_path:/tmp/2.txt}<end_function_call>'''
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 2
+        assert result[0]['arguments']['file_path'] == '/tmp/1.txt'
+        assert result[1]['arguments']['file_path'] == '/tmp/2.txt'
+
+    def test_parse_gemma_function_call_with_text(self, parser):
+        """Test parse() handles text around function call"""
+        response = 'I will read the file.\n<start_function_call>call:Read{file_path:/tmp/test.txt}<end_function_call>\nDone.'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]['name'] == 'Read'
+
+    def test_parse_gemma_function_call_numeric_value(self, parser):
+        """Test parse() handles numeric values (parsed as JSON)"""
+        response = '<start_function_call>call:Bash{command:ls timeout:5000}<end_function_call>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Bash'
+        assert result[0]['arguments']['command'] == 'ls'
+        assert result[0]['arguments']['timeout'] == 5000
+
+    def test_parse_gemma_function_call_empty_args(self, parser):
+        """Test parse() handles function call with no arguments"""
+        response = '<start_function_call>call:Glob{}<end_function_call>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'Glob'
+        assert result[0]['arguments'] == {}
+
+    def test_parse_gemma_function_call_underscore_name(self, parser):
+        """Test parse() handles function names with underscores"""
+        response = '<start_function_call>call:web_search{query:python tutorial}<end_function_call>'
+        result = parser.parse(response)
+
+        assert result is not None
+        assert result[0]['name'] == 'web_search'
+        assert result[0]['arguments']['query'] == 'python tutorial'
 
 
 class TestQwenIntegrationWithRegistry:
