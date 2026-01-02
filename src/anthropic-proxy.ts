@@ -71,7 +71,7 @@ import {
  * Rules:
  * 1. Returns false if smartSystemPrompt is active (smart takes priority)
  * 2. Returns true if safeSystemFilter is explicitly true
- * 3. Returns true if mode is 'lmstudio' AND safeSystemFilter is not explicitly false
+ * 3. Returns true if mode is 'local' AND safeSystemFilter is not explicitly false
  * 4. Returns false for other modes (claude, openrouter) by default
  */
 function shouldUseSafeFilter(options: CreateAnthropicProxyOptions): boolean {
@@ -90,8 +90,8 @@ function shouldUseSafeFilter(options: CreateAnthropicProxyOptions): boolean {
     return false;
   }
 
-  // For LMStudio mode: enabled by default if not explicitly disabled
-  if (options.mode === "lmstudio" && options.safeSystemFilter === undefined) {
+  // For local mode: enabled by default if not explicitly disabled
+  if (options.mode === "local" && options.safeSystemFilter === undefined) {
     return true;
   }
 
@@ -1087,16 +1087,16 @@ export const createAnthropicProxy = ({
         //   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
         // }
 
-        // Warn about tool calling compatibility (LMStudio only, first request)
+        // Warn about tool calling compatibility (local backend only, first request)
         if (
-          mode === "lmstudio" &&
+          mode === "local" &&
           body.tools &&
           body.tools.length > 0 &&
           isDebugEnabled()
         ) {
           debug(
             1,
-            `[Tool Calling] Sending ${body.tools.length} tools to LMStudio. If you see unusual output (like <|channel|> syntax), your model may not support OpenAI function calling. Try models like Qwen2.5-Coder, DeepSeek-R1, or Llama-3.3.`
+            `[Tool Calling] Sending ${body.tools.length} tools to local backend. If you see unusual output (like <|channel|> syntax), your model may not support OpenAI function calling. Try models like Qwen2.5-Coder, DeepSeek-R1, or Llama-3.3.`
           );
         }
 
@@ -1195,8 +1195,8 @@ export const createAnthropicProxy = ({
             backendUrl ||
             (() => {
               // Fallback: try to determine from provider name
-              if (providerName === "lmstudio") {
-                return process.env.LMSTUDIO_URL || "http://localhost:8082";
+              if (providerName === "local") {
+                return process.env.LOCAL_URL || process.env.LMSTUDIO_URL || "http://localhost:8082";
               } else if (providerName === "mlx") {
                 return process.env.MLX_URL || "http://localhost:8081";
               }
@@ -1218,8 +1218,8 @@ export const createAnthropicProxy = ({
               debug(1, `[Backend Query] Detected model: ${modelInfo.name}`);
 
               // MLX and most OpenAI-compatible servers don't return context in /v1/models
-              // Try LMStudio-specific API if available (has context length)
-              if (providerName === "lmstudio") {
+              // Try local backend-specific API if available (has context length)
+              if (providerName === "local") {
                 try {
                   const contextLength =
                     await getModelContextLength(backendUrlToQuery);
@@ -1230,10 +1230,10 @@ export const createAnthropicProxy = ({
                       `[Backend Query] ${getBackendLogPrefix(mode)} context length: ${contextLength} tokens`
                     );
                   }
-                } catch (lmstudioError) {
+                } catch (localBackendError) {
                   debug(
                     1,
-                    `[Backend Query] LMStudio API not available, will use model table lookup`
+                    `[Backend Query] Local backend API not available, will use model table lookup`
                   );
                 }
               }
@@ -1404,7 +1404,7 @@ export const createAnthropicProxy = ({
 
         let stream;
         try {
-          // Log trace for lmstudio mode (before making request)
+          // Log trace for local mode (before making request)
           if (isDebugEnabled()) {
             logTrace(mode, {
               method: req.method,
@@ -1429,15 +1429,15 @@ export const createAnthropicProxy = ({
           }, timeoutConfig.timeout); // Configurable timeout for request completion
 
           try {
-            // Use .chat() for OpenAI providers (lmstudio, mlx, openrouter) and .languageModel() for Anthropic
+            // Use .chat() for OpenAI providers (local, mlx, openrouter) and .languageModel() for Anthropic
             const languageModel =
-              providerName === "lmstudio" ||
+              providerName === "local" ||
               providerName === "mlx" ||
               providerName === "openrouter"
                 ? (provider as any).chat(model)
                 : provider.languageModel(model);
 
-            // No tool parser needed - OpenAI-compatible providers (mlx, lmstudio, openrouter) handle tool calling natively
+            // No tool parser needed - OpenAI-compatible providers (mlx, local, openrouter) handle tool calling natively
 
             debug(
               1,
@@ -1578,7 +1578,9 @@ export const createAnthropicProxy = ({
                       JSON.stringify({
                         type: "error",
                         error:
-                          error instanceof Error ? error.message : String(error),
+                          error instanceof Error
+                            ? error.message
+                            : String(error),
                       })
                     );
                 } else {

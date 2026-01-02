@@ -4,6 +4,7 @@ import * as os from "os";
 
 export type AnyclaudeMode =
   | "claude"
+  | "local"
   | "lmstudio"
   | "openrouter"
   | "mlx-cluster";

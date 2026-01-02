@@ -15,6 +15,7 @@ import {
 } from "./anthropic-proxy";
 import type { AnyclaudeMode } from "./trace-logger";
 import { getBackendLogPrefix } from "./utils/backend-display";
+import { normalizeBackendMode, getMigratedBackendConfig, getMigratedEnvVar } from "./utils/backend-migration";
 import { debug, isDebugEnabled, logSessionContext } from "./debug";
 import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
 import { getTimeoutConfig, getTimeoutInfoString } from "./timeout-config";
@@ -41,7 +42,29 @@ interface AnyclaudeConfig {
     enableStreamLogging?: boolean;
   };
   backends?: {
-    lmstudio?: {
+    local?: {
+      enabled?: boolean;
+      port?: number;
+      baseUrl?: string;
+      apiKey?: string;
+      model?: string;
+      modelPath?: string; // Path to MLX model directory for auto-start
+      compatibility?: string;
+      description?: string;
+      autoStartServer?: boolean; // Auto-start MLX worker when using localhost (default: true)
+      startupTimeout?: number; // Server startup timeout in ms (default: 120000)
+      truncateSystemPrompt?: boolean; // Truncate Claude Code system prompt to reduce cache pressure
+      systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
+      safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
+      filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
+      smartSystemPrompt?: boolean; // Use AI-powered dynamic prompt optimization (EXPERIMENTAL)
+      smartPromptMode?: "simple" | "intelligent"; // simple=keyword, intelligent=use LLM (default: simple)
+      injectToolInstructions?: boolean; // Enable tool instruction injection for better tool calling
+      toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
+      injectionThreshold?: number; // Confidence threshold (0-1)
+      maxInjectionsPerConversation?: number; // Max injections per conversation
+    };
+    lmstudio?: { // Deprecated: use 'local' instead
       enabled?: boolean;
       port?: number;
       baseUrl?: string;
@@ -135,34 +158,38 @@ function parseModeFromArgs(args: string[]): AnyclaudeMode | null {
 
     // Handle --mode=value syntax
     if (arg.startsWith("--mode=")) {
-      const mode = arg.substring(7).toLowerCase();
+      const rawMode = arg.substring(7).toLowerCase();
+      // Normalize mode (converts 'lmstudio' to 'local' with deprecation warning)
+      const mode = normalizeBackendMode(rawMode);
       if (
         mode === "claude" ||
-        mode === "lmstudio" ||
+        mode === "local" ||
         mode === "openrouter" ||
         mode === "mlx-cluster"
       ) {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'openrouter', or 'mlx-cluster'.`
+        `[anyclaude] Invalid mode: ${rawMode}. Must be 'claude', 'local', 'openrouter', or 'mlx-cluster'.`
       );
       process.exit(1);
     }
 
     // Handle --mode value syntax (space-separated)
     if (arg === "--mode" && i + 1 < args.length) {
-      const mode = args[i + 1].toLowerCase();
+      const rawMode = args[i + 1].toLowerCase();
+      // Normalize mode (converts 'lmstudio' to 'local' with deprecation warning)
+      const mode = normalizeBackendMode(rawMode);
       if (
         mode === "claude" ||
-        mode === "lmstudio" ||
+        mode === "local" ||
         mode === "openrouter" ||
         mode === "mlx-cluster"
       ) {
         return mode as AnyclaudeMode;
       }
       console.error(
-        `[anyclaude] Invalid mode: ${mode}. Must be 'claude', 'lmstudio', 'openrouter', or 'mlx-cluster'.`
+        `[anyclaude] Invalid mode: ${rawMode}. Must be 'claude', 'local', 'openrouter', or 'mlx-cluster'.`
       );
       process.exit(1);
     }
@@ -198,7 +225,7 @@ async function runModelTest() {
 
 /**
  * Detect anyclaude mode from config file, CLI args, or environment variable
- * Priority: CLI args > ANYCLAUDE_MODE env var > config file > default (lmstudio)
+ * Priority: CLI args > ANYCLAUDE_MODE env var > config file > default (local)
  */
 function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
   // Check CLI arguments first
@@ -207,32 +234,35 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
     return cliMode;
   }
 
-  // Check environment variable
+  // Check environment variable (normalize handles lmstudio -> local with warning)
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
-  if (
-    envMode === "claude" ||
-    envMode === "lmstudio" ||
-    envMode === "openrouter" ||
-    envMode === "mlx-cluster"
-  ) {
-    return envMode as AnyclaudeMode;
-  }
-
-  // Check config file
-  if (config.backend) {
-    const backend = config.backend.toLowerCase();
+  if (envMode) {
+    const normalizedEnvMode = normalizeBackendMode(envMode);
     if (
-      backend === "claude" ||
-      backend === "lmstudio" ||
-      backend === "openrouter" ||
-      backend === "mlx-cluster"
+      normalizedEnvMode === "claude" ||
+      normalizedEnvMode === "local" ||
+      normalizedEnvMode === "openrouter" ||
+      normalizedEnvMode === "mlx-cluster"
     ) {
-      return backend as AnyclaudeMode;
+      return normalizedEnvMode as AnyclaudeMode;
     }
   }
 
-  // Default to lmstudio
-  return "lmstudio";
+  // Check config file (normalize handles lmstudio -> local with warning)
+  if (config.backend) {
+    const normalizedBackend = normalizeBackendMode(config.backend.toLowerCase());
+    if (
+      normalizedBackend === "claude" ||
+      normalizedBackend === "local" ||
+      normalizedBackend === "openrouter" ||
+      normalizedBackend === "mlx-cluster"
+    ) {
+      return normalizedBackend as AnyclaudeMode;
+    }
+  }
+
+  // Default to local
+  return "local";
 }
 
 // Check for --test-model flag before anything else
@@ -279,12 +309,16 @@ if (process.argv.includes("--check-setup")) {
 /**
  * Get configuration for a specific backend with priority:
  * Environment variables > config file > defaults
+ *
+ * Supports both 'local' (new) and 'lmstudio' (deprecated) naming with migration.
  */
 function getBackendConfig(
   backend: AnyclaudeMode,
   configBackends?: AnyclaudeConfig["backends"]
 ) {
-  if (backend === "lmstudio") {
+  if (backend === "local" || backend === "lmstudio") {
+    // Use migration helpers to support both old and new naming
+    const localConfig = getMigratedBackendConfig(configBackends, 'local', 'lmstudio');
     const defaultConfig = {
       baseURL: "http://localhost:8082/v1",
       apiKey: "lm-studio",
@@ -292,16 +326,16 @@ function getBackendConfig(
     };
     return {
       baseURL:
-        process.env.LMSTUDIO_URL ||
-        configBackends?.lmstudio?.baseUrl ||
+        getMigratedEnvVar('LOCAL_URL', 'LMSTUDIO_URL') ||
+        localConfig?.baseUrl ||
         defaultConfig.baseURL,
       apiKey:
-        process.env.LMSTUDIO_API_KEY ||
-        configBackends?.lmstudio?.apiKey ||
+        getMigratedEnvVar('LOCAL_API_KEY', 'LMSTUDIO_API_KEY') ||
+        localConfig?.apiKey ||
         defaultConfig.apiKey,
       model:
-        process.env.LMSTUDIO_MODEL ||
-        configBackends?.lmstudio?.model ||
+        getMigratedEnvVar('LOCAL_MODEL', 'LMSTUDIO_MODEL') ||
+        localConfig?.model ||
         defaultConfig.model,
     };
   } else if (backend === "openrouter") {
@@ -329,13 +363,13 @@ function getBackendConfig(
 }
 
 // Configure providers based on mode
-const lmstudioConfig = getBackendConfig("lmstudio", config.backends);
+const localConfig = getBackendConfig("local", config.backends);
 const openrouterConfig = getBackendConfig("openrouter", config.backends);
 
 const providers: CreateAnthropicProxyOptions["providers"] = {
-  lmstudio: createOpenAI({
-    baseURL: lmstudioConfig?.baseURL || "http://localhost:8082/v1",
-    apiKey: lmstudioConfig?.apiKey || "lm-studio",
+  local: createOpenAI({
+    baseURL: localConfig?.baseURL || "http://localhost:8082/v1",
+    apiKey: localConfig?.apiKey || "lm-studio",
     // @ts-ignore - compatibility is valid but not in TypeScript types
     compatibility: "legacy", // LMStudio requires Chat Completions format
     fetch: (async (url, init) => {
@@ -405,7 +439,11 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
               }
             }
           } catch (err) {
-            debug(1, `${getBackendLogPrefix(mode)} SSE Debug] Stream read error:`, err);
+            debug(
+              1,
+              `${getBackendLogPrefix(mode)} SSE Debug] Stream read error:`,
+              err
+            );
           }
         })();
 
@@ -563,22 +601,23 @@ if (process.env.NODE_ENV !== "test") {
       }
     }
 
-    // Auto-start MLX worker for lmstudio mode when using localhost
-    if (mode === "lmstudio") {
-      const backendUrl = lmstudioConfig?.baseURL || "http://localhost:8082/v1";
+    // Auto-start MLX worker for local mode when using localhost
+    if (mode === "local") {
+      // Get local backend config with migration support (local or deprecated lmstudio)
+      const localBackendConfig = getMigratedBackendConfig(config.backends, 'local', 'lmstudio');
+      const backendUrl = localConfig?.baseURL || "http://localhost:8082/v1";
       const isLocalhost =
         backendUrl.includes("localhost") || backendUrl.includes("127.0.0.1");
-      const autoStart = config.backends?.lmstudio?.autoStartServer ?? true;
+      const autoStart = localBackendConfig?.autoStartServer ?? true;
 
       if (isLocalhost && autoStart) {
         // Extract port from URL
         const urlMatch = backendUrl.match(/:(\d+)/);
         const port = urlMatch ? parseInt(urlMatch[1], 10) : 8081;
         const modelPath =
-          config.backends?.lmstudio?.modelPath ||
-          process.env.MLX_MODEL_PATH;
+          localBackendConfig?.modelPath || process.env.MLX_MODEL_PATH;
         const startupTimeout =
-          config.backends?.lmstudio?.startupTimeout || 120000;
+          localBackendConfig?.startupTimeout || 120000;
 
         if (modelPath) {
           debug(1, `[anyclaude] Auto-starting MLX Worker on port ${port}...`);
@@ -613,57 +652,57 @@ if (process.env.NODE_ENV !== "test") {
           ? "claude-3-5-sonnet-20241022"
           : mode === "openrouter"
             ? openrouterConfig?.model || "z-ai/glm-4.6"
-            : lmstudioConfig?.model || "current-model",
+            : localConfig?.model || "current-model",
       mode,
       backendUrl:
-        mode === "lmstudio"
-          ? lmstudioConfig?.baseURL
+        mode === "local"
+          ? localConfig?.baseURL
           : mode === "openrouter"
             ? openrouterConfig?.baseURL
             : undefined,
-      // Truncate for LMStudio as fallback when safe filter validation fails
+      // Truncate for local backend as fallback when safe filter validation fails
       // Default: true (acts as safety net for local models with limited context)
       truncateSystemPrompt:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.truncateSystemPrompt ?? true)
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.truncateSystemPrompt ?? true)
           : false,
       systemPromptMaxTokens:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.systemPromptMaxTokens ?? 2000)
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.systemPromptMaxTokens ?? 2000)
           : 0,
       smartSystemPrompt:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.smartSystemPrompt ?? false)
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.smartSystemPrompt ?? false)
           : false,
       smartPromptMode:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.smartPromptMode ?? "simple")
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.smartPromptMode ?? "simple")
           : "simple",
       // Safe system filter (Issue #21)
       safeSystemFilter:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.safeSystemFilter ?? true)
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.safeSystemFilter ?? true)
           : false,
       filterTier:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.filterTier ?? "aggressive")
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.filterTier ?? "aggressive")
           : undefined,
       // Tool instruction injection (Issue #35)
       injectToolInstructions:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.injectToolInstructions ?? false)
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.injectToolInstructions ?? false)
           : false,
       toolInstructionStyle:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.toolInstructionStyle ?? "explicit")
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.toolInstructionStyle ?? "explicit")
           : "explicit",
       injectionThreshold:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.injectionThreshold ?? 0.7)
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.injectionThreshold ?? 0.7)
           : 0.7,
       maxInjectionsPerConversation:
-        mode === "lmstudio"
-          ? (config.backends?.lmstudio?.maxInjectionsPerConversation ?? 10)
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.maxInjectionsPerConversation ?? 10)
           : 10,
     });
 
@@ -683,11 +722,13 @@ if (process.env.NODE_ENV !== "test") {
     }
     console.log("");
 
-    if (mode === "lmstudio") {
-      const endpoint = lmstudioConfig?.baseURL || "http://localhost:1234/v1";
-      console.log(`[anyclaude] ${getBackendLogPrefix(mode)} endpoint: ${endpoint}`);
+    if (mode === "local") {
+      const endpoint = localConfig?.baseURL || "http://localhost:1234/v1";
       console.log(
-        `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in ${getBackendLogPrefix(mode)})`
+        `[anyclaude] ${getBackendLogPrefix(mode)} endpoint: ${endpoint}`
+      );
+      console.log(
+        `[anyclaude] Model: ${localConfig?.model || "current-model"} (whatever is loaded in ${getBackendLogPrefix(mode)})`
       );
       console.log(
         `[anyclaude] Make sure ${getBackendLogPrefix(mode)} is running with a model loaded`
@@ -748,14 +789,14 @@ if (process.env.NODE_ENV !== "test") {
       logSessionContext({
         mode,
         model:
-          mode === "lmstudio"
-            ? lmstudioConfig?.model || "current-model"
+          mode === "local"
+            ? localConfig?.model || "current-model"
             : mode === "openrouter"
               ? openrouterConfig?.model || "z-ai/glm-4.6"
               : "claude-3-5-sonnet-20241022",
         backendUrl:
-          mode === "lmstudio"
-            ? lmstudioConfig?.baseURL
+          mode === "local"
+            ? localConfig?.baseURL
             : mode === "openrouter"
               ? openrouterConfig?.baseURL
               : undefined,

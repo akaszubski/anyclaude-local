@@ -332,10 +332,10 @@ That's it! Server launches automatically, model loads, Claude Code starts. When 
 
 ### Alternative Backends
 
-**LMStudio:**
+**Local (LMStudio):**
 
 1. Open LMStudio, download a model, click "Start Server"
-2. Run: `anyclaude --mode=lmstudio`
+2. Run: `anyclaude --mode=local`
 
 **MLX (manual start, if not using auto-launch):**
 
@@ -362,9 +362,9 @@ AnyClaude supports **4 modes** to fit your workflow - from free local privacy to
 # Auto-launches server with prompt caching
 anyclaude  # Uses .anyclauderc.json config
 
-# MODE 2: LMStudio (cross-platform local)
+# MODE 2: Local (LMStudio or similar, cross-platform local)
 # Start LMStudio first, then:
-anyclaude --mode=lmstudio
+anyclaude --mode=local
 
 # MODE 3: OpenRouter (cheap cloud, 400+ models)
 # 84% cheaper than Claude API
@@ -381,14 +381,14 @@ anyclaude --mode=claude
 | Mode           | Cost                   | Privacy    | Tools  | Cache   | Best For                |
 | -------------- | ---------------------- | ---------- | ------ | ------- | ----------------------- |
 | **MLX** ⭐     | Free                   | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
-| **LMStudio**   | Free                   | 100% local | ✅ Yes | Limited | **Cross-platform**      |
+| **Local**      | Free                   | 100% local | ✅ Yes | Limited | **Cross-platform**      |
 | **OpenRouter** | $0.60-$2/1M (84% less) | Cloud      | ✅ Yes | ✅ Yes  | **Cost savings**        |
 | **Claude API** | $3-$15/1M              | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
 
 ### Cost Example (50K input + 10K output tokens)
 
 - **MLX**: $0 (free, local)
-- **LMStudio**: $0 (free, local)
+- **Local (LMStudio)**: $0 (free, local)
 - **OpenRouter (GLM-4.6)**: $0.05 (84% cheaper!)
 - **Claude API**: $0.30 (premium)
 
@@ -401,7 +401,7 @@ anyclaude --mode=claude
 - Fast iteration with prompt caching
 - Auto-launch convenience
 
-**LMStudio**
+**Local (LMStudio)**
 
 - Windows/Linux users
 - GUI model management
@@ -895,14 +895,13 @@ Create `.anyclauderc.json` in your project root to configure backends:
       "serverScript": "scripts/mlx-server.py",
       "description": "MLX with auto-launch and prompt caching"
     },
-    "lmstudio": {
+    "local": {
       "enabled": false,
       "port": 8082,
       "baseUrl": "http://localhost:8082/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
-      "compatibility": "legacy",
-      "description": "LMStudio local model server"
+      "description": "Local model server (LMStudio or similar)"
     },
     "openrouter": {
       "enabled": false,
@@ -928,17 +927,17 @@ Override specific settings via environment variables:
 
 ```bash
 # Mode selection (overrides config file)
-export ANYCLAUDE_MODE=mlx  # or lmstudio, openrouter, or claude
+export ANYCLAUDE_MODE=mlx  # or local, openrouter, or claude
 
 # MLX configuration
 export MLX_URL=http://localhost:8081/v1
 export MLX_MODEL=/path/to/your/mlx/model
 export MLX_API_KEY=mlx
 
-# LMStudio configuration
-export LMSTUDIO_URL=http://localhost:8082/v1
-export LMSTUDIO_MODEL=current-model
-export LMSTUDIO_API_KEY=lm-studio
+# Local (LMStudio, etc.) configuration
+export LOCAL_URL=http://localhost:8082/v1
+export LOCAL_MODEL=current-model
+export LOCAL_API_KEY=lm-studio
 
 # OpenRouter configuration
 export OPENROUTER_API_KEY=sk-or-v1-...
@@ -951,18 +950,20 @@ export ANYCLAUDE_DEBUG=2  # Verbose debug info
 export ANYCLAUDE_DEBUG=3  # Trace with full prompts
 
 # Context window management
-export LMSTUDIO_CONTEXT_LENGTH=32768
+export LOCAL_CONTEXT_LENGTH=32768
 
 # Proxy-only mode (for testing)
 export PROXY_ONLY=true
 ```
+
+**Deprecation Note**: Old LMStudio environment variable names (`LMSTUDIO_*`) still work with deprecation warnings. See [CHANGELOG.md](CHANGELOG.md#issue-41-rename-lmstudio-backend-to-generic-local) for migration details.
 
 ### CLI Flags
 
 ```bash
 # Select mode via CLI (highest priority)
 anyclaude --mode=mlx
-anyclaude --mode=lmstudio
+anyclaude --mode=local
 anyclaude --mode=openrouter
 anyclaude --mode=claude
 
@@ -977,7 +978,7 @@ anyclaude --test-model
 **Modes:**
 
 - **`mlx` mode** (default): Auto-launch MLX server with prompt caching (Apple Silicon optimized)
-- **`lmstudio` mode**: Use local LMStudio models (privacy-first, zero cloud dependency, cross-platform)
+- **`local` mode**: Use local models like LMStudio (privacy-first, zero cloud dependency, cross-platform)
 - **`openrouter` mode**: Use cloud models via OpenRouter (400+ models, 84% cheaper than Claude API)
 - **`claude` mode**: Use real Anthropic API with trace logging for reverse engineering
 
@@ -992,7 +993,7 @@ anyclaude --test-model
 
 ```bash
 # Method 1: Environment variable
-export ANYCLAUDE_MODE=mlx  # or lmstudio, openrouter, or claude
+export ANYCLAUDE_MODE=mlx  # or local, openrouter, or claude
 anyclaude
 
 # Method 2: CLI flag (takes priority over env var)
@@ -1220,8 +1221,8 @@ ANYCLAUDE_MODE=claude ANTHROPIC_API_KEY=sk-ant-... anyclaude
 # 3. Check the trace file
 cat ~/.anyclaude/traces/claude/$(ls -t ~/.anyclaude/traces/claude/ | head -1)
 
-# 4. Compare with LMStudio mode behavior
-ANYCLAUDE_MODE=lmstudio anyclaude
+# 4. Compare with Local mode behavior
+ANYCLAUDE_MODE=local anyclaude
 
 # 5. Use differences to improve the LMStudio adapter
 ```
@@ -1245,7 +1246,7 @@ ANYCLAUDE_MODE=lmstudio anyclaude
    Original: 25 messages (35,420 tokens)
    Truncated: 10 messages
    Model limit: 26,214 tokens
-   Tip: Start a new conversation or set LMSTUDIO_CONTEXT_LENGTH higher
+   Tip: Start a new conversation or set LOCAL_CONTEXT_LENGTH higher
 ```
 
 **Supported models** (auto-detected):
@@ -1264,7 +1265,7 @@ despite 128K native support. Monitor for mid-generation failures.
 
 ```bash
 # Your model has 128K context but wasn't detected?
-export LMSTUDIO_CONTEXT_LENGTH=131072
+export LOCAL_CONTEXT_LENGTH=131072
 anyclaude
 ```
 
@@ -1282,7 +1283,7 @@ anyclaude
 
 1. **Start new conversations** when you see the 90% warning
 2. **Use models with larger context** for long coding sessions (32K+ recommended)
-3. **Set LMSTUDIO_CONTEXT_LENGTH** if you know your model's limit
+3. **Set LOCAL_CONTEXT_LENGTH** if you know your model's limit
 4. **Monitor warnings** - truncation loses older context
 
 ````

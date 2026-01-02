@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Issue #41: Rename 'lmstudio' backend to generic 'local'** - Backend mode renamed for clarity and future flexibility as more local model servers are integrated.
+
+  **BREAKING CHANGE**: Old names still work with deprecation warnings for backward compatibility, but will be removed in v4.0.
+
+  **Migration Guide**:
+
+  Update your environment variables and configuration:
+  - Environment variable: `ANYCLAUDE_MODE=lmstudio` → `ANYCLAUDE_MODE=local`
+  - Config file: `backends.lmstudio` → `backends.local`
+  - Environment variables:
+    - `LMSTUDIO_URL` → `LOCAL_URL`
+    - `LMSTUDIO_API_KEY` → `LOCAL_API_KEY`
+    - `LMSTUDIO_MODEL` → `LOCAL_MODEL`
+    - `LMSTUDIO_CONTEXT_LENGTH` → `LOCAL_CONTEXT_LENGTH`
+
+  **What's New**:
+  - Backward compatibility: Old environment variable names still work with deprecation warnings
+  - New backend mode `local` in `AnyclaudeMode` type (src/trace-logger.ts)
+  - Migration utilities: `getMigratedEnvVar()` and `getMigratedBackendConfig()` (src/utils/backend-migration.ts)
+  - Deprecation warning system (src/utils/deprecation-warnings.ts) prevents warning spam (one warning per session)
+  - Updated backend display names for consistency (src/utils/backend-display.ts)
+
+  **Files Changed**:
+  - `src/trace-logger.ts` - Added `local` to AnyclaudeMode type
+  - `src/utils/backend-migration.ts` - New migration helpers for env vars and config
+  - `src/utils/deprecation-warnings.ts` - New deprecation warning system with deduplication
+  - `src/utils/backend-display.ts` - Added 'Local' display name for new mode
+
+  **Timeline for Deprecation**:
+  - v3.1.0 (current): Old names work with warnings
+  - v4.0.0 (future): Old names will be removed entirely
+
+  **Impact**: No immediate action required - existing setups continue to work. Warnings encourage migration.
+
 - **Issue #35: Tool Instruction Injection for Local Models** - Intelligent tool intent detection and instruction injection to improve tool calling success rates for models with weaker native tool-calling capabilities.
 
   **Purpose**: Achieve 100% tool calling success rate for local models by detecting user intent and injecting explicit instructions to use specific tools.

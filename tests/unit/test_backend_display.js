@@ -54,7 +54,11 @@ test("should return 'Claude' for claude mode", () => {
   expect(getBackendDisplayName("claude")).toBe("Claude");
 });
 
-test("should return 'LMStudio' for lmstudio mode", () => {
+test("should return 'Local' for local mode", () => {
+  expect(getBackendDisplayName("local")).toBe("Local");
+});
+
+test("should return 'LMStudio' for lmstudio mode (deprecated)", () => {
   expect(getBackendDisplayName("lmstudio")).toBe("LMStudio");
 });
 
@@ -84,7 +88,11 @@ test("should return '[Claude]' for claude mode", () => {
   expect(getBackendLogPrefix("claude")).toBe("[Claude]");
 });
 
-test("should return '[LMStudio]' for lmstudio mode", () => {
+test("should return '[Local]' for local mode", () => {
+  expect(getBackendLogPrefix("local")).toBe("[Local]");
+});
+
+test("should return '[LMStudio]' for lmstudio mode (deprecated)", () => {
   expect(getBackendLogPrefix("lmstudio")).toBe("[LMStudio]");
 });
 

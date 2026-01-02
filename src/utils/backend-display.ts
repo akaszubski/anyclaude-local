@@ -14,6 +14,7 @@ import type { AnyclaudeMode } from "../trace-logger";
  */
 const BACKEND_DISPLAY_NAMES: Record<AnyclaudeMode, string> = {
   claude: "Claude",
+  local: "Local",
   lmstudio: "LMStudio",
   openrouter: "OpenRouter",
   "mlx-cluster": "MLX Cluster",
