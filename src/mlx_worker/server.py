@@ -22,6 +22,48 @@ import uvicorn
 # Get model path from environment - this is the actual filesystem path
 MLX_MODEL_PATH = os.environ.get("MLX_MODEL_PATH", "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit")
 
+# Special tokens to strip from model output (Qwen, Llama, etc.)
+SPECIAL_TOKENS_TO_STRIP = [
+    # Qwen tokens
+    "<|im_end|>",
+    "<|im_start|>",
+    "<|endoftext|>",
+    "<|end|>",
+    # Generic EOS token
+    "</s>",
+    # Llama 3.x tokens
+    "<|begin_of_text|>",
+    "<|eot_id|>",
+    "<|start_header_id|>",
+    "<|end_header_id|>",
+]
+
+def strip_special_tokens(text: str) -> str:
+    """Strip special tokens from model output."""
+    for token in SPECIAL_TOKENS_TO_STRIP:
+        text = text.replace(token, "")
+    return text
+
+def get_model_context_length() -> int:
+    """
+    Read max context length from model's config.json.
+
+    Looks for 'max_position_embeddings' in the model config.
+    Falls back to 32768 if not found.
+    """
+    config_path = Path(MLX_MODEL_PATH).expanduser() / "config.json"
+    try:
+        if config_path.exists():
+            with open(config_path) as f:
+                config = json.load(f)
+                return config.get("max_position_embeddings", 32768)
+    except Exception as e:
+        print(f"Warning: Could not read model config: {e}")
+    return 32768  # Conservative default
+
+# Cache the context length at startup
+MODEL_CONTEXT_LENGTH = get_model_context_length()
+
 # Add scripts directory to path for tool parsers
 scripts_path = Path(__file__).parent.parent.parent / 'scripts'
 sys.path.insert(0, str(scripts_path))
@@ -53,20 +95,37 @@ from .health import (
 
 
 class ChatMessage(BaseModel):
-    """Chat message"""
-    role: str = Field(..., pattern="^(system|user|assistant)$")
-    content: str
+    """Chat message - handles both string and array content formats"""
+    role: str = Field(..., pattern="^(system|user|assistant|tool)$")
+    content: Optional[Union[str, List[Dict[str, Any]]]] = None  # String OR array of content blocks
+    tool_call_id: Optional[str] = None  # For tool role messages
+    tool_calls: Optional[List[Dict[str, Any]]] = None  # For assistant messages with tool calls
+    name: Optional[str] = None  # For function/tool responses
+
+    def get_text_content(self) -> str:
+        """Extract text content from string or array format."""
+        if self.content is None:
+            return ""
+        if isinstance(self.content, str):
+            return self.content
+        # Array format: [{"type": "text", "text": "..."}, ...]
+        text_parts = []
+        for block in self.content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                text_parts.append(block.get("text", ""))
+        return "\n".join(text_parts)
 
 
 class ChatCompletionRequest(BaseModel):
     """Chat completion request (OpenAI-compatible)"""
-    model: str = Field("current-model", pattern="^[a-zA-Z0-9_-]+$")
+    model: str = Field("current-model")  # Allow any model name (claude-sonnet-4-20250514, etc.)
     messages: List[ChatMessage]
-    max_tokens: Optional[int] = Field(2048, ge=1, le=16384)
+    max_tokens: Optional[int] = Field(2048, ge=1, le=32768)  # Increased for larger contexts
     temperature: Optional[float] = Field(0.7, ge=0.0, le=2.0)
     top_p: Optional[float] = Field(0.9, ge=0.0, le=1.0)
     stream: Optional[bool] = False
     tools: Optional[List[Dict[str, Any]]] = None
+    tool_choice: Optional[Any] = None  # Allow tool_choice parameter
 
 
 # Initialize parser registry with priority-ordered parsers
@@ -174,6 +233,26 @@ app = FastAPI(
 )
 
 
+# Add validation error handler to log what's failing
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log validation errors with full details for debugging."""
+    print(f"[VALIDATION ERROR] {exc.errors()}")
+    # Also try to log the raw body
+    try:
+        body = await request.body()
+        print(f"[VALIDATION ERROR] Request body (first 2000 chars): {body[:2000]}")
+    except Exception:
+        pass
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
+
+
 # Endpoints
 
 
@@ -196,8 +275,8 @@ async def chat_completions(
     increment_requests_in_flight()
 
     try:
-        # Convert messages to dict format
-        messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+        # Convert messages to dict format, extracting text from array content
+        messages = [{"role": msg.role, "content": msg.get_text_content()} for msg in request.messages]
 
         # Check for cache hit (if system message present)
         cache_hit = False
@@ -242,6 +321,9 @@ async def chat_completions(
                     tokens.append(token)
 
                 raw_content = "".join(tokens)
+
+                # Strip special tokens from output
+                raw_content = strip_special_tokens(raw_content)
 
                 # Parse tool calls from response using registry
                 content, tool_calls = parse_tool_calls_with_registry(raw_content)
@@ -316,56 +398,163 @@ async def _stream_response(
     """
     Generate streaming SSE response.
 
+    For tool calls: buffers tokens, parses tool calls, emits proper format.
+    For regular content: streams tokens as they arrive.
+
     Yields:
         SSE-formatted events
     """
+    import json
+
     completion_id = f"chatcmpl-{uuid.uuid4()}"
     created = int(time.time())
 
     try:
-        for token in generate_stream(
-            messages,
-            model_path=MLX_MODEL_PATH,  # Use env var, not request.model
-            max_tokens=request.max_tokens,
-            temperature=request.temperature,
-            top_p=request.top_p,
-            tools=request.tools,
-        ):
-            chunk = {
+        # If tools are provided, buffer tokens to detect tool calls
+        if request.tools:
+            tokens = []
+            for token in generate_stream(
+                messages,
+                model_path=MLX_MODEL_PATH,
+                max_tokens=request.max_tokens,
+                temperature=request.temperature,
+                top_p=request.top_p,
+                tools=request.tools,
+            ):
+                tokens.append(token)
+
+            raw_content = "".join(tokens)
+
+            # Strip special tokens from output
+            raw_content = strip_special_tokens(raw_content)
+
+            # Parse tool calls from response
+            content, tool_calls = parse_tool_calls_with_registry(raw_content)
+
+            if tool_calls:
+                # Emit tool calls in OpenAI streaming format
+                for idx, tc in enumerate(tool_calls):
+                    tool_chunk = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": MLX_MODEL_PATH,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {
+                                    "tool_calls": [
+                                        {
+                                            "index": idx,
+                                            "id": tc["id"],
+                                            "type": "function",
+                                            "function": {
+                                                "name": tc["function"]["name"],
+                                                "arguments": tc["function"]["arguments"],
+                                            },
+                                        }
+                                    ],
+                                },
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(tool_chunk)}\n\n"
+
+                # Send final chunk with tool_calls finish reason
+                final_chunk = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": request.model,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {},
+                            "finish_reason": "tool_calls",
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(final_chunk)}\n\n"
+            else:
+                # No tool calls, emit buffered content as chunks
+                if content:
+                    chunk = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": MLX_MODEL_PATH,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": content},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
+
+                # Send final chunk
+                final_chunk = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": request.model,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {},
+                            "finish_reason": "stop",
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(final_chunk)}\n\n"
+        else:
+            # No tools - stream tokens directly for responsiveness
+            for token in generate_stream(
+                messages,
+                model_path=MLX_MODEL_PATH,
+                max_tokens=request.max_tokens,
+                temperature=request.temperature,
+                top_p=request.top_p,
+                tools=request.tools,
+            ):
+                # Strip special tokens from output
+                clean_token = strip_special_tokens(token)
+                if not clean_token:
+                    continue  # Skip empty tokens after stripping
+
+                chunk = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": MLX_MODEL_PATH,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {"content": clean_token},
+                            "finish_reason": None,
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(chunk)}\n\n"
+
+            # Send final chunk
+            final_chunk = {
                 "id": completion_id,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": MLX_MODEL_PATH,
+                "model": request.model,
                 "choices": [
                     {
                         "index": 0,
-                        "delta": {
-                            "content": token,
-                        },
-                        "finish_reason": None,
+                        "delta": {},
+                        "finish_reason": "stop",
                     }
                 ],
             }
+            yield f"data: {json.dumps(final_chunk)}\n\n"
 
-            # Format as SSE
-            import json
-            yield f"data: {json.dumps(chunk)}\n\n"
-
-        # Send final chunk
-        final_chunk = {
-            "id": completion_id,
-            "object": "chat.completion.chunk",
-            "created": created,
-            "model": request.model,
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": {},
-                    "finish_reason": "stop",
-                }
-            ],
-        }
-        yield f"data: {json.dumps(final_chunk)}\n\n"
         yield "data: [DONE]\n\n"
 
         # Record success
@@ -378,7 +567,6 @@ async def _stream_response(
         record_request(success=False, latency=latency)
 
         # Send error event
-        import json
         error_chunk = {
             "error": {
                 "message": str(e),
@@ -392,6 +580,8 @@ async def _stream_response(
 async def list_models():
     """
     List available models (OpenAI-compatible).
+
+    Extended with context_length for proxy auto-detection.
     """
     return {
         "object": "list",
@@ -401,6 +591,8 @@ async def list_models():
                 "object": "model",
                 "created": int(time.time()),
                 "owned_by": "mlx-worker",
+                "context_length": MODEL_CONTEXT_LENGTH,  # From model config.json
+                "model_path": MLX_MODEL_PATH,
             }
         ],
     }

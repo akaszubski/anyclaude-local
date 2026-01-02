@@ -304,7 +304,19 @@ Web tools provide internet access for searching and fetching content.
 
 **When to use:** Current events, recent documentation, latest news, web research
         `.trim(),
-        keywords: ["search web", "google", "look up online", "find online"],
+        keywords: [
+          "search the internet",
+          "search internet",
+          "search the web",
+          "search web",
+          "look up online",
+          "find online",
+          "google",
+          "search for information",
+          "what is the latest",
+          "current news",
+          "recent developments",
+        ],
       },
       {
         name: "WebFetch",

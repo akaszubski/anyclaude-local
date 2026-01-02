@@ -10,6 +10,7 @@ Performance optimizations (Issue #43):
 """
 
 import gc
+import re
 import mlx.core as mx
 import mlx_lm
 from mlx_lm import stream_generate
@@ -270,46 +271,112 @@ def _inject_tool_instruction(
 
     if last_user_idx is not None:
         # Detect if user is asking to read/write/edit files
-        user_content = messages[last_user_idx].get('content', '').lower()
-        # Keywords that strongly suggest file/tool operations
-        # Must be specific to avoid false positives on general questions
-        tool_keywords = {
-            'read': ['read the file', 'read file', 'show me the file', 'show the file',
-                     'show me the contents', 'display the file', 'cat the', 'view the file',
-                     'look at the file', 'open the file', 'read this', 'read that'],
-            'write': ['write to file', 'write the file', 'create a file', 'create file',
-                      'save to file', 'save the file', 'make a file'],
-            'edit': ['edit the file', 'edit file', 'modify the file', 'change the file',
-                     'update the file', 'fix the file'],
-            'bash': ['run the command', 'run command', 'execute the command', 'execute command',
-                     'run this', 'run that', 'in the terminal', 'in terminal'],
-            'glob': ['find files', 'find the files', 'list files', 'list the files', 'search for files'],
-            'grep': ['grep for', 'grep the', 'search in file', 'search the file', 'find in file'],
-        }
+        user_content = messages[last_user_idx].get('content', '')
 
-        # Check which tools are available
-        available_tool_names = set()
-        for tool in tools:
-            if 'function' in tool:
-                available_tool_names.add(tool['function'].get('name', '').lower())
-            elif 'name' in tool:
-                available_tool_names.add(tool.get('name', '').lower())
+        # False positive patterns to avoid injecting WebSearch instructions
+        # These should NOT trigger WebSearch even if they contain search keywords
+        websearch_false_positives = [
+            r'\bresearch\s+(shows|suggests|indicates)\b',
+            r'\bsearch\s+(this|the)\s+(document|file|code|codebase)\b',
+            r'\b(what|check|show|list).*current\s+(directory|file|function)\b',
+        ]
 
-        # Find matching tool to suggest
-        suggested_tool = None
-        for tool_name, keywords in tool_keywords.items():
-            if tool_name in available_tool_names:
-                for kw in keywords:
-                    if kw in user_content:
-                        suggested_tool = tool_name.capitalize()
-                        break
-            if suggested_tool:
+        # General false positive patterns (apply to all tools)
+        general_false_positives = [
+            r'\bread\s+(this|that|it)\s+(carefully|thoroughly|closely)\b',
+        ]
+
+        # Check for general false positives first
+        is_general_false_positive = False
+        for pattern in general_false_positives:
+            if re.search(pattern, user_content, re.IGNORECASE):
+                is_general_false_positive = True
                 break
 
-        # Inject instruction if tool detected
-        if suggested_tool:
-            instruction = f"\n\n[IMPORTANT: You have tools available. To complete this task, you MUST call the {suggested_tool} tool using the proper function call format. Do not just describe what you would do - actually call the tool.]"
-            messages[last_user_idx]['content'] = messages[last_user_idx].get('content', '') + instruction
+        if not is_general_false_positive:
+            # Keywords that strongly suggest file/tool operations
+            # Must be specific to avoid false positives on general questions
+            tool_keywords = {
+                'read': ['read the file', 'read file', 'show me the file', 'show the file',
+                         'show me the contents', 'display the file', 'cat the', 'view the file',
+                         'look at the file', 'open the file', 'read this', 'read that'],
+                'write': ['write to file', 'write the file', 'create a file', 'create file',
+                          'save to file', 'save the file', 'make a file'],
+                'edit': ['edit the file', 'edit file', 'modify the file', 'change the file',
+                         'update the file', 'fix the file'],
+                'bash': ['run the command', 'run command', 'execute the command', 'execute command',
+                         'run this', 'run that', 'in the terminal', 'in terminal'],
+                'glob': ['find files', 'find the files', 'list files', 'list the files', 'search for files'],
+                'grep': ['grep for', 'grep the', 'search in file', 'search the file', 'find in file',
+                         'search for', 'in the codebase', 'search the codebase'],
+                'websearch': ['search the internet', 'search internet', 'search the web', 'search web',
+                              'look up online', 'find online', 'google', 'search for information',
+                              'what is the latest', 'current news', 'recent developments'],
+                'webfetch': ['fetch', 'download', 'get from url', 'scrape'],
+            }
+
+            # Check which tools are available
+            available_tool_names = set()
+            for tool in tools:
+                if 'function' in tool:
+                    available_tool_names.add(tool['function'].get('name', '').lower())
+                elif 'name' in tool:
+                    available_tool_names.add(tool.get('name', '').lower())
+
+            # Tool name mapping for proper capitalization
+            tool_name_map = {
+                'read': 'Read',
+                'write': 'Write',
+                'edit': 'Edit',
+                'bash': 'Bash',
+                'glob': 'Glob',
+                'grep': 'Grep',
+                'websearch': 'WebSearch',
+                'webfetch': 'WebFetch',
+            }
+
+            # Initialize suggested tool
+            suggested_tool = None
+
+            # Check for URL pattern (suggests WebFetch)
+            url_pattern = r'https?://[^\s]+'
+            has_url = re.search(url_pattern, user_content)
+            if has_url and 'webfetch' in available_tool_names:
+                # Check for WebFetch trigger words with URL
+                webfetch_triggers = ['get', 'fetch', 'download', 'scrape', 'retrieve', 'access']
+                for trigger in webfetch_triggers:
+                    trigger_pattern = r'\b' + re.escape(trigger) + r'\b'
+                    if re.search(trigger_pattern, user_content, re.IGNORECASE):
+                        suggested_tool = 'WebFetch'
+                        break
+
+            # Find matching tool to suggest using word boundary regex (if not already found)
+            if not suggested_tool:
+                for tool_name, keywords in tool_keywords.items():
+                    if tool_name in available_tool_names:
+                        # Check WebSearch-specific false positives
+                        if tool_name == 'websearch':
+                            is_websearch_false_positive = False
+                            for pattern in websearch_false_positives:
+                                if re.search(pattern, user_content, re.IGNORECASE):
+                                    is_websearch_false_positive = True
+                                    break
+                            if is_websearch_false_positive:
+                                continue
+
+                        for kw in keywords:
+                            # Use word boundary regex to avoid partial matches (e.g., "research" matching "search")
+                            pattern = r'\b' + re.escape(kw) + r'\b'
+                            if re.search(pattern, user_content, re.IGNORECASE):
+                                suggested_tool = tool_name_map.get(tool_name, tool_name.capitalize())
+                                break
+                    if suggested_tool:
+                        break
+
+            # Inject instruction if tool detected
+            if suggested_tool:
+                instruction = f"\n\n[IMPORTANT: You have tools available. To complete this task, you MUST call the {suggested_tool} tool using the proper function call format. Do not just describe what you would do - actually call the tool.]"
+                messages[last_user_idx]['content'] = messages[last_user_idx].get('content', '') + instruction
 
     return messages
 

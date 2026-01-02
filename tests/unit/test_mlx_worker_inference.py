@@ -567,6 +567,45 @@ class TestToolInstructionInjection:
             }
         }
 
+    @pytest.fixture
+    def web_search_tool(self):
+        """Sample WebSearch tool definition"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "WebSearch",
+                "description": "Search the web",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "allowed_domains": {"type": "array"},
+                        "blocked_domains": {"type": "array"}
+                    },
+                    "required": ["query"]
+                }
+            }
+        }
+
+    @pytest.fixture
+    def web_fetch_tool(self):
+        """Sample WebFetch tool definition"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "WebFetch",
+                "description": "Fetch web content",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string"},
+                        "prompt": {"type": "string"}
+                    },
+                    "required": ["url", "prompt"]
+                }
+            }
+        }
+
     def test_inject_tool_instruction_read_keyword(self, read_tool):
         """Test injection when user mentions 'read file' keyword"""
         messages = [
@@ -744,6 +783,483 @@ class TestToolInstructionInjection:
 
         assert "[IMPORTANT:" in result[0]['content']
         assert "Write" in result[0]['content']
+
+
+class TestWebSearchToolInjection:
+    """Test WebSearch/WebFetch tool instruction injection with all 11 keywords"""
+
+    @pytest.fixture
+    def web_search_tool(self):
+        """Sample WebSearch tool definition"""
+        return {
+            "name": "WebSearch",
+            "description": "Search the web using current information",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"}
+                },
+                "required": ["query"]
+            }
+        }
+
+    @pytest.fixture
+    def web_fetch_tool(self):
+        """Sample WebFetch tool definition"""
+        return {
+            "name": "WebFetch",
+            "description": "Fetch web content from URL",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "prompt": {"type": "string"}
+                },
+                "required": ["url", "prompt"]
+            }
+        }
+
+    # ============================================================================
+    # Test All 11 WebSearch Keywords
+    # ============================================================================
+
+    def test_keyword_search_the_internet(self, web_search_tool):
+        """Test 'search the internet' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search the internet for React best practices"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+        assert "MUST call" in result[0]['content']
+
+    def test_keyword_search_internet(self, web_search_tool):
+        """Test 'search internet' keyword (short form) triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search internet for TypeScript tutorials"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_search_the_web(self, web_search_tool):
+        """Test 'search the web' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search the web for latest AI news"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_search_web(self, web_search_tool):
+        """Test 'search web' keyword (short form) triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search web for Python documentation"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_look_up_online(self, web_search_tool):
+        """Test 'look up online' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Look up online the current Bitcoin price"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_find_online(self, web_search_tool):
+        """Test 'find online' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Find online information about GraphQL"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_google(self, web_search_tool):
+        """Test 'google' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Google the latest Node.js version"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_search_for_information(self, web_search_tool):
+        """Test 'search for information' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search for information about Rust programming"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_what_is_the_latest(self, web_search_tool):
+        """Test 'what is the latest' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "What is the latest version of React?"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_current_news(self, web_search_tool):
+        """Test 'current news' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "What is the current news about AI regulation?"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_recent_developments(self, web_search_tool):
+        """Test 'recent developments' keyword triggers WebSearch"""
+        messages = [
+            {"role": "user", "content": "Tell me about recent developments in quantum computing"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    # ============================================================================
+    # Test Case Insensitivity
+    # ============================================================================
+
+    def test_keyword_case_insensitive(self, web_search_tool):
+        """Test keywords are matched case-insensitively"""
+        messages = [
+            {"role": "user", "content": "SEARCH THE INTERNET for React tutorials"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_keyword_mixed_case(self, web_search_tool):
+        """Test mixed case keywords are matched"""
+        messages = [
+            {"role": "user", "content": "Search The Web for documentation"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    # ============================================================================
+    # Test Word Boundary Behavior
+    # ============================================================================
+
+    def test_word_boundary_research_not_search(self, web_search_tool):
+        """Test 'research' does NOT trigger 'search' (word boundary)"""
+        messages = [
+            {"role": "user", "content": "I will research this topic thoroughly"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        # Should NOT inject WebSearch instruction
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_word_boundary_searching_not_search(self, web_search_tool):
+        """Test 'searching' within word does NOT trigger (word boundary)"""
+        messages = [
+            {"role": "user", "content": "The algorithm is searching internally"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        # Should NOT inject WebSearch instruction
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_word_boundary_search_standalone(self, web_search_tool):
+        """Test 'search' at word boundary DOES trigger"""
+        messages = [
+            {"role": "user", "content": "Search the internet for answers"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_word_boundary_google_standalone(self, web_search_tool):
+        """Test 'google' as standalone word triggers"""
+        messages = [
+            {"role": "user", "content": "Google this for me please"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    def test_word_boundary_googled_not_google(self, web_search_tool):
+        """Test 'googled' does NOT trigger (strict word boundary)"""
+        messages = [
+            {"role": "user", "content": "I googled this yesterday"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        # Strict word boundary: should NOT match
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    # ============================================================================
+    # Test False Positive Prevention
+    # ============================================================================
+
+    def test_false_positive_research_shows(self, web_search_tool):
+        """Test 'research shows' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "Research shows that TypeScript improves code quality"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_research_suggests(self, web_search_tool):
+        """Test 'research suggests' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "Research suggests using async/await over promises"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_research_indicates(self, web_search_tool):
+        """Test 'research indicates' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "Research indicates that React is very popular"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_search_this_document(self, web_search_tool):
+        """Test 'search this document' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search this document for the configuration section"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_search_this_file(self, web_search_tool):
+        """Test 'search this file' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search this file for the function definition"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_search_the_code(self, web_search_tool):
+        """Test 'search the code' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "Search the code for all instances of TODO"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_current_directory(self, web_search_tool):
+        """Test 'current directory' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "Check the current directory for package.json"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_current_file(self, web_search_tool):
+        """Test 'current file' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "The current file needs to be refactored"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_false_positive_current_function(self, web_search_tool):
+        """Test 'current function' does NOT trigger WebSearch"""
+        messages = [
+            {"role": "user", "content": "The current function has a bug"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    # ============================================================================
+    # Test WebFetch Keywords
+    # ============================================================================
+
+    def test_webfetch_keyword_fetch(self, web_fetch_tool):
+        """Test 'fetch' keyword triggers WebFetch"""
+        messages = [
+            {"role": "user", "content": "Fetch the content from https://example.com/docs"}
+        ]
+        result = _inject_tool_instruction(messages, [web_fetch_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebFetch" in result[0]['content']
+
+    def test_webfetch_keyword_download(self, web_fetch_tool):
+        """Test 'download' keyword triggers WebFetch"""
+        messages = [
+            {"role": "user", "content": "Download the page at https://github.com/repo/readme"}
+        ]
+        result = _inject_tool_instruction(messages, [web_fetch_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebFetch" in result[0]['content']
+
+    def test_webfetch_keyword_get_from_url(self, web_fetch_tool):
+        """Test 'get from url' keyword triggers WebFetch"""
+        messages = [
+            {"role": "user", "content": "Get from url https://api.example.com/data"}
+        ]
+        result = _inject_tool_instruction(messages, [web_fetch_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebFetch" in result[0]['content']
+
+    def test_webfetch_keyword_scrape(self, web_fetch_tool):
+        """Test 'scrape' keyword triggers WebFetch"""
+        messages = [
+            {"role": "user", "content": "Scrape the documentation from https://docs.example.com"}
+        ]
+        result = _inject_tool_instruction(messages, [web_fetch_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebFetch" in result[0]['content']
+
+    def test_webfetch_url_pattern_detection(self, web_fetch_tool):
+        """Test URL pattern in message suggests WebFetch"""
+        messages = [
+            {"role": "user", "content": "Get the data from https://api.example.com/v1/users"}
+        ]
+        result = _inject_tool_instruction(messages, [web_fetch_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebFetch" in result[0]['content']
+
+    # ============================================================================
+    # Test Tool Not Available
+    # ============================================================================
+
+    def test_no_injection_when_tool_not_available(self, web_search_tool):
+        """Test no injection when WebSearch tool not in available tools"""
+        other_tool = {
+            "name": "Read",
+            "description": "Read a file"
+        }
+        messages = [
+            {"role": "user", "content": "Search the internet for React tutorials"}
+        ]
+
+        # Only Read tool available, not WebSearch
+        result = _inject_tool_instruction(messages, [other_tool])
+
+        # Should NOT inject since WebSearch not available
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_no_injection_when_no_keywords_match(self, web_search_tool):
+        """Test no injection when message has no matching keywords"""
+        messages = [
+            {"role": "user", "content": "What is the capital of France?"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        # Should NOT inject
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    # ============================================================================
+    # Test Integration with Other Tools
+    # ============================================================================
+
+    def test_differentiate_grep_vs_websearch(self, web_search_tool):
+        """Test distinguishing Grep (code search) from WebSearch (internet)"""
+        grep_tool = {
+            "name": "Grep",
+            "description": "Search files"
+        }
+
+        # Code search should prefer Grep
+        grep_messages = [
+            {"role": "user", "content": "Search for TODO in the codebase"}
+        ]
+        grep_result = _inject_tool_instruction(grep_messages, [grep_tool, web_search_tool])
+        assert "Grep" in grep_result[0]['content']
+
+        # Internet search should prefer WebSearch
+        web_messages = [
+            {"role": "user", "content": "Search the internet for TODO list apps"}
+        ]
+        web_result = _inject_tool_instruction(web_messages, [grep_tool, web_search_tool])
+        assert "WebSearch" in web_result[0]['content']
+
+    def test_multiple_keywords_in_message(self, web_search_tool):
+        """Test message with multiple WebSearch keywords"""
+        messages = [
+            {"role": "user", "content": "Google the latest React version and search for information about hooks"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        # Should inject for WebSearch (first matching tool)
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "WebSearch" in result[0]['content']
+
+    # ============================================================================
+    # Test Edge Cases
+    # ============================================================================
+
+    def test_empty_messages(self, web_search_tool):
+        """Test handles empty messages list"""
+        result = _inject_tool_instruction([], [web_search_tool])
+        assert result == []
+
+    def test_no_user_messages(self, web_search_tool):
+        """Test handles messages with no user role"""
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant"},
+            {"role": "assistant", "content": "How can I help?"}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        # Should return unchanged
+        assert len(result) == 2
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_preserves_original_content(self, web_search_tool):
+        """Test original message content is preserved"""
+        original_content = "Search the internet for React best practices"
+        messages = [
+            {"role": "user", "content": original_content}
+        ]
+        result = _inject_tool_instruction(messages, [web_search_tool])
+
+        # Original content should be at the start
+        assert result[0]['content'].startswith(original_content)
+
+    def test_does_not_mutate_original(self, web_search_tool):
+        """Test original messages list is not mutated"""
+        messages = [
+            {"role": "user", "content": "Search the internet for React"}
+        ]
+        original_content = messages[0]['content']
+
+        _inject_tool_instruction(messages, [web_search_tool])
+
+        # Original should not be modified
+        assert messages[0]['content'] == original_content
 
 
 if __name__ == '__main__':

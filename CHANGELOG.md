@@ -77,6 +77,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Configurable max injections per conversation (default: 10)
   - Prevents degradation from excessive instructions (39% performance penalty if over-injected)
 
+  **6. Web Tool Keywords (WebSearch/WebFetch)**
+  - Enhanced keyword detection for web search and fetch operations
+  - WebSearch keywords: "search the internet", "search the web", "google", "search for information", "what is the latest", "current news", "recent developments", and more
+  - WebFetch keywords: "fetch", "download", "get from url", "scrape"
+  - Word boundary regex matching prevents partial keyword false positives (e.g., "research shows" vs "search the web")
+  - Integrated false positive filtering to avoid triggering on phrases like "search this document" or "research indicates"
+  - Enables users to naturally request web operations: "search the web for latest news", "fetch that article", "google this topic"
+
   **Configuration**:
   - `injectToolInstructions`: Enable/disable injection (default: false for compatibility)
   - `toolInstructionStyle`: "explicit" or "subtle" (default: "explicit")
@@ -89,8 +97,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ✅ 95% false positive prevention
   - ✅ Security protection against injection attacks
   - ✅ Configurable aggressiveness (threshold, style, limits)
+  - ✅ Natural language web operations with intelligent false positive filtering
 
   **Files Changed**:
+  - `src/hierarchical-tools.ts` - Added 11 WebSearch keywords to web tool hierarchy
+  - `src/tool-instruction-injector.ts` - Added WebSearch/WebFetch tool keywords and false positive patterns
+  - `src/mlx_worker/inference.py` - Upgraded to word boundary regex for accurate keyword matching
   - `src/tool-instruction-injector.ts` (478 lines) - Core injection engine with intent detection and instruction generation
   - `src/tool-injection-validator.ts` (342 lines) - Security validation and privilege escalation detection
   - `src/anthropic-proxy.ts` - Integration with proxy request handling
@@ -500,6 +512,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Files Changed**:
   - `src/backend-client.ts` (34 lines) - Added context detection with multi-backend support and validation
   - `tests/unit/test_backend_client.js` - Updated tests for context detection
+
+### Fixed
+
+- **Issue #45: Strip special tokens from MLX worker output** - Remove model-specific special tokens before sending responses to Claude Code.
+
+  **Purpose**: Fix garbled output from MLX models by removing special tokens like `<|im_end|>`, `<|im_start|>`, `</s>` (Qwen), and Llama 3.x tokens (`<|begin_of_text|>`, `<|eot_id|>`, `<|start_header_id|>`, `<|end_header_id|>`) from model responses.
+
+  **Key Features**:
+
+  **1. Configurable Token Stripping** (`src/mlx_worker/server.py`)
+  - `SPECIAL_TOKENS_TO_STRIP` list with 8 special tokens:
+    - Qwen tokens: `<|im_end|>`, `<|im_start|>`, `<|endoftext|>`, `<|end|>`
+    - Generic EOS: `</s>`
+    - Llama 3.x: `<|begin_of_text|>`, `<|eot_id|>`, `<|start_header_id|>`, `<|end_header_id|>`
+  - `strip_special_tokens()` function applies to all model outputs
+
+  **2. Application Points**:
+  - Non-streaming responses: Strip after model inference
+  - Streaming responses with tools: Strip before parsing tool calls
+  - Streaming responses without tools: Strip each token as it arrives
+  - Ensures clean output for both regular content and tool calls
+
+  **3. Test Coverage** (54 tests)
+  - Individual token stripping tests
+  - Combined token stripping tests
+  - Edge cases: empty strings, repeated tokens, partial matches
+  - Qwen and Llama token variants
+  - Integration with tool call parsing
+
+  **Benefits**:
+  - ✅ Clean output to Claude Code (no garbled tokens)
+  - ✅ Works with streaming and non-streaming modes
+  - ✅ Tool parsing unaffected by special tokens
+  - ✅ Extensible token list for future models
+  - ✅ Comprehensive test coverage (54 tests)
+
+  **Files Changed**:
+  - `src/mlx_worker/server.py` (60+ lines) - Added SPECIAL_TOKENS_TO_STRIP, strip_special_tokens(), and integration points
+  - `tests/unit/test_mlx_worker_server.py` (54 tests) - Comprehensive token stripping test suite
 
 ### Documentation
 
