@@ -36,12 +36,48 @@ SPECIAL_TOKENS_TO_STRIP = [
     "<|eot_id|>",
     "<|start_header_id|>",
     "<|end_header_id|>",
+    # Reasoning/thinking tokens (Issue #46)
+    "<think>",
+    "</think>",
+    "<reasoning>",
+    "</reasoning>",
+    "<thinking>",
+    "</thinking>",
+    "<thought>",
+    "</thought>",
+    "<reflection>",
+    "</reflection>",
+    "<|thinking>",
+    "</|thinking>",
+    "<output>",
+    "</output>",
 ]
 
 def strip_special_tokens(text: str) -> str:
-    """Strip special tokens from model output."""
+    """
+    Strip special tokens from model output.
+
+    For reasoning tags directly adjacent to tool_call tags, removes content.
+    Otherwise, preserves content and only removes tag markers.
+    """
+    # First pass: Remove reasoning content when directly before tool_call (no whitespace)
+    # This handles cases like: <think>...</think><tool_call>
+    reasoning_before_tool_patterns = [
+        r'<think>.*?</think>(?=<tool_call>)',
+        r'<reasoning>.*?</reasoning>(?=<tool_call>)',
+        r'<thinking>.*?</thinking>(?=<tool_call>)',
+        r'<thought>.*?</thought>(?=<tool_call>)',
+        r'<reflection>.*?</reflection>(?=<tool_call>)',
+        r'<\|thinking>.*?</\|thinking>(?=<tool_call>)',
+    ]
+
+    for pattern in reasoning_before_tool_patterns:
+        text = re.sub(pattern, '', text, flags=re.DOTALL)
+
+    # Second pass: Remove remaining tags but preserve content
     for token in SPECIAL_TOKENS_TO_STRIP:
         text = text.replace(token, "")
+
     return text
 
 def get_model_context_length() -> int:

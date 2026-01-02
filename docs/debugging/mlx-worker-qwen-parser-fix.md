@@ -73,6 +73,7 @@ if parser.can_parse(response):
 ```
 
 **Features**:
+
 - Pattern-based format detection for all 4 variations
 - Greedy fallback for malformed JSON boundaries
 - Markdown code block normalization
@@ -144,12 +145,12 @@ content, tool_calls = parse_tool_calls_with_registry(raw_content)
 
 All parsers include built-in security limits:
 
-| Feature | Limit | Reason |
-|---------|-------|--------|
-| **JSON Size** | 1MB | Prevent memory exhaustion attacks |
-| **Parse Timeout** | 100ms | Prevent ReDoS regex attacks and hanging |
-| **JSON Only** | json.loads() | XXE prevention (no XML parsing) |
-| **Input Validation** | Schema checks | Malformed tool calls rejected |
+| Feature              | Limit         | Reason                                  |
+| -------------------- | ------------- | --------------------------------------- |
+| **JSON Size**        | 1MB           | Prevent memory exhaustion attacks       |
+| **Parse Timeout**    | 100ms         | Prevent ReDoS regex attacks and hanging |
+| **JSON Only**        | json.loads()  | XXE prevention (no XML parsing)         |
+| **Input Validation** | Schema checks | Malformed tool calls rejected           |
 
 ### Timeout Behavior
 
@@ -172,8 +173,9 @@ The exception is caught and the next parser in the fallback chain is tried.
 **Pattern**: `<tool_call>(.*?)</tool_call>`
 
 Extracted JSON:
+
 ```json
-{"name": "Read", "arguments": {"file_path": "/tmp/file.txt"}}
+{ "name": "Read", "arguments": { "file_path": "/tmp/file.txt" } }
 ```
 
 ### Format 2: Tools Array
@@ -185,13 +187,15 @@ Extracted JSON:
 **Pattern**: `<tools>(.*?)</tools>`
 
 Extracted JSON (array):
+
 ```json
-[{"name": "Read", "arguments": {"file_path": "/tmp/file.txt"}}]
+[{ "name": "Read", "arguments": { "file_path": "/tmp/file.txt" } }]
 ```
 
 Parsed tool calls:
+
 ```json
-[{"name": "Read", "arguments": {"file_path": "/tmp/file.txt"}}]
+[{ "name": "Read", "arguments": { "file_path": "/tmp/file.txt" } }]
 ```
 
 ### Format 3: Function Tag
@@ -203,8 +207,9 @@ Parsed tool calls:
 **Pattern**: `<function>(.*?)</function>`
 
 Extracted JSON:
+
 ```json
-{"name": "Read", "arguments": {"file_path": "/tmp/file.txt"}}
+{ "name": "Read", "arguments": { "file_path": "/tmp/file.txt" } }
 ```
 
 ### Format 4: JSON Bracket
@@ -216,8 +221,9 @@ Extracted JSON:
 **Pattern**: `<(\{[^>]*?\})>`
 
 Extracted JSON:
+
 ```json
-{"name": "Read", "arguments": {"file_path": "/tmp/file.txt"}}
+{ "name": "Read", "arguments": { "file_path": "/tmp/file.txt" } }
 ```
 
 ### Malformed JSON Fallback
@@ -235,6 +241,7 @@ greedy_pattern = re.compile(
 ```
 
 This handles cases where:
+
 - JSON has unmatched braces
 - Content spans multiple lines
 - JSON contains escaped quotes
@@ -253,6 +260,7 @@ Located at `tests/unit/test_qwen_tool_parser.py`:
 - **Performance**: Parse speed benchmarks
 
 Run tests:
+
 ```bash
 pytest tests/unit/test_qwen_tool_parser.py -v
 ```
@@ -267,6 +275,7 @@ Located at `tests/integration/test_mlx_worker_parser_integration.py`:
 - Fallback chain behavior
 
 Run tests:
+
 ```bash
 pytest tests/integration/test_mlx_worker_parser_integration.py -v
 ```
@@ -277,14 +286,14 @@ pytest tests/integration/test_mlx_worker_parser_integration.py -v
 
 Typical parse times with security limits (100ms timeout):
 
-| Format | Parse Time | Notes |
-|--------|-----------|-------|
-| Format 1 (tool_call) | 0.2ms | Fastest, pattern 1 |
-| Format 2 (tools) | 0.3ms | Array parsing, pattern 2 |
-| Format 3 (function) | 0.2ms | Single pattern |
-| Format 4 (json_bracket) | 0.4ms | Greedy match needed |
-| Mixed content | 1-2ms | Text + multiple tool calls |
-| Malformed JSON | 5-10ms | Greedy fallback |
+| Format                  | Parse Time | Notes                      |
+| ----------------------- | ---------- | -------------------------- |
+| Format 1 (tool_call)    | 0.2ms      | Fastest, pattern 1         |
+| Format 2 (tools)        | 0.3ms      | Array parsing, pattern 2   |
+| Format 3 (function)     | 0.2ms      | Single pattern             |
+| Format 4 (json_bracket) | 0.4ms      | Greedy match needed        |
+| Mixed content           | 1-2ms      | Text + multiple tool calls |
+| Malformed JSON          | 5-10ms     | Greedy fallback            |
 
 ### Throughput
 
@@ -303,6 +312,7 @@ Total overhead: <2ms per request (negligible compared to inference latency)
 **Symptoms**: Tool calls appear in text output instead of being parsed
 
 **Diagnosis**:
+
 1. Check MLX worker logs: `grep "parse_tool_calls" ~/.lmstudio/server-logs/`
 2. Enable debug logging:
    ```bash
@@ -311,6 +321,7 @@ Total overhead: <2ms per request (negligible compared to inference latency)
 3. Check trace file: `cat ~/.anyclaude/traces/mlx_worker/*.json | jq '.response.tool_calls'`
 
 **Solutions**:
+
 - Model format changed: Verify format matches one of the 4 variations
 - JSON malformed: Check for unmatched braces in response
 - Parser registry not initialized: Check server startup logs
@@ -320,11 +331,13 @@ Total overhead: <2ms per request (negligible compared to inference latency)
 **Symptoms**: Parser fails with "Parse timeout exceeded: Xms > 100ms"
 
 **Causes**:
+
 - Very large JSON (>1MB) - Size validation will trigger first
 - Regex catastrophic backslash (ReDoS) - Pattern mismatch
 - Slow system - Rare, only on heavily loaded servers
 
 **Solutions**:
+
 - Increase timeout: `QwenToolParser(timeout_ms=200)`
 - Check JSON size: `echo "${response}" | wc -c`
 - Fallback will handle it: Next parser in chain will be tried
@@ -334,6 +347,7 @@ Total overhead: <2ms per request (negligible compared to inference latency)
 **Symptoms**: Even valid tool calls return empty list
 
 **Debug**:
+
 ```python
 # Manual parsing test
 parser = QwenToolParser()
@@ -351,6 +365,8 @@ print(f"Registry parse: {registry.parse_with_fallback(response)}")
 ## Related Issues
 
 - **#33**: Tool calling format inconsistency (this issue)
+- **#45**: Strip special tokens from MLX worker output - Removes model special tokens like `<|im_end|>`, `<|im_start|>`, `</s>` and Llama 3.x tokens before sending responses
+- **#46**: Strip reasoning tokens before tool parsing - Removes reasoning/thinking tokens (`<think>`, `<reasoning>`, `<thinking>`, etc.) from reasoning models before tool call extraction
 - **#13**: Tool Parser Plugin System (completed)
 - **#14**: Streaming Optimization
 - **#32**: MLX Worker error handling improvements

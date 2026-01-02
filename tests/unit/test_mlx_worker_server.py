@@ -8,7 +8,7 @@ special tokens from MLX worker output before returning to the client.
 Expected to FAIL initially (TDD Red Phase) if implementation is incomplete.
 
 Test Coverage:
-- Individual token stripping (9 special token types)
+- Individual token stripping (9 special token types + 14 reasoning token types)
 - Multiple sequential tokens
 - Tokens in middle of text (preserves surrounding content)
 - Empty string after stripping
@@ -17,12 +17,16 @@ Test Coverage:
 - Case sensitivity (exact match required)
 - Streaming chunks with tokens
 - Edge cases (whitespace, punctuation adjacency)
+- Reasoning tokens before tool calls (Issue #46)
+- Nested reasoning tags
+- Mixed reasoning and special tokens
 
 Tokens Under Test:
 - ChatML: <|im_end|>, <|im_start|>
 - GPT: <|endoftext|>, <|end|>
 - Generic: </s>
 - Llama 3.x: <|begin_of_text|>, <|eot_id|>, <|start_header_id|>, <|end_header_id|>
+- Reasoning: <think>, <reasoning>, <thinking>, <thought>, <reflection>, <|thinking>, <output>
 """
 
 import pytest
@@ -120,6 +124,390 @@ class TestTokenStripping:
         result = strip_special_tokens(text)
         assert result == "system\nYou are helpful"
         assert "<|end_header_id|>" not in result
+
+    # ============================================================================
+    # Test Reasoning Token Types (Issue #46)
+    # ============================================================================
+
+    def test_strip_think_open_tag(self):
+        """Test stripping <think> opening tag"""
+        text = "<think>Let me analyze this problem"
+        result = strip_special_tokens(text)
+        assert result == "Let me analyze this problem"
+        assert "<think>" not in result
+
+    def test_strip_think_close_tag(self):
+        """Test stripping </think> closing tag"""
+        text = "Let me consider the options</think>"
+        result = strip_special_tokens(text)
+        assert result == "Let me consider the options"
+        assert "</think>" not in result
+
+    def test_strip_reasoning_open_tag(self):
+        """Test stripping <reasoning> opening tag"""
+        text = "<reasoning>First, we need to understand"
+        result = strip_special_tokens(text)
+        assert result == "First, we need to understand"
+        assert "<reasoning>" not in result
+
+    def test_strip_reasoning_close_tag(self):
+        """Test stripping </reasoning> closing tag"""
+        text = "Therefore, the answer is clear</reasoning>"
+        result = strip_special_tokens(text)
+        assert result == "Therefore, the answer is clear"
+        assert "</reasoning>" not in result
+
+    def test_strip_thinking_open_tag(self):
+        """Test stripping <thinking> opening tag"""
+        text = "<thinking>Breaking down the problem step by step"
+        result = strip_special_tokens(text)
+        assert result == "Breaking down the problem step by step"
+        assert "<thinking>" not in result
+
+    def test_strip_thinking_close_tag(self):
+        """Test stripping </thinking> closing tag"""
+        text = "This leads to the conclusion</thinking>"
+        result = strip_special_tokens(text)
+        assert result == "This leads to the conclusion"
+        assert "</thinking>" not in result
+
+    def test_strip_thought_open_tag(self):
+        """Test stripping <thought> opening tag"""
+        text = "<thought>Hmm, interesting approach"
+        result = strip_special_tokens(text)
+        assert result == "Hmm, interesting approach"
+        assert "<thought>" not in result
+
+    def test_strip_thought_close_tag(self):
+        """Test stripping </thought> closing tag"""
+        text = "That makes sense now</thought>"
+        result = strip_special_tokens(text)
+        assert result == "That makes sense now"
+        assert "</thought>" not in result
+
+    def test_strip_reflection_open_tag(self):
+        """Test stripping <reflection> opening tag"""
+        text = "<reflection>Looking back at this"
+        result = strip_special_tokens(text)
+        assert result == "Looking back at this"
+        assert "<reflection>" not in result
+
+    def test_strip_reflection_close_tag(self):
+        """Test stripping </reflection> closing tag"""
+        text = "I should reconsider</reflection>"
+        result = strip_special_tokens(text)
+        assert result == "I should reconsider"
+        assert "</reflection>" not in result
+
+    def test_strip_pipe_thinking_open_tag(self):
+        """Test stripping <|thinking> opening tag (pipe variant)"""
+        text = "<|thinking>Let me work through this"
+        result = strip_special_tokens(text)
+        assert result == "Let me work through this"
+        assert "<|thinking>" not in result
+
+    def test_strip_pipe_thinking_close_tag(self):
+        """Test stripping </|thinking> closing tag (pipe variant)"""
+        text = "Step by step analysis</|thinking>"
+        result = strip_special_tokens(text)
+        assert result == "Step by step analysis"
+        assert "</|thinking>" not in result
+
+    def test_strip_output_open_tag(self):
+        """Test stripping <output> opening tag"""
+        text = "<output>Here is the final result"
+        result = strip_special_tokens(text)
+        assert result == "Here is the final result"
+        assert "<output>" not in result
+
+    def test_strip_output_close_tag(self):
+        """Test stripping </output> closing tag"""
+        text = "This is my answer</output>"
+        result = strip_special_tokens(text)
+        assert result == "This is my answer"
+        assert "</output>" not in result
+
+    # ============================================================================
+    # Test Reasoning Tokens with Tool Calls (Issue #46 Core Use Case)
+    # ============================================================================
+
+    def test_strip_thinking_tags_before_tool_call(self):
+        """Test stripping thinking tags before tool call (Issue #46 primary scenario)"""
+        text = '<think>I need to read the file first</think><tool_call>{"name":"Read","arguments":{"file_path":"test.txt"}}</tool_call>'
+        result = strip_special_tokens(text)
+        assert result == '<tool_call>{"name":"Read","arguments":{"file_path":"test.txt"}}</tool_call>'
+        assert "<think>" not in result
+        assert "</think>" not in result
+        assert "<tool_call>" in result
+        assert "Read" in result
+
+    def test_strip_reasoning_tags_before_tool_call(self):
+        """Test stripping reasoning tags before tool call"""
+        text = '<reasoning>Analyzing the requirements</reasoning><tool_call>{"name":"Bash","arguments":{"command":"ls -la"}}</tool_call>'
+        result = strip_special_tokens(text)
+        assert result == '<tool_call>{"name":"Bash","arguments":{"command":"ls -la"}}</tool_call>'
+        assert "<reasoning>" not in result
+        assert "</reasoning>" not in result
+        assert "<tool_call>" in result
+
+    def test_strip_thinking_tags_before_multiple_tool_calls(self):
+        """Test stripping thinking tags before multiple tool calls"""
+        text = '<think>First read</think><tool_call>{"name":"Read"}</tool_call><think>Then write</think><tool_call>{"name":"Write"}</tool_call>'
+        result = strip_special_tokens(text)
+        assert result == '<tool_call>{"name":"Read"}</tool_call><tool_call>{"name":"Write"}</tool_call>'
+        assert "<think>" not in result
+        assert "</think>" not in result
+        # Both tool calls should be preserved
+        assert result.count("<tool_call>") == 2
+
+    def test_strip_nested_thinking_tags(self):
+        """Test stripping nested thinking tags"""
+        text = "<think>Outer thought<reasoning>Inner analysis</reasoning>More thinking</think>Result"
+        result = strip_special_tokens(text)
+        assert result == "Outer thoughtInner analysisMore thinkingResult"
+        assert "<think>" not in result
+        assert "</think>" not in result
+        assert "<reasoning>" not in result
+        assert "</reasoning>" not in result
+
+    def test_strip_thinking_with_text_only(self):
+        """Test stripping thinking tags from text-only response"""
+        text = "<think>Let me analyze this carefully</think>The answer is 42"
+        result = strip_special_tokens(text)
+        assert result == "Let me analyze this carefullyThe answer is 42"
+        assert "<think>" not in result
+        assert "</think>" not in result
+        assert "The answer is 42" in result
+
+    def test_strip_multiple_reasoning_tag_types(self):
+        """Test stripping multiple different reasoning tag types in one response"""
+        text = "<think>Initial thought</think><reasoning>Analysis</reasoning><reflection>Review</reflection>Final answer"
+        result = strip_special_tokens(text)
+        assert result == "Initial thoughtAnalysisReviewFinal answer"
+        assert "<think>" not in result
+        assert "<reasoning>" not in result
+        assert "<reflection>" not in result
+
+    def test_strip_output_tags_around_content(self):
+        """Test stripping <output> tags around content"""
+        text = "<output>This is the user-facing response</output>"
+        result = strip_special_tokens(text)
+        assert result == "This is the user-facing response"
+        assert "<output>" not in result
+        assert "</output>" not in result
+
+    def test_strip_thinking_tags_preserve_tool_call_json(self):
+        """Test that thinking tag removal preserves tool call JSON structure"""
+        text = '''<think>I should use the Grep tool</think><tool_call>
+{
+  "name": "Grep",
+  "arguments": {
+    "pattern": "test",
+    "path": "src/"
+  }
+}</tool_call>'''
+        result = strip_special_tokens(text)
+        assert "<think>" not in result
+        assert "</think>" not in result
+        assert "<tool_call>" in result
+        assert '"name": "Grep"' in result
+        assert '"pattern": "test"' in result
+
+    # ============================================================================
+    # Test Streaming with Reasoning Tokens (Issue #46)
+    # ============================================================================
+
+    def test_strip_streaming_chunk_with_partial_thinking_tag(self):
+        """Test streaming chunk containing partial thinking tag"""
+        # In real streaming, tags might be split across chunks
+        chunk1 = "<think>Starting to analyze"
+        chunk2 = " the problem</think>The answer"
+
+        result1 = strip_special_tokens(chunk1)
+        result2 = strip_special_tokens(chunk2)
+
+        assert "<think>" not in result1
+        assert "</think>" not in result2
+        assert "Starting to analyze" in result1
+        assert "The answer" in result2
+
+    def test_strip_streaming_thinking_then_tool_call(self):
+        """Test streaming scenario: thinking tag, then tool call"""
+        chunks = [
+            "<think>",
+            "I need to check the file",
+            "</think>",
+            "<tool_call>",
+            '{"name":"Read"}',
+            "</tool_call>"
+        ]
+        results = [strip_special_tokens(chunk) for chunk in chunks]
+
+        # Tags should be removed
+        assert results[0] == ""
+        assert results[2] == ""
+        # Content preserved
+        assert "I need to check the file" in results[1]
+        assert "<tool_call>" in results[3]
+        assert '{"name":"Read"}' in results[4]
+
+    def test_strip_streaming_nested_reasoning_chunks(self):
+        """Test streaming with nested reasoning tags across chunks"""
+        chunks = [
+            "<think>Outer",
+            "<reasoning>Inner",
+            "</reasoning>",
+            "</think>Result"
+        ]
+        results = [strip_special_tokens(chunk) for chunk in chunks]
+
+        # All tags removed, content preserved
+        combined = "".join(results)
+        assert "<think>" not in combined
+        assert "<reasoning>" not in combined
+        assert "</think>" not in combined
+        assert "</reasoning>" not in combined
+        assert "Outer" in combined
+        assert "Inner" in combined
+        assert "Result" in combined
+
+    # ============================================================================
+    # Test Reasoning Token Regression Cases
+    # ============================================================================
+
+    def test_strip_no_thinking_tokens_regression(self):
+        """Test that responses without thinking tokens still work (regression)"""
+        text = '<tool_call>{"name":"test"}</tool_call>'
+        result = strip_special_tokens(text)
+        assert result == text
+        # Should be unchanged
+
+    def test_strip_thinking_does_not_break_existing_tokens(self):
+        """Test that reasoning token stripping doesn't break existing special tokens"""
+        text = "<think>Thinking</think><|im_start|>assistant<|im_end|>"
+        result = strip_special_tokens(text)
+        assert result == "Thinkingassistant"
+        # All tokens should be removed
+        assert "<think>" not in result
+        assert "</think>" not in result
+        assert "<|im_start|>" not in result
+        assert "<|im_end|>" not in result
+
+    def test_strip_mixed_reasoning_and_special_tokens(self):
+        """Test stripping mixed reasoning and special tokens"""
+        text = "<|im_start|><think>Analyzing</think>Response<|im_end|></s>"
+        result = strip_special_tokens(text)
+        assert result == "AnalyzingResponse"
+        # All tokens removed
+        assert "<|im_start|>" not in result
+        assert "<think>" not in result
+        assert "</think>" not in result
+        assert "<|im_end|>" not in result
+        assert "</s>" not in result
+
+    def test_strip_thinking_tags_case_sensitive(self):
+        """Test that reasoning tags are case-sensitive"""
+        text = "<THINK>Should not be stripped</THINK>"
+        result = strip_special_tokens(text)
+        # Uppercase tags should NOT be stripped
+        assert result == text
+
+    def test_strip_thinking_partial_tags_not_stripped(self):
+        """Test that partial reasoning tags are not stripped"""
+        text = "<thin>incomplete</thin>"
+        result = strip_special_tokens(text)
+        # Partial tags should remain
+        assert result == text
+
+    def test_strip_thinking_tags_in_code_block_not_confused(self):
+        """Test that reasoning tags in code examples are still stripped"""
+        text = "```xml\n<think>example</think>\n```"
+        result = strip_special_tokens(text)
+        # Tags are stripped even in code blocks (they're just text)
+        assert result == "```xml\nexample\n```"
+        assert "<think>" not in result
+
+    # ============================================================================
+    # Test Real-World Reasoning Token Scenarios
+    # ============================================================================
+
+    def test_strip_deepseek_style_thinking(self):
+        """Test stripping DeepSeek-style thinking tokens"""
+        text = "<think>\nStep 1: Analyze the problem\nStep 2: Find solution\n</think>\nThe answer is X"
+        result = strip_special_tokens(text)
+        assert result == "\nStep 1: Analyze the problem\nStep 2: Find solution\n\nThe answer is X"
+        assert "<think>" not in result
+        assert "</think>" not in result
+
+    def test_strip_qwen_style_reasoning(self):
+        """Test stripping Qwen-style reasoning tokens"""
+        text = "<reasoning>First, let's break this down...</reasoning><output>Final answer</output>"
+        result = strip_special_tokens(text)
+        assert result == "First, let's break this down...Final answer"
+        assert "<reasoning>" not in result
+        assert "<output>" not in result
+
+    def test_strip_complex_nested_reasoning_before_tool(self):
+        """Test complex nested reasoning structure before tool call"""
+        text = '''<think>Initial analysis
+<reasoning>Deep dive
+<reflection>Second thoughts</reflection>
+Continue analysis</reasoning>
+Final thought</think>
+<tool_call>{"name":"Bash","arguments":{"command":"pwd"}}</tool_call>'''
+        result = strip_special_tokens(text)
+
+        # All reasoning tags removed
+        assert "<think>" not in result
+        assert "<reasoning>" not in result
+        assert "<reflection>" not in result
+        assert "</think>" not in result
+        assert "</reasoning>" not in result
+        assert "</reflection>" not in result
+
+        # Tool call preserved
+        assert "<tool_call>" in result
+        assert "Bash" in result
+        assert "pwd" in result
+
+        # Reasoning content preserved (tags removed but content remains)
+        assert "Initial analysis" in result
+        assert "Deep dive" in result
+        assert "Second thoughts" in result
+
+    def test_strip_thinking_with_llama3_tokens_and_tool_call(self):
+        """Test realistic scenario: Llama3 tokens + thinking tags + tool call"""
+        text = '<|begin_of_text|><|start_header_id|>assistant<|end_header_id|>\n<think>I should check the directory</think><tool_call>{"name":"Bash","arguments":{"command":"ls"}}</tool_call><|eot_id|>'
+        result = strip_special_tokens(text)
+
+        # All special tokens removed
+        assert "<|begin_of_text|>" not in result
+        assert "<|start_header_id|>" not in result
+        assert "<|end_header_id|>" not in result
+        assert "<|eot_id|>" not in result
+        assert "<think>" not in result
+        assert "</think>" not in result
+
+        # Tool call preserved
+        assert "<tool_call>" in result
+        assert "Bash" in result
+
+    def test_strip_pipe_thinking_variant(self):
+        """Test stripping <|thinking> pipe variant (some models use this)"""
+        text = "<|thinking>Analyzing the context</|thinking>Final answer"
+        result = strip_special_tokens(text)
+        assert result == "Analyzing the contextFinal answer"
+        assert "<|thinking>" not in result
+        assert "</|thinking>" not in result
+
+    def test_strip_output_tags_separate_reasoning_from_response(self):
+        """Test <output> tags separating reasoning from user-facing response"""
+        text = "<think>Internal reasoning process</think><output>User sees this</output>"
+        result = strip_special_tokens(text)
+        assert result == "Internal reasoning processUser sees this"
+        assert "<think>" not in result
+        assert "<output>" not in result
+        # Both parts preserved, just tags removed
 
     # ============================================================================
     # Test Multiple Tokens
@@ -436,6 +824,27 @@ lines of content"""
                 text = f"Test{token}Content"
                 result = strip_special_tokens(text)
                 assert token not in result
+
+    def test_special_tokens_list_contains_reasoning_tokens(self):
+        """Test SPECIAL_TOKENS_TO_STRIP contains all reasoning tokens (Issue #46)"""
+        reasoning_tokens = [
+            "<think>",
+            "</think>",
+            "<reasoning>",
+            "</reasoning>",
+            "<thinking>",
+            "</thinking>",
+            "<thought>",
+            "</thought>",
+            "<reflection>",
+            "</reflection>",
+            "<|thinking>",
+            "</|thinking>",
+            "<output>",
+            "</output>",
+        ]
+        for token in reasoning_tokens:
+            assert token in SPECIAL_TOKENS_TO_STRIP, f"Missing reasoning token: {token} (Issue #46)"
 
     # ============================================================================
     # Test Performance Edge Cases

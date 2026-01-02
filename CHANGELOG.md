@@ -552,6 +552,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/mlx_worker/server.py` (60+ lines) - Added SPECIAL_TOKENS_TO_STRIP, strip_special_tokens(), and integration points
   - `tests/unit/test_mlx_worker_server.py` (54 tests) - Comprehensive token stripping test suite
 
+- **Issue #46: Strip reasoning tokens before tool parsing** - Remove reasoning/thinking tokens from MLX worker output before extracting tool calls.
+
+  **Purpose**: Prevent reasoning/chain-of-thought tokens from reasoning models (DeepSeek R1, Qwen3, Reflection-Llama, etc.) from interfering with tool call JSON extraction, improving tool calling reliability.
+
+  **Problem Statement**: Advanced reasoning models output thinking/reflection tokens that can corrupt tool call JSON extraction:
+  - Tokens like `<think>`, `<reasoning>`, `<thinking>`, `<output>` are meant for internal reasoning
+  - When mixed with tool call JSON, they break pattern matching and parsing
+  - Removing them before parsing ensures clean JSON extraction
+
+  **Key Features**:
+
+  **1. Extended Token List** (`src/mlx_worker/server.py`)
+  - Added 14 new reasoning/thinking tokens to `SPECIAL_TOKENS_TO_STRIP`:
+    - Thinking tags: `<think>`, `</think>`, `<thinking>`, `</thinking>`, `<thought>`, `</thought>`
+    - Reasoning tags: `<reasoning>`, `</reasoning>`, `<reflection>`, `</reflection>`
+    - Llama format: `<|thinking>`, `</|thinking>`
+    - Output tags: `<output>`, `</output>`
+  - Complements Issue #45 special token stripping (now 23 total tokens: 9 from #45 + 14 from #46)
+  - `strip_special_tokens()` applies to all reasoning models
+
+  **2. Model Compatibility**:
+  - DeepSeek R1 - Outputs `<think>` and `</think>` tokens
+  - Qwen 3 - Uses `<reasoning>` and `</reasoning>` tags
+  - Reflection-Llama - Uses `<|thinking>` format
+  - Other reasoning models - Uses various thinking/reflection tags
+
+  **3. Parsing Pipeline**:
+  - Tokens stripped immediately after model inference
+  - Before any JSON extraction or tool call parsing
+  - Ensures tool call parsing sees clean JSON without reasoning content
+
+  **Benefits**:
+  - ✅ Improves tool calling success rate for reasoning models
+  - ✅ Removes reasoning noise from final output
+  - ✅ Compatible with Issue #45 token stripping mechanism
+  - ✅ Works with all reasoning model architectures
+  - ✅ No impact on non-reasoning models
+
+  **Files Changed**:
+  - `src/mlx_worker/server.py` (1-2 lines) - Added 14 reasoning tokens to SPECIAL_TOKENS_TO_STRIP constant
+  - `tests/unit/test_mlx_worker_server.py` - Extended token stripping test coverage for reasoning tokens
+
 ### Documentation
 
 - **Backend Naming Consolidation** - Simplified naming convention from vllm-mlx to mlx (Issue #10)
