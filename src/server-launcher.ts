@@ -8,6 +8,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { debug } from "./debug";
+import type { AnyclaudeMode } from "./trace-logger";
+import { getBackendDisplayName } from "./utils/backend-display";
 
 interface ServerLauncherConfig {
   backend: string;
@@ -40,40 +42,44 @@ export function getServerProcess(): ChildProcess | null {
 
 /**
  * Cleanup spawned server process
+ * Uses synchronous approach to work in 'exit' handlers
  */
 export function cleanupServerProcess(): void {
   if (spawnedServerProcess) {
-    try {
-      // Kill the process group to ensure all child processes are terminated
-      // Use negative PID to kill the entire process group
-      if (spawnedServerProcess.pid) {
-        debug(
-          1,
-          `[server-launcher] Killing process group for PID ${spawnedServerProcess.pid}`
-        );
-        process.kill(-spawnedServerProcess.pid, "SIGTERM");
-
-        // Give it a moment to exit gracefully
-        // Then send SIGKILL if still running
-        setTimeout(() => {
-          try {
-            if (spawnedServerProcess && spawnedServerProcess.pid) {
-              process.kill(-spawnedServerProcess.pid, "SIGKILL");
-              debug(
-                1,
-                `[server-launcher] Sent SIGKILL to process group ${spawnedServerProcess.pid}`
-              );
-            }
-          } catch (e) {
-            // Process already exited
-          }
-        }, 1000);
+    const pid = spawnedServerProcess.pid;
+    if (pid) {
+      debug(1, `[server-launcher] Killing process group for PID ${pid}`);
+      try {
+        // Kill the process group (negative PID)
+        process.kill(-pid, "SIGTERM");
+      } catch (e) {
+        // Process group might not exist, try killing just the process
+        try {
+          process.kill(pid, "SIGTERM");
+        } catch (e2) {
+          // Process already exited
+        }
       }
-    } catch (error) {
-      // Process may have already exited
-      debug(1, "[server-launcher] Error killing server process:", error);
     }
     spawnedServerProcess = null;
+  }
+
+  // Also kill any process on the port as fallback
+  // This handles cases where the spawned process spawned children
+  if (serverWasLaunchedByUs) {
+    const portPid = getProcessOnPort(8081);
+    if (portPid) {
+      debug(1, `[server-launcher] Killing process on port 8081 (PID ${portPid})`);
+      try {
+        process.kill(portPid, "SIGTERM");
+      } catch (e) {
+        try {
+          process.kill(portPid, "SIGKILL");
+        } catch (e2) {
+          // Process already exited
+        }
+      }
+    }
   }
 }
 
@@ -155,6 +161,158 @@ export function killProcessOnPort(port: number): boolean {
     return false;
   } catch (error) {
     debug(1, `[server-launcher] Error killing process on port ${port}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Track if we launched the server (vs. using existing)
+ */
+let serverWasLaunchedByUs = false;
+
+/**
+ * Check if we launched the server (for cleanup decisions)
+ */
+export function wasServerLaunchedByUs(): boolean {
+  return serverWasLaunchedByUs;
+}
+
+/**
+ * Start MLX Worker server (Python/uvicorn)
+ * This is the new FastAPI-based MLX worker
+ */
+export async function startMLXWorkerServer(config: {
+  port?: number;
+  modelPath?: string;
+  pythonPath?: string;
+  startupTimeout?: number;
+}): Promise<boolean> {
+  const port = config.port || 8081;
+  const modelPath = config.modelPath || process.env.MLX_MODEL_PATH;
+  const pythonPath = config.pythonPath || "python3";
+  const startupTimeout = config.startupTimeout || 120000; // 2 minutes
+
+  // Check if server already running
+  if (isServerRunning(port)) {
+    const pid = getProcessOnPort(port);
+    console.log(`[anyclaude] MLX Worker already running (PID ${pid}) on port ${port}`);
+    serverWasLaunchedByUs = false;
+    return true;
+  }
+
+  if (!modelPath) {
+    console.log(`[anyclaude] MLX Worker: No model path configured`);
+    console.log(`[anyclaude] Set MLX_MODEL_PATH or configure in .anyclauderc.json`);
+    return false;
+  }
+
+  // Verify model path exists
+  if (!fs.existsSync(modelPath)) {
+    console.error(`[anyclaude] Model not found: ${modelPath}`);
+    return false;
+  }
+
+  console.log(`[anyclaude] Starting MLX Worker server...`);
+  console.log(`[anyclaude] Model: ${path.basename(modelPath)}`);
+  console.log(`[anyclaude] Port: ${port}`);
+
+  // Create log directory
+  const logDir = path.join(os.homedir(), ".anyclaude", "logs");
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+
+  const logFile = path.join(logDir, "mlx-worker.log");
+  const logStream = fs.createWriteStream(logFile, { flags: "a" });
+  logStream.write(`\n=== MLX Worker Started at ${new Date().toISOString()} ===\n`);
+  logStream.write(`Model: ${modelPath}\n`);
+  logStream.write(`Port: ${port}\n\n`);
+
+  // Find uvicorn - check common locations
+  let uvicornPath = "uvicorn";
+  const possiblePaths = [
+    path.join(os.homedir(), "Library/Python/3.14/bin/uvicorn"),
+    path.join(os.homedir(), "Library/Python/3.13/bin/uvicorn"),
+    path.join(os.homedir(), "Library/Python/3.12/bin/uvicorn"),
+    path.join(os.homedir(), "Library/Python/3.11/bin/uvicorn"),
+    "/opt/homebrew/bin/uvicorn",
+    "/usr/local/bin/uvicorn",
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      uvicornPath = p;
+      break;
+    }
+  }
+
+  // Spawn uvicorn process
+  const serverProcess = spawn(
+    uvicornPath,
+    [
+      "src.mlx_worker.server:app",
+      "--host", "0.0.0.0",
+      "--port", port.toString(),
+    ],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+      env: {
+        ...process.env,
+        MLX_MODEL_PATH: modelPath,
+      },
+      cwd: process.cwd(), // Run from project root
+    }
+  );
+
+  // Register for cleanup
+  registerServerProcess(serverProcess);
+  serverWasLaunchedByUs = true;
+
+  // Pipe output to log file
+  serverProcess.stdout?.on("data", (data) => {
+    logStream.write(data);
+    debug(2, `[mlx-worker] ${data.toString().trim()}`);
+  });
+
+  serverProcess.stderr?.on("data", (data) => {
+    logStream.write(data);
+    const output = data.toString();
+    // Show startup messages to user
+    if (output.includes("Uvicorn running") || output.includes("Application startup")) {
+      console.log(`[anyclaude] MLX Worker is starting...`);
+    }
+    debug(2, `[mlx-worker] ${output.trim()}`);
+  });
+
+  serverProcess.on("error", (error) => {
+    logStream.write(`ERROR: ${error.message}\n`);
+    console.error(`[anyclaude] Failed to start MLX Worker: ${error.message}`);
+    serverWasLaunchedByUs = false;
+  });
+
+  serverProcess.on("exit", (code, signal) => {
+    const message = code !== null ? `exited with code ${code}` : `killed with signal ${signal}`;
+    logStream.write(`Process ${message} at ${new Date().toISOString()}\n`);
+    debug(1, `[mlx-worker] ${message}`);
+  });
+
+  // Don't block parent process
+  serverProcess.unref();
+
+  // Wait for server to be ready
+  console.log(`[anyclaude] Waiting for MLX Worker to load model...`);
+  const baseUrl = `http://localhost:${port}/v1`;
+  const ready = await waitForServerReady(baseUrl, startupTimeout);
+
+  if (ready) {
+    console.log(`[anyclaude] ✓ MLX Worker is ready`);
+    return true;
+  } else {
+    console.error(`[anyclaude] ✗ MLX Worker failed to start`);
+    console.error(`[anyclaude] Check logs: ${logFile}`);
+    cleanupServerProcess();
+    serverWasLaunchedByUs = false;
     return false;
   }
 }
@@ -403,7 +561,7 @@ export function launchBackendServer(
       // Continue to launch new server
     } else if (mode === "lmstudio") {
       console.log(
-        `[anyclaude] LMStudio server already running, will use existing instance`
+        `[anyclaude] ${getBackendDisplayName(mode as AnyclaudeMode)} server already running, will use existing instance`
       );
       return;
     } else {

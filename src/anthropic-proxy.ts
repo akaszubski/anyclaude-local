@@ -32,6 +32,7 @@ import {
 import { getModelContextLength } from "./lmstudio-info";
 import { BackendClient } from "./backend-client";
 import { logTrace, type AnyclaudeMode } from "./trace-logger";
+import { getBackendLogPrefix } from "./utils/backend-display";
 import { logRequest } from "./request-logger";
 import {
   initializeCacheTracking,
@@ -58,6 +59,11 @@ import {
 } from "./safe-system-filter";
 import { getClusterManager } from "./cluster/cluster-manager";
 import type { MLXNode } from "./cluster/cluster-types";
+import {
+  processMessages,
+  type InjectionConfig,
+  DEFAULT_INJECTION_CONFIG,
+} from "./tool-instruction-injector";
 
 /**
  * Helper function to determine if safe system filter should be used
@@ -315,6 +321,10 @@ export type CreateAnthropicProxyOptions = {
   smartPromptMode?: "simple" | "intelligent"; // Optimization strategy
   safeSystemFilter?: boolean; // Enable/disable safe filtering
   filterTier?: "auto" | "minimal" | "moderate" | "aggressive" | "extreme"; // Optimization tier
+  injectToolInstructions?: boolean; // Enable/disable tool instruction injection
+  toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
+  injectionThreshold?: number; // Confidence threshold (0-1)
+  maxInjectionsPerConversation?: number; // Max injections per conversation
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -334,6 +344,10 @@ export const createAnthropicProxy = ({
   smartPromptMode = "simple",
   safeSystemFilter = false,
   filterTier = "auto",
+  injectToolInstructions = false,
+  toolInstructionStyle = "explicit",
+  injectionThreshold = 0.7,
+  maxInjectionsPerConversation = 10,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -899,7 +913,8 @@ export const createAnthropicProxy = ({
         // Priority 2: Safe system filter (safeSystemFilter)
         // Rule-based: removes optional sections while preserving critical tool calling instructions
         // Validates filtered prompt matches expected patterns (has fallback to truncate)
-        else if (
+        let safeFilterApplied = false;
+        if (
           shouldUseSafeFilter({
             mode,
             smartSystemPrompt,
@@ -930,6 +945,7 @@ export const createAnthropicProxy = ({
 
             if (filterResult.validation.isValid) {
               system = filterResult.filteredPrompt;
+              safeFilterApplied = true;
 
               // Debug level 1: Basic info
               debug(
@@ -979,25 +995,14 @@ export const createAnthropicProxy = ({
           }
         }
 
-        // Priority 3: Simple truncation
+        // Priority 3: Simple truncation (fallback when safe filter fails or is disabled)
         // Preserves important sections (first 100 lines, marked sections) up to token limit
         // Falls back to passthrough if truncation disabled
         if (
           truncateSystemPrompt &&
           system &&
           !smartSystemPrompt &&
-          !shouldUseSafeFilter({
-            mode,
-            smartSystemPrompt,
-            safeSystemFilter,
-            truncateSystemPrompt,
-            filterTier,
-            providers,
-            defaultProvider,
-            defaultModel,
-            systemPromptMaxTokens,
-            smartPromptMode,
-          } as CreateAnthropicProxyOptions)
+          !safeFilterApplied
         ) {
           const originalLength = system.length;
           // Rough estimate: 1 token ≈ 4 characters
@@ -1222,7 +1227,7 @@ export const createAnthropicProxy = ({
                     cachedContextLength = contextLength;
                     debug(
                       1,
-                      `[Backend Query] LMStudio context length: ${contextLength} tokens`
+                      `[Backend Query] ${getBackendLogPrefix(mode)} context length: ${contextLength} tokens`
                     );
                   }
                 } catch (lmstudioError) {
@@ -1303,6 +1308,25 @@ export const createAnthropicProxy = ({
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
             );
           }
+        }
+
+        // Inject tool instructions if enabled (Issue #35)
+        if (injectToolInstructions && body.tools && body.tools.length > 0) {
+          const injectionConfig: InjectionConfig = {
+            enabled: injectToolInstructions,
+            style: toolInstructionStyle,
+            confidenceThreshold: injectionThreshold,
+            maxInjectionsPerConversation,
+            enableFalsePositiveFilter: true,
+          };
+
+          debug(2, `[Tool Injection] Config:`, injectionConfig);
+
+          messagesToSend = processMessages(
+            messagesToSend,
+            body.tools,
+            injectionConfig
+          );
         }
 
         // Convert truncated messages for LMStudio
@@ -1543,17 +1567,25 @@ export const createAnthropicProxy = ({
                   });
                 }
 
-                res
-                  .writeHead(400, {
-                    "Content-Type": "application/json",
-                  })
-                  .end(
-                    JSON.stringify({
-                      type: "error",
-                      error:
-                        error instanceof Error ? error.message : String(error),
+                // Only write error response if headers haven't been sent yet
+                // (headers are already sent during streaming)
+                if (!res.headersSent) {
+                  res
+                    .writeHead(400, {
+                      "Content-Type": "application/json",
                     })
-                  );
+                    .end(
+                      JSON.stringify({
+                        type: "error",
+                        error:
+                          error instanceof Error ? error.message : String(error),
+                      })
+                    );
+                } else {
+                  // Headers already sent (streaming), just end the response
+                  debug(1, `[Proxy] Error during stream, ending response`);
+                  res.end();
+                }
               },
             });
           } catch (innerError) {
@@ -1683,7 +1715,7 @@ export const createAnthropicProxy = ({
             res.write(`: keepalive ${keepaliveCount}\n\n`);
             debug(
               2,
-              `[Keepalive] Sent keepalive #${keepaliveCount} (waiting for LMStudio)`
+              `[Keepalive] Sent keepalive #${keepaliveCount} (waiting for ${getBackendLogPrefix(mode)})`
             );
           }
         }, 10000); // 10 second interval

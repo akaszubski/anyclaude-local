@@ -14,9 +14,15 @@ import {
   type CreateAnthropicProxyOptions,
 } from "./anthropic-proxy";
 import type { AnyclaudeMode } from "./trace-logger";
+import { getBackendLogPrefix } from "./utils/backend-display";
 import { debug, isDebugEnabled, logSessionContext } from "./debug";
 import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
 import { getTimeoutConfig, getTimeoutInfoString } from "./timeout-config";
+import {
+  startMLXWorkerServer,
+  wasServerLaunchedByUs,
+  cleanupServerProcess,
+} from "./server-launcher";
 import {
   initializeCluster,
   getClusterManager,
@@ -41,12 +47,21 @@ interface AnyclaudeConfig {
       baseUrl?: string;
       apiKey?: string;
       model?: string;
+      modelPath?: string; // Path to MLX model directory for auto-start
       compatibility?: string;
       description?: string;
+      autoStartServer?: boolean; // Auto-start MLX worker when using localhost (default: true)
+      startupTimeout?: number; // Server startup timeout in ms (default: 120000)
       truncateSystemPrompt?: boolean; // Truncate Claude Code system prompt to reduce cache pressure
       systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
+      safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
+      filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
       smartSystemPrompt?: boolean; // Use AI-powered dynamic prompt optimization (EXPERIMENTAL)
       smartPromptMode?: "simple" | "intelligent"; // simple=keyword, intelligent=use LLM (default: simple)
+      injectToolInstructions?: boolean; // Enable tool instruction injection for better tool calling
+      toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
+      injectionThreshold?: number; // Confidence threshold (0-1)
+      maxInjectionsPerConversation?: number; // Max injections per conversation
     };
     claude?: {
       enabled?: boolean;
@@ -375,11 +390,11 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
                   try {
                     const data = JSON.parse(line.substring(6));
 
-                    // Log tool call related chunks from LMStudio
+                    // Log tool call related chunks from backend
                     if (data.choices?.[0]?.delta?.tool_calls) {
                       debug(
                         1,
-                        `[LMStudio → Raw SSE] Chunk ${chunkCount++}:`,
+                        `${getBackendLogPrefix(mode)} → Raw SSE] Chunk ${chunkCount++}:`,
                         data.choices[0].delta.tool_calls
                       );
                     }
@@ -390,7 +405,7 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
               }
             }
           } catch (err) {
-            debug(1, `[LMStudio SSE Debug] Stream read error:`, err);
+            debug(1, `${getBackendLogPrefix(mode)} SSE Debug] Stream read error:`, err);
           }
         })();
 
@@ -454,6 +469,12 @@ if (process.env.NODE_ENV !== "test") {
         debug(2, "[anyclaude] Cluster manager shutdown skipped:", error);
       }
 
+      // Cleanup MLX Worker server if we started it
+      if (wasServerLaunchedByUs()) {
+        debug(1, "[anyclaude] Stopping MLX Worker server...");
+        cleanupServerProcess();
+      }
+
       // Import cache monitor to display stats on exit
       try {
         const { getCacheMonitor } = await import("./cache-monitor-dashboard");
@@ -472,6 +493,23 @@ if (process.env.NODE_ENV !== "test") {
 
     process.on("SIGINT", handleShutdown);
     process.on("SIGTERM", handleShutdown);
+
+    // Also cleanup on uncaught exceptions and process exit
+    process.on("uncaughtException", (error) => {
+      debug(1, "[anyclaude] Uncaught exception, cleaning up...", error);
+      if (wasServerLaunchedByUs()) {
+        cleanupServerProcess();
+      }
+      process.exit(1);
+    });
+
+    process.on("exit", () => {
+      // Synchronous cleanup on exit
+      if (wasServerLaunchedByUs()) {
+        debug(1, "[anyclaude] Process exiting, cleaning up server...");
+        cleanupServerProcess();
+      }
+    });
 
     // Initialize cluster manager if mlx-cluster mode is selected
     if (mode === "mlx-cluster") {
@@ -525,7 +563,47 @@ if (process.env.NODE_ENV !== "test") {
       }
     }
 
-    // LMStudio and OpenRouter don't need auto-launching - user manages them manually
+    // Auto-start MLX worker for lmstudio mode when using localhost
+    if (mode === "lmstudio") {
+      const backendUrl = lmstudioConfig?.baseURL || "http://localhost:8082/v1";
+      const isLocalhost =
+        backendUrl.includes("localhost") || backendUrl.includes("127.0.0.1");
+      const autoStart = config.backends?.lmstudio?.autoStartServer ?? true;
+
+      if (isLocalhost && autoStart) {
+        // Extract port from URL
+        const urlMatch = backendUrl.match(/:(\d+)/);
+        const port = urlMatch ? parseInt(urlMatch[1], 10) : 8081;
+        const modelPath =
+          config.backends?.lmstudio?.modelPath ||
+          process.env.MLX_MODEL_PATH;
+        const startupTimeout =
+          config.backends?.lmstudio?.startupTimeout || 120000;
+
+        if (modelPath) {
+          debug(1, `[anyclaude] Auto-starting MLX Worker on port ${port}...`);
+          const started = await startMLXWorkerServer({
+            port,
+            modelPath,
+            startupTimeout,
+          });
+
+          if (!started) {
+            console.error("[anyclaude] Failed to start MLX Worker server");
+            console.error("[anyclaude] Please start it manually:");
+            console.error(
+              `[anyclaude]   uvicorn src.mlx_worker.server:app --port ${port}`
+            );
+            process.exit(1);
+          }
+        } else {
+          debug(
+            1,
+            "[anyclaude] No modelPath configured, expecting server to be running"
+          );
+        }
+      }
+    }
 
     const proxyURL = createAnthropicProxy({
       providers,
@@ -543,11 +621,11 @@ if (process.env.NODE_ENV !== "test") {
           : mode === "openrouter"
             ? openrouterConfig?.baseURL
             : undefined,
-      // Only truncate for LMStudio (MLX has non-trimmable cache)
-      // OpenRouter/Claude have production-grade caching and can handle full prompts
+      // Truncate for LMStudio as fallback when safe filter validation fails
+      // Default: true (acts as safety net for local models with limited context)
       truncateSystemPrompt:
         mode === "lmstudio"
-          ? (config.backends?.lmstudio?.truncateSystemPrompt ?? false)
+          ? (config.backends?.lmstudio?.truncateSystemPrompt ?? true)
           : false,
       systemPromptMaxTokens:
         mode === "lmstudio"
@@ -561,6 +639,32 @@ if (process.env.NODE_ENV !== "test") {
         mode === "lmstudio"
           ? (config.backends?.lmstudio?.smartPromptMode ?? "simple")
           : "simple",
+      // Safe system filter (Issue #21)
+      safeSystemFilter:
+        mode === "lmstudio"
+          ? (config.backends?.lmstudio?.safeSystemFilter ?? true)
+          : false,
+      filterTier:
+        mode === "lmstudio"
+          ? (config.backends?.lmstudio?.filterTier ?? "aggressive")
+          : undefined,
+      // Tool instruction injection (Issue #35)
+      injectToolInstructions:
+        mode === "lmstudio"
+          ? (config.backends?.lmstudio?.injectToolInstructions ?? false)
+          : false,
+      toolInstructionStyle:
+        mode === "lmstudio"
+          ? (config.backends?.lmstudio?.toolInstructionStyle ?? "explicit")
+          : "explicit",
+      injectionThreshold:
+        mode === "lmstudio"
+          ? (config.backends?.lmstudio?.injectionThreshold ?? 0.7)
+          : 0.7,
+      maxInjectionsPerConversation:
+        mode === "lmstudio"
+          ? (config.backends?.lmstudio?.maxInjectionsPerConversation ?? 10)
+          : 10,
     });
 
     console.log(`[anyclaude] Backend: ${mode.toUpperCase()}`);
@@ -581,12 +685,12 @@ if (process.env.NODE_ENV !== "test") {
 
     if (mode === "lmstudio") {
       const endpoint = lmstudioConfig?.baseURL || "http://localhost:1234/v1";
-      console.log(`[anyclaude] LMStudio endpoint: ${endpoint}`);
+      console.log(`[anyclaude] ${getBackendLogPrefix(mode)} endpoint: ${endpoint}`);
       console.log(
-        `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in LMStudio)`
+        `[anyclaude] Model: ${lmstudioConfig?.model || "current-model"} (whatever is loaded in ${getBackendLogPrefix(mode)})`
       );
       console.log(
-        `[anyclaude] Make sure LMStudio is running with a model loaded`
+        `[anyclaude] Make sure ${getBackendLogPrefix(mode)} is running with a model loaded`
       );
     } else if (mode === "openrouter") {
       const modelName = openrouterConfig?.model || "z-ai/glm-4.6";
