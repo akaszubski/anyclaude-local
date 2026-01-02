@@ -33,7 +33,8 @@ try:
         generate_stream,
         count_tokens,
         InferenceError,
-        ModelNotFoundError
+        ModelNotFoundError,
+        _inject_tool_instruction
     )
 except ImportError:
     # Mock classes for TDD red phase
@@ -54,6 +55,9 @@ except ImportError:
 
     def count_tokens(text: str) -> int:
         raise NotImplementedError("count_tokens not yet implemented")
+
+    def _inject_tool_instruction(messages, tools):
+        raise NotImplementedError("_inject_tool_instruction not yet implemented")
 
 
 class TestModelLoading:
@@ -507,6 +511,239 @@ class TestMemoryManagement:
 
         assert len(tokens) == 2
         # Generator should be exhausted and resources freed
+
+
+class TestToolInstructionInjection:
+    """Test tool instruction injection for local models"""
+
+    @pytest.fixture
+    def read_tool(self):
+        """Sample Read tool definition"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "Read",
+                "description": "Read a file",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "file_path": {"type": "string"}
+                    }
+                }
+            }
+        }
+
+    @pytest.fixture
+    def bash_tool(self):
+        """Sample Bash tool definition"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "Bash",
+                "description": "Execute bash command",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {"type": "string"}
+                    }
+                }
+            }
+        }
+
+    @pytest.fixture
+    def glob_tool(self):
+        """Sample Glob tool definition"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "Glob",
+                "description": "Find files",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": {"type": "string"}
+                    }
+                }
+            }
+        }
+
+    def test_inject_tool_instruction_read_keyword(self, read_tool):
+        """Test injection when user mentions 'read file' keyword"""
+        messages = [
+            {"role": "user", "content": "Please read the file README.md"}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool])
+
+        # Should inject instruction mentioning Read tool
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "Read" in result[0]['content']
+        assert "MUST call" in result[0]['content']
+
+    def test_inject_tool_instruction_show_keyword(self, read_tool):
+        """Test injection when user uses 'show me the contents' (maps to Read)"""
+        messages = [
+            {"role": "user", "content": "Show me the contents of package.json"}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "Read" in result[0]['content']
+
+    def test_inject_tool_instruction_run_keyword(self, bash_tool):
+        """Test injection when user uses 'run command' (maps to Bash)"""
+        messages = [
+            {"role": "user", "content": "Run the command ls -la in the current directory"}
+        ]
+
+        result = _inject_tool_instruction(messages, [bash_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "Bash" in result[0]['content']
+
+    def test_inject_tool_instruction_find_keyword(self, glob_tool):
+        """Test injection when user uses 'find files' (maps to Glob)"""
+        messages = [
+            {"role": "user", "content": "Find files with .py extension in the project"}
+        ]
+
+        result = _inject_tool_instruction(messages, [glob_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "Glob" in result[0]['content']
+
+    def test_inject_tool_instruction_no_matching_keyword(self, read_tool):
+        """Test no injection when user message has no tool keywords"""
+        messages = [
+            {"role": "user", "content": "What is the capital of France?"}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool])
+
+        # Should not inject instruction
+        assert "[IMPORTANT:" not in result[0]['content']
+        assert result[0]['content'] == "What is the capital of France?"
+
+    def test_inject_tool_instruction_tool_not_available(self, bash_tool):
+        """Test no injection when matching tool is not available"""
+        messages = [
+            {"role": "user", "content": "Read the file README.md"}
+        ]
+
+        # Only Bash tool is available, but user wants to read
+        result = _inject_tool_instruction(messages, [bash_tool])
+
+        # Should not inject since Read tool not available
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_inject_tool_instruction_preserves_original_content(self, read_tool):
+        """Test original message content is preserved"""
+        original_content = "Please read the file config.yaml"
+        messages = [
+            {"role": "user", "content": original_content}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool])
+
+        # Original content should be preserved (at the start)
+        assert result[0]['content'].startswith(original_content)
+
+    def test_inject_tool_instruction_does_not_mutate_original(self, read_tool):
+        """Test original messages list is not mutated"""
+        messages = [
+            {"role": "user", "content": "Please read the file README.md"}
+        ]
+        original_content = messages[0]['content']
+
+        _inject_tool_instruction(messages, [read_tool])
+
+        # Original should not be modified
+        assert messages[0]['content'] == original_content
+
+    def test_inject_tool_instruction_last_user_message(self, read_tool):
+        """Test injection targets the last user message"""
+        messages = [
+            {"role": "user", "content": "First question"},
+            {"role": "assistant", "content": "First answer"},
+            {"role": "user", "content": "Read the file please"}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool])
+
+        # Only last user message should have injection
+        assert "[IMPORTANT:" not in result[0]['content']
+        assert "[IMPORTANT:" in result[2]['content']
+
+    def test_inject_tool_instruction_empty_tools(self):
+        """Test no injection when tools list is empty"""
+        messages = [
+            {"role": "user", "content": "Read the file README.md"}
+        ]
+
+        result = _inject_tool_instruction(messages, [])
+
+        # Should not inject when no tools available
+        assert "[IMPORTANT:" not in result[0]['content']
+
+    def test_inject_tool_instruction_empty_messages(self, read_tool):
+        """Test handles empty messages list"""
+        result = _inject_tool_instruction([], [read_tool])
+
+        assert result == []
+
+    def test_inject_tool_instruction_no_user_messages(self, read_tool):
+        """Test handles messages with no user role"""
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant"},
+            {"role": "assistant", "content": "How can I help?"}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool])
+
+        # Should return unchanged (no user message to inject into)
+        assert len(result) == 2
+        assert "[IMPORTANT:" not in result[0]['content']
+        assert "[IMPORTANT:" not in result[1]['content']
+
+    def test_inject_tool_instruction_multiple_keywords(self, read_tool, bash_tool):
+        """Test with message containing multiple tool keywords"""
+        messages = [
+            {"role": "user", "content": "Read the file and then run the command pytest"}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool, bash_tool])
+
+        # Should inject for first matching tool
+        assert "[IMPORTANT:" in result[0]['content']
+        # Should mention one of the tools
+        assert "Read" in result[0]['content'] or "Bash" in result[0]['content']
+
+    def test_inject_tool_instruction_case_insensitive(self, read_tool):
+        """Test keyword matching is case insensitive"""
+        messages = [
+            {"role": "user", "content": "READ THE FILE readme.md please"}
+        ]
+
+        result = _inject_tool_instruction(messages, [read_tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "Read" in result[0]['content']
+
+    def test_inject_tool_instruction_alternative_tool_format(self):
+        """Test with tool definitions using 'name' at top level"""
+        tool = {
+            "name": "Write",
+            "description": "Write a file"
+        }
+        messages = [
+            {"role": "user", "content": "Write to file output.txt the results"}
+        ]
+
+        result = _inject_tool_instruction(messages, [tool])
+
+        assert "[IMPORTANT:" in result[0]['content']
+        assert "Write" in result[0]['content']
 
 
 if __name__ == '__main__':
