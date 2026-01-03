@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Complete Local Search Architecture for Claude Code** - Documented the full solution for replacing Claude Code's server-side WebSearch with local SearXNG via MCP.
+
+  **The Challenge**: Claude Code's native `WebSearch` tool executes server-side at Anthropic before requests reach any proxy. This means:
+  - Proxies never see WebSearch requests
+  - You can't redirect searches to local SearXNG
+  - All searches go through Anthropic's servers
+
+  **The Solution** (3 parts):
+
+  1. **Disable native WebSearch** - Add to `~/.claude/settings.json`:
+     ```json
+     { "permissions": { "deny": ["WebSearch"] } }
+     ```
+     This prevents server-side execution and forces Claude to use MCP tools.
+
+  2. **Add MCP SearXNG server** - Provides local search as a tool:
+     ```bash
+     claude mcp add searxng -- npx -y @kevinwatt/mcp-server-searxng
+     ```
+
+  3. **Configure auto-approval** - Create `~/.claude/config/auto_approve_policy.json`:
+     ```json
+     {
+       "version": "1.0",
+       "web_tools": {
+         "whitelist": ["WebFetch", "WebSearch", "mcp__searxng__web_search"],
+         "allow_all_domains": true,
+         "blocked_domains": ["localhost", "127.0.0.1", "169.254.*", "10.*", "192.168.*"]
+       }
+     }
+     ```
+     This bridges Claude Code's permissions and the PreToolUse hook's separate whitelist.
+
+  **Result**: Local SearXNG searches via MCP execute seamlessly with no permission dialogs.
+
+  **Files Updated**:
+  - `docs/guides/web-search-local.md` - Complete rewrite with architecture diagrams, TL;DR setup, and troubleshooting
+
 ### Changed
 
 - **Issue #41: Rename 'lmstudio' backend to generic 'local'** - Backend mode renamed for clarity and future flexibility as more local model servers are integrated.

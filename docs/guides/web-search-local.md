@@ -6,6 +6,268 @@ Privacy-first web search using self-hosted SearxNG for AnyClaude. No cloud depen
 
 AnyClaude supports local web search via [SearxNG](https://github.com/searxng/searxng), a privacy-respecting metasearch engine. When enabled, web searches happen on your local machine instead of calling cloud APIs.
 
+## The Claude Code Challenge
+
+**Why can't we just intercept WebSearch at the proxy?**
+
+Claude Code's native `WebSearch` tool is executed **server-side by Anthropic** before requests reach any proxy. This means:
+
+1. Your proxy never sees WebSearch requests
+2. You can't redirect them to local SearXNG
+3. All searches go through Anthropic's servers
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    THE PROBLEM                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  User: "search for latest news"                                 │
+│           │                                                     │
+│           ▼                                                     │
+│  ┌─────────────────┐    WebSearch    ┌──────────────────────┐  │
+│  │  Claude Code    │ ──────────────► │  Anthropic Servers   │  │
+│  │  (your machine) │                 │  (executes search)   │  │
+│  └─────────────────┘                 └──────────────────────┘  │
+│           │                                                     │
+│           ▼                                                     │
+│  ┌─────────────────┐                                           │
+│  │  AnyClaude      │  ◄── Never sees WebSearch!                │
+│  │  Proxy          │                                           │
+│  └─────────────────┘                                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## The Solution: Disable Native + Use MCP
+
+The solution has three parts:
+
+1. **Disable native WebSearch** - Prevents Anthropic server-side execution
+2. **Add MCP SearXNG server** - Provides local search as a tool Claude can call
+3. **Configure auto-approval** - Enables seamless usage without permission prompts
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    THE SOLUTION                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  User: "search for latest news"                                 │
+│           │                                                     │
+│           ▼                                                     │
+│  ┌─────────────────┐  mcp__searxng  ┌──────────────────────┐   │
+│  │  Claude Code    │ ─────────────► │  MCP SearXNG Server  │   │
+│  │  (your machine) │                │  (local process)     │   │
+│  └─────────────────┘                └──────────────────────┘   │
+│                                              │                  │
+│                                              ▼                  │
+│                                     ┌──────────────────────┐   │
+│                                     │  Local SearXNG       │   │
+│                                     │  (Docker container)  │   │
+│                                     └──────────────────────┘   │
+│                                              │                  │
+│                                              ▼                  │
+│                                     ┌──────────────────────┐   │
+│                                     │  Search Engines      │   │
+│                                     │  (Google, DDG, etc)  │   │
+│                                     └──────────────────────┘   │
+│                                                                 │
+│  ✓ All orchestration happens locally                           │
+│  ✓ No Anthropic server-side execution                          │
+│  ✓ You control which search engines are used                   │
+│  ✓ No API keys or rate limits                                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## MCP-Based Approach (Recommended for Claude Code)
+
+This is the **recommended approach** for Claude Code users. It uses the Model Context Protocol (MCP) to provide a local search tool that Claude Code can call directly.
+
+### TL;DR - Complete Setup
+
+```bash
+# 1. Start SearXNG (Docker)
+cd scripts/docker && ./start-searxng.sh
+
+# 2. Install MCP server
+npm install -g @kevinwatt/mcp-server-searxng
+
+# 3. Configure Claude Code MCP
+claude mcp add searxng -- npx -y @kevinwatt/mcp-server-searxng
+
+# 4. Disable native WebSearch (forces Claude to use MCP)
+# Add to ~/.claude/settings.json or .claude/settings.json in your project:
+#   { "permissions": { "deny": ["WebSearch"] } }
+
+# 5. Create auto-approval policy (critical for seamless usage)
+mkdir -p ~/.claude/config
+cat > ~/.claude/config/auto_approve_policy.json << 'EOF'
+{
+  "version": "1.0",
+  "web_tools": {
+    "whitelist": ["WebFetch", "WebSearch", "mcp__searxng__web_search"],
+    "allow_all_domains": true,
+    "blocked_domains": ["localhost", "127.0.0.1", "169.254.*", "10.*", "192.168.*"]
+  }
+}
+EOF
+
+# 6. Restart Claude Code
+```
+
+Now searches work seamlessly with no permission prompts!
+
+**What each step does:**
+
+| Step | Component | Purpose |
+|------|-----------|---------|
+| 1 | SearXNG Docker | Local metasearch engine aggregating Google, DuckDuckGo, etc. |
+| 2 | MCP Server | Bridge between Claude Code and SearXNG |
+| 3 | MCP Config | Tells Claude Code about the MCP server |
+| 4 | Deny WebSearch | **Critical**: Prevents server-side search execution |
+| 5 | Auto-approval | Removes permission prompts for MCP tool |
+| 6 | Restart | Loads new configuration |
+
+### Why MCP?
+
+- **Works with Claude Code**: Bypasses server-side WebSearch execution
+- **Native integration**: Claude Code has built-in MCP support
+- **Clean architecture**: No proxy interception needed
+- **Works with any backend**: Local models, OpenRouter, or Claude
+
+### Quick Setup
+
+**Step 1: Start local SearxNG** (same Docker setup as below)
+
+```bash
+cd scripts/docker
+./start-searxng.sh
+```
+
+**Step 2: Install MCP SearXNG server**
+
+```bash
+npm install -g @kevinwatt/mcp-server-searxng
+```
+
+**Step 3: Configure Claude Code MCP**
+
+Add to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "searxng": {
+      "command": "npx",
+      "args": ["-y", "@kevinwatt/mcp-server-searxng"],
+      "env": {
+        "SEARXNG_URL": "http://localhost:8080"
+      }
+    }
+  }
+}
+```
+
+Or use the CLI:
+
+```bash
+claude mcp add searxng -- npx -y @kevinwatt/mcp-server-searxng
+```
+
+**Step 4: Disable native WebSearch** (forces Claude to use MCP)
+
+Create `.claude/settings.json` in your project (or `~/.claude/settings.json` globally):
+
+```json
+{
+  "permissions": {
+    "deny": ["WebSearch"]
+  }
+}
+```
+
+**Step 5: Configure Auto-Approval (Critical)**
+
+Claude Code's permissions system (`~/.claude/settings.json`) allows `mcp__*` tools, but if you're using the autonomous-dev plugin's PreToolUse hooks, there's a separate policy file that controls MCP tool auto-approval.
+
+Create `~/.claude/config/auto_approve_policy.json`:
+
+```json
+{
+  "version": "1.0",
+  "web_tools": {
+    "whitelist": ["WebFetch", "WebSearch", "mcp__searxng__web_search"],
+    "allow_all_domains": true,
+    "blocked_domains": ["localhost", "127.0.0.1", "169.254.*", "10.*", "192.168.*"]
+  }
+}
+```
+
+> **Why is this needed?**
+>
+> The PreToolUse hook's `tool_validator.py` has its own whitelist separate from Claude Code's main permissions. Without this policy file, MCP searches will prompt for approval each time, even if `mcp__*` is in your allowed tools.
+
+**Step 6: Restart Claude Code**
+
+Now when you ask Claude to search, it will use your local SearxNG via the MCP `mcp__searxng__web_search` tool - with **no permission prompts**.
+
+### Alternative MCP Servers
+
+| Server | Install | Notes |
+|--------|---------|-------|
+| [@kevinwatt/mcp-server-searxng](https://www.npmjs.com/package/@kevinwatt/mcp-server-searxng) | `npm install -g @kevinwatt/mcp-server-searxng` | Recommended, well-maintained |
+| [searxng-mcp](https://github.com/tisDDM/searxng-mcp) | `uvx searxng-mcp` | Uses random public instances (no Docker needed) |
+| [mcp-searxng](https://github.com/ihor-sokoliuk/mcp-searxng) | See repo | Python-based |
+
+### Verification
+
+After setup, Claude Code will have a `searxng_search` tool available. You can verify by asking Claude:
+
+```
+What tools do you have for web search?
+```
+
+Claude should mention the `searxng_search` MCP tool instead of the native `WebSearch` tool.
+
+### Troubleshooting MCP Auto-Approval
+
+**Problem: Still getting permission prompts for MCP search**
+
+```
+Hook PreToolUse:mcp__searxng__web_search requires confirmation for this tool:
+Not whitelisted: Tool 'mcp__searxng__web_search' not supported for auto-approval
+```
+
+**Solution:**
+
+1. Create the policy file (Step 5 above)
+2. Ensure the directory exists: `mkdir -p ~/.claude/config`
+3. Restart Claude Code
+
+**Why this happens:**
+
+Claude Code has two permission layers:
+1. **Claude Code permissions** (`~/.claude/settings.json`) - Controls which tools Claude can call
+2. **Hook validator** (`~/.claude/lib/tool_validator.py`) - Pre-tool hooks may have their own whitelists
+
+Even if `mcp__*` is allowed in settings.json, the hook's `tool_validator.py` checks its own `web_tools.whitelist`. The policy file bridges this gap.
+
+**Verify it's working:**
+
+After setup, ask Claude to search. You should see the search execute immediately without any permission dialog.
+
+### References
+
+- [Claude Code Issue #1380](https://github.com/anthropics/claude-code/issues/1380) - Allow native tools to be disabled ✅ Implemented
+- [Claude Code MCP Docs](https://code.claude.com/docs/en/mcp)
+- [Integrating MCP Servers for Web Search](https://intuitionlabs.ai/articles/mcp-servers-claude-code-internet-search)
+
+---
+
+## Proxy-Based Approach (For Other Clients)
+
 **Benefits:**
 
 - **Privacy**: All searches stay on your machine
