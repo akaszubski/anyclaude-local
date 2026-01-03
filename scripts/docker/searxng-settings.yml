@@ -1,0 +1,35 @@
+use_default_settings: true
+
+general:
+  instance_name: "AnyClaude SearxNG"
+
+server:
+  # IMPORTANT: Generate your own secret key with: openssl rand -hex 32
+  secret_key: "anyclaude-local-dev-only-change-in-prod-9f8e7d6c5b4a"
+  limiter: false
+  image_proxy: true
+  # Bind to localhost only for security (not exposed to network)
+  bind_address: "127.0.0.1:8080"
+
+search:
+  formats:
+    - html
+    - json
+
+engines:
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false

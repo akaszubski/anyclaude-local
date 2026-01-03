@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  searxng:
+    image: ghcr.io/searxng/searxng:latest
+    container_name: anyclaude-searxng
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./searxng-settings.yml:/etc/searxng/settings.yml:ro
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

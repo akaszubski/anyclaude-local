@@ -39,6 +39,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
 - 💻 **Global Command** - Install once, run `anyclaude` from anywhere
 - 🧪 **Automated Testing** - 1,400+ tests across 101 files with regression detection via git hooks
+- 🔍 **Local Web Search** - Self-hosted SearxNG for privacy-first web search, no API keys needed
 
 ---
 

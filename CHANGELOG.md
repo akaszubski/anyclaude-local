@@ -513,6 +513,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/backend-client.ts` (34 lines) - Added context detection with multi-backend support and validation
   - `tests/unit/test_backend_client.js` - Updated tests for context detection
 
+### Added
+
+- **Issue #49: Local-Only WebSearch with self-hosted SearxNG** - Privacy-first web search using self-hosted SearxNG instead of cloud APIs.
+
+  **Purpose**: Enable local web search without API keys, rate limits, or cloud dependencies. All searches stay on your machine for maximum privacy.
+
+  **Key Features**:
+
+  **1. Self-Hosted SearxNG**
+  - Docker Compose configuration for easy setup
+  - One-command startup: `scripts/docker/start-searxng.sh`
+  - Privacy-first metasearch engine with configurable search engines
+  - No API keys required, unlimited searches
+
+  **2. Configuration Options**
+  - Environment variable: `SEARXNG_URL` for quick setup
+  - Config file options: `webSearch.localSearxngUrl`, `webSearch.preferLocal`, `webSearch.enableFallback`
+  - Supports custom ports and remote instances
+  - Fallback chain to cloud APIs if local unavailable
+
+  **3. Docker Deployment**
+  - Container name: `anyclaude-searxng`
+  - Port: `127.0.0.1:8080` (localhost only, not exposed to network)
+  - Minimal Linux capabilities for security
+  - Persistent configuration via `searxng-settings.yml`
+  - Auto-restart on reboot
+
+  **4. Search Fallback**
+  - Primary: Local SearxNG (if `SEARXNG_URL` set)
+  - Secondary: Anthropic API (if `ANTHROPIC_API_KEY` set)
+  - Tertiary: Tavily API (if `TAVILY_API_KEY` set)
+  - Fallback: Brave API, public SearxNG instances
+
+  **Benefits**:
+  - ✅ Privacy - All searches stay local
+  - ✅ No API costs - Free forever
+  - ✅ No rate limits - Unlimited searches
+  - ✅ No API key management - Just set SEARXNG_URL
+  - ✅ Full control - Customize search engines and behavior
+
+  **Files Changed**:
+  - `src/claude-search-executor.ts` - Added local SearxNG support with fallback chain
+  - `scripts/docker/docker-compose.searxng.yml` - Docker Compose configuration
+  - `scripts/docker/start-searxng.sh` - Setup and health check script
+  - `scripts/docker/searxng-settings.yml` - SearxNG configuration
+  - `docs/guides/web-search-local.md` - Complete setup and troubleshooting guide
+  - `.anyclauderc.example.json` - Added webSearch configuration section
+
 ### Fixed
 
 - **Issue #45: Strip special tokens from MLX worker output** - Remove model-specific special tokens before sending responses to Claude Code.

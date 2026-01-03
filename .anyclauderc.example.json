@@ -9,14 +9,22 @@
     "enableTraces": false,
     "enableStreamLogging": false
   },
+  "webSearch": {
+    "localSearxngUrl": "http://localhost:8080",
+    "preferLocal": true,
+    "enableFallback": true
+  },
   "backends": {
     "lmstudio": {
       "enabled": true,
-      "baseUrl": "http://localhost:8082/v1",
+      "baseUrl": "http://localhost:8081/v1",
       "apiKey": "lm-studio",
       "model": "current-model",
+      "modelPath": "/path/to/mlx/model",
       "compatibility": "legacy",
-      "description": "LMStudio - loads whatever model you have running in the UI",
+      "description": "Local MLX Worker - auto-starts when using localhost",
+      "autoStartServer": true,
+      "startupTimeout": 120000,
       "truncateSystemPrompt": false,
       "systemPromptMaxTokens": 2000,
       "smartSystemPrompt": false,
@@ -99,6 +107,15 @@
     "latency-based": "Route to node with lowest average response time"
   },
 
+  "// WEB SEARCH CONFIGURATION (Issue #49)": {
+    "localSearxngUrl": "URL of your self-hosted SearxNG instance (default: http://localhost:8080)",
+    "preferLocal": "Try local SearxNG first before cloud APIs (privacy-first)",
+    "enableFallback": "Fall back to cloud search if local fails (Anthropic/Tavily/Brave)",
+    "SEARXNG_URL": "Env var to enable local search (set to your SearxNG URL)",
+    "Quick_Start": "Run: scripts/docker/start-searxng.sh to launch local SearxNG",
+    "Benefits": "Privacy, no rate limits, no API costs, full control"
+  },
+
   "// OPTIMIZATION STRATEGIES (Issue #21)": {
     "safeSystemFilter": "Enable intelligent prompt optimization that preserves tool calling (default: true for LMStudio, false for others)",
     "filterTier_auto": "Automatically select tier based on prompt size (recommended)",
@@ -121,13 +138,22 @@
     "openai/gpt-4": "$10/$30 per 1M tokens - via OpenRouter"
   },
 
+  "// AUTO-START SERVER (Issue #42)": {
+    "autoStartServer": "Auto-start MLX Worker when using localhost (default: true)",
+    "modelPath": "Path to MLX model directory (required for auto-start)",
+    "startupTimeout": "Server startup timeout in ms (default: 120000 = 2min)",
+    "MLX_MODEL_PATH": "Env var alternative to modelPath config",
+    "NOTE": "Server only auto-stops if anyclaude started it (existing servers are preserved)"
+  },
+
   "// ENVIRONMENT VARIABLES": {
     "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|openrouter|mlx-cluster)",
     "ANYCLAUDE_DEBUG": "Debug level (0=off, 1=basic, 2=verbose, 3=trace with prompts)",
     "OPENROUTER_API_KEY": "Your OpenRouter API key (get from openrouter.ai)",
     "OPENROUTER_MODEL": "Override OpenRouter model",
     "ANTHROPIC_API_KEY": "Your Anthropic API key (for claude mode)",
-    "LMSTUDIO_MODEL": "Override LMStudio model"
+    "LMSTUDIO_MODEL": "Override LMStudio model",
+    "MLX_MODEL_PATH": "Path to MLX model for auto-start"
   },
 
   "// QUICK START": {
