@@ -41,7 +41,8 @@ async function searchViaSearxNG(query: string): Promise<SearchResult[]> {
 
       const response = await fetch(url, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
         },
         signal: controller.signal,
       });
@@ -52,7 +53,7 @@ async function searchViaSearxNG(query: string): Promise<SearchResult[]> {
         continue;
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         results?: Array<{ url: string; title: string; content?: string }>;
       };
 
@@ -87,7 +88,9 @@ async function searchViaSearxNG(query: string): Promise<SearchResult[]> {
 async function searchViaTavily(query: string): Promise<SearchResult[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
-    throw new Error("TAVILY_API_KEY not set - get free key at https://tavily.com/");
+    throw new Error(
+      "TAVILY_API_KEY not set - get free key at https://tavily.com/"
+    );
   }
 
   debug(1, `[Tavily] Searching for: "${query}"`);
@@ -117,7 +120,7 @@ async function searchViaTavily(query: string): Promise<SearchResult[]> {
       throw new Error(`Tavily API error: ${response.status} ${error}`);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       results?: Array<{ url: string; title: string; content?: string }>;
     };
 
@@ -159,7 +162,7 @@ async function searchViaBrave(query: string): Promise<SearchResult[]> {
     const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}`;
     const response = await fetch(url, {
       headers: {
-        "Accept": "application/json",
+        Accept: "application/json",
         "X-Subscription-Token": apiKey,
       },
       signal: controller.signal,
@@ -171,8 +174,10 @@ async function searchViaBrave(query: string): Promise<SearchResult[]> {
       throw new Error(`Brave API error: ${response.status} ${error}`);
     }
 
-    const data = await response.json() as {
-      web?: { results?: Array<{ url: string; title: string; description?: string }> };
+    const data = (await response.json()) as {
+      web?: {
+        results?: Array<{ url: string; title: string; description?: string }>;
+      };
     };
 
     const results: SearchResult[] = [];
@@ -402,7 +407,7 @@ export async function searchViaLocalSearxNG(
       );
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       results?: Array<{ url: string; title: string; content?: string }>;
     };
 
@@ -433,14 +438,21 @@ export async function searchViaLocalSearxNG(
       throw new Error(`Local SearxNG timeout after 5s at ${searxngUrl}`);
     }
 
-    if (error.code === "ECONNREFUSED" || error.message.includes("ECONNREFUSED")) {
+    if (
+      error.code === "ECONNREFUSED" ||
+      error.message.includes("ECONNREFUSED")
+    ) {
       throw new Error(
         `Local SearxNG not running at ${searxngUrl}. Start with: docker compose -f scripts/docker/docker-compose.searxng.yml up -d`
       );
     }
 
     // Check if error is already our custom error (from status code checks above)
-    if (error.message && (error.message.includes("403") || error.message.includes("JSON format disabled"))) {
+    if (
+      error.message &&
+      (error.message.includes("403") ||
+        error.message.includes("JSON format disabled"))
+    ) {
       throw error; // Re-throw our custom 403 error
     }
 
@@ -475,9 +487,11 @@ export async function executeClaudeSearch(
 ): Promise<SearchResult[]> {
   // Try local SearxNG first if configured (privacy-first, no rate limits)
   if (process.env.SEARXNG_URL) {
+    debug(1, `[Search] Trying local SearxNG at ${process.env.SEARXNG_URL}`);
     try {
       const results = await searchViaLocalSearxNG(query);
       if (results.length > 0) {
+        debug(1, `[Search] Local SearxNG returned ${results.length} results`);
         return results;
       }
       // Empty results, try fallback
@@ -485,6 +499,8 @@ export async function executeClaudeSearch(
     } catch (localError) {
       debug(1, `[Search] Local SearxNG failed: ${localError}, trying fallback`);
     }
+  } else {
+    debug(2, `[Search] SEARXNG_URL not set, skipping local search`);
   }
 
   // Try Anthropic API first (user already has this key, most reliable)

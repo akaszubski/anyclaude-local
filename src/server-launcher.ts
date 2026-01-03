@@ -27,6 +27,13 @@ interface ServerLauncherConfig {
 let spawnedServerProcess: ChildProcess | null = null;
 
 /**
+ * Track if we launched the SearXNG container (for cleanup decisions)
+ */
+let searxngWasLaunchedByUs = false;
+const SEARXNG_CONTAINER_NAME = "anyclaude-searxng";
+const SEARXNG_DEFAULT_PORT = 8080;
+
+/**
  * Register a server process for cleanup on exit
  */
 export function registerServerProcess(process: ChildProcess): void {
@@ -69,7 +76,10 @@ export function cleanupServerProcess(): void {
   if (serverWasLaunchedByUs) {
     const portPid = getProcessOnPort(8081);
     if (portPid) {
-      debug(1, `[server-launcher] Killing process on port 8081 (PID ${portPid})`);
+      debug(
+        1,
+        `[server-launcher] Killing process on port 8081 (PID ${portPid})`
+      );
       try {
         process.kill(portPid, "SIGTERM");
       } catch (e) {
@@ -81,6 +91,226 @@ export function cleanupServerProcess(): void {
       }
     }
   }
+
+  // Stop SearXNG container if we started it
+  stopSearxNGContainer();
+}
+
+/**
+ * Check if Docker is available and running
+ */
+export function isDockerAvailable(): boolean {
+  try {
+    const result = spawnSync("docker", ["info"], { encoding: "utf8", timeout: 5000 });
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Start Docker daemon (OrbStack or Docker Desktop)
+ * Returns true if Docker is now available
+ */
+export async function startDockerDaemon(): Promise<boolean> {
+  // Check if already running
+  if (isDockerAvailable()) {
+    return true;
+  }
+
+  console.log(`[anyclaude] Starting Docker...`);
+
+  // Try OrbStack first (lighter weight)
+  try {
+    const orbstackCheck = spawnSync("which", ["orbctl"], { encoding: "utf8" });
+    if (orbstackCheck.status === 0) {
+      spawnSync("open", ["-a", "OrbStack"], { encoding: "utf8" });
+      debug(1, "[server-launcher] Started OrbStack");
+    } else {
+      // Fall back to Docker Desktop
+      spawnSync("open", ["-a", "Docker"], { encoding: "utf8" });
+      debug(1, "[server-launcher] Started Docker Desktop");
+    }
+  } catch (error) {
+    debug(1, `[server-launcher] Failed to start Docker: ${error}`);
+    return false;
+  }
+
+  // Wait for Docker to be ready (up to 30 seconds)
+  const maxWait = 30000;
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWait) {
+    if (isDockerAvailable()) {
+      console.log(`[anyclaude] ✓ Docker is ready`);
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  console.warn(`[anyclaude] Docker did not start within ${maxWait / 1000}s`);
+  return false;
+}
+
+/**
+ * Check if SearXNG container is running
+ */
+export function isSearxNGRunning(): boolean {
+  try {
+    const result = spawnSync(
+      "docker",
+      ["ps", "-q", "-f", `name=${SEARXNG_CONTAINER_NAME}`],
+      { encoding: "utf8" }
+    );
+    return Boolean(result.stdout && result.stdout.trim().length > 0);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Start SearXNG Docker container
+ * Returns true if container is running (either started or already running)
+ */
+export async function startSearxNGContainer(): Promise<boolean> {
+  // Start Docker if not running (auto-starts OrbStack or Docker Desktop)
+  const dockerReady = await startDockerDaemon();
+  if (!dockerReady) {
+    debug(1, "[server-launcher] Docker not available, skipping SearXNG auto-start");
+    return false;
+  }
+
+  // Check if already running
+  if (isSearxNGRunning()) {
+    debug(1, "[server-launcher] SearXNG container already running");
+    searxngWasLaunchedByUs = false;
+    return true;
+  }
+
+  // Check if container exists but stopped
+  const existsResult = spawnSync(
+    "docker",
+    ["ps", "-aq", "-f", `name=${SEARXNG_CONTAINER_NAME}`],
+    { encoding: "utf8" }
+  );
+
+  if (existsResult.stdout && existsResult.stdout.trim()) {
+    // Container exists, start it
+    console.log(`[anyclaude] Starting SearXNG container...`);
+    const startResult = spawnSync("docker", ["start", SEARXNG_CONTAINER_NAME], {
+      encoding: "utf8",
+    });
+
+    if (startResult.status === 0) {
+      searxngWasLaunchedByUs = true;
+      console.log(`[anyclaude] ✓ SearXNG container started`);
+
+      // Wait for it to be ready
+      const ready = await waitForSearxNGReady();
+      return ready;
+    }
+  }
+
+  // Container doesn't exist, use docker compose
+  const composeFile = path.join(
+    process.cwd(),
+    "scripts",
+    "docker",
+    "docker-compose.searxng.yml"
+  );
+
+  if (!fs.existsSync(composeFile)) {
+    debug(1, `[server-launcher] SearXNG compose file not found: ${composeFile}`);
+    return false;
+  }
+
+  console.log(`[anyclaude] Starting SearXNG container (first run)...`);
+
+  const composeResult = spawnSync(
+    "docker",
+    ["compose", "-f", composeFile, "up", "-d"],
+    {
+      encoding: "utf8",
+      cwd: path.dirname(composeFile),
+    }
+  );
+
+  if (composeResult.status === 0) {
+    searxngWasLaunchedByUs = true;
+    console.log(`[anyclaude] ✓ SearXNG container created and started`);
+
+    // Wait for it to be ready
+    const ready = await waitForSearxNGReady();
+    return ready;
+  } else {
+    console.error(`[anyclaude] Failed to start SearXNG: ${composeResult.stderr}`);
+    return false;
+  }
+}
+
+/**
+ * Wait for SearXNG to be ready
+ */
+async function waitForSearxNGReady(timeout: number = 30000): Promise<boolean> {
+  const startTime = Date.now();
+  const url = `http://localhost:${SEARXNG_DEFAULT_PORT}/healthz`;
+
+  while (Date.now() - startTime < timeout) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return true;
+      }
+    } catch {
+      // Not ready yet
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  console.warn(`[anyclaude] SearXNG did not become ready within ${timeout}ms`);
+  return false;
+}
+
+/**
+ * Stop SearXNG container (only if we started it)
+ */
+export function stopSearxNGContainer(): void {
+  if (!searxngWasLaunchedByUs) {
+    debug(1, "[server-launcher] SearXNG was not launched by us, not stopping");
+    return;
+  }
+
+  if (!isSearxNGRunning()) {
+    debug(1, "[server-launcher] SearXNG container not running");
+    return;
+  }
+
+  debug(1, "[server-launcher] Stopping SearXNG container...");
+
+  try {
+    spawnSync("docker", ["stop", SEARXNG_CONTAINER_NAME], {
+      encoding: "utf8",
+      timeout: 10000,
+    });
+    console.log(`[anyclaude] ✓ SearXNG container stopped`);
+  } catch (error) {
+    debug(1, `[server-launcher] Error stopping SearXNG: ${error}`);
+  }
+
+  searxngWasLaunchedByUs = false;
+}
+
+/**
+ * Check if SearXNG was launched by us
+ */
+export function wasSearxNGLaunchedByUs(): boolean {
+  return searxngWasLaunchedByUs;
 }
 
 /**
@@ -195,14 +425,18 @@ export async function startMLXWorkerServer(config: {
   // Check if server already running
   if (isServerRunning(port)) {
     const pid = getProcessOnPort(port);
-    console.log(`[anyclaude] MLX Worker already running (PID ${pid}) on port ${port}`);
+    console.log(
+      `[anyclaude] MLX Worker already running (PID ${pid}) on port ${port}`
+    );
     serverWasLaunchedByUs = false;
     return true;
   }
 
   if (!modelPath) {
     console.log(`[anyclaude] MLX Worker: No model path configured`);
-    console.log(`[anyclaude] Set MLX_MODEL_PATH or configure in .anyclauderc.json`);
+    console.log(
+      `[anyclaude] Set MLX_MODEL_PATH or configure in .anyclauderc.json`
+    );
     return false;
   }
 
@@ -224,7 +458,9 @@ export async function startMLXWorkerServer(config: {
 
   const logFile = path.join(logDir, "mlx-worker.log");
   const logStream = fs.createWriteStream(logFile, { flags: "a" });
-  logStream.write(`\n=== MLX Worker Started at ${new Date().toISOString()} ===\n`);
+  logStream.write(
+    `\n=== MLX Worker Started at ${new Date().toISOString()} ===\n`
+  );
   logStream.write(`Model: ${modelPath}\n`);
   logStream.write(`Port: ${port}\n\n`);
 
@@ -251,8 +487,10 @@ export async function startMLXWorkerServer(config: {
     uvicornPath,
     [
       "src.mlx_worker.server:app",
-      "--host", "0.0.0.0",
-      "--port", port.toString(),
+      "--host",
+      "0.0.0.0",
+      "--port",
+      port.toString(),
     ],
     {
       stdio: ["ignore", "pipe", "pipe"],
@@ -279,7 +517,10 @@ export async function startMLXWorkerServer(config: {
     logStream.write(data);
     const output = data.toString();
     // Show startup messages to user
-    if (output.includes("Uvicorn running") || output.includes("Application startup")) {
+    if (
+      output.includes("Uvicorn running") ||
+      output.includes("Application startup")
+    ) {
       console.log(`[anyclaude] MLX Worker is starting...`);
     }
     debug(2, `[mlx-worker] ${output.trim()}`);
@@ -292,7 +533,10 @@ export async function startMLXWorkerServer(config: {
   });
 
   serverProcess.on("exit", (code, signal) => {
-    const message = code !== null ? `exited with code ${code}` : `killed with signal ${signal}`;
+    const message =
+      code !== null
+        ? `exited with code ${code}`
+        : `killed with signal ${signal}`;
     logStream.write(`Process ${message} at ${new Date().toISOString()}\n`);
     debug(1, `[mlx-worker] ${message}`);
   });

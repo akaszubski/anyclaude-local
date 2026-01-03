@@ -64,6 +64,13 @@ import {
   type InjectionConfig,
   DEFAULT_INJECTION_CONFIG,
 } from "./tool-instruction-injector";
+import {
+  filterServerSideTools,
+  executeProactiveSearch,
+  initializeSearchClassifier,
+  getDefaultClassifierConfig,
+  isInternalMessage,
+} from "./server-side-tool-handler";
 
 /**
  * Helper function to determine if safe system filter should be used
@@ -355,6 +362,15 @@ export const createAnthropicProxy = ({
   // Initialize cache metrics tracking
   initializeCacheTracking();
   displayCacheMetricsOnExit();
+
+  // Initialize GenAI search intent classifier for local modes
+  if (mode !== "claude" && mode !== "openrouter") {
+    const classifierConfig = getDefaultClassifierConfig();
+    console.log(
+      `[anyclaude] Initializing GenAI search classifier for mode: ${mode}`
+    );
+    initializeSearchClassifier(classifierConfig, mode, backendUrl);
+  }
 
   // Cache for backend model info (queried on first request)
   let cachedContextLength: number | null = null;
@@ -729,6 +745,8 @@ export const createAnthropicProxy = ({
       (async () => {
         // Declare timeout early so it's available to close handler
         let timeout: NodeJS.Timeout | null = null;
+        // Track if we executed proactive search (to strip WebSearch tool calls from response)
+        let proactiveSearchExecuted = false;
 
         const body = await new Promise<AnthropicMessagesRequest>(
           (resolve, reject) => {
@@ -910,6 +928,7 @@ export const createAnthropicProxy = ({
             `[Adaptive Optimizer] Tier: ${result.tier.toUpperCase()} | ${result.stats.originalTokens} → ${result.stats.optimizedTokens} tokens (${result.stats.reductionPercent.toFixed(1)}% reduction) | Complexity: ${(result.metrics.estimatedComplexity * 100).toFixed(0)}%`
           );
         }
+
         // Priority 2: Safe system filter (safeSystemFilter)
         // Rule-based: removes optional sections while preserving critical tool calling instructions
         // Validates filtered prompt matches expected patterns (has fallback to truncate)
@@ -1148,6 +1167,120 @@ export const createAnthropicProxy = ({
           }
         }
 
+        // Filter out server-side tools (like web_search_20250305) that local models can't handle
+        // These tools are executed by Anthropic's servers, not by the model
+        let hasWebSearchTool = false;
+        const isLocalModel =
+          mode === "local" || mode === "lmstudio" || mode === "mlx-cluster";
+        if (toolsToUse && toolsToUse.length > 0) {
+          const { regularTools, hasWebSearch } =
+            filterServerSideTools(toolsToUse);
+          hasWebSearchTool = hasWebSearch;
+          // Only use regular tools for local models
+          if (isLocalModel) {
+            toolsToUse = regularTools;
+            if (isDebugEnabled() && hasWebSearch) {
+              debug(
+                1,
+                `[Server Tools] WebSearch enabled - will execute proactive search if needed`
+              );
+            }
+          }
+        }
+
+        // Execute proactive web search for local models
+        // This detects search intent and injects results into the system prompt
+        // Note: We always check for search intent, not just when web_search tool is present
+        // because Claude Code may not send that tool when using a non-Anthropic backend
+        if (isLocalModel) {
+          // Extract the actual user query from messages
+          // Claude Code sends multiple user messages - the actual query may be in an earlier one
+          // while the last user message often contains tool_results or system-reminders
+          const userMessages = body.messages.filter(
+            (m: any) => m.role === "user"
+          );
+          let userMsgForSearch = "";
+
+          // Search through ALL user messages (reverse order - most recent first)
+          // to find the actual user query (not tool_results or internal messages)
+          for (
+            let msgIdx = userMessages.length - 1;
+            msgIdx >= 0 && !userMsgForSearch;
+            msgIdx--
+          ) {
+            const userMessage = userMessages[msgIdx];
+
+            if (typeof userMessage?.content === "string") {
+              const text = (userMessage.content as string).trim();
+              // Skip internal messages
+              if (!isInternalMessage(text)) {
+                userMsgForSearch = text;
+                debug(
+                  2,
+                  `[WebSearch] Found user query in message ${msgIdx}: "${text.substring(0, 60)}..."`
+                );
+              }
+            } else if (Array.isArray(userMessage?.content)) {
+              // Check text blocks in this message
+              for (const block of userMessage.content) {
+                if (block && "text" in block && block.text) {
+                  const text = block.text.trim();
+                  if (!isInternalMessage(text) && text.length > 10) {
+                    // Prefer longer text blocks (actual queries) over short internal labels
+                    if (
+                      !userMsgForSearch ||
+                      text.length > userMsgForSearch.length
+                    ) {
+                      userMsgForSearch = text;
+                      debug(
+                        2,
+                        `[WebSearch] Found user query in message ${msgIdx} block: "${text.substring(0, 60)}..."`
+                      );
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          if (userMsgForSearch) {
+            debug(
+              1,
+              `[WebSearch] Checking intent for: "${userMsgForSearch.substring(0, 80)}..."`
+            );
+            try {
+              const searchResult = await executeProactiveSearch(
+                userMsgForSearch,
+                true, // Always treat as having web search capability
+                mode
+              );
+
+              if (searchResult && searchResult.contextAddition) {
+                // Append search results to system prompt
+                system = (system || "") + searchResult.contextAddition;
+                // Mark that we executed proactive search - will strip WebSearch tool calls from response
+                proactiveSearchExecuted = true;
+                debug(
+                  1,
+                  `[WebSearch] Injected ${searchResult.results.length} search results for query: "${searchResult.query}"`
+                );
+              } else {
+                debug(
+                  1,
+                  `[WebSearch] No search results returned (SEARXNG_URL=${process.env.SEARXNG_URL || "not set"})`
+                );
+              }
+            } catch (searchError) {
+              debug(1, `[WebSearch] Proactive search failed: ${searchError}`);
+              debug(
+                2,
+                `[WebSearch] SEARXNG_URL=${process.env.SEARXNG_URL || "not set"}`
+              );
+              // Non-fatal: continue without search results
+            }
+          }
+        }
+
         // Sort tools by name for deterministic cache keys
         // This ensures the same tools in different orders still produce cache hits
         const sortedTools = toolsToUse
@@ -1196,7 +1329,11 @@ export const createAnthropicProxy = ({
             (() => {
               // Fallback: try to determine from provider name
               if (providerName === "local") {
-                return process.env.LOCAL_URL || process.env.LMSTUDIO_URL || "http://localhost:8082";
+                return (
+                  process.env.LOCAL_URL ||
+                  process.env.LMSTUDIO_URL ||
+                  "http://localhost:8082"
+                );
               } else if (providerName === "mlx") {
                 return process.env.MLX_URL || "http://localhost:8081";
               }
@@ -1738,10 +1875,14 @@ export const createAnthropicProxy = ({
           // convertToAnthropicStream Transform --[respects backpressure]-->
           // Writable to res.write() --[writes with backpressure handling]-->
           // HTTP Response
-          const convertedStream = convertToAnthropicStream(
-            stream.fullStream,
-            true
-          );
+          const convertedStream = convertToAnthropicStream(stream.fullStream, {
+            skipFirstMessageStart: true,
+            // For local models, always strip WebSearch tool calls since:
+            // 1. We execute proactive search and inject results into system prompt
+            // 2. Local models can't actually execute server-side tools
+            // 3. If the call reaches Claude Code, it may fail with "0 searches"
+            stripWebSearchCalls: isLocalModel,
+          });
 
           let totalChunksWritten = 0;
           let totalBytesWritten = 0;

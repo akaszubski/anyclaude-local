@@ -16,6 +16,80 @@ import {
   assembleStreamingToolCall,
 } from "./tool-response-parser";
 import { IncrementalJSONParser } from "./streaming-json-parser";
+import { isWebSearchToolCall } from "./server-side-tool-handler";
+
+/**
+ * Sanitize tool call input parameters to fix common model mistakes.
+ *
+ * Local models sometimes generate invalid parameter combinations that
+ * Claude Code's tool APIs will reject. This function cleans them up.
+ *
+ * @param toolName - The name of the tool being called
+ * @param input - The tool input parameters
+ * @returns Sanitized input parameters
+ */
+function sanitizeToolInput(
+  toolName: string,
+  input: Record<string, any>
+): Record<string, any> {
+  if (!input || typeof input !== "object") {
+    return input;
+  }
+
+  const sanitized = { ...input };
+
+  // WebSearch: Cannot specify both allowed_domains and blocked_domains
+  if (toolName === "WebSearch") {
+    const hasAllowed =
+      Array.isArray(sanitized.allowed_domains) &&
+      sanitized.allowed_domains.length > 0;
+    const hasBlocked =
+      Array.isArray(sanitized.blocked_domains) &&
+      sanitized.blocked_domains.length > 0;
+
+    // Remove empty arrays (they're effectively undefined)
+    if (
+      Array.isArray(sanitized.allowed_domains) &&
+      sanitized.allowed_domains.length === 0
+    ) {
+      delete sanitized.allowed_domains;
+    }
+    if (
+      Array.isArray(sanitized.blocked_domains) &&
+      sanitized.blocked_domains.length === 0
+    ) {
+      delete sanitized.blocked_domains;
+    }
+
+    // If both are non-empty, keep only allowed_domains (more specific)
+    if (hasAllowed && hasBlocked) {
+      debug(
+        1,
+        `[Tool Sanitization] WebSearch: removing blocked_domains (cannot use both allowed_domains and blocked_domains)`
+      );
+      delete sanitized.blocked_domains;
+    }
+  }
+
+  // WebFetch: Similar domain filtering might apply
+  if (toolName === "WebFetch") {
+    // Remove empty arrays
+    if (
+      Array.isArray(sanitized.allowed_domains) &&
+      sanitized.allowed_domains.length === 0
+    ) {
+      delete sanitized.allowed_domains;
+    }
+    if (
+      Array.isArray(sanitized.blocked_domains) &&
+      sanitized.blocked_domains.length === 0
+    ) {
+      delete sanitized.blocked_domains;
+    }
+  }
+
+  return sanitized;
+}
 
 export interface ConvertToAnthropicStreamOptions {
   /**
@@ -41,6 +115,13 @@ export interface ConvertToAnthropicStreamOptions {
    * Maximum buffer size for incremental parser (default: 1MB)
    */
   maxBufferSize?: number;
+
+  /**
+   * Strip WebSearch tool calls from the response (default: false)
+   * Enable for local models where proactive search results are already injected
+   * into the system prompt. This prevents "Did 0 searches" display in Claude Code.
+   */
+  stripWebSearchCalls?: boolean;
 }
 
 export function convertToAnthropicStream(
@@ -71,6 +152,7 @@ export function convertToAnthropicStream(
     useIncrementalParser: options.useIncrementalParser ?? true, // Enabled by default
     fallbackOnError: options.fallbackOnError ?? true,
     maxBufferSize: options.maxBufferSize || 1024 * 1024, // 1MB default
+    stripWebSearchCalls: options.stripWebSearchCalls ?? false,
   };
   let index = 0; // content block index within the current message
   let reasoningBuffer = ""; // Buffer for accumulating reasoning text
@@ -113,7 +195,7 @@ export function convertToAnthropicStream(
     TextStreamPart<Record<string, Tool>>,
     AnthropicStreamChunk
   >({
-    transform(chunk, controller) {
+    async transform(chunk, controller) {
       chunkCount++;
       debug(
         1,
@@ -240,6 +322,21 @@ export function convertToAnthropicStream(
               }
             );
             break; // Skip malformed tool call
+          }
+
+          // Strip WebSearch tool calls if enabled (for local models with proactive search)
+          debug(
+            1,
+            `[Tool Strip Check] toolName="${toolName}", stripWebSearchCalls=${opts.stripWebSearchCalls}, isWebSearch=${isWebSearchToolCall(toolName)}`
+          );
+          if (opts.stripWebSearchCalls && isWebSearchToolCall(toolName)) {
+            debug(
+              1,
+              `[Tool Input Start] Stripping WebSearch tool call (proactive search already executed)`
+            );
+            // Track this tool ID to skip its deltas and end event too
+            streamedToolIds.add(toolId); // Mark as "handled" so we skip subsequent events
+            break;
           }
 
           // DIAGNOSTIC: Log streaming tool start
@@ -457,6 +554,16 @@ export function convertToAnthropicStream(
             fullChunkKeys: Object.keys(chunk),
           });
 
+          // Strip WebSearch tool calls if enabled (for local models with proactive search)
+          if (opts.stripWebSearchCalls && isWebSearchToolCall(toolName)) {
+            debug(
+              1,
+              `[Tool Call] Stripping WebSearch tool call (proactive search already executed)`
+            );
+            streamedToolIds.add(toolCallId); // Mark as handled
+            break;
+          }
+
           // Check if this tool was started but never received deltas
           const pendingTool = toolsWithoutDeltas.get(toolCallId);
           if (pendingTool) {
@@ -469,6 +576,8 @@ export function convertToAnthropicStream(
 
             const toolInput = (chunk as any).input;
             if (toolInput && typeof toolInput === "object") {
+              // Sanitize tool input to fix common model mistakes
+              const sanitizedInput = sanitizeToolInput(toolName, toolInput);
               // Send the complete input as a single delta
               // Use safeStringify to handle potential circular references in tool inputs
               controller.enqueue({
@@ -476,7 +585,7 @@ export function convertToAnthropicStream(
                 index: pendingTool.index,
                 delta: {
                   type: "input_json_delta",
-                  partial_json: safeStringify(toolInput),
+                  partial_json: safeStringify(sanitizedInput),
                 },
               });
             }
@@ -537,11 +646,24 @@ export function convertToAnthropicStream(
             break;
           }
 
+          // Strip WebSearch tool calls if enabled (third code path - atomic tool calls)
+          if (opts.stripWebSearchCalls && isWebSearchToolCall(toolName)) {
+            debug(
+              1,
+              `[Tool Call Atomic] Stripping WebSearch tool call: ${toolName}`
+            );
+            streamedToolIds.add(toolCallId);
+            break;
+          }
+
+          // Sanitize tool input to fix common model mistakes (e.g., WebSearch with both domain filters)
+          const sanitizedInput = sanitizeToolInput(toolName, toolInput);
+
           if (isTraceDebugEnabled()) {
             debug(3, `[Tool Call] Atomic tool call: ${toolName}`, {
               toolCallId: toolCallId,
               toolName: toolName,
-              input: toolInput,
+              input: sanitizedInput,
             });
 
             // Validate using integrated tool-response-parser
@@ -554,7 +676,7 @@ export function convertToAnthropicStream(
                 type: "function" as const,
                 function: {
                   name: toolName,
-                  arguments: JSON.stringify(toolInput),
+                  arguments: JSON.stringify(sanitizedInput),
                 },
               };
               const parsedToolUse = parseOpenAIToolCall(openAIStyleToolCall);
@@ -573,6 +695,7 @@ export function convertToAnthropicStream(
             }
           }
 
+          // Emit tool_use block
           controller.enqueue({
             type: "content_block_start",
             index,
@@ -580,7 +703,7 @@ export function convertToAnthropicStream(
               type: "tool_use",
               id: toolCallId,
               name: toolName,
-              input: toolInput,
+              input: sanitizedInput,
             },
           });
           controller.enqueue({ type: "content_block_stop", index });

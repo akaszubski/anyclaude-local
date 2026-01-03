@@ -7,6 +7,7 @@ Privacy-first web search using self-hosted SearxNG for AnyClaude. No cloud depen
 AnyClaude supports local web search via [SearxNG](https://github.com/searxng/searxng), a privacy-respecting metasearch engine. When enabled, web searches happen on your local machine instead of calling cloud APIs.
 
 **Benefits:**
+
 - **Privacy**: All searches stay on your machine
 - **No rate limits**: Unlimited searches without API quotas
 - **No API costs**: Free forever, no API keys needed
@@ -14,6 +15,7 @@ AnyClaude supports local web search via [SearxNG](https://github.com/searxng/sea
 - **Speed**: Local searches are fast (no network latency)
 
 **When to use:**
+
 - You want privacy-first web search
 - You're hitting rate limits on cloud APIs
 - You want to minimize cloud dependencies
@@ -69,6 +71,7 @@ Add to `.anyclauderc.json`:
 ```
 
 **Options:**
+
 - `localSearxngUrl`: URL of your SearxNG instance (default: `http://localhost:8080`)
 - `preferLocal`: Try local SearxNG first (default: `true`)
 - `enableFallback`: Fall back to cloud APIs if local fails (default: `true`)
@@ -95,12 +98,14 @@ cd scripts/docker
 ```
 
 This script:
+
 - Checks Docker is running
 - Starts `anyclaude-searxng` container
 - Waits for SearxNG to be ready (health check)
 - Prints test command
 
 **Output:**
+
 ```
 Starting SearxNG...
 Waiting for SearxNG to be ready...
@@ -133,6 +138,7 @@ docker compose -f scripts/docker/docker-compose.searxng.yml restart
 **Restart policy:** `unless-stopped` (survives reboots)
 
 **Security:**
+
 - Runs with minimal capabilities (drops all except `CHOWN`, `SETGID`, `SETUID`)
 - Bound to `127.0.0.1` only (not accessible from network)
 - Read-only config volume
@@ -164,6 +170,7 @@ engines:
 ```
 
 **Restart to apply:**
+
 ```bash
 docker compose -f scripts/docker/docker-compose.searxng.yml restart
 ```
@@ -174,10 +181,11 @@ Edit `scripts/docker/docker-compose.searxng.yml`:
 
 ```yaml
 ports:
-  - "127.0.0.1:9999:8080"  # Change 9999 to your port
+  - "127.0.0.1:9999:8080" # Change 9999 to your port
 ```
 
 Update environment variable:
+
 ```bash
 export SEARXNG_URL=http://localhost:9999
 ```
@@ -188,10 +196,11 @@ Edit `scripts/docker/searxng-settings.yml`:
 
 ```yaml
 server:
-  secret_key: "your-random-string-here"  # Generate with: openssl rand -hex 32
+  secret_key: "your-random-string-here" # Generate with: openssl rand -hex 32
 ```
 
 **Restart to apply:**
+
 ```bash
 docker compose -f scripts/docker/docker-compose.searxng.yml restart
 ```
@@ -201,6 +210,7 @@ docker compose -f scripts/docker/docker-compose.searxng.yml restart
 ### Connection Refused
 
 **Error:**
+
 ```
 Local SearxNG not running at http://localhost:8080.
 Start with: docker compose -f scripts/docker/docker-compose.searxng.yml up -d
@@ -209,12 +219,14 @@ Start with: docker compose -f scripts/docker/docker-compose.searxng.yml up -d
 **Cause:** Docker container not running
 
 **Fix:**
+
 ```bash
 cd scripts/docker
 ./start-searxng.sh
 ```
 
 **Check:**
+
 ```bash
 docker ps | grep anyclaude-searxng
 ```
@@ -222,6 +234,7 @@ docker ps | grep anyclaude-searxng
 ### 403 Forbidden (JSON Format Disabled)
 
 **Error:**
+
 ```
 SearxNG JSON format disabled. Enable in settings.yml:
 search.formats: [html, json] (HTTP 403)
@@ -230,14 +243,16 @@ search.formats: [html, json] (HTTP 403)
 **Cause:** SearxNG not configured to return JSON
 
 **Fix:** Edit `scripts/docker/searxng-settings.yml`:
+
 ```yaml
 search:
   formats:
     - html
-    - json  # Ensure this is present
+    - json # Ensure this is present
 ```
 
 **Restart:**
+
 ```bash
 docker compose -f scripts/docker/docker-compose.searxng.yml restart
 ```
@@ -245,6 +260,7 @@ docker compose -f scripts/docker/docker-compose.searxng.yml restart
 ### Timeout After 5 Seconds
 
 **Error:**
+
 ```
 Local SearxNG timeout after 5s at http://localhost:8080
 ```
@@ -252,11 +268,13 @@ Local SearxNG timeout after 5s at http://localhost:8080
 **Cause:** SearxNG is slow or overloaded
 
 **Check logs:**
+
 ```bash
 docker logs anyclaude-searxng
 ```
 
 **Fix:**
+
 - Check Docker resource limits (CPU/memory)
 - Disable slow search engines in `searxng-settings.yml`
 - Reduce number of engines queried simultaneously
@@ -264,6 +282,7 @@ docker logs anyclaude-searxng
 ### Invalid JSON Response
 
 **Error:**
+
 ```
 Invalid JSON response from SearxNG at http://localhost:8080.
 Check server configuration.
@@ -272,11 +291,13 @@ Check server configuration.
 **Cause:** SearxNG returning HTML instead of JSON
 
 **Check response manually:**
+
 ```bash
 curl 'http://localhost:8080/search?q=test&format=json'
 ```
 
 **Fix:**
+
 - Ensure `format=json` is in URL
 - Check `search.formats` in settings.yml includes `json`
 - Restart container
@@ -284,17 +305,20 @@ curl 'http://localhost:8080/search?q=test&format=json'
 ### Docker Not Running
 
 **Error:**
+
 ```
 Error: Docker is not running. Please start Docker first.
 ```
 
 **Fix:**
+
 - Start Docker Desktop (macOS/Windows)
 - Start Docker daemon (Linux): `sudo systemctl start docker`
 
 ### Port Already in Use
 
 **Error:**
+
 ```
 Error response from daemon: Ports are not available:
 listen tcp 127.0.0.1:8080: bind: address already in use
@@ -303,27 +327,32 @@ listen tcp 127.0.0.1:8080: bind: address already in use
 **Cause:** Another process using port 8080
 
 **Find process:**
+
 ```bash
 lsof -i :8080
 ```
 
 **Fix:**
+
 - Stop the conflicting process
 - Or change SearxNG port (see "Change Port" above)
 
 ### Container Exits Immediately
 
 **Check logs:**
+
 ```bash
 docker logs anyclaude-searxng
 ```
 
 **Common causes:**
+
 - Invalid `searxng-settings.yml` syntax
 - Missing required settings
 - Permission issues on config file
 
 **Fix:**
+
 - Validate YAML syntax
 - Check file permissions: `chmod 644 scripts/docker/searxng-settings.yml`
 - Restart with: `./start-searxng.sh`
@@ -353,6 +382,7 @@ export SEARXNG_URL=http://[::1]:8080
 ```
 
 Edit `docker-compose.searxng.yml`:
+
 ```yaml
 ports:
   - "[::1]:8080:8080"
@@ -391,7 +421,7 @@ Add volume for persistent data:
 # docker-compose.searxng.yml
 volumes:
   - ./searxng-settings.yml:/etc/searxng/settings.yml:ro
-  - ./searxng-data:/etc/searxng/data  # Add this
+  - ./searxng-data:/etc/searxng/data # Add this
 ```
 
 ## Performance
@@ -417,13 +447,15 @@ volumes:
 **Default:** SearxNG binds to `127.0.0.1` only (localhost)
 
 **Not accessible from:**
+
 - Other machines on your network
 - The internet
 
 **To expose on network** (not recommended):
+
 ```yaml
 ports:
-  - "0.0.0.0:8080:8080"  # WARNING: Exposes to network
+  - "0.0.0.0:8080:8080" # WARNING: Exposes to network
 ```
 
 **Better:** Use firewall rules or VPN for remote access
@@ -435,6 +467,7 @@ ports:
 **Cloud fallback:** If local SearxNG fails, cloud APIs may be used (Anthropic/Tavily/Brave). These require API keys and send queries to cloud services.
 
 **Disable fallback** to ensure 100% local:
+
 ```json
 {
   "webSearch": {
@@ -444,6 +477,7 @@ ports:
 ```
 
 Or unset cloud API keys:
+
 ```bash
 unset ANTHROPIC_API_KEY
 unset TAVILY_API_KEY
@@ -464,24 +498,26 @@ unset BRAVE_API_KEY
 **Search engines:** SearxNG forwards queries to search engines (Google, DuckDuckGo, etc.)
 
 **For maximum privacy:**
+
 - Use only privacy-focused engines (DuckDuckGo, Qwant, Startpage)
 - Disable Google/Bing in `searxng-settings.yml`
 - Use Tor proxy (requires additional SearxNG configuration)
 
 ## Comparison: Local vs Cloud Search
 
-| Feature | Local SearxNG | Cloud APIs |
-|---------|---------------|------------|
-| **Privacy** | ✅ All local | ❌ Sends to cloud |
-| **Rate limits** | ✅ None | ❌ Yes (varies by API) |
-| **API costs** | ✅ Free | ❌ Paid (free tiers available) |
-| **Setup** | ⚠️ Docker required | ✅ Just API key |
-| **Latency** | ✅ Fast (local) | ⚠️ Network dependent |
-| **Reliability** | ⚠️ Single point of failure | ✅ Cloud redundancy |
-| **Search quality** | ⚠️ Depends on engines | ✅ Optimized for AI |
-| **Maintenance** | ⚠️ You manage | ✅ Managed service |
+| Feature            | Local SearxNG              | Cloud APIs                     |
+| ------------------ | -------------------------- | ------------------------------ |
+| **Privacy**        | ✅ All local               | ❌ Sends to cloud              |
+| **Rate limits**    | ✅ None                    | ❌ Yes (varies by API)         |
+| **API costs**      | ✅ Free                    | ❌ Paid (free tiers available) |
+| **Setup**          | ⚠️ Docker required         | ✅ Just API key                |
+| **Latency**        | ✅ Fast (local)            | ⚠️ Network dependent           |
+| **Reliability**    | ⚠️ Single point of failure | ✅ Cloud redundancy            |
+| **Search quality** | ⚠️ Depends on engines      | ✅ Optimized for AI            |
+| **Maintenance**    | ⚠️ You manage              | ✅ Managed service             |
 
 **Recommendation:**
+
 - **Use local SearxNG** for privacy and unlimited searches
 - **Enable fallback** for reliability (best of both worlds)
 - **Pure local** if privacy is critical (disable fallback)
