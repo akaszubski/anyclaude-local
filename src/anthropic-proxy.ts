@@ -71,6 +71,19 @@ import {
   getDefaultClassifierConfig,
   isInternalMessage,
 } from "./server-side-tool-handler";
+import { CircuitBreaker } from "./circuit-breaker";
+
+// Circuit breaker for monitoring backend health and latency
+const proxyCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 5,
+  successThreshold: 2,
+  retryTimeout: 30000,
+  requestTimeout: 10000,
+  latencyThresholdMs: 30000, // 30s - high for LLM requests
+  latencyConsecutiveChecks: 3,
+  latencyWindowMs: 60000, // 1 minute window
+  autoCheckLatency: true,
+});
 
 /**
  * Helper function to determine if safe system filter should be used
@@ -395,6 +408,16 @@ export const createAnthropicProxy = ({
           JSON.stringify({
             error: "No URL provided",
           })
+        );
+        return;
+      }
+
+      // Circuit breaker metrics endpoint
+      if (req.url === "/v1/circuit-breaker/metrics" && req.method === "GET") {
+        CircuitBreaker.handleMetricsRequest(
+          proxyCircuitBreaker,
+          { method: req.method, url: req.url },
+          res
         );
         return;
       }
