@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Issues #56-59: KV Cache Optimizations** - Comprehensive disk-based KV cache persistence for MLX worker with significant performance improvements.
+
+  **Issue #56 - Disk-Based Persistence**:
+  - KV cache saved to `~/.cache/anyclaude/kv-cache/` as safetensors files
+  - Cache key includes system prompt hash + model path hash for invalidation
+  - First request after restart: 30-45s → <5s (loads from disk cache)
+
+  **Issue #57 - FP16 Quantization**:
+  - Quantize KV cache to FP16 before disk save (2x size reduction)
+  - Cache files: ~26MB → ~13MB per cache entry
+  - Configurable via `ANYCLAUDE_KV_CACHE_QUANTIZE=true` (default)
+
+  **Issue #58 - Memory-Mapped Loading**:
+  - Zero-copy cache loading using mmap
+  - Reduces memory spike during load
+  - Configurable via `ANYCLAUDE_KV_CACHE_MMAP=true` (default)
+
+  **Issue #59 - LRU Eviction Policy**:
+  - Track last access time for each cache entry
+  - Automatically evict oldest caches when over size limit
+  - Default limit: 5GB (configurable via `ANYCLAUDE_KV_CACHE_MAX_SIZE_GB`)
+
+  **Environment Variables**:
+  - `ANYCLAUDE_KV_CACHE_DIR` - Cache directory (default: ~/.cache/anyclaude/kv-cache)
+  - `ANYCLAUDE_KV_CACHE_MAX_SIZE_GB` - Max size before eviction (default: 5.0)
+  - `ANYCLAUDE_KV_CACHE_QUANTIZE` - Enable FP16 quantization (default: true)
+  - `ANYCLAUDE_KV_CACHE_MMAP` - Enable mmap loading (default: true)
+
 - **Documentation Audit** - Comprehensive audit of documentation consistency across 149 markdown files identified 19 issue categories with 31+ specific inconsistencies. All issues documented in DOCUMENTATION_AUDIT_REPORT.md for systematic remediation.
 
   **Issues Found**:

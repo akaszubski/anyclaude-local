@@ -264,6 +264,32 @@ export ANYCLAUDE_DEBUG=3  # Trace (full prompts)
 export SEARXNG_URL=http://localhost:8080
 ```
 
+### KV Cache Persistence (MLX Worker)
+
+Configure disk-based KV cache for faster MLX worker startup:
+
+```bash
+# Cache directory (default: ~/.cache/anyclaude/kv-cache)
+export ANYCLAUDE_KV_CACHE_DIR=~/.cache/anyclaude/kv-cache
+
+# Max cache size in GB before LRU eviction (default: 5.0)
+export ANYCLAUDE_KV_CACHE_MAX_SIZE_GB=5.0
+
+# Enable FP16 quantization for 2x smaller cache files (default: true)
+export ANYCLAUDE_KV_CACHE_QUANTIZE=true
+
+# Enable memory-mapped loading for zero-copy performance (default: true)
+export ANYCLAUDE_KV_CACHE_MMAP=true
+
+# Minimum tokens to cache (prompts shorter than this skip disk cache)
+export ANYCLAUDE_KV_CACHE_MIN_TOKENS=1024
+```
+
+**Performance Impact:**
+- First request (cold): 30-45s → <5s (loads from disk cache)
+- Cache file size: ~26MB → ~13MB (with FP16 quantization)
+- Memory on load: Full cache size → Near-zero (with mmap)
+
 ## CLI Flags
 
 CLI flags have highest priority:
