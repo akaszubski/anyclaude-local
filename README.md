@@ -11,9 +11,9 @@
 
 An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude Code 2.0, enabling seamless use of:
 
-- **Local models** (mistral.rs with native MLX, LMStudio) for 100% privacy
+- **Local models** (MLX Worker, LMStudio, or any OpenAI-compatible server) for 100% privacy
 - **OpenRouter** for access to 400+ cloud models at 84% lower cost than Claude API
-- **Fast inference on Apple Silicon** with mistral.rs native MLX acceleration and KV caching
+- **Fast inference on Apple Silicon** with Python MLX Worker (mlx_lm) and KV caching
 
 ## ✨ Features
 
@@ -21,8 +21,8 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 - 🏠 **100% Local** - No cloud API keys required
 - 🔒 **Privacy First** - Your code never leaves your machine
-- ⚡ **mistral.rs Engine** - Production Rust inference with native MLX acceleration, KV caching, and MoE support
-- 🧩 **LMStudio Support** - Cross-platform alternative, works with Qwen Coder, Mistral, Llama, DeepSeek
+- ⚡ **MLX Worker** - Python FastAPI server with mlx_lm for native Apple Silicon acceleration and KV caching
+- 🧩 **Any OpenAI-Compatible Server** - Works with LMStudio, Ollama, or any OpenAI API server
 
 ### Cloud Models (Cost Effective)
 
@@ -34,7 +34,7 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 ### General
 
 - 🚀 **Simple Setup** - Running in under 5 minutes
-- 🎯 **Multi-Mode** - Switch between MLX, LMStudio, OpenRouter, and real Claude API
+- 🎯 **Multi-Mode** - Switch between local, openrouter, claude, and mlx-cluster modes
 - 🛑 **Auto-Cleanup** - Server processes terminate cleanly when you exit
 - 🐛 **Debug Friendly** - Comprehensive logging for troubleshooting
 - 💻 **Global Command** - Install once, run `anyclaude` from anywhere
@@ -43,17 +43,17 @@ An enhanced port of [anyclaude](https://github.com/coder/anyclaude) for Claude C
 
 ---
 
-## 🆕 Latest Improvements (v3.0.0)
+## 🆕 Latest Improvements (v2.2.0)
 
-### ✅ mistral.rs Integration (Production Ready)
+### ✅ MLX Worker Backend (Production Ready)
 
-- **Backend**: mistral.rs - Production Rust inference engine with native MLX support
+- **Backend**: Python MLX Worker - FastAPI server with mlx_lm for Apple Silicon
 - **Performance**: Native MLX acceleration with KV caching for fast inference
 - **Full Tool Calling**: ✅ Read, Write, Edit, Bash, Git - all work perfectly
-- **MoE Support**: Native support for Mixture-of-Experts models
+- **Auto-Start**: Server automatically launches when you run anyclaude
 - **Stability**: Production-ready with excellent error handling
-- **Status**: Primary backend, replaces deprecated custom MLX server
-- **Migration**: Previous custom MLX server archived to `scripts/archive/deprecated-mlx/`
+- **Status**: Primary `local` backend for Apple Silicon
+- **Note**: Use `--mode=local` (MLX, LMStudio are deprecated aliases)
 
 ### ✅ Streaming Response Fixes (v2.1.0)
 
@@ -299,7 +299,7 @@ bun install -g $(pwd)
 which anyclaude
 ```
 
-### Quick Setup (MLX Recommended)
+### Quick Setup (Local Backend Recommended)
 
 1. **Install MLX dependencies** (one-time)
 
@@ -313,12 +313,12 @@ which anyclaude
 
    ```json
    {
-     "backend": "mlx",
+     "backend": "local",
      "backends": {
-       "mlx": {
+       "local": {
          "enabled": true,
-         "port": 8081,
-         "model": "/path/to/mlx-model"
+         "modelPath": "/path/to/mlx-model",
+         "autoStartServer": true
        }
      }
    }
@@ -359,32 +359,33 @@ AnyClaude supports **4 modes** to fit your workflow - from free local privacy to
 ### Quick Start (4 modes available)
 
 ```bash
-# MODE 1: MLX (default, recommended for Apple Silicon)
-# Auto-launches server with prompt caching
+# MODE 1: Local (default, recommended for Apple Silicon)
+# Auto-launches MLX Worker server with prompt caching
 anyclaude  # Uses .anyclauderc.json config
-
-# MODE 2: Local (LMStudio or similar, cross-platform local)
-# Start LMStudio first, then:
 anyclaude --mode=local
 
-# MODE 3: OpenRouter (cheap cloud, 400+ models)
+# MODE 2: OpenRouter (cheap cloud, 400+ models)
 # 84% cheaper than Claude API
 export OPENROUTER_API_KEY="sk-or-v1-..."
 anyclaude --mode=openrouter
 
-# MODE 4: Claude API (official, with trace logging)
+# MODE 3: Claude API (official, with trace logging)
 # Uses your Claude Max subscription or API key
 anyclaude --mode=claude
+
+# MODE 4: MLX Cluster (distributed inference)
+# Multiple Apple Silicon Macs with load balancing
+anyclaude --mode=mlx-cluster
 ```
 
 ### Mode Comparison
 
-| Mode           | Cost                   | Privacy    | Tools  | Cache   | Best For                |
-| -------------- | ---------------------- | ---------- | ------ | ------- | ----------------------- |
-| **MLX** ⭐     | Free                   | 100% local | ✅ Yes | ✅ Yes  | **Apple Silicon users** |
-| **Local**      | Free                   | 100% local | ✅ Yes | Limited | **Cross-platform**      |
-| **OpenRouter** | $0.60-$2/1M (84% less) | Cloud      | ✅ Yes | ✅ Yes  | **Cost savings**        |
-| **Claude API** | $3-$15/1M              | Cloud      | ✅ Yes | ✅ Yes  | **Premium quality**     |
+| Mode            | Cost                   | Privacy    | Tools  | Cache  | Best For                             |
+| --------------- | ---------------------- | ---------- | ------ | ------ | ------------------------------------ |
+| **local** ⭐    | Free                   | 100% local | ✅ Yes | ✅ Yes | **Apple Silicon / Any local server** |
+| **openrouter**  | $0.60-$2/1M (84% less) | Cloud      | ✅ Yes | ✅ Yes | **Cost savings**                     |
+| **claude**      | $3-$15/1M              | Cloud      | ✅ Yes | ✅ Yes | **Premium quality**                  |
+| **mlx-cluster** | Free                   | 100% local | ✅ Yes | ✅ Yes | **Distributed inference**            |
 
 ### Cost Example (50K input + 10K output tokens)
 

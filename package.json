@@ -99,6 +99,7 @@
     "@ai-sdk/openai": "^2.0.6",
     "ai": "^5.0.8",
     "dotenv": "^17.2.3",
+    "duck-duck-scrape": "^2.2.7",
     "json-schema": "^0.4.0",
     "node-fetch": "^2.7.0",
     "tiktoken": "^1.0.22",

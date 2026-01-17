@@ -1002,7 +1002,7 @@ describe("CircuitBreaker - Metrics Endpoint", () => {
       const breaker = createCircuitBreaker();
 
       breaker.recordLatency(123.456789);
-      breaker.recordLatency(234.567890);
+      breaker.recordLatency(234.56789);
 
       const req = {
         method: "GET",

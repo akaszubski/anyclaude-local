@@ -32,7 +32,9 @@ export function warnDeprecation(
     return false;
   }
   shownWarnings.add(deprecatedName);
-  const msg = message || `${deprecatedName} is deprecated, use ${replacementName} instead`;
+  const msg =
+    message ||
+    `${deprecatedName} is deprecated, use ${replacementName} instead`;
   console.warn(`[DEPRECATED] ${msg}`);
   return true;
 }

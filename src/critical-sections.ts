@@ -23,6 +23,14 @@
  */
 
 /**
+ * Priority levels for critical sections
+ * - P0: Must preserve (tool definitions, JSON schemas, function call instructions)
+ * - P1: Should preserve (safety guidelines, core identity, task instructions)
+ * - P2: Optional (examples, verbose explanations, formatting guidelines)
+ */
+export type Priority = "P0" | "P1" | "P2";
+
+/**
  * A critical section pattern that must be preserved in system prompts
  */
 export interface CriticalSection {
@@ -37,6 +45,12 @@ export interface CriticalSection {
 
   /** Human-readable description of why this section is critical */
   description: string;
+
+  /** Priority level (P0=must preserve, P1=should preserve, P2=optional) */
+  priority: Priority;
+
+  /** Array of section names this pattern depends on (empty if no dependencies) */
+  dependencies: string[];
 }
 
 /**
@@ -90,21 +104,31 @@ export interface ValidationResult {
  * - Avoid quantifiers like .*, .+, {n,m} where possible
  * - Use character classes instead of dot-star
  * - Keep patterns short and specific
+ *
+ * Priority Levels:
+ * - P0: Must preserve for tool calling to work (tool definitions, JSON schemas)
+ * - P1: Should preserve for best experience (safety, core identity)
+ * - P2: Optional content (examples, verbose explanations)
  */
 export const CRITICAL_SECTIONS: CriticalSection[] = [
+  // P0: Critical tool calling patterns
   {
     name: "tool-usage-policy-header",
     pattern: /# Tool usage policy/,
     required: true,
     description:
       "Header marking the tool usage policy section - contains critical function call instructions",
+    priority: "P0",
+    dependencies: [],
   },
   {
     name: "function-calls-instruction",
     pattern: /When making function calls/,
-    required: false,
+    required: true,
     description:
       "Core instruction for how to make function calls - critical for tool invocation",
+    priority: "P0",
+    dependencies: ["tool-usage-policy-header"],
   },
   {
     name: "json-format-requirement",
@@ -112,26 +136,45 @@ export const CRITICAL_SECTIONS: CriticalSection[] = [
     required: true,
     description:
       "Requirement to use JSON format for parameters - prevents malformed tool calls",
+    priority: "P0",
+    dependencies: [],
+  },
+
+  // P1: Important guidelines and core identity
+  {
+    name: "function-calls-tags",
+    pattern: /<function_calls>/,
+    required: false,
+    description:
+      "XML-style function call tags - used in tool invocation format (format-specific)",
+    priority: "P1",
+    dependencies: [],
+  },
+  {
+    name: "invoke-tag",
+    pattern: /<invoke name=/,
+    required: false,
+    description:
+      "Tool invocation tag format - shows how to structure tool calls (format-specific)",
+    priority: "P1",
+    dependencies: ["function-calls-tags"],
   },
   {
     name: "doing-tasks-section",
     pattern: /# Doing tasks/,
-    required: true,
+    required: false,
     description:
       "Section header for task execution instructions - contains workflow guidance",
+    priority: "P1",
+    dependencies: [],
   },
   {
     name: "important-markers",
     pattern: /IMPORTANT:/,
-    required: true,
-    description: "Markers for critical instructions that must be followed",
-  },
-  {
-    name: "very-important-markers",
-    pattern: /VERY IMPORTANT:/,
     required: false,
-    description:
-      "Markers for the most critical instructions - optional but recommended",
+    description: "Markers for critical instructions that must be followed",
+    priority: "P1",
+    dependencies: [],
   },
   {
     name: "absolute-path-requirement",
@@ -139,20 +182,44 @@ export const CRITICAL_SECTIONS: CriticalSection[] = [
     required: false,
     description:
       "Instruction to use absolute paths instead of relative paths - prevents file access errors",
+    priority: "P1",
+    dependencies: [],
   },
   {
-    name: "function-calls-tags",
-    pattern: /<function_calls>/,
+    name: "security-guidelines",
+    pattern: /# Security|NEVER execute/i,
+    required: false,
+    description: "Security guidelines for safe code execution",
+    priority: "P1",
+    dependencies: [],
+  },
+
+  // P2: Optional content
+  {
+    name: "very-important-markers",
+    pattern: /VERY IMPORTANT:/,
     required: false,
     description:
-      "XML-style function call tags - used in some tool invocation formats",
+      "Markers for the most critical instructions - optional but recommended",
+    priority: "P2",
+    dependencies: [],
   },
   {
-    name: "invoke-tag",
-    pattern: /<invoke name=/,
+    name: "examples-section",
+    pattern: /# Examples|Example \d+/i,
     required: false,
     description:
-      "Tool invocation tag format - shows how to structure tool calls",
+      "Example sections showing tool usage patterns - helpful but not required",
+    priority: "P2",
+    dependencies: [],
+  },
+  {
+    name: "verbose-explanations",
+    pattern: /detailed explanation|for instance|specifically/i,
+    required: false,
+    description: "Verbose explanatory text - can be condensed or removed",
+    priority: "P2",
+    dependencies: [],
   },
 ];
 

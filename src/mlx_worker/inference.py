@@ -11,6 +11,7 @@ Performance optimizations (Issue #43):
 
 import gc
 import re
+import time
 import mlx.core as mx
 import mlx_lm
 from mlx_lm import stream_generate
@@ -89,11 +90,20 @@ def load_model(model_path: str, config: Optional[Dict[str, Any]] = None) -> Tupl
         return _model_cache[cache_key]
 
     try:
+        # Show loading message for large models
+        model_name = model_path.split("/")[-1] if "/" in model_path else model_path
+        print(f"[mlx-worker] Loading model: {model_name}...")
+        print(f"[mlx-worker] This may take 30-60 seconds for large models (loading weights to GPU)")
+        load_start = time.time()
+
         # Load model using mlx_lm
         if config:
             model, tokenizer = mlx_lm.load(model_path, config=config)
         else:
             model, tokenizer = mlx_lm.load(model_path)
+
+        load_time = time.time() - load_start
+        print(f"[mlx-worker] ✓ Model loaded in {load_time:.1f}s")
 
         # Cache the result
         _model_cache[cache_key] = (model, tokenizer)
@@ -171,13 +181,17 @@ def generate_stream(
         # The cache must be created with make_prompt_cache(model) to work correctly
         current_hash = _get_system_prompt_hash(messages)
         prompt_cache = None
+        is_cache_warming = False
 
         if cache_prompt:
             if current_hash == _prompt_cache_hash and current_hash in _prompt_cache:
                 # Reuse existing cache for same system prompt
                 prompt_cache = _prompt_cache[current_hash]
             else:
-                # Create new cache using make_prompt_cache (NOT empty list!)
+                # Create new cache - first request will be slow while KV cache warms
+                print(f"[mlx-worker] Warming KV cache with system prompt (~18k tokens)...")
+                print(f"[mlx-worker] This is a one-time cost - follow-up requests will be 10-100x faster")
+                is_cache_warming = True
                 prompt_cache = make_prompt_cache(model)
                 _prompt_cache_hash = current_hash
 
@@ -308,10 +322,13 @@ def _inject_tool_instruction(
                          'run this', 'run that', 'in the terminal', 'in terminal'],
                 'glob': ['find files', 'find the files', 'list files', 'list the files', 'search for files'],
                 'grep': ['grep for', 'grep the', 'search in file', 'search the file', 'find in file',
-                         'search for', 'in the codebase', 'search the codebase'],
+                         'search in code', 'in the codebase', 'search the codebase', 'search code for'],
                 'websearch': ['search the internet', 'search internet', 'search the web', 'search web',
                               'look up online', 'find online', 'google', 'search for information',
-                              'what is the latest', 'current news', 'recent developments'],
+                              'what is the latest', 'current news', 'recent developments',
+                              'search online', 'look online', 'find information about',
+                              'search best practices', 'search documentation', 'search tutorials',
+                              'search for latest', 'search for current', 'search for recent'],
                 'webfetch': ['fetch', 'download', 'get from url', 'scrape'],
             }
 

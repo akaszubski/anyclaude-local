@@ -30,7 +30,10 @@ import { warnDeprecation } from "./deprecation-warnings";
  * // Neither set:
  * getMigratedEnvVar('LOCAL_URL', 'LMSTUDIO_URL') // Returns undefined
  */
-export function getMigratedEnvVar(newVarName: string, oldVarName: string): string | undefined {
+export function getMigratedEnvVar(
+  newVarName: string,
+  oldVarName: string
+): string | undefined {
   const newValue = process.env[newVarName];
   if (newValue !== undefined) {
     return newValue;
@@ -65,7 +68,11 @@ export function getMigratedEnvVar(newVarName: string, oldVarName: string): strin
  * getMigratedBackendConfig(config, 'local', 'lmstudio')
  * // Returns local config, no warning
  */
-export function getMigratedBackendConfig(config: any, newKey: string, oldKey: string): any {
+export function getMigratedBackendConfig(
+  config: any,
+  newKey: string,
+  oldKey: string
+): any {
   if (config && config[newKey] !== undefined) {
     return config[newKey];
   }
@@ -77,9 +84,19 @@ export function getMigratedBackendConfig(config: any, newKey: string, oldKey: st
 }
 
 /**
+ * Map of deprecated backend names to their replacements
+ */
+const DEPRECATED_BACKENDS: Record<string, string> = {
+  lmstudio: "local",
+  mlx: "local",
+  "mlx-lm": "local",
+  "mlx-textgen": "local",
+};
+
+/**
  * Normalize backend mode name
  *
- * Converts 'lmstudio' to 'local' with deprecation warning.
+ * Converts deprecated backend names to their current equivalents with deprecation warning.
  * Handles case-insensitive input.
  *
  * @param mode - Backend mode name
@@ -87,15 +104,24 @@ export function getMigratedBackendConfig(config: any, newKey: string, oldKey: st
  *
  * @example
  * normalizeBackendMode('lmstudio') // Returns 'local', emits warning
+ * normalizeBackendMode('mlx-lm') // Returns 'local', emits warning
+ * normalizeBackendMode('mlx') // Returns 'local', emits warning
  * normalizeBackendMode('LMSTUDIO') // Returns 'local', emits warning
  * normalizeBackendMode('local') // Returns 'local', no warning
  * normalizeBackendMode('claude') // Returns 'claude', no warning
  */
 export function normalizeBackendMode(mode: string): string {
   const normalized = mode.toLowerCase();
-  if (normalized === 'lmstudio') {
-    warnDeprecation('ANYCLAUDE_MODE=lmstudio', 'ANYCLAUDE_MODE=local');
-    return 'local';
+
+  // Check if it's a deprecated backend
+  if (normalized in DEPRECATED_BACKENDS) {
+    const replacement = DEPRECATED_BACKENDS[normalized];
+    warnDeprecation(
+      `ANYCLAUDE_MODE=${normalized}`,
+      `ANYCLAUDE_MODE=${replacement}`
+    );
+    return replacement;
   }
+
   return normalized;
 }

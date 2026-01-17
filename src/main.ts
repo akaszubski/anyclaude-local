@@ -15,7 +15,11 @@ import {
 } from "./anthropic-proxy";
 import type { AnyclaudeMode } from "./trace-logger";
 import { getBackendLogPrefix } from "./utils/backend-display";
-import { normalizeBackendMode, getMigratedBackendConfig, getMigratedEnvVar } from "./utils/backend-migration";
+import {
+  normalizeBackendMode,
+  getMigratedBackendConfig,
+  getMigratedEnvVar,
+} from "./utils/backend-migration";
 import { debug, isDebugEnabled, logSessionContext } from "./debug";
 import { displaySetupStatus, shouldFailStartup } from "./setup-checker";
 import { getTimeoutConfig, getTimeoutInfoString } from "./timeout-config";
@@ -23,6 +27,7 @@ import {
   startMLXWorkerServer,
   wasServerLaunchedByUs,
   cleanupServerProcess,
+  startSearxNGContainer,
 } from "./server-launcher";
 import {
   initializeCluster,
@@ -63,8 +68,10 @@ interface AnyclaudeConfig {
       toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
       injectionThreshold?: number; // Confidence threshold (0-1)
       maxInjectionsPerConversation?: number; // Max injections per conversation
+      localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
-    lmstudio?: { // Deprecated: use 'local' instead
+    lmstudio?: {
+      // Deprecated: use 'local' instead
       enabled?: boolean;
       port?: number;
       baseUrl?: string;
@@ -85,6 +92,7 @@ interface AnyclaudeConfig {
       toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
       injectionThreshold?: number; // Confidence threshold (0-1)
       maxInjectionsPerConversation?: number; // Max injections per conversation
+      localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
     claude?: {
       enabled?: boolean;
@@ -215,12 +223,58 @@ async function runModelTest() {
 
   const testProcess = spawn("./test-model-compatibility.sh", [], {
     stdio: "inherit",
-    shell: true,
+    shell: false, // Security: avoid shell interpretation
   });
 
   testProcess.on("close", (code) => {
     process.exit(code || 0);
   });
+}
+
+// Valid backend modes
+const VALID_BACKENDS = [
+  "claude",
+  "local",
+  "openrouter",
+  "mlx-cluster",
+] as const;
+const DEPRECATED_BACKENDS: Record<string, string> = {
+  lmstudio: "local",
+  "mlx-textgen": "local",
+  mlx: "local",
+  "mlx-lm": "local",
+};
+
+/**
+ * Validate that a backend name is recognized
+ * Throws a clear error if the backend is unknown
+ */
+function validateBackendName(
+  backend: string,
+  source: "ANYCLAUDE_MODE" | "config.backend" | "CLI --mode"
+): void {
+  const normalized = backend.toLowerCase();
+
+  // Check if it's a valid backend
+  if (VALID_BACKENDS.includes(normalized as any)) {
+    return;
+  }
+
+  // Check if it's a deprecated backend (these are handled by normalizeBackendMode)
+  if (normalized in DEPRECATED_BACKENDS) {
+    return;
+  }
+
+  // Unknown backend - throw helpful error
+  const validList = VALID_BACKENDS.join(", ");
+  const deprecatedList = Object.keys(DEPRECATED_BACKENDS).join(", ");
+  console.error(`\n❌ Error: Unknown backend "${backend}" in ${source}`);
+  console.error(`\n   Valid backends: ${validList}`);
+  console.error(`   Deprecated (still work): ${deprecatedList}`);
+  console.error(`\n   Example: Set backend to "local" for MLX/LMStudio models`);
+  console.error(`            Set backend to "openrouter" for cloud models`);
+  console.error(`            Set backend to "claude" for Anthropic API\n`);
+  process.exit(1);
 }
 
 /**
@@ -237,6 +291,8 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
   // Check environment variable (normalize handles lmstudio -> local with warning)
   const envMode = process.env.ANYCLAUDE_MODE?.toLowerCase();
   if (envMode) {
+    // Validate before normalizing - catch unknown backends early
+    validateBackendName(envMode, "ANYCLAUDE_MODE");
     const normalizedEnvMode = normalizeBackendMode(envMode);
     if (
       normalizedEnvMode === "claude" ||
@@ -250,7 +306,11 @@ function detectMode(config: AnyclaudeConfig): AnyclaudeMode {
 
   // Check config file (normalize handles lmstudio -> local with warning)
   if (config.backend) {
-    const normalizedBackend = normalizeBackendMode(config.backend.toLowerCase());
+    // Validate before normalizing - catch unknown backends early
+    validateBackendName(config.backend, "config.backend");
+    const normalizedBackend = normalizeBackendMode(
+      config.backend.toLowerCase()
+    );
     if (
       normalizedBackend === "claude" ||
       normalizedBackend === "local" ||
@@ -318,7 +378,11 @@ function getBackendConfig(
 ) {
   if (backend === "local" || backend === "lmstudio") {
     // Use migration helpers to support both old and new naming
-    const localConfig = getMigratedBackendConfig(configBackends, 'local', 'lmstudio');
+    const localConfig = getMigratedBackendConfig(
+      configBackends,
+      "local",
+      "lmstudio"
+    );
     const defaultConfig = {
       baseURL: "http://localhost:8082/v1",
       apiKey: "lm-studio",
@@ -326,15 +390,15 @@ function getBackendConfig(
     };
     return {
       baseURL:
-        getMigratedEnvVar('LOCAL_URL', 'LMSTUDIO_URL') ||
+        getMigratedEnvVar("LOCAL_URL", "LMSTUDIO_URL") ||
         localConfig?.baseUrl ||
         defaultConfig.baseURL,
       apiKey:
-        getMigratedEnvVar('LOCAL_API_KEY', 'LMSTUDIO_API_KEY') ||
+        getMigratedEnvVar("LOCAL_API_KEY", "LMSTUDIO_API_KEY") ||
         localConfig?.apiKey ||
         defaultConfig.apiKey,
       model:
-        getMigratedEnvVar('LOCAL_MODEL', 'LMSTUDIO_MODEL') ||
+        getMigratedEnvVar("LOCAL_MODEL", "LMSTUDIO_MODEL") ||
         localConfig?.model ||
         defaultConfig.model,
     };
@@ -604,7 +668,11 @@ if (process.env.NODE_ENV !== "test") {
     // Auto-start MLX worker for local mode when using localhost
     if (mode === "local") {
       // Get local backend config with migration support (local or deprecated lmstudio)
-      const localBackendConfig = getMigratedBackendConfig(config.backends, 'local', 'lmstudio');
+      const localBackendConfig = getMigratedBackendConfig(
+        config.backends,
+        "local",
+        "lmstudio"
+      );
       const backendUrl = localConfig?.baseURL || "http://localhost:8082/v1";
       const isLocalhost =
         backendUrl.includes("localhost") || backendUrl.includes("127.0.0.1");
@@ -616,8 +684,7 @@ if (process.env.NODE_ENV !== "test") {
         const port = urlMatch ? parseInt(urlMatch[1], 10) : 8081;
         const modelPath =
           localBackendConfig?.modelPath || process.env.MLX_MODEL_PATH;
-        const startupTimeout =
-          localBackendConfig?.startupTimeout || 120000;
+        const startupTimeout = localBackendConfig?.startupTimeout || 120000;
 
         if (modelPath) {
           debug(1, `[anyclaude] Auto-starting MLX Worker on port ${port}...`);
@@ -644,6 +711,35 @@ if (process.env.NODE_ENV !== "test") {
       }
     }
 
+    // Auto-start SearXNG container if local search is enabled
+    // Check SEARXNG_URL env var or localSearch config option
+    const localSearchEnabled =
+      process.env.SEARXNG_URL ||
+      config.backends?.local?.localSearch ||
+      config.backends?.lmstudio?.localSearch;
+
+    if (localSearchEnabled) {
+      debug(
+        1,
+        "[anyclaude] Local search enabled, checking SearXNG container..."
+      );
+      const searxngStarted = await startSearxNGContainer();
+      if (searxngStarted) {
+        // Set SEARXNG_URL if not already set so search executor uses it
+        if (!process.env.SEARXNG_URL) {
+          process.env.SEARXNG_URL = "http://localhost:8080";
+          console.log(
+            `[anyclaude] ✓ Local search enabled (${process.env.SEARXNG_URL})`
+          );
+        }
+      } else {
+        debug(
+          1,
+          "[anyclaude] SearXNG container not started, will use fallback search"
+        );
+      }
+    }
+
     const proxyURL = createAnthropicProxy({
       providers,
       defaultProvider: mode,
@@ -664,45 +760,55 @@ if (process.env.NODE_ENV !== "test") {
       // Default: true (acts as safety net for local models with limited context)
       truncateSystemPrompt:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.truncateSystemPrompt ?? true)
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.truncateSystemPrompt ?? true)
           : false,
       systemPromptMaxTokens:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.systemPromptMaxTokens ?? 2000)
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.systemPromptMaxTokens ?? 2000)
           : 0,
       smartSystemPrompt:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.smartSystemPrompt ?? false)
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.smartSystemPrompt ?? false)
           : false,
       smartPromptMode:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.smartPromptMode ?? "simple")
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.smartPromptMode ?? "simple")
           : "simple",
       // Safe system filter (Issue #21)
       safeSystemFilter:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.safeSystemFilter ?? true)
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.safeSystemFilter ?? true)
           : false,
       filterTier:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.filterTier ?? "aggressive")
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.filterTier ?? "aggressive")
           : undefined,
       // Tool instruction injection (Issue #35)
       injectToolInstructions:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.injectToolInstructions ?? false)
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.injectToolInstructions ?? false)
           : false,
       toolInstructionStyle:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.toolInstructionStyle ?? "explicit")
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.toolInstructionStyle ?? "explicit")
           : "explicit",
       injectionThreshold:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.injectionThreshold ?? 0.7)
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.injectionThreshold ?? 0.7)
           : 0.7,
       maxInjectionsPerConversation:
         mode === "local"
-          ? (getMigratedBackendConfig(config.backends, 'local', 'lmstudio')?.maxInjectionsPerConversation ?? 10)
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.maxInjectionsPerConversation ?? 10)
           : 10,
     });
 

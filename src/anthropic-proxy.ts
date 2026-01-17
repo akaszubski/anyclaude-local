@@ -73,6 +73,10 @@ import {
 } from "./server-side-tool-handler";
 import { CircuitBreaker } from "./circuit-breaker";
 
+// Security: Maximum request body size (10MB) to prevent DoS attacks
+// Claude Code requests are typically 1-5MB, so 10MB provides headroom
+const MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024; // 10MB
+
 // Circuit breaker for monitoring backend health and latency
 const proxyCircuitBreaker = new CircuitBreaker({
   failureThreshold: 5,
@@ -409,6 +413,21 @@ export const createAnthropicProxy = ({
             error: "No URL provided",
           })
         );
+        return;
+      }
+
+      // Security: Check Content-Length header for oversized requests (DoS prevention)
+      const contentLength = parseInt(req.headers["content-length"] || "0", 10);
+      if (contentLength > MAX_REQUEST_BODY_SIZE) {
+        res.writeHead(413, {
+          "Content-Type": "application/json",
+        });
+        res.end(
+          JSON.stringify({
+            error: `Request body too large. Maximum size is ${MAX_REQUEST_BODY_SIZE / (1024 * 1024)}MB`,
+          })
+        );
+        debug(1, `[Security] Rejected oversized request: ${contentLength} bytes (max: ${MAX_REQUEST_BODY_SIZE})`);
         return;
       }
 
@@ -1633,6 +1652,14 @@ export const createAnthropicProxy = ({
                   );
                 }
 
+                // Record latency for circuit breaker monitoring
+                const completionLatencyMs = Date.now() - requestStartTime;
+                proxyCircuitBreaker.recordLatency(completionLatencyMs);
+                debug(
+                  2,
+                  `[Circuit Breaker] Recorded latency: ${completionLatencyMs}ms`
+                );
+
                 // If the body is already being streamed,
                 // we don't need to do any conversion here.
                 if (body.stream) {
@@ -2198,6 +2225,13 @@ export const createAnthropicProxy = ({
               clearInterval(keepaliveInterval);
             }
             const totalDuration = Date.now() - requestStartTime;
+
+            // Record latency for circuit breaker monitoring
+            proxyCircuitBreaker.recordLatency(totalDuration);
+            debug(
+              2,
+              `[Circuit Breaker] Recorded streaming latency: ${totalDuration}ms`
+            );
 
             // Calculate tok/s if we have timing data
             let tokensPerSecond: number | null = null;

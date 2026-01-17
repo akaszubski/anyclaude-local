@@ -121,14 +121,14 @@ Now searches work seamlessly with no permission prompts!
 
 **What each step does:**
 
-| Step | Component | Purpose |
-|------|-----------|---------|
-| 1 | SearXNG Docker | Local metasearch engine aggregating Google, DuckDuckGo, etc. |
-| 2 | MCP Server | Bridge between Claude Code and SearXNG |
-| 3 | MCP Config | Tells Claude Code about the MCP server |
-| 4 | Deny WebSearch | **Critical**: Prevents server-side search execution |
-| 5 | Auto-approval | Removes permission prompts for MCP tool |
-| 6 | Restart | Loads new configuration |
+| Step | Component      | Purpose                                                      |
+| ---- | -------------- | ------------------------------------------------------------ |
+| 1    | SearXNG Docker | Local metasearch engine aggregating Google, DuckDuckGo, etc. |
+| 2    | MCP Server     | Bridge between Claude Code and SearXNG                       |
+| 3    | MCP Config     | Tells Claude Code about the MCP server                       |
+| 4    | Deny WebSearch | **Critical**: Prevents server-side search execution          |
+| 5    | Auto-approval  | Removes permission prompts for MCP tool                      |
+| 6    | Restart        | Loads new configuration                                      |
 
 ### Why MCP?
 
@@ -200,7 +200,13 @@ Create `~/.claude/config/auto_approve_policy.json`:
   "web_tools": {
     "whitelist": ["WebFetch", "WebSearch", "mcp__searxng__web_search"],
     "allow_all_domains": true,
-    "blocked_domains": ["localhost", "127.0.0.1", "169.254.*", "10.*", "192.168.*"]
+    "blocked_domains": [
+      "localhost",
+      "127.0.0.1",
+      "169.254.*",
+      "10.*",
+      "192.168.*"
+    ]
   }
 }
 ```
@@ -215,11 +221,11 @@ Now when you ask Claude to search, it will use your local SearxNG via the MCP `m
 
 ### Alternative MCP Servers
 
-| Server | Install | Notes |
-|--------|---------|-------|
-| [@kevinwatt/mcp-server-searxng](https://www.npmjs.com/package/@kevinwatt/mcp-server-searxng) | `npm install -g @kevinwatt/mcp-server-searxng` | Recommended, well-maintained |
-| [searxng-mcp](https://github.com/tisDDM/searxng-mcp) | `uvx searxng-mcp` | Uses random public instances (no Docker needed) |
-| [mcp-searxng](https://github.com/ihor-sokoliuk/mcp-searxng) | See repo | Python-based |
+| Server                                                                                       | Install                                        | Notes                                           |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------- |
+| [@kevinwatt/mcp-server-searxng](https://www.npmjs.com/package/@kevinwatt/mcp-server-searxng) | `npm install -g @kevinwatt/mcp-server-searxng` | Recommended, well-maintained                    |
+| [searxng-mcp](https://github.com/tisDDM/searxng-mcp)                                         | `uvx searxng-mcp`                              | Uses random public instances (no Docker needed) |
+| [mcp-searxng](https://github.com/ihor-sokoliuk/mcp-searxng)                                  | See repo                                       | Python-based                                    |
 
 ### Verification
 
@@ -249,6 +255,7 @@ Not whitelisted: Tool 'mcp__searxng__web_search' not supported for auto-approval
 **Why this happens:**
 
 Claude Code has two permission layers:
+
 1. **Claude Code permissions** (`~/.claude/settings.json`) - Controls which tools Claude can call
 2. **Hook validator** (`~/.claude/lib/tool_validator.py`) - Pre-tool hooks may have their own whitelists
 

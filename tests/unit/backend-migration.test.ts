@@ -27,7 +27,10 @@ import {
   getMigratedBackendConfig,
   normalizeBackendMode,
 } from "../../src/utils/backend-migration";
-import { warnDeprecation, resetWarnings } from "../../src/utils/deprecation-warnings";
+import {
+  warnDeprecation,
+  resetWarnings,
+} from "../../src/utils/deprecation-warnings";
 import type { AnyclaudeMode } from "../../src/trace-logger";
 
 // Mock console.warn to capture deprecation warnings
@@ -156,7 +159,10 @@ describe("getMigratedEnvVar - Multiple variables", () => {
   test("should handle context length migration", () => {
     process.env.LMSTUDIO_CONTEXT_LENGTH = "8192";
 
-    const result = getMigratedEnvVar("LOCAL_CONTEXT_LENGTH", "LMSTUDIO_CONTEXT_LENGTH");
+    const result = getMigratedEnvVar(
+      "LOCAL_CONTEXT_LENGTH",
+      "LMSTUDIO_CONTEXT_LENGTH"
+    );
 
     expect(result).toBe("8192");
   });
@@ -427,6 +433,24 @@ describe("normalizeBackendMode - Basic functionality", () => {
     expect(result).toBe("local");
   });
 
+  test("should convert 'mlx-lm' to 'local'", () => {
+    const result = normalizeBackendMode("mlx-lm" as any);
+
+    expect(result).toBe("local");
+  });
+
+  test("should convert 'mlx' to 'local'", () => {
+    const result = normalizeBackendMode("mlx" as any);
+
+    expect(result).toBe("local");
+  });
+
+  test("should convert 'mlx-textgen' to 'local'", () => {
+    const result = normalizeBackendMode("mlx-textgen" as any);
+
+    expect(result).toBe("local");
+  });
+
   test("should keep 'local' as 'local'", () => {
     const result = normalizeBackendMode("local");
 
@@ -501,6 +525,30 @@ describe("normalizeBackendMode - Deprecation warnings", () => {
     expect(warnCalls[0]).toContain("local");
   });
 
+  test("should emit warning when normalizing 'mlx-lm'", () => {
+    normalizeBackendMode("mlx-lm" as any);
+
+    expect(warnCalls.length).toBeGreaterThan(0);
+    expect(warnCalls[0]).toContain("mlx-lm");
+    expect(warnCalls[0]).toContain("local");
+  });
+
+  test("should emit warning when normalizing 'mlx'", () => {
+    normalizeBackendMode("mlx" as any);
+
+    expect(warnCalls.length).toBeGreaterThan(0);
+    expect(warnCalls[0]).toContain("mlx");
+    expect(warnCalls[0]).toContain("local");
+  });
+
+  test("should emit warning when normalizing 'mlx-textgen'", () => {
+    normalizeBackendMode("mlx-textgen" as any);
+
+    expect(warnCalls.length).toBeGreaterThan(0);
+    expect(warnCalls[0]).toContain("mlx-textgen");
+    expect(warnCalls[0]).toContain("local");
+  });
+
   test("should not emit warning for 'local'", () => {
     normalizeBackendMode("local");
 
@@ -523,10 +571,27 @@ describe("normalizeBackendMode - Deprecation warnings", () => {
     expect(warnCalls.length).toBe(1);
   });
 
+  test("should emit warning only once for 'mlx-lm'", () => {
+    normalizeBackendMode("mlx-lm" as any);
+    normalizeBackendMode("mlx-lm" as any);
+    normalizeBackendMode("mlx-lm" as any);
+
+    expect(warnCalls.length).toBe(1);
+  });
+
   test("should emit warning for case-insensitive matches", () => {
     normalizeBackendMode("LMSTUDIO" as AnyclaudeMode);
 
     expect(warnCalls.length).toBeGreaterThan(0);
+  });
+
+  test("should emit separate warnings for each deprecated backend", () => {
+    normalizeBackendMode("lmstudio");
+    normalizeBackendMode("mlx-lm" as any);
+    normalizeBackendMode("mlx" as any);
+    normalizeBackendMode("mlx-textgen" as any);
+
+    expect(warnCalls.length).toBe(4);
   });
 });
 
@@ -567,7 +632,10 @@ describe("Backend migration - Integration scenarios", () => {
     process.env.LMSTUDIO_CONTEXT_LENGTH = "8192";
 
     const url = getMigratedEnvVar("LOCAL_URL", "LMSTUDIO_URL");
-    const contextLength = getMigratedEnvVar("LOCAL_CONTEXT_LENGTH", "LMSTUDIO_CONTEXT_LENGTH");
+    const contextLength = getMigratedEnvVar(
+      "LOCAL_CONTEXT_LENGTH",
+      "LMSTUDIO_CONTEXT_LENGTH"
+    );
 
     expect(url).toBe("http://new-url:1234");
     expect(contextLength).toBe("8192");
@@ -617,7 +685,10 @@ describe("Backend migration - Integration scenarios", () => {
 
     const mode = normalizeBackendMode("lmstudio");
     const url = getMigratedEnvVar("LOCAL_URL", "LMSTUDIO_URL");
-    const contextLength = getMigratedEnvVar("LOCAL_CONTEXT_LENGTH", "LMSTUDIO_CONTEXT_LENGTH");
+    const contextLength = getMigratedEnvVar(
+      "LOCAL_CONTEXT_LENGTH",
+      "LMSTUDIO_CONTEXT_LENGTH"
+    );
     const backendConfig = getMigratedBackendConfig(config, "local", "lmstudio");
 
     expect(mode).toBe("local");

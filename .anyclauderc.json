@@ -1,18 +1,21 @@
 {
-  "backend": "lmstudio",
+  "backend": "local",
   "debug": {
-    "level": 0,
+    "level": 1,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "lmstudio": {
+    "local": {
       "enabled": true,
-      "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "mlx-worker",
-      "model": "current-model",
-      "compatibility": "legacy",
-      "description": "Local MLX Worker - uses Qwen2.5-Coder-7B via MLX"
+      "baseUrl": "http://Mac-Studio.local.:8082/v1",
+      "apiKey": "local",
+      "model": "/models--mlx-community--Qwen2.5-32B-Instruct-4bit/snapshots/2938092373e5f97b95538884112085364c2da315",
+      "description": "Local OpenAI-compatible server on Mac Studio",
+      "autoStartServer": false,
+      "truncateSystemPrompt": false,
+      "safeSystemFilter": true,
+      "localSearch": true
     },
     "claude": {
       "enabled": false,

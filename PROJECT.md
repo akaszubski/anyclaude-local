@@ -2,38 +2,57 @@
 
 ## Project Vision
 
-**Make Claude Code work seamlessly with any AI backend - local, cloud, or hybrid.**
+**A complete, local-first replacement for Claude Code - all capabilities, no cloud dependency, maximum speed.**
 
-AnyClaude is a translation layer that bridges the gap between Claude Code (Anthropic's official CLI tool) and multiple AI providers. Whether you're using local models (mistral.rs with MLX, LMStudio), cloud models (OpenRouter with 400+ options), or official Claude API (Max subscription or API key), anyclaude provides a unified, flexible development experience optimized for your needs.
+AnyClaude enables developers to use Claude Code with local LLMs while retaining 100% of its capabilities. This is not just a proxy - it's a complete solution that makes local AI development indistinguishable from using Claude's cloud service. Every feature must work: tool calling, web search, file operations, and all automations. Speed is critical - responses must feel as fast as the cloud experience.
+
+### Core Principles
+
+1. **Local-First**: Run everything locally with zero cloud dependency when desired
+2. **Feature Parity**: Every Claude Code capability must work (tools, web search, all automations)
+3. **Speed is Key**: Response latency must match or exceed cloud experience
+4. **Reliable by Default**: No manual configuration needed for core features
 
 ## GOALS
 
-### Primary Goals
+### Primary Goal
 
-1. **Enable Privacy-First Development**
-   - Run Claude Code completely offline with local models (mistral.rs with MLX, LMStudio)
-   - Zero data transmission to cloud services
-   - Full control over code and conversations
-   - Support for Apple Silicon (M1/M2/M3/M4) with native MLX acceleration
+**Use all Claude Code automation and functionality with local open-source models.**
 
-2. **Reduce AI Development Costs**
-   - Free: Local models (mistral.rs, LMStudio) with no API costs
-   - 84% savings: OpenRouter ($0.60-$2/1M tokens vs Claude $3-$15/1M)
-   - Flexible: Switch modes based on task requirements
-   - Efficient: Prompt caching reduces token usage by 30-50%
+Run Claude Code with local LLMs (MLX on Apple Silicon) and get the same experience as using Claude's cloud service. Every tool, every automation, every workflow - all working locally with open-source models.
 
-3. **Seamless Claude Code Experience**
-   - Full tool calling support (Read, Write, Edit, Bash, Git, etc.)
-   - Production-ready with mistral.rs inference engine
+### Requirements (in priority order)
+
+1. **Full Claude Code Functionality with Local Models**
+   - 100% feature parity using local open-source LLMs
+   - All tools work: Read, Write, Edit, Bash, Git, WebSearch, WebFetch
+   - All automations work: task agents, code review, commit generation
+   - Indistinguishable experience from cloud Claude Code
+
+2. **Speed is Critical**
+   - Response latency must match or exceed cloud experience
+   - First token in <2 seconds for cached contexts
+   - Native MLX acceleration with KV caching (M1/M2/M3/M4 Ultra)
    - Streaming responses with proper backpressure handling
-   - Authentication compatibility (Claude Max + API keys)
-   - Hot-swappable models without restart
+   - Note: LMStudio backend exists but is too slow for production use
 
-4. **Developer Productivity**
-   - Auto-launch mistral.rs server for zero-config experience
-   - Native MLX acceleration with KV caching
+3. **Local-First, Zero Cloud Dependency**
+   - Run completely offline with local models
+   - Zero data transmission to cloud services
+   - Full control over code, conversations, and model selection
+   - Privacy-first: your code never leaves your machine
+
+4. **OpenRouter as Backup** (secondary)
+   - Simpler and cheaper cloud alternative when local isn't practical
+   - 84% cost savings vs Claude API ($0.60-$2/1M vs $3-$15/1M tokens)
+   - Useful for tasks requiring larger context or faster response
+   - Prompt caching reduces token usage by 30-50%
+
+5. **Developer Productivity**
+   - Zero-config: Auto-launch MLX server, auto-detect models
    - Mode switching via CLI flag, env var, or config file
    - Comprehensive debug logging (3 levels) for troubleshooting
+   - Hot-swappable models without restart
 
 ### Success Metrics
 
@@ -57,12 +76,13 @@ AnyClaude is a translation layer that bridges the gap between Claude Code (Anthr
 **Core Functionality**:
 
 - ✅ Translation between Anthropic Messages API and OpenAI Chat Completions format
-- ✅ Support for 4 backend modes: mlx (mistral.rs), lmstudio, openrouter, claude
+- ✅ Support for 4 backend modes: local (MLX/LMStudio), openrouter, claude
 - ✅ Full tool calling translation (streaming and atomic formats)
 - ✅ Streaming response adaptation (AI SDK → Anthropic SSE)
 - ✅ Context window management with automatic truncation
 - ✅ Trace logging for cloud modes (auto-enabled, API keys redacted)
-- ✅ **Native MLX acceleration with mistral.rs**: Production-ready Rust inference engine with KV caching, MoE support, and excellent tool calling
+- ✅ **Native MLX acceleration**: Production-ready with KV caching, MoE support, and excellent tool calling
+- 🔄 **WebSearch for Local Models**: Proactive search with intent detection, multi-provider fallback (Anthropic API, Tavily, Brave, SearxNG)
 
 **Production Infrastructure**:
 
@@ -332,33 +352,32 @@ While anyclaude acts as an HTTP proxy server, its primary role is **intelligent 
 
 anyclaude supports **four backend modes**, each optimized for different use cases:
 
-#### 1. MLX Mode (`ANYCLAUDE_MODE=mlx`, default)
+#### 1. Local Mode (`ANYCLAUDE_MODE=local`, default)
 
-**Purpose**: High-performance local inference on Apple Silicon with custom KV caching and vLLM-inspired features
+**Purpose**: High-performance local inference with any OpenAI-compatible server (MLX Worker, LMStudio, Ollama, etc.)
 
-**Status**: ✅ Tool calling WORKS with custom mlx-server.py implementation
+**Status**: ✅ Tool calling WORKS with MLX Worker (Python FastAPI with mlx_lm)
 
 **Features**:
 
-- Auto-launches custom MLX server (scripts/mlx-server.py) when model path is configured
-- Routes to local server (default: `http://localhost:8080/v1`)
-- Native MLX acceleration for M1/M2/M3/M4 chips
+- **Auto-start MLX Worker** when `modelPath` is configured and using localhost
+- Routes to local server (default: `http://localhost:8081/v1`)
+- Native MLX acceleration for Apple Silicon (M1/M2/M3/M4)
 - **RAM-based KV cache** for 100-200x speedup (<1ms GET vs 500-2000ms disk)
 - **Full tool calling support** (Read, Write, Edit, Bash, Git, etc.)
+- **Safe system filtering** with configurable tiers (auto, minimal, moderate, aggressive, extreme)
+- **Local web search** with auto-start SearXNG Docker container
 - Full translation layer (Anthropic format → OpenAI format)
-- **vLLM-inspired features**: Error recovery, circuit breaker, metrics monitoring
 - Production hardening: OOM detection, graceful degradation, health checks
 - Auto-cleanup when Claude Code exits
 
 **Architecture**:
 
 ```
-Claude Code → AnyClaude Proxy → Custom MLX Server → MLX Model
-(Anthropic API)  (Translation)   (scripts/mlx-server.py)  (Local file)
+Claude Code → AnyClaude Proxy → MLX Worker/LMStudio/etc. → Local Model
+(Anthropic API)  (Translation)   (OpenAI-compatible API)    (Local file)
                                   ↓
                                   RAM KV Cache (100-200x faster)
-                                  ↓
-                                  vLLM-inspired features
 ```
 
 **Use Cases**:
@@ -368,73 +387,44 @@ Claude Code → AnyClaude Proxy → Custom MLX Server → MLX Model
 - Offline development
 - **Fast coding with tool calling**: Read/Write/Edit/Bash all work
 - Ultra-fast follow-ups with RAM cache (100-200x speedup)
-- Production-grade reliability with error recovery
 
 **Configuration**:
 
 ```json
 {
-  "backend": "mlx",
+  "backend": "local",
   "backends": {
-    "mlx": {
+    "local": {
       "enabled": true,
-      "port": 8080,
-      "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/mlx-server.py"
+      "baseUrl": "http://localhost:8081/v1",
+      "modelPath": "/path/to/your/mlx/model",
+      "autoStartServer": true,
+      "safeSystemFilter": true,
+      "filterTier": "auto",
+      "localSearch": true
     }
   }
 }
 ```
 
----
+> **Note**: Old backend names (`mlx`, `lmstudio`, `mlx-lm`, `mlx-textgen`) still work but are deprecated. Use `local` for all local servers.
 
-#### 2. LMStudio Mode (`ANYCLAUDE_MODE=lmstudio`)
-
-**Purpose**: Cross-platform local inference with GUI model management
-
-**Features**:
-
-- Manual server management via LMStudio GUI
-- Routes to LMStudio server (default: `http://localhost:8082/v1`)
-- Model-agnostic: works with whatever model LMStudio has loaded
-- Hot-swappable: switch models in LMStudio without restarting anyclaude
-- Full translation layer (Anthropic format → OpenAI format)
-- Supports tool calling
-
-**Architecture**:
+**Architecture for different local servers**:
 
 ```
+# MLX Worker (Apple Silicon, auto-start)
+Claude Code → AnyClaude Proxy → MLX Worker (Python/uvicorn) → MLX Model
+
+# LMStudio (cross-platform, manual start)
 Claude Code → AnyClaude Proxy → LMStudio Server → Loaded Model
-(Anthropic API)  (Translation)   (OpenAI API)     (Any format)
+
+# Ollama (cross-platform)
+Claude Code → AnyClaude Proxy → Ollama Server → Downloaded Model
 ```
-
-**Use Cases**:
-
-- Windows/Linux development (non-Apple platforms)
-- GUI-based model switching
-- Privacy-focused development (100% local)
-- Testing different models easily
-
-**Configuration**:
-
-```json
-{
-  "backend": "lmstudio",
-  "backends": {
-    "lmstudio": {
-      "enabled": true,
-      "baseUrl": "http://localhost:8082/v1",
-      "model": "current-model"
-    }
-  }
-}
-```
-
-**Note**: Start LMStudio server manually before running anyclaude.
 
 ---
 
-#### 3. OpenRouter Mode (`ANYCLAUDE_MODE=openrouter`)
+#### 2. OpenRouter Mode (`ANYCLAUDE_MODE=openrouter`)
 
 **Purpose**: Cloud models at fraction of Claude API cost with 400+ model choices
 
@@ -486,7 +476,7 @@ Claude Code → AnyClaude Proxy → OpenRouter API → Selected Model
 
 ---
 
-#### 4. Claude Mode (`ANYCLAUDE_MODE=claude`)
+#### 3. Claude Mode (`ANYCLAUDE_MODE=claude`)
 
 **Purpose**: Official Anthropic API with trace logging for analysis and reverse engineering
 
@@ -563,7 +553,7 @@ anyclaude --mode=claude
      - Pre-startup validation (ConfigValidator)
      - Tool parser plugin system (6 model-specific parsers)
    - Production hardening (Phase 3): 151 tests, all passing
-   - Mode name: `mlx` (simplified from `mlx-textgen`)
+   - Mode name: `local` (replaces deprecated `mlx`, `mlx-textgen`, `lmstudio`)
 
 3. **MLX-Textgen pip package** (v2.2.0, Nov 2025 - **DEPRECATED**)
    - Attempted migration to mlx-textgen pip package
@@ -587,7 +577,7 @@ anyclaude --mode=claude
 ┌─────────────────────────────────────────────────────────────────┐
 │ Layer 1: HTTP Proxy (src/anthropic-proxy.ts)                   │
 │ • Intercepts requests to api.anthropic.com                      │
-│ • Routes based on mode: claude | lmstudio | mlx-textgen | openrouter│
+│ • Routes based on mode: claude | local | openrouter | mlx-cluster   │
 │ • Provides debug logging and trace capture                      │
 └────────────────────────┬────────────────────────────────────────┘
                          │
@@ -653,6 +643,85 @@ anyclaude --mode=claude
               SSE Response Stream          Debugging Logs
               (Anthropic format)           (stderr, trace files)
 ```
+
+## Web Search Architecture
+
+AnyClaude supports two approaches for local web search, depending on your client:
+
+### Approach 1: MCP-Based (Recommended for Claude Code)
+
+**Why MCP?** Claude Code executes `WebSearch` server-side before requests reach our proxy. The proxy cannot intercept this. The MCP pattern provides a clean solution.
+
+**Architecture:**
+
+```
+Claude Code → MCP Server → SearXNG → Search Results
+     ↓              ↓
+(WebSearch denied) (searxng_search tool)
+```
+
+**Setup:**
+
+1. Install MCP server: `npm install -g @kevinwatt/mcp-server-searxng`
+2. Configure in `~/.claude.json`:
+   ```json
+   {
+     "mcpServers": {
+       "searxng": {
+         "command": "npx",
+         "args": ["-y", "@kevinwatt/mcp-server-searxng"],
+         "env": { "SEARXNG_URL": "http://localhost:8080" }
+       }
+     }
+   }
+   ```
+3. Disable native WebSearch in `.claude/settings.json`:
+   ```json
+   { "permissions": { "deny": ["WebSearch"] } }
+   ```
+
+**References:**
+
+- [Claude Code Issue #1380](https://github.com/anthropics/claude-code/issues/1380) - Allow native tools to be disabled ✅ Implemented
+- [Claude Code MCP Docs](https://code.claude.com/docs/en/mcp)
+- [Integrating MCP Servers for Web Search](https://intuitionlabs.ai/articles/mcp-servers-claude-code-internet-search)
+
+### Approach 2: Proxy-Based (For Other Clients)
+
+For clients that don't execute WebSearch server-side, AnyClaude's proxy can intercept and route to local SearXNG.
+
+**Architecture:**
+
+```
+Client → AnyClaude Proxy → SearXNG → Search Results
+              ↓
+    (WebSearch tool call intercepted)
+```
+
+**Setup:**
+
+1. Start SearXNG: `cd scripts/docker && ./start-searxng.sh`
+2. Set environment: `export SEARXNG_URL=http://localhost:8080`
+3. AnyClaude automatically routes WebSearch calls to local SearXNG
+
+**Fallback Chain:**
+
+1. Local SearXNG (if `SEARXNG_URL` set)
+2. Anthropic API (if `ANTHROPIC_API_KEY` set)
+3. Tavily API (if `TAVILY_API_KEY` set)
+4. Brave API (if `BRAVE_API_KEY` set)
+
+### MCP Server Options
+
+| Server                                                                                       | Install                                        | Notes                 |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------- |
+| [@kevinwatt/mcp-server-searxng](https://www.npmjs.com/package/@kevinwatt/mcp-server-searxng) | `npm install -g @kevinwatt/mcp-server-searxng` | Recommended           |
+| [searxng-mcp](https://github.com/tisDDM/searxng-mcp)                                         | `uvx searxng-mcp`                              | Uses public instances |
+| [mcp-searxng](https://github.com/ihor-sokoliuk/mcp-searxng)                                  | See repo                                       | Python-based          |
+
+**Full Documentation:** [docs/guides/web-search-local.md](docs/guides/web-search-local.md)
+
+---
 
 ## Key Translation Challenges & Solutions
 
@@ -1001,6 +1070,21 @@ ANYCLAUDE_DEBUG=3 anyclaude 2> /tmp/fixed.log
 ./analyze-tool-calls.sh
 ```
 
+### Test Framework Matrix
+
+| File Pattern                       | Framework | Command                           |
+| ---------------------------------- | --------- | --------------------------------- |
+| `src/*.test.ts`, `tests/*.test.ts` | Jest      | `npm test` or `npm run test:unit` |
+| `tests/unit/*.py`                  | pytest    | `pytest tests/unit`               |
+| `tests/integration/*.py`           | pytest    | `pytest tests/integration`        |
+| `tests/regression/*.js`            | Node.js   | `npm run test:regression`         |
+
+**Important**:
+
+- TypeScript tests use Jest (configured in `jest.config.js`)
+- Python MLX tests use pytest (configured in `tests/pytest.ini`)
+- test-master agent should use the appropriate framework based on file type
+
 ## Configuration System
 
 AnyClaude uses a hierarchical configuration system that allows users to configure backends via files, environment variables, or CLI flags:
@@ -1014,8 +1098,8 @@ CLI Flags > Environment Variables > Configuration File > Defaults
 **Example**:
 
 ```bash
-# .anyclauderc.json says: backend = "lmstudio"
-# Environment says: export ANYCLAUDE_MODE=mlx-textgen
+# .anyclauderc.json says: backend = "local"
+# Environment says: export ANYCLAUDE_MODE=local
 # CLI says: anyclaude --mode=claude
 
 # Result: Claude mode is used (CLI has highest priority)
@@ -1027,20 +1111,20 @@ Place in project root with structure:
 
 ```json
 {
-  "backend": "mlx-textgen",
+  "backend": "local",
   "debug": {
     "level": 1,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "mlx-textgen": {
+    "local": {
       "enabled": true,
       "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "mlx-textgen",
+      "apiKey": "local",
       "model": "/path/to/your/mlx/model",
-      "serverScript": "scripts/mlx-textgen-server.py"
+      "serverScript": "scripts/mlx_worker/inference.py"
     },
     "lmstudio": {
       "enabled": false,

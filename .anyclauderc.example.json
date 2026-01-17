@@ -1,9 +1,9 @@
 {
-  "// COMMENT": "AnyClaude Configuration File - LMStudio, OpenRouter, and MLX Cluster",
+  "// COMMENT": "AnyClaude Configuration File - Local, OpenRouter, Claude, and MLX Cluster",
   "// USAGE": "Copy this to .anyclauderc.json and customize for your setup",
-  "// DOCS": "See README.md for detailed configuration guide",
+  "// DOCS": "See docs/guides/configuration.md for detailed configuration guide",
 
-  "backend": "lmstudio",
+  "backend": "local",
   "debug": {
     "level": 0,
     "enableTraces": false,
@@ -15,13 +15,12 @@
     "enableFallback": true
   },
   "backends": {
-    "lmstudio": {
+    "local": {
       "enabled": true,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "lm-studio",
+      "apiKey": "local",
       "model": "current-model",
       "modelPath": "/path/to/mlx/model",
-      "compatibility": "legacy",
       "description": "Local MLX Worker - auto-starts when using localhost",
       "autoStartServer": true,
       "startupTimeout": 120000,
@@ -30,7 +29,8 @@
       "smartSystemPrompt": false,
       "smartPromptMode": "simple",
       "safeSystemFilter": true,
-      "filterTier": "auto"
+      "filterTier": "auto",
+      "localSearch": true
     },
     "openrouter": {
       "enabled": false,
@@ -79,10 +79,10 @@
   },
 
   "// BACKEND OPTIONS": {
-    "lmstudio": "Local models - cross-platform, manual server management",
+    "local": "Local models - MLX Worker, LMStudio, or any OpenAI-compatible server",
     "openrouter": "Cloud models - access Gemini, Qwen, Claude, GPT-4 via one API (recommended for best quality)",
     "claude": "Official Claude API - full features, highest cost",
-    "mlx-cluster": "Distributed inference - multiple Macs with shared KV cache (for MLX servers)"
+    "mlx-cluster": "Distributed inference - multiple Macs with shared KV cache"
   },
 
   "// MLX CLUSTER CONFIGURATION (Issue #22-32)": {
@@ -112,7 +112,9 @@
     "preferLocal": "Try local SearxNG first before cloud APIs (privacy-first)",
     "enableFallback": "Fall back to cloud search if local fails (Anthropic/Tavily/Brave)",
     "SEARXNG_URL": "Env var to enable local search (set to your SearxNG URL)",
-    "Quick_Start": "Run: scripts/docker/start-searxng.sh to launch local SearxNG",
+    "localSearch": "Auto-start/stop SearXNG Docker container with anyclaude (default: false)",
+    "Quick_Start": "Set localSearch: true in backend config, Docker will auto-start SearXNG",
+    "Manual_Start": "Run: scripts/docker/start-searxng.sh to launch manually",
     "Benefits": "Privacy, no rate limits, no API costs, full control"
   },
 
@@ -147,7 +149,7 @@
   },
 
   "// ENVIRONMENT VARIABLES": {
-    "ANYCLAUDE_MODE": "Override backend (claude|lmstudio|openrouter|mlx-cluster)",
+    "ANYCLAUDE_MODE": "Override backend (local|openrouter|claude|mlx-cluster)",
     "ANYCLAUDE_DEBUG": "Debug level (0=off, 1=basic, 2=verbose, 3=trace with prompts)",
     "OPENROUTER_API_KEY": "Your OpenRouter API key (get from openrouter.ai)",
     "OPENROUTER_MODEL": "Override OpenRouter model",
@@ -157,9 +159,10 @@
   },
 
   "// QUICK START": {
-    "LMStudio": "1. Load a model in LMStudio, 2. Set backend: 'lmstudio', 3. Run: anyclaude",
+    "Local (auto-start)": "1. Set modelPath to your MLX model, 2. Set backend: 'local', 3. Run: anyclaude (server auto-starts)",
+    "Local (manual)": "1. Start your local server (MLX Worker, LMStudio, etc.), 2. Set backend: 'local', 3. Run: anyclaude",
     "OpenRouter": "1. Get API key from openrouter.ai, 2. Set backend: 'openrouter', 3. Add apiKey, 4. Run: anyclaude",
-    "MLX Cluster": "1. Start MLX workers on each Mac, 2. Set backend: 'mlx-cluster', 3. Configure nodes, 4. Run: anyclaude --mode=mlx-cluster"
+    "MLX Cluster": "1. Start MLX workers on each Mac, 2. Set backend: 'mlx-cluster', 3. Configure nodes, 4. Run: anyclaude"
   },
 
   "// COST COMPARISON (per 1M tokens)": {
@@ -168,7 +171,7 @@
     "Qwen 2.5 72B": "$0.35 input / $0.70 output - best value for basic coding",
     "GLM-4.6": "$0.60 input / $2.00 output - good for coding",
     "Claude 3.5 Sonnet": "$3.00 input / $15.00 output - highest quality",
-    "Local models (LMStudio)": "$0 (hardware costs only)",
+    "Local models": "$0 (hardware costs only)",
     "MLX Cluster": "$0 (hardware costs only, distributed across multiple Macs)"
   }
 }
