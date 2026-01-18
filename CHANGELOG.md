@@ -692,6 +692,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Issue #64: Documentation Fixes** - Fix documentation inconsistencies and environment variable naming.
+
+  **Purpose**: Ensure documentation accurately reflects current code implementation and naming conventions.
+
+  **Issues Addressed**:
+  1. **Environment Variable Naming** - Add `LOCAL_CONTEXT_LENGTH` support with backward-compatible fallback to `LMSTUDIO_CONTEXT_LENGTH`
+     - `src/context-manager.ts` - Updated to prefer `LOCAL_CONTEXT_LENGTH`, fall back to `LMSTUDIO_CONTEXT_LENGTH` with deprecation warning
+     - Maintains full backward compatibility for users still using old env var names
+
+  2. **CLI Mode Documentation** - Updated deprecated `--mode=mlx` examples to `--mode=local` in README.md
+     - Reflects current naming conventions introduced in Issue #41
+     - Ensures new users see correct command syntax
+
+  3. **Configuration Guide** - Verified `docs/guides/configuration.md` has correct environment variable names
+     - `LOCAL_CONTEXT_LENGTH` documented correctly (line 232)
+     - Examples and tables all use correct names
+
+  **Documentation Updated**:
+  - `README.md` - Examples updated from `--mode=mlx` to `--mode=local`
+  - `src/context-manager.ts` - Code reflects proper env var priority
+
+  **Backward Compatibility**: Old `LMSTUDIO_CONTEXT_LENGTH` still works with deprecation warning
+
 - **Issue #45: Strip special tokens from MLX worker output** - Remove model-specific special tokens before sending responses to Claude Code.
 
   **Purpose**: Fix garbled output from MLX models by removing special tokens like `<|im_end|>`, `<|im_start|>`, `</s>` (Qwen), and Llama 3.x tokens (`<|begin_of_text|>`, `<|eot_id|>`, `<|start_header_id|>`, `<|end_header_id|>`) from model responses.

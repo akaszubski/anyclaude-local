@@ -205,7 +205,7 @@ For best tool calling experience:
 
 ```bash
 # Option 1: Custom MLX server (local, fast, tool calling works)
-anyclaude --mode=mlx
+anyclaude --mode=local
 
 # Option 2: OpenRouter (cloud, reliable, 84% cheaper than Claude API)
 anyclaude --mode=openrouter
@@ -341,7 +341,7 @@ That's it! Server launches automatically, model loads, Claude Code starts. When 
 **MLX (manual start, if not using auto-launch):**
 
 1. Run: `source ~/.venv-mlx/bin/activate && python3 scripts/mlx-server.py --model /path/to/model --port 8081`
-2. In another terminal: `anyclaude --mode=mlx`
+2. In another terminal: `anyclaude --mode=local`
 
 **Real Claude API:**
 
@@ -918,10 +918,10 @@ Create `.anyclauderc.json` in your project root to configure backends:
 
 **Configuration Priority:**
 
-1. CLI flags (`--mode=mlx`) - Highest priority
-2. Environment variables (`ANYCLAUDE_MODE=mlx`)
-3. Config file (`backend: "mlx"` in `.anyclauderc.json`)
-4. Defaults - Lowest priority (mlx)
+1. CLI flags (`--mode=local`) - Highest priority
+2. Environment variables (`ANYCLAUDE_MODE=local`)
+3. Config file (`backend: "local"` in `.anyclauderc.json`)
+4. Defaults - Lowest priority (local)
 
 ### Environment Variables
 
@@ -929,17 +929,12 @@ Override specific settings via environment variables:
 
 ```bash
 # Mode selection (overrides config file)
-export ANYCLAUDE_MODE=mlx  # or local, openrouter, or claude
+export ANYCLAUDE_MODE=local  # or openrouter, claude, or mlx-cluster
 
-# MLX configuration
-export MLX_URL=http://localhost:8081/v1
-export MLX_MODEL=/path/to/your/mlx/model
-export MLX_API_KEY=mlx
-
-# Local (LMStudio, etc.) configuration
-export LOCAL_URL=http://localhost:8082/v1
+# Local (MLX Worker, LMStudio, etc.) configuration
+export LOCAL_URL=http://localhost:8081/v1
 export LOCAL_MODEL=current-model
-export LOCAL_API_KEY=lm-studio
+export LOCAL_API_KEY=local
 
 # OpenRouter configuration
 export OPENROUTER_API_KEY=sk-or-v1-...
@@ -964,10 +959,10 @@ export PROXY_ONLY=true
 
 ```bash
 # Select mode via CLI (highest priority)
-anyclaude --mode=mlx
 anyclaude --mode=local
 anyclaude --mode=openrouter
 anyclaude --mode=claude
+anyclaude --mode=mlx-cluster
 
 # Test model compatibility
 anyclaude --test-model
@@ -979,10 +974,10 @@ anyclaude --test-model
 
 **Modes:**
 
-- **`mlx` mode** (default): Auto-launch MLX server with prompt caching (Apple Silicon optimized)
-- **`local` mode**: Use local models like LMStudio (privacy-first, zero cloud dependency, cross-platform)
+- **`local` mode** (default): Auto-launch MLX server with prompt caching (Apple Silicon optimized) or use LMStudio (privacy-first, zero cloud dependency, cross-platform)
 - **`openrouter` mode**: Use cloud models via OpenRouter (400+ models, 84% cheaper than Claude API)
 - **`claude` mode**: Use real Anthropic API with trace logging for reverse engineering
+- **`mlx-cluster` mode**: Distributed inference across multiple Apple Silicon Macs with load balancing
 
 **Why use Claude mode?**
 
@@ -995,24 +990,24 @@ anyclaude --test-model
 
 ```bash
 # Method 1: Environment variable
-export ANYCLAUDE_MODE=mlx  # or local, openrouter, or claude
+export ANYCLAUDE_MODE=local  # or openrouter, claude, or mlx-cluster
 anyclaude
 
 # Method 2: CLI flag (takes priority over env var)
-anyclaude --mode=mlx
+anyclaude --mode=local
 
 # Method 3: Config file (.anyclauderc.json)
-# Set "backend": "mlx" in .anyclauderc.json
+# Set "backend": "local" in .anyclauderc.json
 
 # Method 4: Default (no configuration)
-anyclaude  # Uses mlx mode
+anyclaude  # Uses local mode
 ```
 
-### MLX Mode (Apple Silicon Optimized)
+### Local Mode (Apple Silicon Optimized with MLX)
 
-**Why use mlx mode (default)?**
+**Why use local mode (default)?**
 
-- **Auto-launch**: Server starts automatically when you run `anyclaude`
+- **Auto-launch**: MLX Worker server starts automatically when you run `anyclaude`
 - **Prompt caching**: Built-in KV cache for 10-100x speedup on follow-up requests
 - **Native Apple Silicon optimization** via MLX framework
 - **200K context window** (model-dependent)
@@ -1035,12 +1030,12 @@ pip install mlx-lm fastapi uvicorn pydantic
 
 # 2. Configure .anyclauderc.json
 {
-  "backend": "mlx",
+  "backend": "local",
   "backends": {
-    "mlx": {
+    "local": {
       "enabled": true,
       "port": 8081,
-      "model": "/path/to/your/mlx/model"
+      "modelPath": "/path/to/your/mlx/model"
     }
   }
 }
@@ -1076,10 +1071,10 @@ source ~/.venv-mlx/bin/activate
 python3 scripts/mlx-server.py --model /path/to/model --port 8081
 
 # In another terminal
-anyclaude --mode=mlx
+anyclaude --mode=local
 ```
 
-**Note**: MLX only works on Apple Silicon (M1/M2/M3/M4). For Intel/AMD, use `lmstudio` mode.
+**Note**: MLX only works on Apple Silicon (M1/M2/M3/M4). For Intel/AMD, use LMStudio with `local` mode.
 
 ---
 

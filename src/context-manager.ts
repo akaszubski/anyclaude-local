@@ -1,6 +1,7 @@
 import { encoding_for_model } from "tiktoken";
 import type { AnthropicMessage } from "./anthropic-api-types";
 import { debug, isDebugEnabled } from "./debug";
+import { warnDeprecation } from "./utils/deprecation-warnings";
 
 // Context window sizes for common models
 const MODEL_CONTEXT_LIMITS: Record<string, number> = {
@@ -78,7 +79,7 @@ function estimateTokens(text: string): number {
 /**
  * Get context limit for a model
  * Priority:
- * 1. Environment variable override (LMSTUDIO_CONTEXT_LENGTH)
+ * 1. Environment variable override (LOCAL_CONTEXT_LENGTH)
  * 2. LMStudio API query (loaded_context_length)
  * 3. Known model table lookup
  * 4. Conservative default (32K)
@@ -88,10 +89,19 @@ export function getContextLimit(
   lmstudioContextLength?: number
 ): number {
   // 1. Check for environment variable override (highest priority)
-  const envLimit = process.env.LMSTUDIO_CONTEXT_LENGTH;
+  // Try LOCAL_CONTEXT_LENGTH first, then fall back to LMSTUDIO_CONTEXT_LENGTH (deprecated)
+  const envLimit = process.env.LOCAL_CONTEXT_LENGTH || process.env.LMSTUDIO_CONTEXT_LENGTH;
   if (envLimit) {
     const limit = parseInt(envLimit, 10);
     if (!isNaN(limit) && limit > 0) {
+      // Show deprecation warning if using LMSTUDIO_CONTEXT_LENGTH and LOCAL_CONTEXT_LENGTH is not set
+      if (!process.env.LOCAL_CONTEXT_LENGTH && process.env.LMSTUDIO_CONTEXT_LENGTH) {
+        warnDeprecation(
+          'LMSTUDIO_CONTEXT_LENGTH',
+          'LOCAL_CONTEXT_LENGTH',
+          'Environment variable LMSTUDIO_CONTEXT_LENGTH is deprecated, use LOCAL_CONTEXT_LENGTH instead'
+        );
+      }
       debug(1, `[Context] Using env override: ${limit} tokens`);
       return limit;
     }
@@ -107,11 +117,13 @@ export function getContextLimit(
   }
 
   // 3. Check known models (case-insensitive, partial match)
-  const lowerModel = modelName.toLowerCase();
-  for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
-    if (lowerModel.includes(key.toLowerCase())) {
-      debug(1, `[Context] Using model table lookup (${key}): ${limit} tokens`);
-      return limit;
+  if (modelName) {
+    const lowerModel = modelName.toLowerCase();
+    for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
+      if (lowerModel.includes(key.toLowerCase())) {
+        debug(1, `[Context] Using model table lookup (${key}): ${limit} tokens`);
+        return limit;
+      }
     }
   }
 
@@ -242,7 +254,7 @@ export function truncateMessages(
   if (availableForMessages <= 0) {
     throw new Error(
       `System prompt and tools alone exceed context limit (${fixedTokens} > ${stats.contextLimit}). ` +
-        `Consider reducing tool count or increasing LMSTUDIO_CONTEXT_LENGTH.`
+        `Consider reducing tool count or increasing LOCAL_CONTEXT_LENGTH.`
     );
   }
 
@@ -314,7 +326,7 @@ export function logContextWarning(
         `   RECOMMENDED ACTION:\n` +
         `   1. Save your work and start a new Claude Code conversation\n` +
         `   2. Or: Use a model with larger context (32K+ recommended)\n` +
-        `   3. Or: Set LMSTUDIO_CONTEXT_LENGTH higher if your model supports it\n`
+        `   3. Or: Set LOCAL_CONTEXT_LENGTH higher if your model supports it\n`
       : `   ⚠️  CONTEXT APPROACHING LIMIT:\n` +
         `   Consider starting a new Claude Code conversation soon to avoid\n` +
         `   running out of context space.\n`;
