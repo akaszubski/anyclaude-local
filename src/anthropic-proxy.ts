@@ -34,6 +34,7 @@ import { BackendClient } from "./backend-client";
 import { logTrace, type AnyclaudeMode } from "./trace-logger";
 import { getBackendLogPrefix } from "./utils/backend-display";
 import { logRequest } from "./request-logger";
+import { generatePrometheusMetrics, recordRequest } from "./prometheus-metrics";
 import {
   initializeCacheTracking,
   getCacheTracker,
@@ -473,6 +474,16 @@ export const createAnthropicProxy = ({
           res.writeHead(200, { "Content-Type": "application/json" });
         }
         res.end(JSON.stringify(response));
+        return;
+      }
+
+      // Prometheus metrics endpoint
+      if (req.url === "/v1/metrics" && req.method === "GET") {
+        const metricsOutput = generatePrometheusMetrics(proxyCircuitBreaker);
+        res.writeHead(200, {
+          "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+        });
+        res.end(metricsOutput);
         return;
       }
 
