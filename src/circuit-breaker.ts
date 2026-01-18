@@ -12,6 +12,8 @@
  * - Configurable thresholds
  */
 
+import { circuitBreakerLogger } from "./structured-logger";
+
 export enum CircuitState {
   CLOSED = "CLOSED", // Normal - using Anthropic
   OPEN = "OPEN", // Failover - using LMStudio
@@ -391,7 +393,16 @@ export class CircuitBreaker {
 
   private setState(newState: CircuitState, reason?: string): void {
     if (this.state !== newState) {
+      const oldState = this.state;
       this.state = newState;
+
+      // Log state change
+      circuitBreakerLogger.info("Circuit breaker state changed", {
+        from: oldState,
+        to: newState,
+        reason: reason || "unspecified",
+        failureCount: this.failureCount,
+      });
 
       // Reset metrics when circuit closes
       if (newState === CircuitState.CLOSED) {
