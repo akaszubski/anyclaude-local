@@ -427,7 +427,10 @@ export const createAnthropicProxy = ({
             error: `Request body too large. Maximum size is ${MAX_REQUEST_BODY_SIZE / (1024 * 1024)}MB`,
           })
         );
-        debug(1, `[Security] Rejected oversized request: ${contentLength} bytes (max: ${MAX_REQUEST_BODY_SIZE})`);
+        debug(
+          1,
+          `[Security] Rejected oversized request: ${contentLength} bytes (max: ${MAX_REQUEST_BODY_SIZE})`
+        );
         return;
       }
 
@@ -438,6 +441,38 @@ export const createAnthropicProxy = ({
           { method: req.method, url: req.url },
           res
         );
+        return;
+      }
+
+      // Health probe endpoints (Kubernetes-compatible)
+      if (req.url === "/health/live" && req.method === "GET") {
+        // Liveness probe - is the process alive?
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "alive" }));
+        return;
+      }
+
+      if (req.url === "/health/ready" && req.method === "GET") {
+        // Readiness probe - can we handle traffic?
+        const metrics = proxyCircuitBreaker.getMetrics();
+        const circuitOpen = metrics.state === "OPEN";
+
+        const response = {
+          status: circuitOpen ? "not_ready" : "ready",
+          checks: {
+            circuit_breaker: {
+              state: metrics.state,
+              failure_count: metrics.failureCount,
+            },
+          },
+        };
+
+        if (circuitOpen) {
+          res.writeHead(503, { "Content-Type": "application/json" });
+        } else {
+          res.writeHead(200, { "Content-Type": "application/json" });
+        }
+        res.end(JSON.stringify(response));
         return;
       }
 
