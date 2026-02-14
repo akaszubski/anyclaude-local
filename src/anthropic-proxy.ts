@@ -1234,6 +1234,15 @@ export const createAnthropicProxy = ({
           }
         }
 
+        // Suppress Qwen3 thinking mode to avoid wasting decode tokens
+        // Qwen3 models generate <think> blocks by default which are verbose and slow
+        if (system && /qwen3/i.test(model || "")) {
+          system = system + "\n\n/no_think";
+          if (isDebugEnabled()) {
+            debug(1, `[Qwen3] Appended /no_think to suppress thinking mode`);
+          }
+        }
+
         // Warn about tool calling compatibility (local backend only, first request)
         if (
           mode === "local" &&
