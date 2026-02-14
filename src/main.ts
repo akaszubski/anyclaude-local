@@ -35,12 +35,14 @@ import {
   resetClusterManager,
 } from "./cluster/cluster-manager";
 import type { MLXClusterConfig } from "./cluster/cluster-types";
+import { getProxyPort } from "./utils/proxy-port";
 
 /**
  * Configuration file structure for .anyclauderc.json
  */
 interface AnyclaudeConfig {
   backend?: string;
+  port?: number;
   debug?: {
     level?: number;
     enableTraces?: boolean;
@@ -140,7 +142,7 @@ interface AnyclaudeConfig {
 /**
  * Load configuration from .anyclauderc.json if it exists
  */
-function loadConfig(): AnyclaudeConfig {
+export function loadConfig(): AnyclaudeConfig {
   const configPath = path.join(process.cwd(), ".anyclauderc.json");
 
   if (fs.existsSync(configPath)) {
@@ -150,6 +152,50 @@ function loadConfig(): AnyclaudeConfig {
       return config as AnyclaudeConfig;
     } catch (error) {
       console.error(`[anyclaude] Error reading config file: ${error}`);
+      return {};
+    }
+  }
+
+  // Auto-create config from example if available (Issue #75)
+  const examplePath = path.join(process.cwd(), ".anyclauderc.example.json");
+  if (fs.existsSync(examplePath)) {
+    const defaultConfig: AnyclaudeConfig = {
+      backend: "local",
+      debug: { level: 0 },
+      backends: {
+        local: {
+          enabled: true,
+          baseUrl: "http://localhost:8081/v1",
+          model: "current-model",
+          autoStartServer: false,
+          safeSystemFilter: true,
+          filterTier: "auto",
+        },
+        openrouter: {
+          enabled: false,
+          baseUrl: "https://openrouter.ai/api/v1",
+          apiKey: "",
+          model: "google/gemini-2.5-flash",
+        },
+        claude: {
+          enabled: false,
+        },
+        "mlx-cluster": {
+          enabled: false,
+        },
+      },
+      circuitBreaker: {
+        enabled: true,
+      },
+    };
+
+    try {
+      fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), "utf8");
+      console.log("[anyclaude] \u2713 Created .anyclauderc.json with defaults");
+      return defaultConfig;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`[anyclaude] Could not create config: ${msg}`);
       return {};
     }
   }
@@ -771,6 +817,7 @@ if (process.env.NODE_ENV !== "test") {
     }
 
     const proxyURL = createAnthropicProxy({
+      port: getProxyPort(config),
       providers,
       defaultProvider: mode,
       defaultModel:
