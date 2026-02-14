@@ -94,6 +94,169 @@ const STUBS: Record<string, string> = {
   EnterPlanMode: "Transitions into plan mode for planning.",
 };
 
+// ─── Sub-skill definitions ───────────────────────────────────────────────
+// Each sub-skill is a named slice of a monolithic tool description.
+// They are extracted automatically from the captured full description
+// and loaded on demand based on keyword triggers.
+
+interface SubSkillDef {
+  /** Sub-skill file name (without cc-sub- prefix and .md suffix) */
+  id: string;
+  /** Keywords that trigger this sub-skill injection */
+  triggers: RegExp;
+  /** Also inject when these tools were called in the previous turn */
+  onToolCall?: string[];
+}
+
+/**
+ * Sub-skill split rules: how to slice monolithic skills into sub-skills.
+ * Each entry defines where to cut the original description and what triggers it.
+ */
+interface SplitRule {
+  /** Tool name (matches cc-tool-{name}.md) */
+  tool: string;
+  /** Sub-skills to extract */
+  subSkills: Array<{
+    id: string;
+    /** Regex to find the start of this section in the original description */
+    startPattern: RegExp;
+    /** Regex to find the end (exclusive) — next section start or EOF */
+    endPattern?: RegExp;
+    /** Keyword triggers for injection */
+    triggers: RegExp;
+    /** Inject when these tools were called */
+    onToolCall?: string[];
+  }>;
+}
+
+const SPLIT_RULES: SplitRule[] = [
+  {
+    tool: "Bash",
+    subSkills: [
+      {
+        id: "Bash-core",
+        startPattern: /^Executes a given bash command/,
+        endPattern: /^# Committing changes with git/m,
+        triggers:
+          /\b(run|execute|command|bash|shell|npm|pip|install|build|test|docker|make)\b/,
+        onToolCall: ["Bash"],
+      },
+      {
+        id: "Bash-git-commit",
+        startPattern: /^# Committing changes with git/m,
+        endPattern: /^# Creating pull requests/m,
+        triggers: /\b(commit|stage|amend|git add|git commit)\b/,
+      },
+      {
+        id: "Bash-git-pr",
+        startPattern: /^# Creating pull requests/m,
+        endPattern: /^# Other common operations/m,
+        triggers: /\b(pull request|pr|gh pr|create pr)\b/,
+      },
+      {
+        id: "Bash-git-ops",
+        startPattern: /^# Other common operations/m,
+        endPattern: undefined, // to end of file
+        triggers: /\b(gh api|github|issue|release|comment)\b/,
+      },
+    ],
+  },
+  {
+    tool: "Task",
+    subSkills: [
+      // Note: Task-agents (the full agent list) is intentionally NOT a sub-skill.
+      // At 5K+ chars it's too large, and the stub description already tells the
+      // model what Task does. The agent list only matters when the model needs
+      // to pick a specific agent type — which the schema's enum handles.
+      {
+        id: "Task-usage",
+        startPattern: /^When NOT to use the Task tool:/m,
+        endPattern: undefined,
+        triggers: /\b(task|launch|spawn|parallel|background)\b/,
+        onToolCall: ["Task"],
+      },
+    ],
+  },
+  {
+    tool: "EnterPlanMode",
+    subSkills: [
+      {
+        id: "EnterPlanMode-when",
+        startPattern: /^Use this tool proactively/,
+        endPattern: /^## Examples/m,
+        triggers: /\b(plan|planning|design|architect|approach)\b/,
+        onToolCall: ["EnterPlanMode"],
+      },
+    ],
+  },
+  {
+    tool: "TaskCreate",
+    subSkills: [
+      {
+        id: "TaskCreate-core",
+        startPattern: /^Use this tool to create/,
+        endPattern: /^## Tips/m,
+        triggers: /\b(task|todo|checklist|track|progress)\b/,
+        onToolCall: ["TaskCreate", "TaskUpdate", "TaskList"],
+      },
+    ],
+  },
+];
+
+// ─── Flat sub-skill trigger index (built from SPLIT_RULES) ──────────────
+
+interface SubSkillTrigger {
+  id: string;
+  triggers: RegExp;
+  onToolCall?: string[];
+}
+
+const SUB_SKILL_TRIGGERS: SubSkillTrigger[] = [];
+for (const rule of SPLIT_RULES) {
+  for (const sub of rule.subSkills) {
+    SUB_SKILL_TRIGGERS.push({
+      id: sub.id,
+      triggers: sub.triggers,
+      onToolCall: sub.onToolCall,
+    });
+  }
+}
+
+// Tools that are small enough to inject whole (no splitting needed)
+const SMALL_TOOL_TRIGGERS: Array<{
+  tool: string;
+  triggers: RegExp;
+  onToolCall?: string[];
+}> = [
+  {
+    tool: "Edit",
+    triggers: /\b(edit|replace|modify|change|update|refactor)\b/,
+    onToolCall: ["Edit"],
+  },
+  {
+    tool: "Read",
+    triggers: /\b(read|view|show|display|open|look at)\b/,
+    onToolCall: ["Read"],
+  },
+  {
+    tool: "Grep",
+    triggers: /\b(grep|search|find|pattern|regex)\b/,
+    onToolCall: ["Grep"],
+  },
+  {
+    tool: "WebFetch",
+    triggers: /\b(fetch|url|web|http|download)\b/,
+    onToolCall: ["WebFetch"],
+  },
+  {
+    tool: "Write",
+    triggers: /\b(write|create file|new file)\b/,
+    onToolCall: ["Write"],
+  },
+];
+
+// ─── End sub-skill definitions ───────────────────────────────────────────
+
 interface SkillMeta {
   hash: string;
   lastSeen: string;
@@ -143,8 +306,47 @@ export class ToolContextManager {
     return createHash("sha256").update(text).digest("hex").substring(0, 12);
   }
 
-  private skillPath(toolName: string): string {
-    return path.join(this.skillsDir, `cc-tool-${toolName}.md`);
+  private skillPath(name: string): string {
+    return path.join(this.skillsDir, `cc-tool-${name}.md`);
+  }
+
+  private subSkillPath(id: string): string {
+    return path.join(this.skillsDir, `cc-sub-${id}.md`);
+  }
+
+  /**
+   * Split a monolithic tool description into sub-skills based on SPLIT_RULES.
+   * Each sub-skill is saved as cc-sub-{id}.md
+   */
+  private splitIntoSubSkills(toolName: string, description: string): void {
+    const rule = SPLIT_RULES.find((r) => r.tool === toolName);
+    if (!rule) return;
+
+    for (const sub of rule.subSkills) {
+      const startMatch = description.match(sub.startPattern);
+      if (!startMatch) continue;
+
+      const startIdx = startMatch.index!;
+      let endIdx = description.length;
+
+      if (sub.endPattern) {
+        const endMatch = description.substring(startIdx + 1).match(sub.endPattern);
+        if (endMatch && endMatch.index !== undefined) {
+          endIdx = startIdx + 1 + endMatch.index;
+        }
+      }
+
+      const content = description.substring(startIdx, endIdx).trim();
+      if (content.length > 0) {
+        writeFileSync(this.subSkillPath(sub.id), content);
+        if (isDebugEnabled()) {
+          debug(
+            1,
+            `[tool-context] Split cc-sub-${sub.id}.md (${content.length} chars)`
+          );
+        }
+      }
+    }
   }
 
   captureAndUpdateSkills(
@@ -168,7 +370,12 @@ export class ToolContextManager {
       const version = (existing?.version || 0) + 1;
       const oldVersion = existing?.version || 0;
 
+      // Save the full monolithic skill (for reference/fallback)
       writeFileSync(this.skillPath(tool.name), desc);
+
+      // Split into sub-skills if rules exist
+      this.splitIntoSubSkills(tool.name, desc);
+
       this.meta[tool.name] = {
         hash: toolHash,
         lastSeen: now,
@@ -215,75 +422,106 @@ export class ToolContextManager {
     });
   }
 
+  /**
+   * Get sub-skills to inject based on context.
+   *
+   * Instead of injecting entire monolithic tool descriptions (e.g. 10K Bash),
+   * we inject only the relevant sub-skills (e.g. 1.5K Bash-git-commit).
+   *
+   * Selection logic:
+   * 1. Check lastToolCalls — if the model just called Bash, inject Bash-core
+   * 2. Check userMessage keywords — "commit" → Bash-git-commit, "PR" → Bash-git-pr
+   * 3. For small tools (<1500 chars), inject the whole description
+   * 4. Budget cap: total injection stays under 4K chars
+   */
   getSkillsToInject(lastToolCalls: string[], userMessage: string): string {
-    const skillsToLoad = new Set<string>();
+    const toInject = new Map<string, string>(); // id → file path
+    const lower = userMessage.toLowerCase();
 
-    for (const toolName of lastToolCalls) {
-      if (this.hasSkill(toolName)) {
-        skillsToLoad.add(toolName);
+    // 1. Check sub-skill triggers (keyword + tool call based)
+    for (const trigger of SUB_SKILL_TRIGGERS) {
+      const subPath = this.subSkillPath(trigger.id);
+      if (!existsSync(subPath)) continue;
+
+      // Match by keyword
+      if (trigger.triggers.test(lower)) {
+        toInject.set(trigger.id, subPath);
+        continue;
+      }
+
+      // Match by previous tool call
+      if (trigger.onToolCall) {
+        for (const tc of lastToolCalls) {
+          if (trigger.onToolCall.includes(tc)) {
+            toInject.set(trigger.id, subPath);
+            break;
+          }
+        }
       }
     }
 
-    const lower = userMessage.toLowerCase();
-    if (
-      /\b(commit|push|pull|merge|rebase|branch|pr|cherry.?pick|git)\b/.test(
-        lower
-      )
-    ) {
-      if (this.hasSkill("Bash")) skillsToLoad.add("Bash");
-    }
-    if (/\b(plan|planning|design|architect)\b/.test(lower)) {
-      if (this.hasSkill("ExitPlanMode")) skillsToLoad.add("ExitPlanMode");
-      if (this.hasSkill("EnterPlanMode")) skillsToLoad.add("EnterPlanMode");
-    }
-    if (/\b(task|todo|checklist)\b/.test(lower)) {
-      if (this.hasSkill("TodoWrite")) skillsToLoad.add("TodoWrite");
-      if (this.hasSkill("TaskCreate")) skillsToLoad.add("TaskCreate");
-    }
-    if (/\b(search|find|look\s?up|web)\b/.test(lower)) {
-      if (this.hasSkill("WebSearch")) skillsToLoad.add("WebSearch");
-      if (this.hasSkill("WebFetch")) skillsToLoad.add("WebFetch");
+    // 2. Check small tool triggers (inject whole description)
+    for (const st of SMALL_TOOL_TRIGGERS) {
+      const fullPath = this.skillPath(st.tool);
+      if (!existsSync(fullPath)) continue;
+
+      // Check size — only inject if small
+      try {
+        const content = readFileSync(fullPath, "utf8");
+        if (content.length > 2000) continue; // too big for whole injection
+      } catch {
+        continue;
+      }
+
+      if (st.triggers.test(lower)) {
+        toInject.set(st.tool, fullPath);
+        continue;
+      }
+
+      if (st.onToolCall) {
+        for (const tc of lastToolCalls) {
+          if (st.onToolCall.includes(tc)) {
+            toInject.set(st.tool, fullPath);
+            break;
+          }
+        }
+      }
     }
 
-    const skillNames = Array.from(skillsToLoad);
-    if (skillNames.length === 0) return "";
+    if (toInject.size === 0) return "";
 
-    // Character budget: cap total injected skill content to ~4K chars (~1K tokens)
-    const CHAR_BUDGET = 4000;
+    // 3. Build injection with budget cap
+    const CHAR_BUDGET = 5000;
     let charsUsed = 0;
     const sections: string[] = [];
 
-    for (const name of skillNames) {
-      const content = this.readSkill(name);
-      if (!content) continue;
-      const section = `[TOOL REFERENCE: ${name}]\n${content}\n[END TOOL REFERENCE]`;
+    for (const [id, filePath] of toInject) {
+      let content: string;
+      try {
+        content = readFileSync(filePath, "utf8");
+      } catch {
+        continue;
+      }
+
+      const section = `[TOOL REFERENCE: ${id}]\n${content}\n[END TOOL REFERENCE]`;
       if (charsUsed + section.length > CHAR_BUDGET) {
-        break; // Budget exceeded, skip this and remaining skills
+        continue; // Skip this one, try remaining (smaller ones may fit)
       }
       sections.push(section);
       charsUsed += section.length;
     }
 
     if (sections.length > 0 && isDebugEnabled()) {
+      const ids = Array.from(toInject.keys()).filter((id) =>
+        sections.some((s) => s.includes(`TOOL REFERENCE: ${id}`))
+      );
       debug(
         1,
-        `[tool-context] Injecting ${sections.length} skill(s): ${skillNames.join(", ")}`
+        `[Tool Context] Injected ${sections.length} sub-skill(s) (${charsUsed} chars): ${ids.join(", ")}`
       );
     }
 
     return sections.join("\n\n");
-  }
-
-  private hasSkill(toolName: string): boolean {
-    return existsSync(this.skillPath(toolName));
-  }
-
-  private readSkill(toolName: string): string | null {
-    try {
-      return readFileSync(this.skillPath(toolName), "utf8");
-    } catch {
-      return null;
-    }
   }
 }
 
