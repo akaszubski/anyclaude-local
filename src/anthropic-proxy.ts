@@ -204,7 +204,9 @@ function applySafeSystemFilter(
   const promptTokens = estimateTokens(prompt);
   const tier = mapTierConfig(options.filterTier, promptTokens);
 
-  const result = filterSystemPrompt(prompt, { tier });
+  // Skip validation fallback when tier is explicitly set (not auto)
+  const skipValidation = !!(options.filterTier && options.filterTier !== "auto");
+  const result = filterSystemPrompt(prompt, { tier, skipValidation });
 
   // Debug logging (only when called standalone, not in optimization chain)
   if (isDebugEnabled()) {
@@ -1064,7 +1066,10 @@ export const createAnthropicProxy = ({
               smartPromptMode,
             } as CreateAnthropicProxyOptions);
 
-            if (filterResult.validation.isValid) {
+            // When filterTier is explicitly set (not "auto"), always apply the filter
+            // even if validation fails — the user explicitly wants aggressive filtering
+            const forceApply = filterTier && filterTier !== "auto";
+            if (filterResult.validation.isValid || forceApply) {
               system = filterResult.filteredPrompt;
               safeFilterApplied = true;
 

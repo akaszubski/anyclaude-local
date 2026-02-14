@@ -257,8 +257,8 @@ export class ToolContextManager {
       const content = this.readSkill(name);
       if (!content) continue;
       const section = `[TOOL REFERENCE: ${name}]\n${content}\n[END TOOL REFERENCE]`;
-      if (charsUsed + section.length > CHAR_BUDGET && sections.length > 0) {
-        break; // Budget exceeded, stop adding skills
+      if (charsUsed + section.length > CHAR_BUDGET) {
+        break; // Budget exceeded, skip this and remaining skills
       }
       sections.push(section);
       charsUsed += section.length;

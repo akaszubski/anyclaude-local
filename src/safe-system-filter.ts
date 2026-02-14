@@ -136,6 +136,12 @@ export interface FilterOptions {
    * If specified and exceeded, the prompt is trimmed to this limit
    */
   maxTokens?: number;
+
+  /**
+   * Skip validation and fallback chain - apply the requested tier directly
+   * Use when the tier is explicitly set by the user (not auto-selected)
+   */
+  skipValidation?: boolean;
 }
 
 /**
@@ -633,8 +639,8 @@ export function filterSystemPrompt(
       fallbackOccurred,
     };
 
-    // If validation passed, we're done
-    if (validation.isValid) {
+    // If validation passed or validation is skipped, we're done
+    if (validation.isValid || options.skipValidation) {
       break;
     }
 
