@@ -14,6 +14,17 @@
     "preferLocal": true,
     "enableFallback": true
   },
+  "circuitBreaker": {
+    "enabled": true,
+    "latencyThresholdMs": 120000,
+    "latencyConsecutiveChecks": 3,
+    "latencyWindowMs": 60000,
+    "autoCheckLatency": true,
+    "failureThreshold": 5,
+    "successThreshold": 2,
+    "retryTimeout": 30000,
+    "requestTimeout": 10000
+  },
   "backends": {
     "lmstudio": {
       "enabled": true,
