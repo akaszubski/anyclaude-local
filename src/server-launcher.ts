@@ -10,6 +10,7 @@ import * as os from "os";
 import { debug } from "./debug";
 import type { AnyclaudeMode } from "./trace-logger";
 import { getBackendDisplayName } from "./utils/backend-display";
+import { resolveExecutable, DOCKER_KNOWN_PATHS } from "./utils/executable-resolver";
 
 interface ServerLauncherConfig {
   backend: string;
@@ -31,6 +32,15 @@ let spawnedServerProcess: ChildProcess | null = null;
  */
 let searxngWasLaunchedByUs = false;
 const SEARXNG_CONTAINER_NAME = "anyclaude-searxng";
+
+/** Resolved docker executable path (cached on first use) */
+let _dockerPath: string | null = null;
+function getDockerPath(): string {
+  if (!_dockerPath) {
+    _dockerPath = resolveExecutable("docker", DOCKER_KNOWN_PATHS);
+  }
+  return _dockerPath;
+}
 const SEARXNG_DEFAULT_PORT = 8080;
 
 /**
@@ -101,7 +111,7 @@ export function cleanupServerProcess(): void {
  */
 export function isDockerAvailable(): boolean {
   try {
-    const result = spawnSync("docker", ["info"], {
+    const result = spawnSync(getDockerPath(), ["info"], {
       encoding: "utf8",
       timeout: 5000,
     });
@@ -161,7 +171,7 @@ export async function startDockerDaemon(): Promise<boolean> {
 export function isSearxNGRunning(): boolean {
   try {
     const result = spawnSync(
-      "docker",
+      getDockerPath(),
       ["ps", "-q", "-f", `name=${SEARXNG_CONTAINER_NAME}`],
       { encoding: "utf8" }
     );
@@ -195,7 +205,7 @@ export async function startSearxNGContainer(): Promise<boolean> {
 
   // Check if container exists but stopped
   const existsResult = spawnSync(
-    "docker",
+    getDockerPath(),
     ["ps", "-aq", "-f", `name=${SEARXNG_CONTAINER_NAME}`],
     { encoding: "utf8" }
   );
@@ -203,7 +213,7 @@ export async function startSearxNGContainer(): Promise<boolean> {
   if (existsResult.stdout && existsResult.stdout.trim()) {
     // Container exists, start it
     console.log(`[anyclaude] Starting SearXNG container...`);
-    const startResult = spawnSync("docker", ["start", SEARXNG_CONTAINER_NAME], {
+    const startResult = spawnSync(getDockerPath(), ["start", SEARXNG_CONTAINER_NAME], {
       encoding: "utf8",
     });
 
@@ -236,7 +246,7 @@ export async function startSearxNGContainer(): Promise<boolean> {
   console.log(`[anyclaude] Starting SearXNG container (first run)...`);
 
   const composeResult = spawnSync(
-    "docker",
+    getDockerPath(),
     ["compose", "-f", composeFile, "up", "-d"],
     {
       encoding: "utf8",
@@ -305,7 +315,7 @@ export function stopSearxNGContainer(): void {
   debug(1, "[server-launcher] Stopping SearXNG container...");
 
   try {
-    spawnSync("docker", ["stop", SEARXNG_CONTAINER_NAME], {
+    spawnSync(getDockerPath(), ["stop", SEARXNG_CONTAINER_NAME], {
       encoding: "utf8",
       timeout: 10000,
     });

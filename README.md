@@ -7,6 +7,23 @@
 
 **Run Claude Code with local MLX models OR cheap cloud models — 100% privacy or 84% cost savings.**
 
+## TL;DR
+
+```bash
+git clone https://github.com/akaszubski/anyclaude-local.git
+cd anyclaude-local
+bun install && bun run build
+# .anyclauderc.json auto-created on first run — edit to configure your backend
+bun run ./dist/main.js
+```
+
+Then point Claude Code at the proxy:
+
+```bash
+export ANTHROPIC_BASE_URL=http://localhost:49152
+claude  # requests now route through anyclaude
+```
+
 ## How It Works
 
 ```
