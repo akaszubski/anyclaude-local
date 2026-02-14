@@ -27,5 +27,6 @@ Thanks to all contributors who have helped improve this project.
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 Original work copyright:
+
 - Coder Technologies Inc. (MIT License)
 - Yoni Gozlan (Apache 2.0 License)

@@ -74,12 +74,14 @@ PROXY_ONLY=true
 **REQUIRED**: Use /implement for all code changes. This is not optional.
 
 **STOP AND CHECK**: Before writing ANY new code (functions, classes, methods, bug fixes), you MUST:
+
 1. Invoke /implement <feature description> - NOT implement directly
 2. If user explicitly requests direct implementation, confirm they understand they are skipping tests/security/docs
 
 **For new tasks/bugs discovered**: Use /create-issue to track them, do not implement ad-hoc.
 
 **Exceptions** (direct implementation allowed):
+
 - Documentation updates (.md files only)
 - Config changes (.json, .yaml, .toml)
 - Typo fixes (1-2 lines, no logic changes)

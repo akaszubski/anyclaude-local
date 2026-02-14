@@ -286,6 +286,7 @@ export ANYCLAUDE_KV_CACHE_MIN_TOKENS=1024
 ```
 
 **Performance Impact:**
+
 - First request (cold): 30-45s → <5s (loads from disk cache)
 - Cache file size: ~26MB → ~13MB (with FP16 quantization)
 - Memory on load: Full cache size → Near-zero (with mmap)

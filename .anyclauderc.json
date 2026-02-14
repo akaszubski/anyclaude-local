@@ -15,6 +15,7 @@
       "autoStartServer": false,
       "truncateSystemPrompt": false,
       "safeSystemFilter": true,
+      "stubToolDescriptions": true,
       "localSearch": true
     },
     "claude": {

@@ -18,14 +18,14 @@ This directory contains research documents that support the anyclaude project's 
 
 ## Document Index
 
-| Document | Purpose | Status |
-|----------|---------|--------|
-| claude-api-performance-analysis.md | Analyze Claude API performance characteristics | Complete |
-| IMPLEMENTATION_RISKS.md | Document architectural risks and mitigation | Complete |
-| STREAMING_BEST_PRACTICES.md | Best practices for streaming implementation | Complete |
-| m3-ultra-performance-potential.md | Hardware optimization potential analysis | Complete |
-| PERFORMANCE-DEBUG.md | Performance debugging methodology | Complete |
-| performance-baseline-before-mlx-textgen.md | Historical baseline metrics | Complete |
+| Document                                   | Purpose                                        | Status   |
+| ------------------------------------------ | ---------------------------------------------- | -------- |
+| claude-api-performance-analysis.md         | Analyze Claude API performance characteristics | Complete |
+| IMPLEMENTATION_RISKS.md                    | Document architectural risks and mitigation    | Complete |
+| STREAMING_BEST_PRACTICES.md                | Best practices for streaming implementation    | Complete |
+| m3-ultra-performance-potential.md          | Hardware optimization potential analysis       | Complete |
+| PERFORMANCE-DEBUG.md                       | Performance debugging methodology              | Complete |
+| performance-baseline-before-mlx-textgen.md | Historical baseline metrics                    | Complete |
 
 ## Archived Research
 
