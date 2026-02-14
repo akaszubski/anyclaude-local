@@ -8,13 +8,14 @@
   "backends": {
     "local": {
       "enabled": true,
-      "baseUrl": "http://Mac-Studio.local.:8082/v1",
+      "baseUrl": "http://10.55.0.2:8082/v1",
       "apiKey": "local",
-      "model": "/models--mlx-community--Qwen2.5-32B-Instruct-4bit/snapshots/2938092373e5f97b95538884112085364c2da315",
+      "model": "/Users/andrewkaszubski/Models/Qwen3-30B-A3B-hf",
       "description": "Local OpenAI-compatible server on Mac Studio",
       "autoStartServer": false,
       "truncateSystemPrompt": false,
       "safeSystemFilter": true,
+      "filterTier": "extreme",
       "stubToolDescriptions": true,
       "localSearch": true
     },

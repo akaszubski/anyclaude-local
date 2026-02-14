@@ -5,6 +5,40 @@ import path from "path";
 import { debug, isDebugEnabled } from "./debug";
 
 /**
+ * Recursively simplify a JSON schema by removing descriptions, examples,
+ * and other non-structural metadata. Keeps type, properties, required,
+ * items, enum, const, additionalProperties, and format.
+ */
+function simplifySchema(schema: any): any {
+  if (!schema || typeof schema !== "object") return schema;
+  if (Array.isArray(schema)) return schema.map(simplifySchema);
+
+  const keep = ["type", "properties", "required", "items", "enum", "const",
+    "additionalProperties", "anyOf", "oneOf", "allOf", "format",
+    "minimum", "maximum", "minItems", "maxItems", "minLength", "maxLength",
+    "exclusiveMinimum", "exclusiveMaximum", "default", "propertyNames",
+    "$schema"];
+  const result: any = {};
+  for (const key of keep) {
+    if (key in schema) {
+      if (key === "properties" && typeof schema[key] === "object") {
+        result[key] = {};
+        for (const [prop, val] of Object.entries(schema[key])) {
+          result[key][prop] = simplifySchema(val);
+        }
+      } else if (["items", "additionalProperties", "propertyNames"].includes(key) && typeof schema[key] === "object") {
+        result[key] = simplifySchema(schema[key]);
+      } else if (["anyOf", "oneOf", "allOf"].includes(key) && Array.isArray(schema[key])) {
+        result[key] = schema[key].map(simplifySchema);
+      } else {
+        result[key] = schema[key];
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Stub descriptions for all Claude Code tools.
  * Schemas are kept intact — only the verbose description is replaced.
  */
@@ -134,15 +168,20 @@ export class ToolContextManager {
     }
   }
 
-  stubTools<T extends { name: string; description?: string | undefined }>(
+  stubTools<T extends { name: string; description?: string | undefined; input_schema?: any }>(
     tools: T[]
   ): T[] {
     return tools.map((tool) => {
       const stub = STUBS[tool.name];
-      if (stub && tool.description && tool.description.length > stub.length) {
-        return { ...tool, description: stub };
+      const stubbed = stub && tool.description && tool.description.length > stub.length
+        ? { ...tool, description: stub }
+        : { ...tool };
+
+      // Simplify schemas: strip nested descriptions/examples to reduce token count
+      if (stubbed.input_schema) {
+        stubbed.input_schema = simplifySchema(stubbed.input_schema);
       }
-      return tool;
+      return stubbed;
     });
   }
 
