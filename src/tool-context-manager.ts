@@ -176,16 +176,24 @@ export class ToolContextManager {
       if (this.hasSkill("WebFetch")) skillsToLoad.add("WebFetch");
     }
 
-    const skillNames = Array.from(skillsToLoad).slice(0, 3);
+    const skillNames = Array.from(skillsToLoad);
     if (skillNames.length === 0) return "";
 
-    const sections = skillNames
-      .map((name) => {
-        const content = this.readSkill(name);
-        if (!content) return null;
-        return `[TOOL REFERENCE: ${name}]\n${content}\n[END TOOL REFERENCE]`;
-      })
-      .filter(Boolean);
+    // Character budget: cap total injected skill content to ~4K chars (~1K tokens)
+    const CHAR_BUDGET = 4000;
+    let charsUsed = 0;
+    const sections: string[] = [];
+
+    for (const name of skillNames) {
+      const content = this.readSkill(name);
+      if (!content) continue;
+      const section = `[TOOL REFERENCE: ${name}]\n${content}\n[END TOOL REFERENCE]`;
+      if (charsUsed + section.length > CHAR_BUDGET && sections.length > 0) {
+        break; // Budget exceeded, stop adding skills
+      }
+      sections.push(section);
+      charsUsed += section.length;
+    }
 
     if (sections.length > 0 && isDebugEnabled()) {
       debug(
