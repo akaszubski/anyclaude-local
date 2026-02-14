@@ -124,7 +124,9 @@ export function generatePrometheusMetrics(
   lines.push("# TYPE anyclaude_request_duration_seconds histogram");
   const histogram = calculateHistogram(metrics.requestDurations);
   for (const [le, count] of Object.entries(histogram)) {
-    lines.push(`anyclaude_request_duration_seconds_bucket{le="${le}"} ${count}`);
+    lines.push(
+      `anyclaude_request_duration_seconds_bucket{le="${le}"} ${count}`
+    );
   }
   lines.push(
     `anyclaude_request_duration_seconds_sum ${sum(metrics.requestDurations)}`
@@ -174,7 +176,8 @@ export function generatePrometheusMetrics(
 
   // Cache metrics
   const totalCacheOps = metrics.cacheHits + metrics.cacheMisses;
-  const cacheHitRate = totalCacheOps > 0 ? metrics.cacheHits / totalCacheOps : 0;
+  const cacheHitRate =
+    totalCacheOps > 0 ? metrics.cacheHits / totalCacheOps : 0;
 
   lines.push("# HELP anyclaude_cache_hits_total Total cache hits");
   lines.push("# TYPE anyclaude_cache_hits_total counter");

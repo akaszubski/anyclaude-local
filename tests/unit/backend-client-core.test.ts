@@ -94,7 +94,11 @@ describe("BackendClient", () => {
   describe("getFirstModel", () => {
     it("should return first model when available", async () => {
       const client = new BackendClient("http://localhost:8081");
-      const mockModel = { id: "test-model", object: "model", context_length: 32768 };
+      const mockModel = {
+        id: "test-model",
+        object: "model",
+        context_length: 32768,
+      };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,

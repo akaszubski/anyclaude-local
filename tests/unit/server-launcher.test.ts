@@ -7,7 +7,14 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals";
+import {
+  jest,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
 import * as childProcess from "child_process";
 import * as fs from "fs";
 import { EventEmitter } from "events";
@@ -328,7 +335,7 @@ describe("Server Launcher", () => {
 
       const result = await waitForServerReady("http://localhost:8081/v1", 5000);
       expect(result).toBe(true);
-      expect((global.fetch as jest.Mock)).toHaveBeenCalledWith(
+      expect(global.fetch as jest.Mock).toHaveBeenCalledWith(
         "http://localhost:8081/v1/models",
         expect.objectContaining({ signal: expect.any(Object) })
       );
@@ -345,12 +352,14 @@ describe("Server Launcher", () => {
 
       const result = await waitForServerReady("http://localhost:8081/v1", 5000);
       expect(result).toBe(true);
-      expect((global.fetch as jest.Mock)).toHaveBeenCalledTimes(3);
+      expect(global.fetch as jest.Mock).toHaveBeenCalledTimes(3);
     });
 
     test("should return false on timeout", async () => {
       // @ts-expect-error - Jest mock typing issue
-      (global.fetch as jest.Mock).mockRejectedValue(new Error("Connection refused"));
+      (global.fetch as jest.Mock).mockRejectedValue(
+        new Error("Connection refused")
+      );
 
       // Short timeout for test
       const result = await waitForServerReady("http://localhost:8081/v1", 1000);
@@ -366,7 +375,7 @@ describe("Server Launcher", () => {
 
       const result = await waitForServerReady("http://localhost:8081/v1", 5000);
       expect(result).toBe(true);
-      expect((global.fetch as jest.Mock)).toHaveBeenCalledTimes(2);
+      expect(global.fetch as jest.Mock).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -522,7 +531,9 @@ describe("Server Launcher", () => {
 
   describe("startLMStudioServer", () => {
     test("should log configuration without starting server", () => {
-      const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      const consoleSpy = jest
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
 
       startLMStudioServer({ backend: "lmstudio", port: 1234 });
 
@@ -557,7 +568,9 @@ describe("Server Launcher", () => {
     });
 
     test("should use existing server if running for lmstudio", () => {
-      const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      const consoleSpy = jest
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
 
       (mockChildProcess.spawnSync as jest.Mock).mockReturnValue({
         status: 0,

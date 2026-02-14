@@ -90,16 +90,20 @@ export function getContextLimit(
 ): number {
   // 1. Check for environment variable override (highest priority)
   // Try LOCAL_CONTEXT_LENGTH first, then fall back to LMSTUDIO_CONTEXT_LENGTH (deprecated)
-  const envLimit = process.env.LOCAL_CONTEXT_LENGTH || process.env.LMSTUDIO_CONTEXT_LENGTH;
+  const envLimit =
+    process.env.LOCAL_CONTEXT_LENGTH || process.env.LMSTUDIO_CONTEXT_LENGTH;
   if (envLimit) {
     const limit = parseInt(envLimit, 10);
     if (!isNaN(limit) && limit > 0) {
       // Show deprecation warning if using LMSTUDIO_CONTEXT_LENGTH and LOCAL_CONTEXT_LENGTH is not set
-      if (!process.env.LOCAL_CONTEXT_LENGTH && process.env.LMSTUDIO_CONTEXT_LENGTH) {
+      if (
+        !process.env.LOCAL_CONTEXT_LENGTH &&
+        process.env.LMSTUDIO_CONTEXT_LENGTH
+      ) {
         warnDeprecation(
-          'LMSTUDIO_CONTEXT_LENGTH',
-          'LOCAL_CONTEXT_LENGTH',
-          'Environment variable LMSTUDIO_CONTEXT_LENGTH is deprecated, use LOCAL_CONTEXT_LENGTH instead'
+          "LMSTUDIO_CONTEXT_LENGTH",
+          "LOCAL_CONTEXT_LENGTH",
+          "Environment variable LMSTUDIO_CONTEXT_LENGTH is deprecated, use LOCAL_CONTEXT_LENGTH instead"
         );
       }
       debug(1, `[Context] Using env override: ${limit} tokens`);
@@ -121,7 +125,10 @@ export function getContextLimit(
     const lowerModel = modelName.toLowerCase();
     for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
       if (lowerModel.includes(key.toLowerCase())) {
-        debug(1, `[Context] Using model table lookup (${key}): ${limit} tokens`);
+        debug(
+          1,
+          `[Context] Using model table lookup (${key}): ${limit} tokens`
+        );
         return limit;
       }
     }

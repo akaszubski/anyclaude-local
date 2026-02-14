@@ -44,7 +44,10 @@ import { getCachedPrompt, getCacheStats } from "./prompt-cache";
 import { getCacheMonitor } from "./cache-monitor-dashboard";
 import { extractMarkers } from "./cache-control-extractor";
 import { getTimeoutConfig } from "./timeout-config";
-import { getToolContextManager, extractLastToolCalls } from "./tool-context-manager";
+import {
+  getToolContextManager,
+  extractLastToolCalls,
+} from "./tool-context-manager";
 import { createHash } from "crypto";
 import {
   buildOptimizedSystemPrompt,
@@ -1216,11 +1219,17 @@ export const createAnthropicProxy = ({
             }
           }
 
-          const skillContext = toolCtx.getSkillsToInject(lastToolCalls, userMsg);
+          const skillContext = toolCtx.getSkillsToInject(
+            lastToolCalls,
+            userMsg
+          );
           if (skillContext) {
             system = system + "\n\n" + skillContext;
             if (isDebugEnabled()) {
-              debug(1, `[Tool Context] Injected skill context (${skillContext.length} chars)`);
+              debug(
+                1,
+                `[Tool Context] Injected skill context (${skillContext.length} chars)`
+              );
             }
           }
         }
@@ -1294,7 +1303,10 @@ export const createAnthropicProxy = ({
           toolsToUse = toolCtx.stubTools(toolsToUse);
 
           if (isDebugEnabled()) {
-            debug(1, `[Tool Context] Stubbed ${toolsToUse.length} tool descriptions`);
+            debug(
+              1,
+              `[Tool Context] Stubbed ${toolsToUse.length} tool descriptions`
+            );
           }
         }
 

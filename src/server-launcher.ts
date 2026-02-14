@@ -671,20 +671,28 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
   // Build args for mistral.rs (avoiding shell interpretation for security)
   // Use 'plain' subcommand for pre-quantized models (no additional ISQ needed)
   // Security: Using array-based spawn prevents shell injection (CWE-78)
-  const serverProcess = spawn(mistralrsBin, [
-    "--port", String(port),
-    "--token-source", "none",
-    "plain",
-    "--model-id", modelPath,
-    "--arch", architecture
-  ], {
-    stdio: ["ignore", "pipe", "pipe"],
-    detached: true,
-    shell: false, // Security: explicitly disable shell interpretation
-    env: {
-      ...process.env,
-    },
-  });
+  const serverProcess = spawn(
+    mistralrsBin,
+    [
+      "--port",
+      String(port),
+      "--token-source",
+      "none",
+      "plain",
+      "--model-id",
+      modelPath,
+      "--arch",
+      architecture,
+    ],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+      shell: false, // Security: explicitly disable shell interpretation
+      env: {
+        ...process.env,
+      },
+    }
+  );
 
   // Register process for cleanup on exit
   registerServerProcess(serverProcess);

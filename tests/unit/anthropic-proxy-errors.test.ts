@@ -10,7 +10,14 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals";
+import {
+  jest,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
 
 // Import helper functions from safe-system-filter for testing filter error handling
 import {
@@ -234,7 +241,8 @@ describe("Anthropic Proxy Error Paths", () => {
     });
 
     test("should record node failure correctly", () => {
-      const nodeFailures: Record<string, { count: number; lastError: Error }> = {};
+      const nodeFailures: Record<string, { count: number; lastError: Error }> =
+        {};
 
       const nodeId = "node-1";
       const error = new Error("Connection refused");
@@ -354,7 +362,8 @@ describe("Anthropic Proxy Error Paths", () => {
       latencies.push(150);
       latencies.push(200);
 
-      const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+      const avgLatency =
+        latencies.reduce((a, b) => a + b, 0) / latencies.length;
 
       expect(avgLatency).toBe(150);
     });

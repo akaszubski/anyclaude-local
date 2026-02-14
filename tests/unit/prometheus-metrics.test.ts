@@ -51,9 +51,15 @@ describe("Prometheus Metrics", () => {
 
       const output = generatePrometheusMetrics();
 
-      expect(output).toContain('anyclaude_request_duration_seconds_bucket{le="0.1"}');
-      expect(output).toContain('anyclaude_request_duration_seconds_bucket{le="1"}');
-      expect(output).toContain('anyclaude_request_duration_seconds_bucket{le="+Inf"}');
+      expect(output).toContain(
+        'anyclaude_request_duration_seconds_bucket{le="0.1"}'
+      );
+      expect(output).toContain(
+        'anyclaude_request_duration_seconds_bucket{le="1"}'
+      );
+      expect(output).toContain(
+        'anyclaude_request_duration_seconds_bucket{le="+Inf"}'
+      );
       expect(output).toContain("anyclaude_request_duration_seconds_sum");
       expect(output).toContain("anyclaude_request_duration_seconds_count 3");
     });
@@ -105,7 +111,9 @@ describe("Prometheus Metrics", () => {
       const output = generatePrometheusMetrics();
 
       expect(output).toContain("# HELP anyclaude_process_cpu_seconds_total");
-      expect(output).toContain("# TYPE anyclaude_process_cpu_seconds_total counter");
+      expect(output).toContain(
+        "# TYPE anyclaude_process_cpu_seconds_total counter"
+      );
       expect(output).toContain("# HELP anyclaude_process_memory_bytes");
       expect(output).toContain("# TYPE anyclaude_process_memory_bytes gauge");
       // Values should be present (actual numbers vary)

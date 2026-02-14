@@ -53,13 +53,16 @@ beforeEach(() => {
   resetWarnings();
 
   // Mock the debug function from debug module
-  debugSpy = jest.spyOn(debugModule, "debug").mockImplementation((level: 1 | 2 | 3, message: string, data?: any) => {
-    const fullMessage = data !== undefined ? `${message} ${JSON.stringify(data)}` : message;
-    debugCalls.push({
-      level,
-      message: fullMessage,
+  debugSpy = jest
+    .spyOn(debugModule, "debug")
+    .mockImplementation((level: 1 | 2 | 3, message: string, data?: any) => {
+      const fullMessage =
+        data !== undefined ? `${message} ${JSON.stringify(data)}` : message;
+      debugCalls.push({
+        level,
+        message: fullMessage,
+      });
     });
-  });
 
   console.warn = jest.fn((...args: unknown[]) => {
     warnCalls.push(args.join(" "));
@@ -124,7 +127,8 @@ describe("getContextLimit - LOCAL_CONTEXT_LENGTH (new)", () => {
     getContextLimit("test-model");
 
     const hasDebugMessage = debugCalls.some(
-      (call) => call.message.includes("env override") && call.message.includes("16384")
+      (call) =>
+        call.message.includes("env override") && call.message.includes("16384")
     );
     expect(hasDebugMessage).toBe(true);
   });
@@ -195,7 +199,8 @@ describe("getContextLimit - LMSTUDIO_CONTEXT_LENGTH fallback", () => {
     getContextLimit("test-model");
 
     const hasDebugMessage = debugCalls.some(
-      (call) => call.message.includes("env override") && call.message.includes("8192")
+      (call) =>
+        call.message.includes("env override") && call.message.includes("8192")
     );
     expect(hasDebugMessage).toBe(true);
   });
@@ -500,7 +505,8 @@ describe("getContextLimit - Debug output", () => {
     getContextLimit("test-model");
 
     const hasDebugLog = debugCalls.some(
-      (call) => call.message.includes("env override") && call.message.includes("16384")
+      (call) =>
+        call.message.includes("env override") && call.message.includes("16384")
     );
     expect(hasDebugLog).toBe(true);
   });
@@ -512,7 +518,8 @@ describe("getContextLimit - Debug output", () => {
     getContextLimit("test-model");
 
     const hasDebugLog = debugCalls.some(
-      (call) => call.message.includes("env override") && call.message.includes("8192")
+      (call) =>
+        call.message.includes("env override") && call.message.includes("8192")
     );
     expect(hasDebugLog).toBe(true);
   });
@@ -524,7 +531,9 @@ describe("getContextLimit - Debug output", () => {
     getContextLimit("test-model", lmstudioApiValue);
 
     const hasDebugLog = debugCalls.some(
-      (call) => call.message.includes("LMStudio reported") && call.message.includes("8192")
+      (call) =>
+        call.message.includes("LMStudio reported") &&
+        call.message.includes("8192")
     );
     expect(hasDebugLog).toBe(true);
   });
@@ -535,7 +544,8 @@ describe("getContextLimit - Debug output", () => {
     getContextLimit("qwen2.5-coder-7b");
 
     const hasDebugLog = debugCalls.some(
-      (call) => call.message.includes("model table") || call.message.includes("lookup")
+      (call) =>
+        call.message.includes("model table") || call.message.includes("lookup")
     );
     expect(hasDebugLog).toBe(true);
   });
@@ -546,7 +556,8 @@ describe("getContextLimit - Debug output", () => {
     getContextLimit("unknown-model");
 
     const hasDebugLog = debugCalls.some(
-      (call) => call.message.includes("default") && call.message.includes("32768")
+      (call) =>
+        call.message.includes("default") && call.message.includes("32768")
     );
     expect(hasDebugLog).toBe(true);
   });
@@ -740,7 +751,9 @@ describe("getContextLimit - Documentation compliance", () => {
 
     getContextLimit("test-model");
 
-    const hasWarning = warnCalls.some((msg) => msg.includes("LMSTUDIO_CONTEXT_LENGTH"));
+    const hasWarning = warnCalls.some((msg) =>
+      msg.includes("LMSTUDIO_CONTEXT_LENGTH")
+    );
     expect(hasWarning).toBe(false);
   });
 });
