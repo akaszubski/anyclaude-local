@@ -513,8 +513,33 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
           }
         })();
 
-        // Return response with the second stream for AI SDK
-        return new Response(stream2, {
+        // Patch tool_calls: mlx_lm.server omits index and sends null id
+        const patchStream = new TransformStream({
+          transform(chunk, controller) {
+            const text = new TextDecoder().decode(chunk);
+            const lines = text.split("\n");
+            const patched = lines.map((line) => {
+              if (!line.startsWith("data: ") || line === "data: [DONE]") return line;
+              try {
+                const data = JSON.parse(line.substring(6));
+                const tc = data.choices?.[0]?.delta?.tool_calls;
+                if (tc && Array.isArray(tc)) {
+                  tc.forEach((call: any, i: number) => {
+                    if (call.index === undefined || call.index === null) call.index = i;
+                    if (!call.id) call.id = `call_${Date.now()}_${i}`;
+                  });
+                  return "data: " + JSON.stringify(data);
+                }
+              } catch {}
+              return line;
+            }).join("\n");
+            controller.enqueue(new TextEncoder().encode(patched));
+          }
+        });
+        const patchedStream = stream2.pipeThrough(patchStream);
+
+        // Return response with patched stream for AI SDK
+        return new Response(patchedStream, {
           status: response.status,
           statusText: response.statusText,
           headers: response.headers,
