@@ -68,6 +68,7 @@ interface AnyclaudeConfig {
       toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
       injectionThreshold?: number; // Confidence threshold (0-1)
       maxInjectionsPerConversation?: number; // Max injections per conversation
+      stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
     lmstudio?: {
@@ -92,6 +93,7 @@ interface AnyclaudeConfig {
       toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
       injectionThreshold?: number; // Confidence threshold (0-1)
       maxInjectionsPerConversation?: number; // Max injections per conversation
+      stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
     claude?: {
@@ -810,6 +812,12 @@ if (process.env.NODE_ENV !== "test") {
           ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
               ?.maxInjectionsPerConversation ?? 10)
           : 10,
+      // Adaptive tool context (skill-based tool descriptions)
+      stubToolDescriptions:
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.stubToolDescriptions ?? false)
+          : false,
     });
 
     console.log(`[anyclaude] Backend: ${mode.toUpperCase()}`);

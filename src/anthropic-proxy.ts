@@ -44,6 +44,7 @@ import { getCachedPrompt, getCacheStats } from "./prompt-cache";
 import { getCacheMonitor } from "./cache-monitor-dashboard";
 import { extractMarkers } from "./cache-control-extractor";
 import { getTimeoutConfig } from "./timeout-config";
+import { getToolContextManager, extractLastToolCalls } from "./tool-context-manager";
 import { createHash } from "crypto";
 import {
   buildOptimizedSystemPrompt,
@@ -350,6 +351,7 @@ export type CreateAnthropicProxyOptions = {
   toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
   injectionThreshold?: number; // Confidence threshold (0-1)
   maxInjectionsPerConversation?: number; // Max injections per conversation
+  stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -373,6 +375,7 @@ export const createAnthropicProxy = ({
   toolInstructionStyle = "explicit",
   injectionThreshold = 0.7,
   maxInjectionsPerConversation = 10,
+  stubToolDescriptions = false,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -1194,6 +1197,34 @@ export const createAnthropicProxy = ({
         //   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
         // }
 
+        // Inject expanded tool skills based on context
+        if (stubToolDescriptions && system) {
+          const toolCtx = getToolContextManager();
+          const lastToolCalls = extractLastToolCalls(body.messages);
+
+          // Extract user message for keyword matching
+          let userMsg = "";
+          const lastMsg = body.messages[body.messages.length - 1];
+          if (typeof lastMsg?.content === "string") {
+            userMsg = lastMsg.content;
+          } else if (Array.isArray(lastMsg?.content)) {
+            for (const block of lastMsg.content) {
+              if (block && "text" in block && block.text) {
+                userMsg = block.text;
+                break;
+              }
+            }
+          }
+
+          const skillContext = toolCtx.getSkillsToInject(lastToolCalls, userMsg);
+          if (skillContext) {
+            system = system + "\n\n" + skillContext;
+            if (isDebugEnabled()) {
+              debug(1, `[Tool Context] Injected skill context (${skillContext.length} chars)`);
+            }
+          }
+        }
+
         // Warn about tool calling compatibility (local backend only, first request)
         if (
           mode === "local" &&
@@ -1252,6 +1283,18 @@ export const createAnthropicProxy = ({
               1,
               `[Cache Control] Caching ${toolsToUse.length} tools for future requests`
             );
+          }
+        }
+
+        // Adaptive Tool Context: capture skills and stub descriptions
+        // This reduces tool description tokens from ~15K to ~2-4K
+        if (stubToolDescriptions && toolsToUse && toolsToUse.length > 0) {
+          const toolCtx = getToolContextManager();
+          toolCtx.captureAndUpdateSkills(toolsToUse);
+          toolsToUse = toolCtx.stubTools(toolsToUse);
+
+          if (isDebugEnabled()) {
+            debug(1, `[Tool Context] Stubbed ${toolsToUse.length} tool descriptions`);
           }
         }
 

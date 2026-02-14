@@ -31,9 +31,10 @@
       "smartPromptMode": "simple",
       "safeSystemFilter": true,
       "filterTier": "auto",
+      "stubToolDescriptions": false,
       "distributed": {
         "enabled": false,
-        "peers": [{"host": "10.55.0.2", "memory_gb": 512}],
+        "peers": [{ "host": "10.55.0.2", "memory_gb": 512 }],
         "strategy": "pipeline",
         "connection": "auto",
         "local_memory_gb": 128
@@ -133,6 +134,13 @@
     "smartSystemPrompt": "Context-aware dynamic optimization (experimental, higher risk)",
     "truncateSystemPrompt": "Simple size-based truncation (used as fallback)",
     "NOTE": "Safe filter takes priority over truncation. Smart prompt takes priority over safe filter."
+  },
+
+  "// ADAPTIVE TOOL CONTEXT (Skill-Based)": {
+    "stubToolDescriptions": "Replace verbose tool descriptions with 1-liner stubs, expand as skills on demand (default: false)",
+    "How_It_Works": "Full descriptions saved to ~/.anyclaude/tool-skills/, stubs sent to model, skills injected when needed",
+    "Token_Savings": "~15K tokens -> ~2-4K tokens per request (3-5x faster TTFT on local models)",
+    "When_To_Enable": "Local models with limited context or slow prefill (e.g., MLX with large MoE models)"
   },
 
   "// POPULAR OPENROUTER MODELS": {
