@@ -450,10 +450,14 @@ export async function startMLXWorkerServer(config: {
   console.log(`[anyclaude] Model: ${path.basename(modelPath)}`);
   console.log(`[anyclaude] Port: ${port}`);
 
-  // Create log directory
+  // Create log and cache directories
   const logDir = path.join(os.homedir(), ".anyclaude", "logs");
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
+  }
+  const cacheDir = path.join(os.homedir(), ".anyclaude", "cache");
+  if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
   }
 
   const logFile = path.join(logDir, "mlx-worker.log");

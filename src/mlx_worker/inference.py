@@ -11,11 +11,12 @@ Performance optimizations (Issue #43):
 
 import gc
 import re
+import time
 import mlx.core as mx
 import mlx_lm
 from mlx_lm import stream_generate
 from mlx_lm.sample_utils import make_sampler
-from mlx_lm.models.cache import make_prompt_cache
+from mlx_lm.models.cache import make_prompt_cache, save_prompt_cache, load_prompt_cache
 from typing import Generator, List, Dict, Any, Tuple, Optional
 from pathlib import Path
 
@@ -41,6 +42,14 @@ _prompt_cache_hash: str = ""
 # Request counter for periodic memory cleanup (Issue #43)
 _request_counter: int = 0
 _MEMORY_CLEANUP_INTERVAL: int = 10  # Clear memory every N requests
+
+# KV cache persistence paths (Issue #67)
+CACHE_DIR = Path.home() / ".anyclaude" / "cache"
+CACHE_FILE = CACHE_DIR / "system_prompt_kv.safetensors"
+CACHE_HASH_FILE = CACHE_DIR / "system_prompt_kv.hash"
+
+# Distributed inference manager (Issue #69) - lazy initialized
+_distributed_manager = None
 
 
 def clear_memory(log: bool = False) -> None:
@@ -107,13 +116,13 @@ def load_model(model_path: str, config: Optional[Dict[str, Any]] = None) -> Tupl
 
 
 def _get_system_prompt_hash(messages: List[Dict[str, str]]) -> str:
-    """Get hash of system prompt for cache key."""
-    import hashlib
+    """Get hash of system prompt for cache key using SHA-256 (matches cache.py)."""
+    from .cache import compute_prompt_hash
     system_content = ""
     for msg in messages:
         if msg.get('role') == 'system':
             system_content += msg.get('content', '')
-    return hashlib.md5(system_content.encode()).hexdigest()[:16]
+    return compute_prompt_hash(system_content)
 
 
 def generate_stream(
@@ -177,8 +186,43 @@ def generate_stream(
                 # Reuse existing cache for same system prompt
                 prompt_cache = _prompt_cache[current_hash]
             else:
-                # Create new cache using make_prompt_cache (NOT empty list!)
-                prompt_cache = make_prompt_cache(model)
+                # Try loading from disk first (Issue #67)
+                loaded_from_disk = False
+                if CACHE_FILE.exists() and CACHE_HASH_FILE.exists():
+                    try:
+                        saved_hash = CACHE_HASH_FILE.read_text().strip()
+                        if saved_hash == current_hash:
+                            prompt_cache = load_prompt_cache(str(CACHE_FILE))
+                            loaded_from_disk = True
+                            print(f"[inference] KV cache loaded from disk (hash: {current_hash[:16]})")
+                    except Exception as e:
+                        print(f"[inference] Failed to load cached KV from disk: {e}")
+
+                if not loaded_from_disk:
+                    # Create new cache and warm it by running model on system prompt
+                    prompt_cache = make_prompt_cache(model)
+
+                    system_messages = [m for m in messages if m.get('role') == 'system']
+                    if system_messages:
+                        warm_start = time.time()
+                        system_prompt_text = _format_messages(system_messages, tokenizer)
+                        for _ in stream_generate(
+                            model, tokenizer, system_prompt_text,
+                            max_tokens=1, prompt_cache=prompt_cache
+                        ):
+                            pass
+                        warm_time = time.time() - warm_start
+                        print(f"[inference] KV cache warmed in {warm_time:.2f}s (hash: {current_hash[:16]})")
+
+                        # Save to disk for persistence across restarts
+                        try:
+                            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                            save_prompt_cache(str(CACHE_FILE), prompt_cache)
+                            CACHE_HASH_FILE.write_text(current_hash)
+                            print(f"[inference] KV cache saved to {CACHE_FILE}")
+                        except Exception as e:
+                            print(f"[inference] Failed to save KV cache to disk: {e}")
+
                 _prompt_cache_hash = current_hash
 
         # mlx_lm.stream_generate yields GenerationResponse objects
