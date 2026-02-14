@@ -30,7 +30,14 @@
       "smartSystemPrompt": false,
       "smartPromptMode": "simple",
       "safeSystemFilter": true,
-      "filterTier": "auto"
+      "filterTier": "auto",
+      "distributed": {
+        "enabled": false,
+        "peers": [{"host": "10.55.0.2", "memory_gb": 512}],
+        "strategy": "pipeline",
+        "connection": "auto",
+        "local_memory_gb": 128
+      }
     },
     "openrouter": {
       "enabled": false,

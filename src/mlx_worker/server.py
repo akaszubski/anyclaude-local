@@ -114,6 +114,7 @@ from .cache import (
     warm_cache,
     clear_cache,
     compute_prompt_hash,
+    is_cache_warmed,
     CacheError,
 )
 from .health import (
@@ -321,10 +322,17 @@ async def chat_completions(
             prompt_hash = compute_prompt_hash(system_prompt)
             cache_state = get_cache_state()
 
-            if cache_state['systemPromptHash'] == prompt_hash:
+            if cache_state['systemPromptHash'] == prompt_hash and is_cache_warmed():
                 cache_hit = True
                 record_cache_hit()
             else:
+                # Auto-warm on first request if not warmed yet
+                if not is_cache_warmed():
+                    try:
+                        warm_cache(system_prompt, model_path=MLX_MODEL_PATH)
+                        print(f"[server] Auto-warmed cache on first request")
+                    except Exception as e:
+                        print(f"[server] Auto-warm failed: {e}")
                 record_cache_miss()
         else:
             record_cache_miss()
@@ -658,7 +666,10 @@ async def health_check():
     return {
         "status": status,
         "health": health,
-        "cache": cache,
+        "cache": {
+            **cache,
+            "warmed": is_cache_warmed(),
+        },
         "metrics": metrics,
     }
 
@@ -677,7 +688,7 @@ async def warm_cache_endpoint(request: CacheWarmRequest):
     Warm cache with system prompt.
     """
     try:
-        result = warm_cache(request.system_prompt)
+        result = warm_cache(request.system_prompt, model_path=MLX_MODEL_PATH)
         return {
             "success": True,
             "hash": result['systemPromptHash'],

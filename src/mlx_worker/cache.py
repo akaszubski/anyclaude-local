@@ -85,15 +85,29 @@ class CacheManager:
             # Count tokens
             token_count = count_tokens(system_prompt, model_path)
 
-            # Pre-process with model (for actual KV caching)
-            # Try to load model for warming, but don't fail if unavailable (e.g. in tests)
+            # Actually warm the KV cache by running model on system prompt
             try:
                 model, tokenizer = load_model(model_path)
-                # In a full implementation, would call model.generate with cache_prompt=True
-                # to actually populate the KV cache
-            except Exception:
+                from mlx_lm.models.cache import make_prompt_cache
+                from mlx_lm import stream_generate as mlx_stream_generate
+
+                prompt_cache = make_prompt_cache(model)
+                system_messages = [{"role": "system", "content": system_prompt}]
+                formatted = tokenizer.apply_chat_template(
+                    system_messages, add_generation_prompt=True, tokenize=False
+                )
+                warm_start = time.time()
+                for _ in mlx_stream_generate(
+                    model, tokenizer, formatted,
+                    max_tokens=1, prompt_cache=prompt_cache
+                ):
+                    pass
+                warm_time = time.time() - warm_start
+                print(f"[cache] KV cache warmed in {warm_time:.2f}s ({token_count} tokens)")
+                self._prompt_cache = prompt_cache
+            except Exception as e:
                 # Model not available (e.g. in test environment), just update state
-                pass
+                print(f"[cache] Could not warm KV cache: {e}")
 
             # Update state
             with self._state_lock:
@@ -106,12 +120,21 @@ class CacheManager:
         except Exception as e:
             raise CacheError(f"Failed to warm cache: {str(e)}")
 
+    def get_prompt_cache(self):
+        """Return the mlx_lm prompt cache object, or None if not warmed."""
+        return getattr(self, '_prompt_cache', None)
+
+    def is_warmed(self) -> bool:
+        """Return whether the KV cache has been warmed with actual model inference."""
+        return getattr(self, '_prompt_cache', None) is not None
+
     def clear(self) -> None:
         """Clear cache state."""
         with self._state_lock:
             self._state.tokens = 0
             self._state.systemPromptHash = ""
             self._state.lastUpdated = 0
+            self._prompt_cache = None
 
 
 # Global cache manager instance
@@ -151,6 +174,16 @@ def warm_cache(system_prompt: str, model_path: str = "current-model") -> Dict[st
 def clear_cache() -> None:
     """Clear cache state."""
     _cache_manager.clear()
+
+
+def get_prompt_cache():
+    """Get the mlx_lm prompt cache object for use by inference engine."""
+    return _cache_manager.get_prompt_cache()
+
+
+def is_cache_warmed() -> bool:
+    """Check if cache has been warmed with actual model inference."""
+    return _cache_manager.is_warmed()
 
 
 def compute_prompt_hash(prompt: str) -> str:
