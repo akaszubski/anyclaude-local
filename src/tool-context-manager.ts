@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, writeFile } from "fs";
 import { homedir } from "os";
 import path from "path";
 import { debug, isDebugEnabled } from "./debug";
@@ -299,7 +299,10 @@ export class ToolContextManager {
   }
 
   private saveMeta(): void {
-    writeFileSync(this.metaPath, JSON.stringify(this.meta, null, 2));
+    // Async write — meta is a cache, not critical path
+    writeFile(this.metaPath, JSON.stringify(this.meta, null, 2), (err) => {
+      if (err) debug(1, `[tool-context] Failed to save meta: ${err.message}`);
+    });
   }
 
   private hashStr(text: string): string {
@@ -338,7 +341,9 @@ export class ToolContextManager {
 
       const content = description.substring(startIdx, endIdx).trim();
       if (content.length > 0) {
-        writeFileSync(this.subSkillPath(sub.id), content);
+        writeFile(this.subSkillPath(sub.id), content, (err) => {
+          if (err) debug(1, `[tool-context] Failed to write sub-skill ${sub.id}: ${err.message}`);
+        });
         if (isDebugEnabled()) {
           debug(
             1,
@@ -370,8 +375,10 @@ export class ToolContextManager {
       const version = (existing?.version || 0) + 1;
       const oldVersion = existing?.version || 0;
 
-      // Save the full monolithic skill (for reference/fallback)
-      writeFileSync(this.skillPath(tool.name), desc);
+      // Save the full monolithic skill (for reference/fallback) — async, non-blocking
+      writeFile(this.skillPath(tool.name), desc, (err) => {
+        if (err) debug(1, `[tool-context] Failed to write skill ${tool.name}: ${err.message}`);
+      });
 
       // Split into sub-skills if rules exist
       this.splitIntoSubSkills(tool.name, desc);

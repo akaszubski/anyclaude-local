@@ -76,13 +76,109 @@ import {
   getDefaultClassifierConfig,
   isInternalMessage,
 } from "./server-side-tool-handler";
-import { CircuitBreaker } from "./circuit-breaker";
+import { CircuitBreaker, type CircuitBreakerConfig } from "./circuit-breaker";
 
 // Security: Maximum request body size (10MB) to prevent DoS attacks
 // Claude Code requests are typically 1-5MB, so 10MB provides headroom
 const MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024; // 10MB
 
+/**
+ * User-configurable circuit breaker settings
+ * All fields are optional - system uses mode-based defaults
+ */
+export interface CircuitBreakerUserConfig {
+  enabled?: boolean;
+  latencyThresholdMs?: number;
+  latencyConsecutiveChecks?: number;
+  latencyWindowMs?: number;
+  autoCheckLatency?: boolean;
+  failureThreshold?: number;
+  successThreshold?: number;
+  retryTimeout?: number;
+  requestTimeout?: number;
+}
+
+/**
+ * Get circuit breaker configuration with mode-based defaults
+ *
+ * Per-mode defaults:
+ * - local/mlx-cluster/lmstudio: 120s latency threshold (local models can be slow)
+ * - openrouter/claude: 30s latency threshold (cloud services are fast)
+ *
+ * User config overrides defaults, except when enabled=false forces latency monitoring off.
+ *
+ * @param mode - Backend mode (local, openrouter, claude, mlx-cluster, lmstudio)
+ * @param userConfig - Optional user configuration overrides
+ * @returns Complete circuit breaker configuration
+ */
+export function getCircuitBreakerConfig(
+  mode: string,
+  userConfig?: CircuitBreakerUserConfig | null
+): CircuitBreakerConfig {
+  // Default configuration for all modes
+  const baseDefaults: CircuitBreakerConfig = {
+    failureThreshold: 5,
+    successThreshold: 2,
+    retryTimeout: 30000,
+    requestTimeout: 10000,
+    latencyThresholdMs: 30000, // Cloud default
+    latencyConsecutiveChecks: 3,
+    latencyWindowMs: 60000,
+    autoCheckLatency: true,
+  };
+
+  // Per-mode defaults for latency threshold
+  const isLocalMode = mode === "local" || mode === "mlx-cluster" || mode === "lmstudio";
+  const modeDefaults: CircuitBreakerConfig = {
+    ...baseDefaults,
+    latencyThresholdMs: isLocalMode ? 120000 : 30000, // 120s for local, 30s for cloud
+  };
+
+  // If no user config, return mode defaults
+  if (!userConfig) {
+    return modeDefaults;
+  }
+
+  // Merge user config with mode defaults
+  const merged: CircuitBreakerConfig = { ...modeDefaults };
+
+  // Apply user overrides
+  if (userConfig.failureThreshold !== undefined) {
+    merged.failureThreshold = userConfig.failureThreshold;
+  }
+  if (userConfig.successThreshold !== undefined) {
+    merged.successThreshold = userConfig.successThreshold;
+  }
+  if (userConfig.retryTimeout !== undefined) {
+    merged.retryTimeout = userConfig.retryTimeout;
+  }
+  if (userConfig.requestTimeout !== undefined) {
+    merged.requestTimeout = userConfig.requestTimeout;
+  }
+  if (userConfig.latencyThresholdMs !== undefined) {
+    merged.latencyThresholdMs = userConfig.latencyThresholdMs;
+  }
+  if (userConfig.latencyConsecutiveChecks !== undefined) {
+    merged.latencyConsecutiveChecks = userConfig.latencyConsecutiveChecks;
+  }
+  if (userConfig.latencyWindowMs !== undefined) {
+    merged.latencyWindowMs = userConfig.latencyWindowMs;
+  }
+  if (userConfig.autoCheckLatency !== undefined) {
+    merged.autoCheckLatency = userConfig.autoCheckLatency;
+  }
+
+  // Special handling: enabled: false disables latency monitoring
+  if (userConfig.enabled === false) {
+    merged.latencyThresholdMs = 0;
+    merged.autoCheckLatency = false;
+  }
+
+  return merged;
+}
+
 // Circuit breaker for monitoring backend health and latency
+// Will be reconfigured per-mode in createAnthropicProxy
 const proxyCircuitBreaker = new CircuitBreaker({
   failureThreshold: 5,
   successThreshold: 2,
@@ -357,6 +453,7 @@ export type CreateAnthropicProxyOptions = {
   injectionThreshold?: number; // Confidence threshold (0-1)
   maxInjectionsPerConversation?: number; // Max injections per conversation
   stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
+  circuitBreakerConfig?: CircuitBreakerUserConfig; // Circuit breaker configuration per mode
 };
 
 // createAnthropicProxy creates a proxy server that accepts
@@ -381,6 +478,7 @@ export const createAnthropicProxy = ({
   injectionThreshold = 0.7,
   maxInjectionsPerConversation = 10,
   stubToolDescriptions = false,
+  circuitBreakerConfig,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
   displayDebugStartup();
@@ -388,6 +486,11 @@ export const createAnthropicProxy = ({
   // Initialize cache metrics tracking
   initializeCacheTracking();
   displayCacheMetricsOnExit();
+  // Configure circuit breaker per backend mode
+  const cbConfig = getCircuitBreakerConfig(mode, circuitBreakerConfig);
+  // Reconfigure the global circuit breaker instance
+  Object.assign(proxyCircuitBreaker, new CircuitBreaker(cbConfig));
+
 
   // Initialize GenAI search intent classifier for local modes
   if (mode !== "claude" && mode !== "openrouter") {
@@ -2253,7 +2356,7 @@ export const createAnthropicProxy = ({
                   },
                 })
               );
-            } else {
+            } else if (!res.writableEnded) {
               // Already streaming - send error as SSE event and close stream properly
               const errorMessage =
                 error?.message || "Backend server connection lost";
@@ -2288,6 +2391,11 @@ export const createAnthropicProxy = ({
                 );
                 nodeWritable.destroy(error);
               }
+            } else {
+              debug(
+                1,
+                `[Stream Error] Response already ended, cannot send error event`
+              );
             }
           });
 
@@ -2310,7 +2418,7 @@ export const createAnthropicProxy = ({
                   },
                 })
               );
-            } else {
+            } else if (!res.writableEnded) {
               // Already streaming - try to send error event
               debug(1, `[Write Error] ⚠️  Sending error event to Claude Code`);
               try {
@@ -2338,6 +2446,11 @@ export const createAnthropicProxy = ({
                   writeError
                 );
               }
+            } else {
+              debug(
+                1,
+                `[Write Error] Response already ended, cannot send error event`
+              );
             }
           });
 

@@ -136,6 +136,17 @@ interface AnyclaudeConfig {
       };
     };
   };
+  circuitBreaker?: {
+    enabled?: boolean;
+    latencyThresholdMs?: number;
+    latencyConsecutiveChecks?: number;
+    latencyWindowMs?: number;
+    autoCheckLatency?: boolean;
+    failureThreshold?: number;
+    successThreshold?: number;
+    retryTimeout?: number;
+    requestTimeout?: number;
+  };
 }
 
 /**
@@ -843,6 +854,8 @@ if (process.env.NODE_ENV !== "test") {
           ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
               ?.stubToolDescriptions ?? false)
           : false,
+      // Circuit breaker configuration
+      circuitBreakerConfig: config.circuitBreaker,
     });
 
     console.log(`[anyclaude] Backend: ${mode.toUpperCase()}`);
