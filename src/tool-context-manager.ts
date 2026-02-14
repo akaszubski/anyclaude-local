@@ -13,11 +13,30 @@ function simplifySchema(schema: any): any {
   if (!schema || typeof schema !== "object") return schema;
   if (Array.isArray(schema)) return schema.map(simplifySchema);
 
-  const keep = ["type", "properties", "required", "items", "enum", "const",
-    "additionalProperties", "anyOf", "oneOf", "allOf", "format",
-    "minimum", "maximum", "minItems", "maxItems", "minLength", "maxLength",
-    "exclusiveMinimum", "exclusiveMaximum", "default", "propertyNames",
-    "$schema"];
+  const keep = [
+    "type",
+    "properties",
+    "required",
+    "items",
+    "enum",
+    "const",
+    "additionalProperties",
+    "anyOf",
+    "oneOf",
+    "allOf",
+    "format",
+    "minimum",
+    "maximum",
+    "minItems",
+    "maxItems",
+    "minLength",
+    "maxLength",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "default",
+    "propertyNames",
+    "$schema",
+  ];
   const result: any = {};
   for (const key of keep) {
     if (key in schema) {
@@ -26,9 +45,15 @@ function simplifySchema(schema: any): any {
         for (const [prop, val] of Object.entries(schema[key])) {
           result[key][prop] = simplifySchema(val);
         }
-      } else if (["items", "additionalProperties", "propertyNames"].includes(key) && typeof schema[key] === "object") {
+      } else if (
+        ["items", "additionalProperties", "propertyNames"].includes(key) &&
+        typeof schema[key] === "object"
+      ) {
         result[key] = simplifySchema(schema[key]);
-      } else if (["anyOf", "oneOf", "allOf"].includes(key) && Array.isArray(schema[key])) {
+      } else if (
+        ["anyOf", "oneOf", "allOf"].includes(key) &&
+        Array.isArray(schema[key])
+      ) {
         result[key] = schema[key].map(simplifySchema);
       } else {
         result[key] = schema[key];
@@ -168,14 +193,19 @@ export class ToolContextManager {
     }
   }
 
-  stubTools<T extends { name: string; description?: string | undefined; input_schema?: any }>(
-    tools: T[]
-  ): T[] {
+  stubTools<
+    T extends {
+      name: string;
+      description?: string | undefined;
+      input_schema?: any;
+    },
+  >(tools: T[]): T[] {
     return tools.map((tool) => {
       const stub = STUBS[tool.name];
-      const stubbed = stub && tool.description && tool.description.length > stub.length
-        ? { ...tool, description: stub }
-        : { ...tool };
+      const stubbed =
+        stub && tool.description && tool.description.length > stub.length
+          ? { ...tool, description: stub }
+          : { ...tool };
 
       // Simplify schemas: strip nested descriptions/examples to reduce token count
       if (stubbed.input_schema) {

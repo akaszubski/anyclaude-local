@@ -986,6 +986,14 @@ export const createAnthropicProxy = ({
           }
         }
 
+        // Strip Claude Code billing header from system prompt
+        // This header contains a per-request hash (cch=XXXXX) that changes every request,
+        // which busts mlx_lm.server's LRU prefix cache and forces full recomputation.
+        // Removing it allows the prefix cache to hit on consecutive requests (~100x speedup).
+        if (system) {
+          system = system.replace(/^x-anthropic-billing-header:[^\n]*\n?/, "");
+        }
+
         // Optimization chain priority: smart → safe → truncate → passthrough
         // Each strategy is mutually exclusive (early return prevents fallthrough).
         // Safe filter includes fallback: if validation fails, falls back to truncate.
