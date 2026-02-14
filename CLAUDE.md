@@ -4,9 +4,9 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## Project Overview
 
-**anyclaude** is a translation layer for Claude Code that enables using local models (MLX Worker with mlx_lm, LMStudio, or any OpenAI-compatible server) or cloud models (OpenRouter) through the Anthropic API format.
+**anyclaude** is a translation proxy that lets Claude Code use local models (MLX Worker, LMStudio, any OpenAI-compatible server) or cloud models (OpenRouter) through the Anthropic API format.
 
-See [PROJECT.md](PROJECT.md) for complete architecture documentation.
+58 TypeScript source files, ~21K lines. 4 backends: local, openrouter, claude, mlx-cluster.
 
 ## Development Commands
 
@@ -17,46 +17,50 @@ bun run ./dist/main.js  # Run the built binary
 npm test             # Run all tests
 ```
 
+## Architecture at a Glance
+
+```
+Claude Code → anyclaude proxy → [local MLX | LMStudio | OpenRouter | Claude API]
+(Anthropic API)  (translate)     (OpenAI-compatible or passthrough)
+```
+
+Key source files:
+- `src/main.ts` — Entry point, config loading, mode detection
+- `src/anthropic-proxy.ts` — HTTP proxy, request routing, prompt optimization
+- `src/convert-anthropic-messages.ts` — Anthropic ↔ OpenAI message translation
+- `src/convert-to-anthropic-stream.ts` — OpenAI SSE → Anthropic SSE stream translation
+- `src/safe-system-filter.ts` — System prompt optimization (filtering tiers)
+- `src/capability-detector.ts` — Runtime backend capability probing
+- `src/adapters/` — Model-specific prompt formatting (Qwen, Mistral, Llama, generic)
+- `src/cluster/` — MLX distributed cluster support
+
 ## File Organization
 
-**Root directory - only these files:**
+**Root directory** — only: README.md, CHANGELOG.md, LICENSE, CLAUDE.md, PROJECT.md, package.json, tsconfig.json, .gitignore
 
-- README.md, CHANGELOG.md, LICENSE, CLAUDE.md, PROJECT.md
-- package.json, tsconfig.json, .gitignore
-
-**Everything else in subdirectories:**
-
-- `src/` - TypeScript source code
-- `tests/` - Unit, integration, regression tests
-- `scripts/` - Debug and test scripts
-- `docs/` - All documentation
-
-**Before creating files:** Ask yourself if it belongs in root or a subdirectory.
+**Subdirectories:**
+- `src/` — TypeScript source code
+- `tests/` — Unit, integration, regression tests
+- `scripts/` — Debug tools and test scripts
+- `docs/` — All documentation
 
 ## Key Environment Variables
 
 ```bash
-# Backend mode
 ANYCLAUDE_MODE=local|openrouter|claude|mlx-cluster
-
-# Debug levels
-ANYCLAUDE_DEBUG=1  # Basic
-ANYCLAUDE_DEBUG=2  # Verbose
-ANYCLAUDE_DEBUG=3  # Trace (full prompts)
-
-# Test proxy without Claude Code
-PROXY_ONLY=true
+ANYCLAUDE_DEBUG=1  # Basic  |  2 = Verbose  |  3 = Trace
+PROXY_ONLY=true    # Test proxy without Claude Code
 ```
 
 ## Quick Reference
 
 | Backend     | Config File         | Key Env Vars                             |
-| ----------- | ------------------- | ---------------------------------------- |
+|-------------|---------------------|------------------------------------------|
 | Local       | `.anyclauderc.json` | `LOCAL_URL`, `LOCAL_CONTEXT_LENGTH`      |
 | OpenRouter  | `.anyclauderc.json` | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` |
 | MLX Cluster | `mlx-cluster.json`  | `MLX_CLUSTER_ENABLED`, `MLX_MODEL_PATH`  |
 
-**Note**: Old LMStudio names (`lmstudio` mode, `LMSTUDIO_*` env vars) still work with deprecation warnings for backward compatibility. See [CHANGELOG.md](CHANGELOG.md#issue-41-rename-lmstudio-backend-to-generic-local) for migration details.
+**Note**: Old LMStudio names (`lmstudio` mode, `LMSTUDIO_*` env vars) still work with deprecation warnings.
 
 ## Further Documentation
 
@@ -65,46 +69,21 @@ PROXY_ONLY=true
 - **OpenRouter Setup**: [docs/guides/openrouter-setup.md](docs/guides/openrouter-setup.md)
 - **MLX Setup**: [docs/guides/mlx-lm-setup.md](docs/guides/mlx-lm-setup.md)
 - **Troubleshooting**: [docs/debugging/](docs/debugging/)
-- **Full Original**: [docs/reference/CLAUDE.md.original](docs/reference/CLAUDE.md.original)
 
 ---
 
-## Workflow Discipline (CRITICAL!)
+## Workflow Discipline
 
-**REQUIRED**: Use /implement for all code changes. This is not optional.
+**Use /implement for code changes** (functions, classes, methods, bug fixes).
 
-**STOP AND CHECK**: Before writing ANY new code (functions, classes, methods, bug fixes), you MUST:
+**Exceptions** (direct edits OK): documentation (.md), config (.json), typos (1-2 lines).
 
-1. Invoke /implement <feature description> - NOT implement directly
-2. If user explicitly requests direct implementation, confirm they understand they are skipping tests/security/docs
+| Command            | Use For                                |
+|--------------------|----------------------------------------|
+| `/auto-implement`  | Features, bug fixes, refactors         |
+| `/create-issue`    | Track new tasks/bugs as GitHub issues  |
+| `/advise`          | Critical analysis before decisions     |
+| `/audit-tests`     | Test coverage analysis                 |
+| `/batch-implement` | Process multiple features sequentially |
 
-**For new tasks/bugs discovered**: Use /create-issue to track them, do not implement ad-hoc.
-
-**Exceptions** (direct implementation allowed):
-
-- Documentation updates (.md files only)
-- Config changes (.json, .yaml, .toml)
-- Typo fixes (1-2 lines, no logic changes)
-
-**Why This Matters**: /implement runs the full pipeline (research, test, implement, review, security, docs). Direct implementation skips quality gates.
-
-### Commands
-
-| Command            | Use For                                                 |
-| ------------------ | ------------------------------------------------------- |
-| `/auto-implement`  | New features, bug fixes, refactors (full SDLC pipeline) |
-| `/create-issue`    | Create GitHub issues with research                      |
-| `/advise`          | Critical analysis before decisions                      |
-| `/audit-tests`     | Test coverage analysis                                  |
-| `/batch-implement` | Process multiple features sequentially                  |
-
-### When to Use
-
-- **Direct edits**: Documentation, config changes, typos
-- **/auto-implement**: Any code that needs tests, security review, or affects behavior
-
-### After Each Feature
-
-Run `/clear` to manage context (prevents bloat after 3-4 features).
-
-See `.claude/commands/` for all available commands.
+After 3-4 features, run `/clear` to manage context.
