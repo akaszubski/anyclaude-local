@@ -150,11 +150,11 @@ Common chunk types you should see:
 ## Example Healthy Output
 
 ```
-[Failover] Routing request to LMStudio: deepseek-r1-distill-qwen-32b-abliterated
-[LMStudio Config] { endpoint: 'http://localhost:1234/v1', model: '...', circuitState: 'OPEN' }
-[Request Start] lmstudio/... at 2025-10-25T08:28:20.924Z
+[Local] Routing request to backend: qwen3-30b-a3b
+[Local Config] { endpoint: 'http://localhost:8081/v1', model: '...', circuitState: 'CLOSED' }
+[Request Start] local/... at 2025-10-25T08:28:20.924Z
 [Request Details] { toolCount: 15, messageCount: 3, maxTokens: 8192 }
-[LMStudio] Preparing request to deepseek-r1-distill-qwen-32b-abliterated
+[Local] Preparing request to qwen3-30b-a3b
 [First Chunk] lmstudio/... after 150ms
 [First Chunk Type] start-step
 [Stream Conversion] Raw chunk 1: { type: 'start-step' }

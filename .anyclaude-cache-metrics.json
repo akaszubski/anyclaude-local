@@ -1,32 +1,15 @@
 {
-  "exportedAt": "2026-01-11T23:40:45.298Z",
-  "runtime": 21018,
+  "exportedAt": "2026-02-14T11:54:04.996Z",
+  "runtime": 0,
   "metrics": {
-    "totalRequests": 2,
+    "totalRequests": 0,
     "cacheHits": 0,
-    "cacheMisses": 2,
+    "cacheMisses": 0,
     "hitRate": "0.00",
     "tokenSavings": "0.00",
-    "totalInputTokens": 27505,
-    "cacheCreationTokens": 19253,
+    "totalInputTokens": 0,
+    "cacheCreationTokens": 0,
     "cacheReadTokens": 0
   },
-  "topEntries": [
-    {
-      "hash": "bd0817489f165df938d85307f4821d8f502c26aa6a5a2c696a05041e9e20f7c8",
-      "tools": 11,
-      "hits": 0,
-      "misses": 1,
-      "hitRate": "0",
-      "cacheTokens": 9659
-    },
-    {
-      "hash": "3d9ff79ba3f0eb968c4730671784d0dc2cd14dff7200749c4f973615fe95be00",
-      "tools": 11,
-      "hits": 0,
-      "misses": 1,
-      "hitRate": "0",
-      "cacheTokens": 9594
-    }
-  ]
+  "topEntries": []
 }

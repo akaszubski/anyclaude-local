@@ -1,235 +1,61 @@
-# Documentation Index
+# Documentation
 
-Complete documentation for anyclaude - the translation layer enabling Claude Code with:
+## Guides
 
-- **Local models** (MLX, LMStudio) for 100% privacy
-- **Cloud models** (OpenRouter) for 400+ models at 84% lower cost than Claude API
-- **Official Claude API** for full features
+- **[Configuration](guides/configuration.md)** — All config options (env vars, `.anyclauderc.json`, CLI flags)
+- **[Installation](guides/installation.md)** — Setup for each backend
+- **[Authentication](guides/authentication.md)** — API keys and session tokens
+- **[MLX-LM Setup](guides/mlx-lm-setup.md)** — Local MLX backend setup
+- **[MLX-LM Technical Details](guides/mlx-lm-technical-details.md)** — JSON parsing workarounds
+- **[OpenRouter Setup](guides/openrouter-setup.md)** — OpenRouter backend setup
+- **[OpenRouter Model Selection](guides/openrouter-model-selection.md)** — Model picker script
+- **[Circuit Breaker Configuration](guides/circuit-breaker-configuration.md)** — Failure handling tuning
+- **[Web Search (Local)](guides/web-search-local.md)** — SearxNG for local web search
+- **[Trace Analysis](guides/trace-analysis.md)** — Analyzing Claude Code request traces
+- **[mistral.rs Setup](guides/mistralrs-setup-guide.md)** — PagedAttention backend
+- **[Qwen3 MoE in mistral.rs](guides/add-switch-mlp-to-mistralrs.md)** — SwitchMLP support
 
----
+## Architecture
 
-## 🚀 Getting Started
+- **[Cache Control Headers](architecture/cache-control-headers.md)** — Anthropic cache_control marker extraction
+- **[MLX Cluster System](architecture/mlx-cluster-system.md)** — Distributed inference design
+- **[Streaming JSON Parser](architecture/streaming-json-parser.md)** — Incremental JSON tokenization
+- **[Tool Parsing Resilience](architecture/issue-13-tool-parsing-resilience.md)** — Parser registry and fallback chains
 
-**New Users**: Start here
+## Caching & Performance
 
-- **[Installation Guide](guides/installation.md)** - Get up and running in 5 minutes
-- **[Debug Quick Start](guides/debug-quick-start.md)** - Troubleshooting basics
-- **[Testing Guide](testing/TESTING.md)** - Running the 170+ test suite
-- **[Configuration Guide](guides/configuration.md)** - Setup and configuration options
+- **[Cache Strategy](caching/CACHE_STRATEGY.md)** — Multi-level caching approach
+- **[Cache Performance Tuning](caching/cache-performance-tuning.md)** — Hit rate optimization
+- **[Prompt Cache Explanation](caching/PROMPT_CACHE_EXPLANATION.md)** — Why system prompt caching matters
 
----
+## Debugging
 
-## 🏗️ Architecture & Design
+- **[Debug Guide](debugging/DEBUG-GUIDE.md)** — Request/response logging
+- **[Debug Workflow](debugging/DEBUG-WORKFLOW.md)** — Debug levels 0-3
+- **[Tool Calling Fix](debugging/tool-calling-fix.md)** — Streaming vs complete tool calls
+- **[Tool Call Debug](debugging/tool-call-debug.md)** — Tool execution debugging
+- **[Qwen Parser Fix](debugging/mlx-worker-qwen-parser-fix.md)** — Multi-format XML parsing
+- **[System Prompt Regression](debugging/system-prompt-regression-prevention.md)** — Newline handling
 
-**Understanding How It Works**
+## Development
 
-- **[PROJECT.md](../PROJECT.md)** - Complete architectural deep-dive and translation layer design
-- **[Architecture Summary](architecture/ARCHITECTURE_SUMMARY.md)** - System overview and design patterns
-- **[Model Adapters](architecture/model-adapters.md)** - Model-specific handling and optimization
-- **[Tool Calling Enhancement](architecture/tool-calling-enhancement.md)** - Tool system implementation
-- **[Issue #14: Streaming JSON Parser](architecture/streaming-json-parser.md)** - **NEW!** Character-by-character JSON tokenization (78% complete)
-  - JSONTokenizer lexer with state machine
-  - IncrementalJSONParser with partial object building
-  - Delta generation for 40% data reduction
-  - Early tool detection for 60% faster recognition
-  - Security: 1MB buffer, 64-level nesting, 30s timeout
-  - 29/37 unit tests passing (78%)
-- **[Issue #13: Tool Parser Plugin System & Circuit Breaker](architecture/issue-13-tool-parsing-resilience.md)** - Extensible parsing with resilient failure handling
-  - Parser plugin architecture with fallback chains
-  - Circuit breaker state machine for failure recovery
-  - Integration and performance characteristics
-- **[Cache Control Headers](architecture/cache-control-headers.md)** - Anthropic cache_control marker detection and extraction (Phase 2.2)
+- **[Anthropic Cache Analysis](development/anthropic-cache-analysis.md)** — Reverse-engineered cache behavior
+- **[Production Hardening](development/production-hardening-implementation.md)** — ErrorHandler, MetricsCollector, ConfigValidator
+- **[Security Fixes](development/security-fixes-cache-warmup.md)** — Path traversal and env injection fixes
+- **[Test Suite](development/TESTING_COMPREHENSIVE.md)** — 170+ tests breakdown
 
----
+## Reference
 
-## 📚 User Guides
+- **[Production Hardening API](reference/production-hardening-api.md)** — `/v1/metrics` endpoint formats
+- **[Cluster Config API](reference/cluster-config-api.md)** — Cluster configuration parsing
+- **[Cluster Health API](reference/cluster-health-api.md)** — Health monitoring and circuit breaker
+- **[Critical Sections API](reference/critical-sections-api.md)** — Prompt section preservation
+- **[Claude Code Auth](reference/claude-code-auth.md)** — Authentication mechanisms
 
-**Using anyclaude**
+## Research
 
-- **[Installation](guides/installation.md)** - Complete setup instructions
-- **[Authentication](guides/authentication.md)** - API key setup and modes
-- **[OpenRouter Setup](guides/openrouter-setup.md)** - **NEW!** 400+ models at fraction of Claude cost
-- **[Mode Switching](guides/mode-switching.md)** - Switch between local, OpenRouter, and Claude modes
-- **[Auto-Launch](guides/auto-launch.md)** - Server auto-launch configuration
-- **[Crash Fix Guide](guides/crash-fix.md)** - Fixing MLX server crashes
-- **[Trace Analysis](guides/trace-analysis.md)** - **NEW!** Analyzing Claude Code prompts
-
----
-
-## 🛠️ Development & Testing
-
-**Contributing & Test Documentation**
-
-- **[Testing Guide](testing/TESTING.md)** - Overview of 170+ test suite
-- **[Cache Control Tests](testing/cache-control-tests.md)** - **NEW!** Phase 2.2 cache_control test suite documentation (84 tests)
-- **[Production Hardening Tests](testing/production-hardening-tests.md)** - **NEW!** Phase 3 complete test documentation (151 tests)
-  - ErrorHandler unit tests (44): Cache degradation, OOM recovery, network retry
-  - MetricsCollector unit tests (52): Cache tracking, latency percentiles, memory, throughput
-  - ConfigValidator unit tests (60): Port validation, env vars, model paths, dependencies
-  - Integration + regression tests (18 + 11): Metrics endpoint, error recovery
-- **[Tool Parser Plugin System](development/tool-parser-plugins.md)** - **NEW!** Issue #13 extending tool parsing for new models
-  - Creating custom parsers (~100 lines per parser)
-  - Priority-based parser ordering and fallback chains
-  - Integration with circuit breaker
-  - Performance targets and testing
-- **[Circuit Breaker Guide](development/circuit-breaker-guide.md)** - **NEW!** Issue #13 resilient failure handling for MLX
-  - State machine: CLOSED/OPEN/HALF_OPEN
-  - Configuration and monitoring
-  - Integration examples and best practices
-  - Troubleshooting and performance tuning
-- **[Production Hardening Implementation](development/production-hardening-implementation.md)** - Phase 3 detailed implementation guide
-  - ErrorHandler: Error recovery with graceful degradation (44 tests)
-  - MetricsCollector: Performance metrics with JSON/Prometheus export (52 tests)
-  - ConfigValidator: Pre-startup configuration validation (60 tests)
-  - Integration guide for MLX server (18 integration tests + 11 regression tests)
-- **[Comprehensive Testing](development/TESTING_COMPREHENSIVE.md)** - Detailed test documentation
-  - Unit tests (100 error handling)
-  - Integration tests (30 component interactions)
-  - End-to-end tests (20 workflows)
-  - Performance tests (20 stress/scale)
-- **[Development Guide](development/DEVELOPMENT.md)** - Setup for contributors
-
----
-
-## 🐛 Debugging & Troubleshooting
-
-**Fixing Issues**
-
-- **[Qwen Tool Parser Fix](debugging/mlx-worker-qwen-parser-fix.md)** - Multi-format tool call parser for Qwen2.5-Coder-7B with plugin-based fallback chain (Issue #33)
-- **[Tool Calling Fix](debugging/tool-calling-fix.md)** - Investigation of streaming tool parameters
-- **[Tool Call Debug](debugging/tool-call-debug.md)** - Debugging tool execution
-- **[Trace Analysis](debugging/trace-analysis.md)** - Using trace files
-- **[Capture Tool Calls](debugging/capture-tool-calls.md)** - Recording tool events
-- **[vLLM-MLX Crash Analysis](debugging/vllm-mlx-crash-analysis.md)** - Server crash debugging (archived)
-- **[MLX-Textgen Migration Postmortem](debugging/mlx-textgen-migration-postmortem.md)** - Migration insights
-- **[Stream Truncation Fix](debugging/stream-truncation-fix.md)** - SSE stream issues
-
----
-
-## 💾 Caching & Performance
-
-**KV Cache & Optimization**
-
-- **[Cache Performance Tuning](caching/cache-performance-tuning.md)** - Complete guide to cache optimization
-  - Configure cache size for your workload
-  - Monitor cache hit rates and cost savings
-  - Understand performance metrics
-- **[Cache Strategy](caching/CACHE_STRATEGY.md)** - Caching approach overview
-- **[Implementation Summary](caching/IMPLEMENTATION_SUMMARY.md)** - Cache implementation details
-- **[Quick Start](caching/QUICK_START.md)** - Getting started with caching
-- **[Prompt Cache Explanation](caching/PROMPT_CACHE_EXPLANATION.md)** - Technical details
-- **[Cache Control Headers](architecture/cache-control-headers.md)** - Phase 2.2 implementation for cache_control detection (see Architecture section)
-
----
-
-## 📖 Reference
-
-**Technical References**
-
-- **[Production Hardening API](reference/production-hardening-api.md)** - **NEW!** Phase 3 API reference
-  - `/v1/metrics` endpoint with JSON/Prometheus formats
-  - ErrorHandler class API (CacheError, OOMError, NetworkError)
-  - MetricsCollector class API (15 methods)
-  - ConfigValidator class API (8 methods)
-  - Integration examples and security notes
-- **[Claude Code Auth](reference/claude-code-auth.md)** - Authentication mechanism
-- **[GitHub Issues Summary](reference/github-issues-summary.md)** - Known issues and status
-- **[Path Setup](reference/path-setup-complete.md)** - Environment configuration
-
----
-
-## 📄 Project Documentation
-
-**Core Project Files**
-
-- **[README.md](../README.md)** - Main project overview
-- **[PROJECT.md](../PROJECT.md)** - Complete architecture and design
-- **[CHANGELOG.md](../CHANGELOG.md)** - Version history and changes
-- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - How to contribute
-- **[CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)** - Community guidelines
-- **[SECURITY.md](../SECURITY.md)** - Security policy
-- **[CLAUDE.md](../CLAUDE.md)** - Claude Code-specific instructions
-- **[LICENSE](../LICENSE)** - MIT License
-
----
-
-## 📊 Documentation Statistics
-
-| Category     | Files  | Purpose                      |
-| ------------ | ------ | ---------------------------- |
-| Guides       | 15     | User guides and tutorials    |
-| Development  | 2      | Contributing and testing     |
-| Debugging    | 7      | Troubleshooting and analysis |
-| Architecture | 2      | Design and architecture      |
-| Caching      | 5      | Performance optimization     |
-| Reference    | 3      | Technical references         |
-| **Total**    | **34** | **Complete documentation**   |
-
----
-
-## 🎯 Quick Navigation
-
-**By Task**
-
-| Task                    | Documentation                                       |
-| ----------------------- | --------------------------------------------------- |
-| Install anyclaude       | [Installation](guides/installation.md)              |
-| Configure settings      | [Configuration](guides/configuration.md)            |
-| Run tests               | [Testing Guide](testing/TESTING.md)                 |
-| Debug issues            | [Debugging Guides](debugging/)                      |
-| Understand architecture | [PROJECT.md](../PROJECT.md)                         |
-| Contribute code         | [Development](development/DEVELOPMENT.md)           |
-| Optimize performance    | [Cache Tuning](caching/cache-performance-tuning.md) |
-| Understand git hooks    | [CLAUDE.md](../CLAUDE.md#-git-automation-hooks)     |
-
----
-
-## 📝 Recent Updates (v2.2.0+)
-
-### ✅ New Documentation
-
-- **[Streaming JSON Parser](architecture/streaming-json-parser.md)** - Issue #14 architecture and implementation (78% complete)
-  - Character-by-character tokenization
-  - Incremental parsing with delta generation
-  - Early tool detection and security features
-  - Unit test coverage (29/37 tests passing)
-
-### ✅ Updated Documentation
-
-- **[docs/README.md](README.md)** - Added streaming JSON parser documentation
-- **[CHANGELOG.md](../CHANGELOG.md)** - Updated Issue #9 progress with Issue #14 in-progress status
-- **[docs/development/DEVELOPMENT.md](development/DEVELOPMENT.md)** - Preparing for integration phase
-
-### ✅ Completed Features
-
-- Tool Parser Plugin System (Issue #13) - 97.7% test coverage
-- Circuit Breaker (Issue #13) - 97.7% test coverage
-- Production Hardening Phase 3 - 100% test coverage
-- Cache Performance Tuning (Phase 2.2) - 60-85% hit rate
-- Cache Warmup Zero Cold-Start (Phase 2.3)
-- OpenRouter Integration (400+ models)
-
-### ⏳ In-Progress Features
-
-- Streaming JSON Parser (Issue #14) - 78% unit tests, pending integration
-  - Target: 40% data reduction, 60% faster tool detection
-  - Awaiting: Integration tests, performance benchmarking, stream converter integration
-
----
-
-## 📝 Notes
-
-All documentation is organized per [CLAUDE.md](../CLAUDE.md) standards:
-
-✅ Core files in root directory
-✅ Guides in `docs/guides/`
-✅ Development docs in `docs/development/`
-✅ Debugging guides in `docs/debugging/`
-✅ Architecture docs in `docs/architecture/`
-✅ Reference docs in `docs/reference/`
-✅ Feature-specific docs in feature folders (e.g., `docs/caching/`)
-
----
-
-**Last Updated**: 2025-11-20
-**Status**: ✅ Complete and Up-to-Date
+- **[Claude API Performance](research/claude-api-performance-analysis.md)** — Cloud vs local latency analysis
+- **[Claude Code Proxies](research/claude-code-proxies-and-web-search.md)** — Proxy landscape survey
+- **[Local LLM Proxy Patterns](research/local-llm-proxy-patterns.md)** — Caching patterns from LiteLLM
+- **[M3 Ultra Performance](research/m3-ultra-performance-potential.md)** — Hardware analysis
+- **[Streaming Best Practices](research/STREAMING_BEST_PRACTICES.md)** — SSE backpressure and recovery

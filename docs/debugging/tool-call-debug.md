@@ -153,10 +153,10 @@ This will show you exactly what's different between a working (Claude) and faili
 
 **Cause:** Model doesn't understand the tool schema
 
-**Fix:** Add model to `MODEL_CONFIGS` in `src/model-adapters.ts`:
+**Fix:** Add a model-specific adapter in `src/adapters/` extending `BaseAdapter`:
 
 ```typescript
-'your-model-name': {
+// Example adapter config
   maxParameters: 3,
   removeOptionalParams: true,
   toolCallingHint: '\\n\\nUse tools by calling them with required parameters only.'

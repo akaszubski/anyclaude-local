@@ -124,9 +124,9 @@ ANYCLAUDE_DEBUG=1 anyclaude
 
 **Files Added**:
 
-- `src/cache-monitor.ts` - Cache metrics tracking and reporting
-- Integration in `src/anthropic-proxy.ts:181-192` - Records hits/misses
-- Integration in `src/main.ts:361-370` - Displays stats on exit
+- `src/cache-metrics.ts` - Cache metrics tracking and reporting
+- Integration in `src/anthropic-proxy.ts` - Records hits/misses
+- Integration in `src/main.ts` - Displays stats on exit
 
 **Tracked Metrics**:
 
@@ -427,7 +427,7 @@ ANYCLAUDE_DEBUG=1 anyclaude | grep "Cached Items"
 | File                     | Purpose                       |
 | ------------------------ | ----------------------------- |
 | `scripts/mlx-server.py`  | vLLM server with LRU cache    |
-| `src/cache-monitor.ts`   | Metrics tracking              |
+| `src/cache-metrics.ts`   | Metrics tracking              |
 | `src/anthropic-proxy.ts` | Proxy with tool ordering      |
 | `src/main.ts`            | Entry point with exit handler |
 
@@ -444,7 +444,7 @@ ANYCLAUDE_DEBUG=1 anyclaude | grep "Cached Items"
    - Tool sorting (409-413)
    - Cache metrics recording (181-192)
 
-3. **src/cache-monitor.ts** (NEW)
+3. **src/cache-metrics.ts**
    - Cache metrics class
    - Formatted statistics display
    - Cost calculation
