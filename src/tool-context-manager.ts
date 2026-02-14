@@ -333,7 +333,9 @@ export class ToolContextManager {
       let endIdx = description.length;
 
       if (sub.endPattern) {
-        const endMatch = description.substring(startIdx + 1).match(sub.endPattern);
+        const endMatch = description
+          .substring(startIdx + 1)
+          .match(sub.endPattern);
         if (endMatch && endMatch.index !== undefined) {
           endIdx = startIdx + 1 + endMatch.index;
         }

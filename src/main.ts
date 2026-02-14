@@ -62,12 +62,6 @@ interface AnyclaudeConfig {
       systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
       safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
-      smartSystemPrompt?: boolean; // Use AI-powered dynamic prompt optimization (EXPERIMENTAL)
-      smartPromptMode?: "simple" | "intelligent"; // simple=keyword, intelligent=use LLM (default: simple)
-      injectToolInstructions?: boolean; // Enable tool instruction injection for better tool calling
-      toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
-      injectionThreshold?: number; // Confidence threshold (0-1)
-      maxInjectionsPerConversation?: number; // Max injections per conversation
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
@@ -87,12 +81,6 @@ interface AnyclaudeConfig {
       systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
       safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
-      smartSystemPrompt?: boolean; // Use AI-powered dynamic prompt optimization (EXPERIMENTAL)
-      smartPromptMode?: "simple" | "intelligent"; // simple=keyword, intelligent=use LLM (default: simple)
-      injectToolInstructions?: boolean; // Enable tool instruction injection for better tool calling
-      toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
-      injectionThreshold?: number; // Confidence threshold (0-1)
-      maxInjectionsPerConversation?: number; // Max injections per conversation
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
@@ -529,23 +517,27 @@ const providers: CreateAnthropicProxyOptions["providers"] = {
           transform(chunk, controller) {
             const text = new TextDecoder().decode(chunk);
             const lines = text.split("\n");
-            const patched = lines.map((line) => {
-              if (!line.startsWith("data: ") || line === "data: [DONE]") return line;
-              try {
-                const data = JSON.parse(line.substring(6));
-                const tc = data.choices?.[0]?.delta?.tool_calls;
-                if (tc && Array.isArray(tc)) {
-                  tc.forEach((call: any, i: number) => {
-                    if (call.index === undefined || call.index === null) call.index = i;
-                    if (!call.id) call.id = `call_${Date.now()}_${i}`;
-                  });
-                  return "data: " + JSON.stringify(data);
-                }
-              } catch {}
-              return line;
-            }).join("\n");
+            const patched = lines
+              .map((line) => {
+                if (!line.startsWith("data: ") || line === "data: [DONE]")
+                  return line;
+                try {
+                  const data = JSON.parse(line.substring(6));
+                  const tc = data.choices?.[0]?.delta?.tool_calls;
+                  if (tc && Array.isArray(tc)) {
+                    tc.forEach((call: any, i: number) => {
+                      if (call.index === undefined || call.index === null)
+                        call.index = i;
+                      if (!call.id) call.id = `call_${Date.now()}_${i}`;
+                    });
+                    return "data: " + JSON.stringify(data);
+                  }
+                } catch {}
+                return line;
+              })
+              .join("\n");
             controller.enqueue(new TextEncoder().encode(patched));
-          }
+          },
         });
         const patchedStream = stream2.pipeThrough(patchStream);
 
@@ -806,16 +798,6 @@ if (process.env.NODE_ENV !== "test") {
           ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
               ?.systemPromptMaxTokens ?? 2000)
           : 0,
-      smartSystemPrompt:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.smartSystemPrompt ?? false)
-          : false,
-      smartPromptMode:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.smartPromptMode ?? "simple")
-          : "simple",
       // Safe system filter (Issue #21)
       safeSystemFilter:
         mode === "local"
@@ -827,27 +809,6 @@ if (process.env.NODE_ENV !== "test") {
           ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
               ?.filterTier ?? "aggressive")
           : undefined,
-      // Tool instruction injection (Issue #35)
-      injectToolInstructions:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.injectToolInstructions ?? false)
-          : false,
-      toolInstructionStyle:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.toolInstructionStyle ?? "explicit")
-          : "explicit",
-      injectionThreshold:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.injectionThreshold ?? 0.7)
-          : 0.7,
-      maxInjectionsPerConversation:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.maxInjectionsPerConversation ?? 10)
-          : 10,
       // Adaptive tool context (skill-based tool descriptions)
       stubToolDescriptions:
         mode === "local"

@@ -1,8 +1,8 @@
 import { debug } from "./debug";
-import { LMStudioClient } from "./lmstudio-client";
+import { LMStudioClient } from "./local-client";
 
 // Re-export for backwards compatibility
-export type { ModelInfo as LMStudioModelInfo } from "./lmstudio-client";
+export type { ModelInfo as LMStudioModelInfo } from "./local-client";
 
 /**
  * Get the currently loaded model from LMStudio

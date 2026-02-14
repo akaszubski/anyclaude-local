@@ -5,7 +5,36 @@
  * Supports backward compatibility with deprecation warnings.
  */
 
-import { warnDeprecation } from "./deprecation-warnings";
+/**
+ * Track warnings to prevent spam (one per session)
+ */
+const shownWarnings = new Set<string>();
+
+/**
+ * Emit a deprecation warning with tracking to prevent duplicates
+ */
+export function warnDeprecation(
+  deprecatedName: string,
+  replacementName: string,
+  message?: string
+): boolean {
+  if (shownWarnings.has(deprecatedName)) {
+    return false;
+  }
+  shownWarnings.add(deprecatedName);
+  const msg =
+    message ||
+    `${deprecatedName} is deprecated, use ${replacementName} instead`;
+  console.warn(`[DEPRECATED] ${msg}`);
+  return true;
+}
+
+/**
+ * Reset all warning tracking state (for testing)
+ */
+export function resetWarnings(): void {
+  shownWarnings.clear();
+}
 
 /**
  * Get environment variable value with migration support

@@ -14,7 +14,6 @@
  */
 
 import { QwenAdapter } from "./adapters/qwen-adapter";
-import { DeepSeekAdapter } from "./adapters/deepseek-adapter";
 import { MistralAdapter } from "./adapters/mistral-adapter";
 import { LlamaAdapter } from "./adapters/llama-adapter";
 import { GenericAdapter } from "./adapters/generic-adapter";
@@ -137,7 +136,6 @@ const MODEL_ADAPTER_MAP: Record<
   new (modelId: string, config?: PromptAdapterConfig) => PromptAdapter
 > = {
   qwen: QwenAdapter,
-  deepseek: DeepSeekAdapter,
   mistral: MistralAdapter,
   mixtral: MistralAdapter, // Mixtral uses same adapter as Mistral
   llama: LlamaAdapter,

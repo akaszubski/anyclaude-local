@@ -29,7 +29,7 @@ import {
   truncateMessages,
   logContextWarning,
 } from "./context-manager";
-import { getModelContextLength } from "./lmstudio-info";
+import { getModelContextLength } from "./local-info";
 import { BackendClient } from "./backend-client";
 import { logTrace, type AnyclaudeMode } from "./trace-logger";
 import { getBackendLogPrefix } from "./utils/backend-display";
@@ -50,14 +50,6 @@ import {
 } from "./tool-context-manager";
 import { createHash } from "crypto";
 import {
-  buildOptimizedSystemPrompt,
-  shouldUseSmartPrompt,
-} from "./smart-system-prompt";
-import {
-  optimizePromptAdaptive,
-  type OptimizationResult,
-} from "./adaptive-optimizer";
-import {
   filterSystemPrompt,
   OptimizationTier,
   type FilterResult,
@@ -65,15 +57,8 @@ import {
 import { getClusterManager } from "./cluster/cluster-manager";
 import type { MLXNode } from "./cluster/cluster-types";
 import {
-  processMessages,
-  type InjectionConfig,
-  DEFAULT_INJECTION_CONFIG,
-} from "./tool-instruction-injector";
-import {
   filterServerSideTools,
   executeProactiveSearch,
-  initializeSearchClassifier,
-  getDefaultClassifierConfig,
   isInternalMessage,
 } from "./server-side-tool-handler";
 import { CircuitBreaker, type CircuitBreakerConfig } from "./circuit-breaker";
@@ -194,17 +179,11 @@ const proxyCircuitBreaker = new CircuitBreaker({
  * Helper function to determine if safe system filter should be used
  *
  * Rules:
- * 1. Returns false if smartSystemPrompt is active (smart takes priority)
- * 2. Returns true if safeSystemFilter is explicitly true
- * 3. Returns true if mode is 'local' AND safeSystemFilter is not explicitly false
- * 4. Returns false for other modes (claude, openrouter) by default
+ * 1. Returns true if safeSystemFilter is explicitly true
+ * 2. Returns true if mode is 'local' AND safeSystemFilter is not explicitly false
+ * 3. Returns false for other modes (claude, openrouter) by default
  */
 function shouldUseSafeFilter(options: CreateAnthropicProxyOptions): boolean {
-  // Smart prompt takes priority over safe filter
-  if (options.smartSystemPrompt === true) {
-    return false;
-  }
-
   // Explicitly enabled
   if (options.safeSystemFilter === true) {
     return true;
@@ -265,14 +244,11 @@ function mapTierConfig(
  * Priority order: smart > safe > truncate > passthrough
  *
  * @param options - Proxy configuration options
- * @returns Active strategy: 'smart' (context-aware), 'safe' (filtered), 'truncate' (size-limited), or 'passthrough' (no optimization)
+ * @returns Active strategy: 'safe' (filtered), 'truncate' (size-limited), or 'passthrough' (no optimization)
  */
 function getOptimizationStrategy(
   options: CreateAnthropicProxyOptions
-): "smart" | "safe" | "truncate" | "passthrough" {
-  if (options.smartSystemPrompt === true) {
-    return "smart";
-  }
+): "safe" | "truncate" | "passthrough" {
   if (shouldUseSafeFilter(options)) {
     return "safe";
   }
@@ -301,7 +277,9 @@ function applySafeSystemFilter(
   const tier = mapTierConfig(options.filterTier, promptTokens);
 
   // Skip validation fallback when tier is explicitly set (not auto)
-  const skipValidation = !!(options.filterTier && options.filterTier !== "auto");
+  const skipValidation = !!(
+    options.filterTier && options.filterTier !== "auto"
+  );
   const result = filterSystemPrompt(prompt, { tier, skipValidation });
 
   // Debug logging (only when called standalone, not in optimization chain)
@@ -444,14 +422,8 @@ export type CreateAnthropicProxyOptions = {
   backendUrl?: string; // URL of the active backend for model queries
   truncateSystemPrompt?: boolean; // Truncate system prompt for LMStudio
   systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
-  smartSystemPrompt?: boolean; // Use dynamic context-aware prompt optimization
-  smartPromptMode?: "simple" | "intelligent"; // Optimization strategy
   safeSystemFilter?: boolean; // Enable/disable safe filtering
   filterTier?: "auto" | "minimal" | "moderate" | "aggressive" | "extreme"; // Optimization tier
-  injectToolInstructions?: boolean; // Enable/disable tool instruction injection
-  toolInstructionStyle?: "explicit" | "subtle"; // Instruction style
-  injectionThreshold?: number; // Confidence threshold (0-1)
-  maxInjectionsPerConversation?: number; // Max injections per conversation
   stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
   circuitBreakerConfig?: CircuitBreakerUserConfig; // Circuit breaker configuration per mode
 };
@@ -469,14 +441,8 @@ export const createAnthropicProxy = ({
   backendUrl,
   truncateSystemPrompt = false,
   systemPromptMaxTokens = 2000,
-  smartSystemPrompt = false,
-  smartPromptMode = "simple",
   safeSystemFilter = false,
   filterTier = "auto",
-  injectToolInstructions = false,
-  toolInstructionStyle = "explicit",
-  injectionThreshold = 0.7,
-  maxInjectionsPerConversation = 10,
   stubToolDescriptions = false,
   circuitBreakerConfig,
 }: CreateAnthropicProxyOptions): string => {
@@ -491,15 +457,6 @@ export const createAnthropicProxy = ({
   // Reconfigure the global circuit breaker instance
   Object.assign(proxyCircuitBreaker, new CircuitBreaker(cbConfig));
 
-
-  // Initialize GenAI search intent classifier for local modes
-  if (mode !== "claude" && mode !== "openrouter") {
-    const classifierConfig = getDefaultClassifierConfig();
-    console.log(
-      `[anyclaude] Initializing GenAI search classifier for mode: ${mode}`
-    );
-    initializeSearchClassifier(classifierConfig, mode, backendUrl);
-  }
 
   // Cache for backend model info (queried on first request)
   let cachedContextLength: number | null = null;
@@ -1099,51 +1056,17 @@ export const createAnthropicProxy = ({
           system = system.replace(/^x-anthropic-billing-header:[^\n]*\n?/, "");
         }
 
-        // Optimization chain priority: smart → safe → truncate → passthrough
+        // Optimization chain: safe filter → truncate → passthrough
         // Each strategy is mutually exclusive (early return prevents fallthrough).
         // Safe filter includes fallback: if validation fails, falls back to truncate.
 
-        // Priority 1: Adaptive multi-tier prompt optimization (smartSystemPrompt)
-        // Context-aware: analyzes user request + conversation history to optimize
-        if (smartSystemPrompt && system && shouldUseSmartPrompt(body, mode)) {
-          // Get user message from request
-          const lastMessage = body.messages[body.messages.length - 1];
-          let userMessage = "";
-          if (typeof lastMessage?.content === "string") {
-            userMessage = lastMessage.content;
-          } else if (
-            Array.isArray(lastMessage?.content) &&
-            lastMessage.content.length > 0
-          ) {
-            const firstContent = lastMessage.content[0];
-            if (firstContent && "text" in firstContent) {
-              userMessage = firstContent.text;
-            }
-          }
-
-          // Apply adaptive optimization with automatic tier selection
-          const result: OptimizationResult = optimizePromptAdaptive(
-            system,
-            userMessage,
-            body.messages.slice(0, -1) // conversation history
-          );
-
-          system = result.optimizedPrompt;
-
-          debug(
-            1,
-            `[Adaptive Optimizer] Tier: ${result.tier.toUpperCase()} | ${result.stats.originalTokens} → ${result.stats.optimizedTokens} tokens (${result.stats.reductionPercent.toFixed(1)}% reduction) | Complexity: ${(result.metrics.estimatedComplexity * 100).toFixed(0)}%`
-          );
-        }
-
-        // Priority 2: Safe system filter (safeSystemFilter)
+        // Priority 1: Safe system filter (safeSystemFilter)
         // Rule-based: removes optional sections while preserving critical tool calling instructions
         // Validates filtered prompt matches expected patterns (has fallback to truncate)
         let safeFilterApplied = false;
         if (
           shouldUseSafeFilter({
             mode,
-            smartSystemPrompt,
             safeSystemFilter,
             truncateSystemPrompt,
             filterTier,
@@ -1151,14 +1074,12 @@ export const createAnthropicProxy = ({
             defaultProvider,
             defaultModel,
             systemPromptMaxTokens,
-            smartPromptMode,
           } as CreateAnthropicProxyOptions) &&
           system
         ) {
           try {
             const filterResult = applySafeSystemFilter(system, {
               mode,
-              smartSystemPrompt,
               safeSystemFilter,
               truncateSystemPrompt,
               filterTier,
@@ -1166,7 +1087,6 @@ export const createAnthropicProxy = ({
               defaultProvider,
               defaultModel,
               systemPromptMaxTokens,
-              smartPromptMode,
             } as CreateAnthropicProxyOptions);
 
             // When filterTier is explicitly set (not "auto"), always apply the filter
@@ -1230,7 +1150,6 @@ export const createAnthropicProxy = ({
         if (
           truncateSystemPrompt &&
           system &&
-          !smartSystemPrompt &&
           !safeFilterApplied
         ) {
           const originalLength = system.length;
@@ -1713,25 +1632,6 @@ export const createAnthropicProxy = ({
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
             );
           }
-        }
-
-        // Inject tool instructions if enabled (Issue #35)
-        if (injectToolInstructions && body.tools && body.tools.length > 0) {
-          const injectionConfig: InjectionConfig = {
-            enabled: injectToolInstructions,
-            style: toolInstructionStyle,
-            confidenceThreshold: injectionThreshold,
-            maxInjectionsPerConversation,
-            enableFalsePositiveFilter: true,
-          };
-
-          debug(2, `[Tool Injection] Config:`, injectionConfig);
-
-          messagesToSend = processMessages(
-            messagesToSend,
-            body.tools,
-            injectionConfig
-          );
         }
 
         // Convert truncated messages for LMStudio

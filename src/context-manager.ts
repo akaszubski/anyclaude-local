@@ -1,7 +1,7 @@
 import { encoding_for_model } from "tiktoken";
 import type { AnthropicMessage } from "./anthropic-api-types";
 import { debug, isDebugEnabled } from "./debug";
-import { warnDeprecation } from "./utils/deprecation-warnings";
+import { warnDeprecation } from "./utils/backend-migration";
 
 // Context window sizes for common models
 const MODEL_CONTEXT_LIMITS: Record<string, number> = {

@@ -16,39 +16,6 @@ import {
   executeClaudeSearch,
   type SearchResult,
 } from "./claude-search-executor";
-import {
-  SearchIntentClassifier,
-  type ClassifierConfig,
-} from "./search-intent-classifier";
-
-// Global classifier instance (initialized lazily)
-let searchClassifier: SearchIntentClassifier | null = null;
-
-/**
- * Initialize the GenAI search intent classifier
- * Should be called during server startup
- */
-export function initializeSearchClassifier(
-  config: ClassifierConfig,
-  mode: string,
-  backendUrl?: string
-): void {
-  searchClassifier = new SearchIntentClassifier(config, mode, backendUrl);
-  debug(1, "[WebSearch] GenAI classifier initialized", { mode, backendUrl });
-}
-
-/**
- * Get default classifier config from environment variables
- */
-export function getDefaultClassifierConfig(): ClassifierConfig {
-  return {
-    enabled: process.env.GENAI_CLASSIFIER_ENABLED !== "false",
-    cacheSize: parseInt(process.env.GENAI_CLASSIFIER_CACHE_SIZE || "100"),
-    cacheTtlSeconds: parseInt(process.env.GENAI_CLASSIFIER_TTL || "3600"),
-    llmTimeout: parseInt(process.env.GENAI_CLASSIFIER_TIMEOUT || "3000"),
-    fallbackToRegex: process.env.GENAI_CLASSIFIER_FALLBACK !== "false",
-  };
-}
 
 /**
  * Known server-side tool names that should be handled by the proxy
@@ -184,39 +151,13 @@ export function detectSearchIntent(message: string): boolean {
 }
 
 /**
- * Detect if a message indicates search intent (async version - GenAI powered)
- * Falls back to regex if classifier is not initialized
+ * Detect if a message indicates search intent (async version)
+ * Uses regex pattern matching
  */
 export async function detectSearchIntentAsync(
   message: string
 ): Promise<boolean> {
-  // If classifier is not initialized, fall back to regex
-  if (!searchClassifier) {
-    debug(2, "[WebSearch] Classifier not initialized, using regex fallback");
-    return detectSearchIntent(message);
-  }
-
-  try {
-    const result = await searchClassifier.classify(message);
-    debug(
-      2,
-      `[WebSearch] GenAI classification: ${result.method} -> ${result.isSearchIntent} (${result.confidence}, ${result.latencyMs.toFixed(1)}ms)`
-    );
-    return result.isSearchIntent;
-  } catch (error: any) {
-    debug(
-      1,
-      `[WebSearch] GenAI classification failed, using regex fallback: ${error.message}`
-    );
-    return detectSearchIntent(message);
-  }
-}
-
-/**
- * Get classifier statistics for monitoring
- */
-export function getClassifierStats() {
-  return searchClassifier?.getStats() ?? null;
+  return detectSearchIntent(message);
 }
 
 /**
