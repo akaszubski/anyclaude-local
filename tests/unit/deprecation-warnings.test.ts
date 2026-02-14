@@ -22,7 +22,10 @@
  * Expected: ALL TESTS FAIL (TDD red phase - implementation doesn't exist yet)
  */
 
-import { warnDeprecation, resetWarnings } from "../../src/utils/deprecation-warnings";
+import {
+  warnDeprecation,
+  resetWarnings,
+} from "../../src/utils/deprecation-warnings";
 
 // Mock console.warn to capture output
 let warnCalls: Array<{ message: string; timestamp: number }> = [];
@@ -80,7 +83,8 @@ describe("warnDeprecation - Basic emission", () => {
   });
 
   test("should include custom message in warning", () => {
-    const customMessage = "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
+    const customMessage =
+      "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
     warnDeprecation("lmstudio", "local", customMessage);
 
     expect(warnCalls[0].message).toContain(customMessage);
@@ -106,7 +110,8 @@ describe("warnDeprecation - Basic emission", () => {
 
 describe("warnDeprecation - Deduplication", () => {
   test("should emit warning only once for same deprecated name", () => {
-    const message = "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
+    const message =
+      "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
 
     warnDeprecation("lmstudio", "local", message);
     warnDeprecation("lmstudio", "local", message);
@@ -116,7 +121,8 @@ describe("warnDeprecation - Deduplication", () => {
   });
 
   test("should not emit warning on second call", () => {
-    const message = "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
+    const message =
+      "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
 
     warnDeprecation("lmstudio", "local", message);
     const firstCallCount = warnCalls.length;
@@ -344,7 +350,8 @@ describe("warnDeprecation - Edge cases", () => {
 
 describe("resetWarnings", () => {
   test("should allow re-emission after reset", () => {
-    const message = "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
+    const message =
+      "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
 
     warnDeprecation("lmstudio", "local", message);
     expect(warnCalls.length).toBe(1);
@@ -402,7 +409,8 @@ describe("warnDeprecation - Return value", () => {
   });
 
   test("should return false on subsequent emissions", () => {
-    const message = "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
+    const message =
+      "Backend mode 'lmstudio' is deprecated. Use 'local' instead.";
 
     const first = warnDeprecation("lmstudio", "local", message);
     const second = warnDeprecation("lmstudio", "local", message);

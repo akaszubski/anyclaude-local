@@ -9,6 +9,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Issues #56-59: KV Cache Optimizations** - Comprehensive disk-based KV cache persistence for MLX worker with significant performance improvements.
+
+  **Issue #56 - Disk-Based Persistence**:
+  - KV cache saved to `~/.cache/anyclaude/kv-cache/` as safetensors files
+  - Cache key includes system prompt hash + model path hash for invalidation
+  - First request after restart: 30-45s → <5s (loads from disk cache)
+
+  **Issue #57 - FP16 Quantization**:
+  - Quantize KV cache to FP16 before disk save (2x size reduction)
+  - Cache files: ~26MB → ~13MB per cache entry
+  - Configurable via `ANYCLAUDE_KV_CACHE_QUANTIZE=true` (default)
+
+  **Issue #58 - Memory-Mapped Loading**:
+  - Zero-copy cache loading using mmap
+  - Reduces memory spike during load
+  - Configurable via `ANYCLAUDE_KV_CACHE_MMAP=true` (default)
+
+  **Issue #59 - LRU Eviction Policy**:
+  - Track last access time for each cache entry
+  - Automatically evict oldest caches when over size limit
+  - Default limit: 5GB (configurable via `ANYCLAUDE_KV_CACHE_MAX_SIZE_GB`)
+
+  **Environment Variables**:
+  - `ANYCLAUDE_KV_CACHE_DIR` - Cache directory (default: ~/.cache/anyclaude/kv-cache)
+  - `ANYCLAUDE_KV_CACHE_MAX_SIZE_GB` - Max size before eviction (default: 5.0)
+  - `ANYCLAUDE_KV_CACHE_QUANTIZE` - Enable FP16 quantization (default: true)
+  - `ANYCLAUDE_KV_CACHE_MMAP` - Enable mmap loading (default: true)
+
+- **Documentation Audit** - Comprehensive audit of documentation consistency across 149 markdown files identified 19 issue categories with 31+ specific inconsistencies. All issues documented in DOCUMENTATION_AUDIT_REPORT.md for systematic remediation.
+
+  **Issues Found**:
+  - Missing `docs/research/README.md` (now created)
+  - 14 temporary documentation sync files in root directory (to be archived)
+  - Deprecated backend naming (`mlx-textgen` → `local`) still in some docs
+  - Inconsistent environment variable names across documentation
+  - Broken internal links to missing guide files
+  - Version number inconsistency (README header vs package.json)
+
+  **Validation Results**:
+  - All code examples (JSON, bash, TypeScript, Python) are syntactically valid ✅
+  - External links to github, openrouter verified ✅
+  - Core documentation (README, CLAUDE, PROJECT) accurate and comprehensive ✅
+
+- **docs/research/README.md** - Index of research documentation for the project, enabling doc-master agent to validate and maintain research document structure.
+
+- **Issue #48: Circuit Breaker Latency Monitoring** - Latency-based circuit detection and metrics endpoint for proactive service degradation monitoring.
+
+  **Purpose**: Detect service degradation due to latency (not just failures) and provide real-time metrics for monitoring and alerting.
+
+  **New Features**:
+  1. **Latency Monitoring** (src/circuit-breaker.ts)
+     - Record latency samples with rolling window (configurable, default 1 second)
+     - Automatic or manual threshold checking for circuit opening
+     - Consecutive high-latency detection (e.g., open after 3 slow requests)
+     - Configurable latency threshold (0 = disabled by default)
+
+  2. **Advanced Metrics** - New CircuitBreakerMetrics interface with:
+     - Aggregate metrics: avgLatencyMs, minLatencyMs, maxLatencyMs
+     - Percentiles for SLA monitoring: p50LatencyMs, p95LatencyMs, p99LatencyMs
+     - Consecutive high-latency counter
+     - Total failure/success counts (separate from state machine counts)
+     - Next recovery attempt timestamp
+
+  3. **Metrics Endpoint** - GET /v1/circuit-breaker/metrics returns JSON
+
+  4. **Configuration Options**:
+     - latencyThresholdMs: Latency threshold in milliseconds (0 = disabled)
+     - latencyConsecutiveChecks: Number of consecutive high-latency before opening
+     - latencyWindowMs: Rolling window for latency samples
+     - autoCheckLatency: Automatically check threshold on each sample
+
+  5. **Documentation** - New comprehensive guide at docs/guides/circuit-breaker-configuration.md:
+     - State diagram and detailed state descriptions
+     - Configuration examples for common scenarios
+     - Monitoring patterns and best practices
+     - Troubleshooting guide
+
+  **Files Updated**:
+  - src/circuit-breaker.ts - Added latency monitoring and metrics
+  - docs/guides/circuit-breaker-configuration.md - New configuration guide
+
 - **Complete Local Search Architecture for Claude Code** - Documented the full solution for replacing Claude Code's server-side WebSearch with local SearXNG via MCP.
 
   **The Challenge**: Claude Code's native `WebSearch` tool executes server-side at Anthropic before requests reach any proxy. This means:
@@ -17,14 +98,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All searches go through Anthropic's servers
 
   **The Solution** (3 parts):
-
   1. **Disable native WebSearch** - Add to `~/.claude/settings.json`:
+
      ```json
      { "permissions": { "deny": ["WebSearch"] } }
      ```
+
      This prevents server-side execution and forces Claude to use MCP tools.
 
   2. **Add MCP SearXNG server** - Provides local search as a tool:
+
      ```bash
      claude mcp add searxng -- npx -y @kevinwatt/mcp-server-searxng
      ```
@@ -36,7 +119,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
        "web_tools": {
          "whitelist": ["WebFetch", "WebSearch", "mcp__searxng__web_search"],
          "allow_all_domains": true,
-         "blocked_domains": ["localhost", "127.0.0.1", "169.254.*", "10.*", "192.168.*"]
+         "blocked_domains": [
+           "localhost",
+           "127.0.0.1",
+           "169.254.*",
+           "10.*",
+           "192.168.*"
+         ]
        }
      }
      ```
@@ -602,6 +691,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `.anyclauderc.example.json` - Added webSearch configuration section
 
 ### Fixed
+
+- **Issue #64: Documentation Fixes** - Fix documentation inconsistencies and environment variable naming.
+
+  **Purpose**: Ensure documentation accurately reflects current code implementation and naming conventions.
+
+  **Issues Addressed**:
+  1. **Environment Variable Naming** - Add `LOCAL_CONTEXT_LENGTH` support with backward-compatible fallback to `LMSTUDIO_CONTEXT_LENGTH`
+     - `src/context-manager.ts` - Updated to prefer `LOCAL_CONTEXT_LENGTH`, fall back to `LMSTUDIO_CONTEXT_LENGTH` with deprecation warning
+     - Maintains full backward compatibility for users still using old env var names
+
+  2. **CLI Mode Documentation** - Updated deprecated `--mode=mlx` examples to `--mode=local` in README.md
+     - Reflects current naming conventions introduced in Issue #41
+     - Ensures new users see correct command syntax
+
+  3. **Configuration Guide** - Verified `docs/guides/configuration.md` has correct environment variable names
+     - `LOCAL_CONTEXT_LENGTH` documented correctly (line 232)
+     - Examples and tables all use correct names
+
+  **Documentation Updated**:
+  - `README.md` - Examples updated from `--mode=mlx` to `--mode=local`
+  - `src/context-manager.ts` - Code reflects proper env var priority
+
+  **Backward Compatibility**: Old `LMSTUDIO_CONTEXT_LENGTH` still works with deprecation warning
 
 - **Issue #45: Strip special tokens from MLX worker output** - Remove model-specific special tokens before sending responses to Claude Code.
 

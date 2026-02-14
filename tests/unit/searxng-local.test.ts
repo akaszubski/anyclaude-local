@@ -305,7 +305,9 @@ describe("searchViaLocalSearxNG - Network errors", () => {
 
     mockFetch.mockRejectedValueOnce(timeoutError);
 
-    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(/abort|timeout/i);
+    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(
+      /abort|timeout/i
+    );
   });
 
   test("should throw error on DNS resolution failure", async () => {
@@ -344,7 +346,9 @@ describe("searchViaLocalSearxNG - HTTP errors", () => {
       text: async () => "Not Found",
     });
 
-    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(/404|not found/i);
+    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(
+      /404|not found/i
+    );
   });
 
   test("should throw error on 500 Internal Server Error", async () => {
@@ -355,7 +359,9 @@ describe("searchViaLocalSearxNG - HTTP errors", () => {
       text: async () => "Server error",
     });
 
-    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(/500|server error/i);
+    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(
+      /500|server error/i
+    );
   });
 
   test("should throw error on 502 Bad Gateway (SearxNG backend down)", async () => {
@@ -366,7 +372,9 @@ describe("searchViaLocalSearxNG - HTTP errors", () => {
       text: async () => "Bad Gateway",
     });
 
-    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(/502|bad gateway/i);
+    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(
+      /502|bad gateway/i
+    );
   });
 });
 
@@ -403,7 +411,10 @@ describe("searchViaLocalSearxNG - Timeout enforcement", () => {
           });
 
           // Never resolves normally - simulates hanging request
-          setTimeout(() => resolve({ ok: true, json: async () => ({}) }), 10000);
+          setTimeout(
+            () => resolve({ ok: true, json: async () => ({}) }),
+            10000
+          );
         });
       }
     );
@@ -470,7 +481,9 @@ describe("searchViaLocalSearxNG - Invalid JSON responses", () => {
       },
     });
 
-    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(SyntaxError);
+    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(
+      SyntaxError
+    );
   });
 
   test("should handle HTML response instead of JSON (misconfigured SearxNG)", async () => {
@@ -482,7 +495,9 @@ describe("searchViaLocalSearxNG - Invalid JSON responses", () => {
       },
     });
 
-    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(/JSON|parse/i);
+    await expect(searchViaLocalSearxNG("test query")).rejects.toThrow(
+      /JSON|parse/i
+    );
   });
 
   test("should handle empty response body", async () => {

@@ -29,14 +29,11 @@
 
 import {
   validateCriticalPresence,
-  ValidationResult as BaseValidationResult,
   detectCriticalSections,
 } from "./critical-sections";
-import {
-  parseIntoSections,
-  reconstructPrompt,
-  PromptSection,
-} from "./prompt-section-parser";
+import type { ValidationResult as BaseValidationResult } from "./critical-sections";
+import { parseIntoSections, reconstructPrompt } from "./prompt-section-parser";
+import type { PromptSection } from "./prompt-section-parser";
 import { deduplicatePrompt } from "./prompt-templates";
 
 /**
@@ -62,14 +59,71 @@ export enum OptimizationTier {
 }
 
 /**
+ * Tier configuration with token budgets and inclusion rules
+ */
+interface TierConfig {
+  /** Target token count (mid-range of tier's range) */
+  targetTokens: number;
+  /** Minimum token count for this tier */
+  minTokens: number;
+  /** Maximum token count for this tier */
+  maxTokens: number;
+  /** Section tiers to include (0=P0, 1=P1, 2=P2, 3=other) */
+  includeTiers: number[];
+  /** Description of what this tier does */
+  description: string;
+}
+
+/**
+ * Token budget configuration for each optimization tier
+ *
+ * Each tier has a target range and rules for which sections to include:
+ * - MINIMAL: 12-15k tokens, includes all tiers (P0/P1/P2)
+ * - MODERATE: 8-10k tokens, includes tiers 0-2 (P0/P1/P2)
+ * - AGGRESSIVE: 4-6k tokens, includes tiers 0-1 (P0/P1)
+ * - EXTREME: 2-3k tokens, includes tier 0 only (P0)
+ */
+const TIER_CONFIGS: Record<OptimizationTier, TierConfig> = {
+  [OptimizationTier.MINIMAL]: {
+    targetTokens: 13500,
+    minTokens: 12000,
+    maxTokens: 15000,
+    includeTiers: [0, 1, 2, 3],
+    description: "Deduplication only, preserves all content",
+  },
+  [OptimizationTier.MODERATE]: {
+    targetTokens: 9000,
+    minTokens: 8000,
+    maxTokens: 10000,
+    includeTiers: [0, 1, 2],
+    description: "Deduplication + condense examples, removes tier 3",
+  },
+  [OptimizationTier.AGGRESSIVE]: {
+    targetTokens: 5000,
+    minTokens: 4000,
+    maxTokens: 6000,
+    includeTiers: [0, 1],
+    description: "Hierarchical filtering, removes tiers 2-3",
+  },
+  [OptimizationTier.EXTREME]: {
+    targetTokens: 2500,
+    minTokens: 2000,
+    maxTokens: 3000,
+    includeTiers: [0, 1], // Include P0 and P1 for minimum viable prompt
+    description:
+      "Core sections only, preserves P0 critical patterns and essential P1 guidelines",
+  },
+};
+
+/**
  * Filter options for system prompt optimization
  *
  * Controls how aggressively the prompt is filtered while ensuring critical
  * tool-calling functionality is always preserved.
  */
 export interface FilterOptions {
-  /** Optimization tier to apply - REQUIRED */
-  tier: OptimizationTier;
+  /** Optimization tier to apply - REQUIRED (or 'auto' for automatic selection) */
+  tier: OptimizationTier | "auto";
 
   /**
    * Whether to preserve example sections (default: false)
@@ -119,6 +173,9 @@ export interface ValidationResult {
 
   /** Array of present pattern names (critical patterns that were found) */
   presentPatterns: string[];
+
+  /** Coverage percentage (0-100) of required patterns present */
+  coveragePercent: number;
 }
 
 /**
@@ -170,6 +227,40 @@ export function estimateTokens(text: string): number {
 }
 
 /**
+ * Select the appropriate optimization tier based on prompt size
+ *
+ * Automatically selects the tier that will bring the prompt within acceptable
+ * token limits while preserving as much functionality as possible.
+ *
+ * Selection Rules:
+ * - <18k tokens: MINIMAL (deduplication only)
+ * - 18k-25k tokens: MODERATE (condense examples)
+ * - 25k-40k tokens: AGGRESSIVE (hierarchical filtering)
+ * - >40k tokens: EXTREME (core sections only)
+ *
+ * @param tokenCount - Estimated token count of the prompt
+ * @returns The recommended optimization tier
+ *
+ * @example
+ * ```typescript
+ * const tokens = estimateTokens(prompt);
+ * const tier = selectTierForPrompt(tokens);
+ * const result = filterSystemPrompt(prompt, { tier });
+ * ```
+ */
+export function selectTierForPrompt(tokenCount: number): OptimizationTier {
+  if (tokenCount < 18000) {
+    return OptimizationTier.MINIMAL;
+  } else if (tokenCount < 25000) {
+    return OptimizationTier.MODERATE;
+  } else if (tokenCount < 40000) {
+    return OptimizationTier.AGGRESSIVE;
+  } else {
+    return OptimizationTier.EXTREME;
+  }
+}
+
+/**
  * Convert BaseValidationResult to extended ValidationResult
  */
 function convertValidationResult(
@@ -185,6 +276,7 @@ function convertValidationResult(
     isValid: base.isValid,
     missingPatterns,
     presentPatterns,
+    coveragePercent: base.coveragePercent,
   };
 }
 
@@ -192,32 +284,21 @@ function convertValidationResult(
  * Get tier inclusion level (which section tiers to include)
  */
 function getTierInclusion(tier: OptimizationTier): number[] {
-  switch (tier) {
-    case OptimizationTier.MINIMAL:
-      return [0, 1, 2, 3]; // Include all tiers
-    case OptimizationTier.MODERATE:
-      return [0, 1, 2]; // Include tiers 0-2
-    case OptimizationTier.AGGRESSIVE:
-      return [0, 1]; // Include tiers 0-1
-    case OptimizationTier.EXTREME:
-      return [0]; // Include tier 0 only
-  }
+  return TIER_CONFIGS[tier].includeTiers;
 }
 
 /**
  * Get target token count for a tier
  */
 function getTierTargetTokens(tier: OptimizationTier): number {
-  switch (tier) {
-    case OptimizationTier.MINIMAL:
-      return 13500; // Mid-range of 12-15k
-    case OptimizationTier.MODERATE:
-      return 9000; // Mid-range of 8-10k
-    case OptimizationTier.AGGRESSIVE:
-      return 5000; // Mid-range of 4-6k
-    case OptimizationTier.EXTREME:
-      return 2500; // Mid-range of 2-3k
-  }
+  return TIER_CONFIGS[tier].targetTokens;
+}
+
+/**
+ * Get maximum token count for a tier (with buffer)
+ */
+function getTierMaxTokens(tier: OptimizationTier): number {
+  return TIER_CONFIGS[tier].maxTokens + 1000; // Allow 1k buffer
 }
 
 /**
@@ -391,35 +472,43 @@ function applyTierTransformations(
 
 /**
  * Trim prompt to maxTokens if specified
+ * Also ensures minimum token count from tier config
  */
 function trimToMaxTokens(
   prompt: string,
-  maxTokens: number | undefined
+  maxTokens: number | undefined,
+  tier: OptimizationTier
 ): string {
-  if (!maxTokens) {
-    return prompt;
-  }
-
   const currentTokens = estimateTokens(prompt);
-  if (currentTokens <= maxTokens) {
+
+  // If maxTokens specified and exceeded, trim to it
+  if (maxTokens && currentTokens > maxTokens) {
+    const targetChars = maxTokens * 4;
+    return prompt.substring(0, targetChars);
+  }
+
+  // Check if we're below the minimum for the tier
+  const minTokens = TIER_CONFIGS[tier].minTokens;
+  if (currentTokens < minTokens) {
+    // Prompt is already smaller than minimum - don't trim
+    // This can happen with very small prompts
     return prompt;
   }
 
-  // Simple trimming: cut to character limit
-  const targetChars = maxTokens * 4;
-  return prompt.substring(0, targetChars);
+  return prompt;
 }
 
 /**
  * Filter a system prompt with tier-based filtering, validation, and automatic fallback
  *
  * Algorithm:
- * 1. Parse prompt into sections
- * 2. Filter by tier (ALWAYS include containsCritical sections)
- * 3. Apply tier-specific transformations (deduplication, etc.)
- * 4. Rebuild prompt
- * 5. VALIDATION GATE - check critical sections
- * 6. Automatic fallback if validation fails
+ * 1. Auto-select tier if tier='auto'
+ * 2. Parse prompt into sections
+ * 3. Filter by tier (ALWAYS include containsCritical sections)
+ * 4. Apply tier-specific transformations (deduplication, etc.)
+ * 5. Rebuild prompt
+ * 6. VALIDATION GATE - check critical sections
+ * 7. Automatic fallback if validation fails
  *
  * @param prompt - System prompt to filter
  * @param options - Filter options including tier
@@ -436,6 +525,14 @@ export function filterSystemPrompt(
 
   const startTime = Date.now();
   const originalTokens = estimateTokens(prompt);
+
+  // Auto-select tier if 'auto' specified
+  let selectedTier: OptimizationTier;
+  if (options.tier === "auto") {
+    selectedTier = selectTierForPrompt(originalTokens);
+  } else {
+    selectedTier = options.tier;
+  }
 
   // Handle empty prompts
   if (!prompt || prompt.trim().length === 0) {
@@ -454,13 +551,13 @@ export function filterSystemPrompt(
         processingTimeMs: Date.now() - startTime,
       },
       validation,
-      appliedTier: options.tier,
+      appliedTier: selectedTier,
       fallbackOccurred: false,
     };
   }
 
-  // Try filtering with the requested tier, with fallback chain
-  let currentTier = options.tier;
+  // Try filtering with the selected tier, with fallback chain
+  let currentTier = selectedTier;
   let fallbackOccurred = false;
   let result: FilterResult | null = null;
 
@@ -482,14 +579,37 @@ export function filterSystemPrompt(
     filteredPrompt = applyTierTransformations(filteredPrompt, currentTier);
 
     // 5. Apply maxTokens limit if specified
-    filteredPrompt = trimToMaxTokens(filteredPrompt, options.maxTokens);
+    filteredPrompt = trimToMaxTokens(
+      filteredPrompt,
+      options.maxTokens,
+      currentTier
+    );
+
+    // 5.5. Check if we're below minimum viable token count (only for small prompts)
+    let currentFilteredTokens = estimateTokens(filteredPrompt);
+    const minViableTokens = 1000; // Minimum for a functional prompt
+    // Only enforce minimum if original prompt was also small (<5000 tokens)
+    if (
+      originalTokens < 5000 &&
+      currentFilteredTokens < minViableTokens &&
+      currentFilteredTokens > 0
+    ) {
+      // Too aggressive for a small prompt - try to include more content
+      const fallbackTier = getFallbackTier(currentTier);
+      if (fallbackTier !== null && fallbackTier !== currentTier) {
+        // Retry with less aggressive tier
+        currentTier = fallbackTier;
+        fallbackOccurred = true;
+        continue;
+      }
+    }
 
     // 6. VALIDATION GATE
     const baseValidation = validateCriticalPresence(filteredPrompt);
     const validation = convertValidationResult(baseValidation, filteredPrompt);
 
     // Calculate stats
-    const filteredTokens = estimateTokens(filteredPrompt);
+    const filteredTokens = currentFilteredTokens;
     const reductionPercent =
       originalTokens > 0
         ? ((originalTokens - filteredTokens) / originalTokens) * 100

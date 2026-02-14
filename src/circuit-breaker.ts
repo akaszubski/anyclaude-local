@@ -12,6 +12,8 @@
  * - Configurable thresholds
  */
 
+import { circuitBreakerLogger } from "./structured-logger";
+
 export enum CircuitState {
   CLOSED = "CLOSED", // Normal - using Anthropic
   OPEN = "OPEN", // Failover - using LMStudio
@@ -76,14 +78,17 @@ export class CircuitBreaker {
       latencyConsecutiveChecks: config.latencyConsecutiveChecks ?? 3,
       latencyWindowMs: config.latencyWindowMs ?? 1000, // 1 second window
       autoCheckLatency: config.autoCheckLatency ?? false,
-      maxLatencySamples: config.maxLatencySamples ?? DEFAULT_MAX_LATENCY_SAMPLES,
+      maxLatencySamples:
+        config.maxLatencySamples ?? DEFAULT_MAX_LATENCY_SAMPLES,
     };
   }
 
   /**
    * Register callback for state changes (for logging/monitoring)
    */
-  public onStateChangeListener(callback: (state: CircuitState, reason?: string) => void): void {
+  public onStateChangeListener(
+    callback: (state: CircuitState, reason?: string) => void
+  ): void {
     this.onStateChange = callback;
   }
 
@@ -176,7 +181,8 @@ export class CircuitBreaker {
     if (!Number.isFinite(latencyMs)) {
       throw new Error("Latency must be a finite number");
     }
-    if (latencyMs > 86400000) { // 24 hours max - sanity check
+    if (latencyMs > 86400000) {
+      // 24 hours max - sanity check
       throw new Error("Latency exceeds maximum allowed value (24 hours)");
     }
 
@@ -189,7 +195,8 @@ export class CircuitBreaker {
     // Security: Enforce max samples limit to prevent DoS via memory exhaustion (CWE-400)
     if (this.latencySamples.length > this.config.maxLatencySamples!) {
       // Remove oldest samples to stay within limit
-      const excess = this.latencySamples.length - this.config.maxLatencySamples!;
+      const excess =
+        this.latencySamples.length - this.config.maxLatencySamples!;
       this.latencySamples.splice(0, excess);
     }
 
@@ -204,7 +211,10 @@ export class CircuitBreaker {
    */
   public checkLatencyThreshold(): void {
     // Skip if threshold disabled
-    if (!this.config.latencyThresholdMs || this.config.latencyThresholdMs === 0) {
+    if (
+      !this.config.latencyThresholdMs ||
+      this.config.latencyThresholdMs === 0
+    ) {
       return;
     }
 
@@ -224,7 +234,9 @@ export class CircuitBreaker {
       this.consecutiveHighLatency++;
 
       // Open circuit if threshold reached
-      if (this.consecutiveHighLatency >= this.config.latencyConsecutiveChecks!) {
+      if (
+        this.consecutiveHighLatency >= this.config.latencyConsecutiveChecks!
+      ) {
         this.setState(CircuitState.OPEN, "latency threshold exceeded");
         this.scheduleRetry();
       }
@@ -239,20 +251,24 @@ export class CircuitBreaker {
    */
   public getMetrics(): CircuitBreakerMetrics {
     const validSamples = this.getValidLatencySamples();
-    const latencies = validSamples.map(s => s.latencyMs);
+    const latencies = validSamples.map((s) => s.latencyMs);
 
     // Calculate basic stats - round to 2 decimal places
-    const rawAvg = latencies.length > 0
-      ? latencies.reduce((sum, lat) => sum + lat, 0) / latencies.length
-      : 0;
+    const rawAvg =
+      latencies.length > 0
+        ? latencies.reduce((sum, lat) => sum + lat, 0) / latencies.length
+        : 0;
     const avgLatencyMs = Math.round(rawAvg * 100) / 100;
     const minLatencyMs = latencies.length > 0 ? Math.min(...latencies) : 0;
     const maxLatencyMs = latencies.length > 0 ? Math.max(...latencies) : 0;
 
     // Calculate percentiles
-    const p50LatencyMs = Math.round(this.calculatePercentile(latencies, 50) * 100) / 100;
-    const p95LatencyMs = Math.round(this.calculatePercentile(latencies, 95) * 100) / 100;
-    const p99LatencyMs = Math.round(this.calculatePercentile(latencies, 99) * 100) / 100;
+    const p50LatencyMs =
+      Math.round(this.calculatePercentile(latencies, 50) * 100) / 100;
+    const p95LatencyMs =
+      Math.round(this.calculatePercentile(latencies, 95) * 100) / 100;
+    const p99LatencyMs =
+      Math.round(this.calculatePercentile(latencies, 99) * 100) / 100;
 
     return {
       state: this.state,
@@ -266,9 +282,10 @@ export class CircuitBreaker {
       p95LatencyMs,
       p99LatencyMs,
       consecutiveHighLatency: this.consecutiveHighLatency,
-      nextAttempt: this.state === CircuitState.OPEN
-        ? new Date(this.nextAttempt).toISOString()
-        : null,
+      nextAttempt:
+        this.state === CircuitState.OPEN
+          ? new Date(this.nextAttempt).toISOString()
+          : null,
       timestamp: new Date().toISOString(),
     };
   }
@@ -281,7 +298,10 @@ export class CircuitBreaker {
   public static async handleMetricsRequest(
     breaker: CircuitBreaker,
     req: { method: string; url: string },
-    res: { writeHead: (status: number, headers: Record<string, string>) => void; end: (body?: string) => void }
+    res: {
+      writeHead: (status: number, headers: Record<string, string>) => void;
+      end: (body?: string) => void;
+    }
   ): Promise<void> {
     // Check method and URL
     if (req.method !== "GET" || req.url !== "/v1/circuit-breaker/metrics") {
@@ -308,7 +328,7 @@ export class CircuitBreaker {
     const cutoff = now - this.config.latencyWindowMs!;
 
     // Filter samples within window (strictly greater than cutoff to exclude boundary)
-    return this.latencySamples.filter(sample => sample.timestamp > cutoff);
+    return this.latencySamples.filter((sample) => sample.timestamp > cutoff);
   }
 
   /**
@@ -373,7 +393,16 @@ export class CircuitBreaker {
 
   private setState(newState: CircuitState, reason?: string): void {
     if (this.state !== newState) {
+      const oldState = this.state;
       this.state = newState;
+
+      // Log state change
+      circuitBreakerLogger.info("Circuit breaker state changed", {
+        from: oldState,
+        to: newState,
+        reason: reason || "unspecified",
+        failureCount: this.failureCount,
+      });
 
       // Reset metrics when circuit closes
       if (newState === CircuitState.CLOSED) {

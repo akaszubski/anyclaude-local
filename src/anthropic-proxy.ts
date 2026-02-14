@@ -34,6 +34,7 @@ import { BackendClient } from "./backend-client";
 import { logTrace, type AnyclaudeMode } from "./trace-logger";
 import { getBackendLogPrefix } from "./utils/backend-display";
 import { logRequest } from "./request-logger";
+import { generatePrometheusMetrics, recordRequest } from "./prometheus-metrics";
 import {
   initializeCacheTracking,
   getCacheTracker,
@@ -72,6 +73,10 @@ import {
   isInternalMessage,
 } from "./server-side-tool-handler";
 import { CircuitBreaker } from "./circuit-breaker";
+
+// Security: Maximum request body size (10MB) to prevent DoS attacks
+// Claude Code requests are typically 1-5MB, so 10MB provides headroom
+const MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024; // 10MB
 
 // Circuit breaker for monitoring backend health and latency
 const proxyCircuitBreaker = new CircuitBreaker({
@@ -412,6 +417,24 @@ export const createAnthropicProxy = ({
         return;
       }
 
+      // Security: Check Content-Length header for oversized requests (DoS prevention)
+      const contentLength = parseInt(req.headers["content-length"] || "0", 10);
+      if (contentLength > MAX_REQUEST_BODY_SIZE) {
+        res.writeHead(413, {
+          "Content-Type": "application/json",
+        });
+        res.end(
+          JSON.stringify({
+            error: `Request body too large. Maximum size is ${MAX_REQUEST_BODY_SIZE / (1024 * 1024)}MB`,
+          })
+        );
+        debug(
+          1,
+          `[Security] Rejected oversized request: ${contentLength} bytes (max: ${MAX_REQUEST_BODY_SIZE})`
+        );
+        return;
+      }
+
       // Circuit breaker metrics endpoint
       if (req.url === "/v1/circuit-breaker/metrics" && req.method === "GET") {
         CircuitBreaker.handleMetricsRequest(
@@ -419,6 +442,48 @@ export const createAnthropicProxy = ({
           { method: req.method, url: req.url },
           res
         );
+        return;
+      }
+
+      // Health probe endpoints (Kubernetes-compatible)
+      if (req.url === "/health/live" && req.method === "GET") {
+        // Liveness probe - is the process alive?
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "alive" }));
+        return;
+      }
+
+      if (req.url === "/health/ready" && req.method === "GET") {
+        // Readiness probe - can we handle traffic?
+        const metrics = proxyCircuitBreaker.getMetrics();
+        const circuitOpen = metrics.state === "OPEN";
+
+        const response = {
+          status: circuitOpen ? "not_ready" : "ready",
+          checks: {
+            circuit_breaker: {
+              state: metrics.state,
+              failure_count: metrics.failureCount,
+            },
+          },
+        };
+
+        if (circuitOpen) {
+          res.writeHead(503, { "Content-Type": "application/json" });
+        } else {
+          res.writeHead(200, { "Content-Type": "application/json" });
+        }
+        res.end(JSON.stringify(response));
+        return;
+      }
+
+      // Prometheus metrics endpoint
+      if (req.url === "/v1/metrics" && req.method === "GET") {
+        const metricsOutput = generatePrometheusMetrics(proxyCircuitBreaker);
+        res.writeHead(200, {
+          "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+        });
+        res.end(metricsOutput);
         return;
       }
 
@@ -1633,6 +1698,14 @@ export const createAnthropicProxy = ({
                   );
                 }
 
+                // Record latency for circuit breaker monitoring
+                const completionLatencyMs = Date.now() - requestStartTime;
+                proxyCircuitBreaker.recordLatency(completionLatencyMs);
+                debug(
+                  2,
+                  `[Circuit Breaker] Recorded latency: ${completionLatencyMs}ms`
+                );
+
                 // If the body is already being streamed,
                 // we don't need to do any conversion here.
                 if (body.stream) {
@@ -2198,6 +2271,13 @@ export const createAnthropicProxy = ({
               clearInterval(keepaliveInterval);
             }
             const totalDuration = Date.now() - requestStartTime;
+
+            // Record latency for circuit breaker monitoring
+            proxyCircuitBreaker.recordLatency(totalDuration);
+            debug(
+              2,
+              `[Circuit Breaker] Recorded streaming latency: ${totalDuration}ms`
+            );
 
             // Calculate tok/s if we have timing data
             let tokensPerSecond: number | null = null;

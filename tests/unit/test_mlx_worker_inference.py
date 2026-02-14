@@ -1262,5 +1262,702 @@ class TestWebSearchToolInjection:
         assert messages[0]['content'] == original_content
 
 
+class TestKVCachePersistence:
+    """Test disk-based KV cache persistence (Issue #56)"""
+
+    @pytest.fixture
+    def mock_cache_dir(self, tmp_path):
+        """Create temporary cache directory for testing"""
+        cache_dir = tmp_path / "kv-cache"
+        cache_dir.mkdir()
+        return cache_dir
+
+    @pytest.fixture
+    def mock_model(self):
+        """Mock MLX model for testing"""
+        model = MagicMock()
+        return model
+
+    @pytest.fixture
+    def mock_cache_object(self):
+        """Mock KV cache object with state property"""
+        cache_obj = MagicMock()
+        # Mock keys and values tensors
+        keys = MagicMock()
+        values = MagicMock()
+        cache_obj.state = (keys, values)
+        return cache_obj
+
+    @pytest.fixture
+    def mock_cache_list(self, mock_cache_object):
+        """Mock cache list with multiple layers"""
+        return [mock_cache_object for _ in range(3)]
+
+    def test_get_cache_filename(self):
+        """Test cache filename generation includes both hashes"""
+        from mlx_worker.inference import _get_cache_filename
+
+        filename = _get_cache_filename("abc123", "/path/to/model")
+
+        # Should include both system hash and model hash
+        assert "abc123" in filename
+        assert filename.endswith(".safetensors")
+        assert "_" in filename  # Delimiter between hashes
+
+    def test_get_cache_filename_different_models(self):
+        """Test different model paths produce different cache filenames"""
+        from mlx_worker.inference import _get_cache_filename
+
+        filename1 = _get_cache_filename("abc123", "/model1")
+        filename2 = _get_cache_filename("abc123", "/model2")
+
+        # Same system prompt, different models -> different filenames
+        assert filename1 != filename2
+
+    def test_get_cache_filename_different_prompts(self):
+        """Test different system prompts produce different cache filenames"""
+        from mlx_worker.inference import _get_cache_filename
+
+        filename1 = _get_cache_filename("hash1", "/model")
+        filename2 = _get_cache_filename("hash2", "/model")
+
+        # Different system prompts, same model -> different filenames
+        assert filename1 != filename2
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    @patch('mlx_worker.inference.mx.save_safetensors')
+    def test_save_cache_to_disk_creates_directory(
+        self,
+        mock_save_safetensors,
+        mock_cache_dir_path,
+        mock_cache_list,
+        mock_cache_dir
+    ):
+        """Test saving cache creates cache directory if missing"""
+        from mlx_worker.inference import _save_cache_to_disk
+
+        mock_cache_dir_path.__truediv__ = lambda self, other: mock_cache_dir / other
+        mock_cache_dir_path.mkdir = MagicMock()
+
+        _save_cache_to_disk(mock_cache_list, "abc123", "/model")
+
+        # Should create cache directory
+        mock_cache_dir_path.mkdir.assert_called()
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    @patch('mlx_worker.inference.mx.save_safetensors')
+    def test_save_cache_to_disk_saves_metadata(
+        self,
+        mock_save_safetensors,
+        mock_cache_dir_path,
+        mock_cache_list,
+        mock_cache_dir,
+        tmp_path
+    ):
+        """Test saving cache creates metadata.json with correct info"""
+        from mlx_worker.inference import _save_cache_to_disk
+        import json
+
+        # Mock cache directory
+        cache_subdir = tmp_path / "cache_abc123_12345678"
+        mock_cache_dir_path.__truediv__ = lambda self, other: tmp_path / other
+        mock_cache_dir_path.mkdir = MagicMock()
+
+        _save_cache_to_disk(mock_cache_list, "abc123", "/model")
+
+        # Find created metadata file
+        metadata_files = list(tmp_path.rglob("metadata.json"))
+        assert len(metadata_files) > 0
+
+        # Verify metadata content
+        with open(metadata_files[0]) as f:
+            metadata = json.load(f)
+
+        assert metadata["system_hash"] == "abc123"
+        assert metadata["model_path"] == "/model"
+        assert metadata["num_layers"] == 3
+        assert "timestamp" in metadata
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    @patch('mlx_worker.inference.mx.save_safetensors')
+    def test_save_cache_to_disk_saves_all_layers(
+        self,
+        mock_save_safetensors,
+        mock_cache_dir_path,
+        mock_cache_list,
+        tmp_path
+    ):
+        """Test saving cache saves each layer's KV tensors"""
+        from mlx_worker.inference import _save_cache_to_disk
+
+        mock_cache_dir_path.__truediv__ = lambda self, other: tmp_path / other
+        mock_cache_dir_path.mkdir = MagicMock()
+
+        _save_cache_to_disk(mock_cache_list, "abc123", "/model")
+
+        # Should call save_safetensors for each layer
+        assert mock_save_safetensors.call_count == 3
+
+        # Verify saved with keys and values
+        for call in mock_save_safetensors.call_args_list:
+            args, kwargs = call
+            tensors_dict = args[1]
+            assert "keys" in tensors_dict
+            assert "values" in tensors_dict
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    def test_save_cache_to_disk_handles_errors_gracefully(
+        self,
+        mock_cache_dir_path,
+        mock_cache_list
+    ):
+        """Test saving cache handles errors without raising"""
+        from mlx_worker.inference import _save_cache_to_disk
+
+        # Mock error during mkdir
+        mock_cache_dir_path.mkdir.side_effect = PermissionError("Access denied")
+
+        # Should NOT raise exception (graceful degradation)
+        try:
+            _save_cache_to_disk(mock_cache_list, "abc123", "/model")
+        except Exception as e:
+            pytest.fail(f"Should not raise exception: {e}")
+
+    def test_load_cache_from_disk_success(self, tmp_path, mock_model):
+        """Test loading cache from disk successfully"""
+        from mlx_worker.inference import _load_cache_from_disk, _get_cache_filename
+        import mlx_worker.inference as inf
+        import json
+
+        # Create mock cache objects with state property
+        mock_cache_list = []
+        for _ in range(3):
+            cache_obj = MagicMock()
+            cache_obj.state = (MagicMock(), MagicMock())
+            mock_cache_list.append(cache_obj)
+
+        # Setup cache directory structure
+        cache_filename = _get_cache_filename("abc123", "/model")
+        cache_subdir = tmp_path / cache_filename.replace(".safetensors", "")
+        cache_subdir.mkdir(parents=True)
+
+        # Create metadata
+        metadata = {
+            "system_hash": "abc123",
+            "model_path": "/model",
+            "num_layers": 3,
+            "timestamp": 1234567890
+        }
+        with open(cache_subdir / "metadata.json", "w") as f:
+            json.dump(metadata, f)
+
+        # Create layer files
+        for i in range(3):
+            layer_file = cache_subdir / f"layer_{i}.safetensors"
+            layer_file.touch()
+
+        # Temporarily override _CACHE_DIR
+        original_cache_dir = inf._CACHE_DIR
+        try:
+            inf._CACHE_DIR = tmp_path
+
+            # Mock make_prompt_cache to return cache objects
+            with patch('mlx_worker.inference.make_prompt_cache', return_value=mock_cache_list):
+                # Mock mx.load to return tensor dict
+                with patch('mlx_worker.inference.mx.load', return_value={"keys": MagicMock(), "values": MagicMock()}) as mock_mx_load:
+                    # Load cache
+                    result = _load_cache_from_disk(mock_model, "abc123", "/model")
+
+                    # Should return cache list
+                    assert result is not None
+                    assert len(result) == 3
+
+                    # Should have loaded each layer
+                    assert mock_mx_load.call_count == 3
+        finally:
+            # Restore original cache dir
+            inf._CACHE_DIR = original_cache_dir
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    def test_load_cache_from_disk_missing_cache(
+        self,
+        mock_cache_dir_path,
+        mock_model,
+        tmp_path
+    ):
+        """Test loading cache returns None when cache doesn't exist"""
+        from mlx_worker.inference import _load_cache_from_disk
+
+        mock_cache_dir_path.__truediv__ = lambda self, other: tmp_path / "nonexistent"
+
+        result = _load_cache_from_disk(mock_model, "abc123", "/model")
+
+        # Should return None for missing cache
+        assert result is None
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    def test_load_cache_from_disk_hash_mismatch(
+        self,
+        mock_cache_dir_path,
+        mock_model,
+        tmp_path
+    ):
+        """Test loading cache returns None when hash doesn't match"""
+        from mlx_worker.inference import _load_cache_from_disk
+        import json
+
+        cache_subdir = tmp_path / "cache_abc123_12345678"
+        cache_subdir.mkdir(parents=True)
+
+        # Create metadata with different hash
+        metadata = {
+            "system_hash": "different",
+            "model_path": "/model",
+            "num_layers": 3
+        }
+        with open(cache_subdir / "metadata.json", "w") as f:
+            json.dump(metadata, f)
+
+        mock_cache_dir_path.__truediv__ = lambda self, other: tmp_path / other
+
+        result = _load_cache_from_disk(mock_model, "abc123", "/model")
+
+        # Should return None for hash mismatch
+        assert result is None
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    def test_load_cache_from_disk_model_mismatch(
+        self,
+        mock_cache_dir_path,
+        mock_model,
+        tmp_path
+    ):
+        """Test loading cache returns None when model path doesn't match"""
+        from mlx_worker.inference import _load_cache_from_disk
+        import json
+
+        cache_subdir = tmp_path / "cache_abc123_12345678"
+        cache_subdir.mkdir(parents=True)
+
+        # Create metadata with different model
+        metadata = {
+            "system_hash": "abc123",
+            "model_path": "/different-model",
+            "num_layers": 3
+        }
+        with open(cache_subdir / "metadata.json", "w") as f:
+            json.dump(metadata, f)
+
+        mock_cache_dir_path.__truediv__ = lambda self, other: tmp_path / other
+
+        result = _load_cache_from_disk(mock_model, "abc123", "/model")
+
+        # Should return None for model mismatch
+        assert result is None
+
+    @patch('mlx_worker.inference._CACHE_DIR')
+    def test_load_cache_from_disk_handles_errors_gracefully(
+        self,
+        mock_cache_dir_path,
+        mock_model,
+        tmp_path
+    ):
+        """Test loading cache handles errors without raising"""
+        from mlx_worker.inference import _load_cache_from_disk
+
+        # Mock error during exists check
+        mock_cache_dir_path.__truediv__ = MagicMock(side_effect=RuntimeError("I/O error"))
+
+        # Should NOT raise exception (graceful degradation)
+        result = _load_cache_from_disk(mock_model, "abc123", "/model")
+
+        # Should return None on error
+        assert result is None
+
+    @patch('mlx_worker.inference.load_model')
+    @patch('mlx_worker.inference._load_cache_from_disk')
+    @patch('mlx_worker.inference._save_cache_to_disk')
+    @patch('mlx_worker.inference.stream_generate')
+    def test_generate_stream_uses_disk_cache(
+        self,
+        mock_stream_generate,
+        mock_save_cache,
+        mock_load_cache,
+        mock_load_model
+    ):
+        """Test generate_stream loads cache from disk when available"""
+        from mlx_worker.inference import generate_stream
+
+        mock_model = MagicMock()
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.apply_chat_template = MagicMock(return_value="formatted prompt")
+        mock_load_model.return_value = (mock_model, mock_tokenizer)
+
+        # Mock disk cache available
+        mock_cache_list = [MagicMock() for _ in range(3)]
+        mock_load_cache.return_value = mock_cache_list
+
+        # Mock generation response
+        mock_response = MagicMock()
+        mock_response.text = "response"
+        mock_stream_generate.return_value = iter([mock_response])
+
+        messages = [{"role": "system", "content": "test"}]
+        list(generate_stream(messages, model_path="/model", cache_prompt=True))
+
+        # Should try to load cache from disk
+        mock_load_cache.assert_called_once()
+
+        # Should NOT save cache (already loaded from disk)
+        mock_save_cache.assert_not_called()
+
+    @patch('mlx_worker.inference._prompt_cache_hash', '')
+    @patch('mlx_worker.inference._prompt_cache', {})
+    @patch('mlx_worker.inference.load_model')
+    @patch('mlx_worker.inference._load_cache_from_disk')
+    @patch('mlx_worker.inference._save_cache_to_disk')
+    @patch('mlx_worker.inference.stream_generate')
+    @patch('mlx_worker.inference.make_prompt_cache')
+    def test_generate_stream_saves_cache_after_warming(
+        self,
+        mock_make_cache,
+        mock_stream_generate,
+        mock_save_cache,
+        mock_load_cache,
+        mock_load_model
+    ):
+        """Test generate_stream saves cache to disk after warming"""
+        from mlx_worker.inference import generate_stream
+        import mlx_worker.inference as inf
+
+        # Clear global state
+        inf._prompt_cache_hash = ''
+        inf._prompt_cache = {}
+
+        mock_model = MagicMock()
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.apply_chat_template = MagicMock(return_value="formatted prompt")
+        mock_load_model.return_value = (mock_model, mock_tokenizer)
+
+        # Mock disk cache NOT available (need to warm)
+        mock_load_cache.return_value = None
+
+        # Mock cache creation
+        mock_cache_list = [MagicMock() for _ in range(3)]
+        mock_make_cache.return_value = mock_cache_list
+
+        # Mock generation response
+        mock_response = MagicMock()
+        mock_response.text = "response"
+        mock_stream_generate.return_value = iter([mock_response])
+
+        messages = [{"role": "system", "content": "test"}]
+        list(generate_stream(messages, model_path="/model", cache_prompt=True))
+
+        # Should try to load cache from disk
+        mock_load_cache.assert_called_once()
+
+        # Should create new cache (warming)
+        mock_make_cache.assert_called_once()
+
+        # Should save cache to disk after warming
+        mock_save_cache.assert_called_once()
+
+    @patch('mlx_worker.inference.load_model')
+    @patch('mlx_worker.inference._load_cache_from_disk')
+    @patch('mlx_worker.inference._save_cache_to_disk')
+    @patch('mlx_worker.inference.stream_generate')
+    def test_generate_stream_skips_disk_cache_when_disabled(
+        self,
+        mock_stream_generate,
+        mock_save_cache,
+        mock_load_cache,
+        mock_load_model
+    ):
+        """Test generate_stream skips disk cache when cache_prompt=False"""
+        from mlx_worker.inference import generate_stream
+
+        mock_model = MagicMock()
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.apply_chat_template = MagicMock(return_value="formatted prompt")
+        mock_load_model.return_value = (mock_model, mock_tokenizer)
+
+        # Mock generation response
+        mock_response = MagicMock()
+        mock_response.text = "response"
+        mock_stream_generate.return_value = iter([mock_response])
+
+        messages = [{"role": "user", "content": "test"}]
+        list(generate_stream(messages, model_path="/model", cache_prompt=False))
+
+        # Should NOT try to load or save cache
+        mock_load_cache.assert_not_called()
+        mock_save_cache.assert_not_called()
+
+    def test_cache_dir_environment_variable(self, monkeypatch, tmp_path):
+        """Test cache directory can be configured via environment variable"""
+        import importlib
+        import mlx_worker.inference as inference_module
+
+        custom_cache_dir = str(tmp_path / "custom-cache")
+        monkeypatch.setenv("ANYCLAUDE_KV_CACHE_DIR", custom_cache_dir)
+
+        # Reload module to pick up env var
+        importlib.reload(inference_module)
+
+        from mlx_worker.inference import _CACHE_DIR
+
+        # Should use custom cache directory
+        assert str(_CACHE_DIR) == custom_cache_dir
+
+    def test_cache_dir_default_location(self, monkeypatch):
+        """Test cache directory defaults to ~/.cache/anyclaude/kv-cache"""
+        import os
+        import importlib
+        import mlx_worker.inference as inference_module
+
+        # Clear any existing env var
+        monkeypatch.delenv("ANYCLAUDE_KV_CACHE_DIR", raising=False)
+
+        # Reload module to use default
+        importlib.reload(inference_module)
+
+        from mlx_worker.inference import _CACHE_DIR
+
+        expected = os.path.expanduser("~/.cache/anyclaude/kv-cache")
+
+        # Should use default location
+        assert str(_CACHE_DIR) == expected
+
+
+class TestKVCacheOptimizations:
+    """Tests for KV cache optimizations (Issues #57, #58, #59)"""
+
+    def test_quantize_tensor_returns_fp16(self):
+        """Test _quantize_tensor converts to FP16 when enabled"""
+        from mlx_worker.inference import _quantize_tensor, _ENABLE_QUANTIZATION
+        import mlx.core as mx
+
+        if not _ENABLE_QUANTIZATION:
+            pytest.skip("Quantization disabled")
+
+        tensor = mx.array([1.0, 2.0, 3.0], dtype=mx.float32)
+        quantized, scale, zero_point = _quantize_tensor(tensor)
+
+        assert quantized.dtype == mx.float16
+        assert scale == 1.0
+        assert zero_point == 0.0
+
+    def test_dequantize_tensor_returns_fp32(self):
+        """Test _dequantize_tensor converts back to FP32"""
+        from mlx_worker.inference import _dequantize_tensor, _ENABLE_QUANTIZATION
+        import mlx.core as mx
+
+        if not _ENABLE_QUANTIZATION:
+            pytest.skip("Quantization disabled")
+
+        tensor = mx.array([1.0, 2.0, 3.0], dtype=mx.float16)
+        dequantized = _dequantize_tensor(tensor)
+
+        assert dequantized.dtype == mx.float32
+
+    def test_quantize_roundtrip_preserves_values(self):
+        """Test quantize -> dequantize preserves approximate values"""
+        from mlx_worker.inference import _quantize_tensor, _dequantize_tensor, _ENABLE_QUANTIZATION
+        import mlx.core as mx
+
+        if not _ENABLE_QUANTIZATION:
+            pytest.skip("Quantization disabled")
+
+        original = mx.array([1.5, 2.5, 3.5], dtype=mx.float32)
+        quantized, _, _ = _quantize_tensor(original)
+        restored = _dequantize_tensor(quantized)
+
+        # FP16 has enough precision for these values
+        assert mx.allclose(original, restored, atol=1e-3).item()
+
+    def test_get_cache_size_bytes_empty_dir(self, tmp_path, monkeypatch):
+        """Test _get_cache_size_bytes returns 0 for empty/nonexistent directory"""
+        from mlx_worker.inference import _get_cache_size_bytes
+        from pathlib import Path
+
+        monkeypatch.setattr('mlx_worker.inference._CACHE_DIR', tmp_path / "nonexistent")
+
+        size = _get_cache_size_bytes()
+        assert size == 0
+
+    def test_get_cache_size_bytes_with_files(self, tmp_path, monkeypatch):
+        """Test _get_cache_size_bytes calculates total size correctly"""
+        from mlx_worker.inference import _get_cache_size_bytes
+
+        # Create test files
+        cache_dir = tmp_path / "kv-cache"
+        cache_dir.mkdir()
+        (cache_dir / "file1.safetensors").write_bytes(b"x" * 1000)
+        (cache_dir / "file2.safetensors").write_bytes(b"x" * 500)
+
+        monkeypatch.setattr('mlx_worker.inference._CACHE_DIR', cache_dir)
+
+        size = _get_cache_size_bytes()
+        assert size == 1500
+
+    def test_update_cache_access_time(self, tmp_path):
+        """Test _update_cache_access_time updates last_access in metadata"""
+        from mlx_worker.inference import _update_cache_access_time
+        import json
+        import time
+
+        cache_dir = tmp_path / "test-cache"
+        cache_dir.mkdir()
+
+        # Create initial metadata
+        initial_time = time.time() - 1000
+        metadata = {"system_hash": "abc", "last_access": initial_time}
+        with open(cache_dir / "metadata.json", "w") as f:
+            json.dump(metadata, f)
+
+        _update_cache_access_time(cache_dir)
+
+        # Read updated metadata
+        with open(cache_dir / "metadata.json", "r") as f:
+            updated = json.load(f)
+
+        assert updated["last_access"] > initial_time
+
+    def test_evict_old_caches_removes_oldest(self, tmp_path, monkeypatch):
+        """Test _evict_old_caches removes oldest entries first"""
+        from mlx_worker.inference import _evict_old_caches
+        import json
+        import time
+
+        cache_dir = tmp_path / "kv-cache"
+        cache_dir.mkdir()
+
+        # Create 3 cache directories with different access times
+        for i, age in enumerate([1000, 500, 100]):  # Oldest to newest
+            subdir = cache_dir / f"cache_{i}"
+            subdir.mkdir()
+            metadata = {"last_access": time.time() - age}
+            with open(subdir / "metadata.json", "w") as f:
+                json.dump(metadata, f)
+            # Create a 1KB file in each
+            (subdir / "layer_0.safetensors").write_bytes(b"x" * 1024)
+
+        monkeypatch.setattr('mlx_worker.inference._CACHE_DIR', cache_dir)
+        monkeypatch.setattr('mlx_worker.inference._MAX_CACHE_SIZE_GB', 0.000002)  # ~2KB limit
+
+        _evict_old_caches()
+
+        # Should have evicted the oldest (cache_0)
+        remaining = list(cache_dir.iterdir())
+        assert len(remaining) <= 2
+        # Oldest should be evicted
+        assert not (cache_dir / "cache_0").exists() or len(remaining) == 3
+
+    def test_save_cache_includes_quantized_flag(self, tmp_path, monkeypatch):
+        """Test saved metadata includes quantized flag"""
+        from mlx_worker.inference import _save_cache_to_disk, _ENABLE_QUANTIZATION
+        import json
+
+        monkeypatch.setattr('mlx_worker.inference._CACHE_DIR', tmp_path)
+        monkeypatch.setattr('mlx_worker.inference._evict_old_caches', lambda: None)
+
+        # Create mock cache objects
+        class MockCache:
+            def __init__(self):
+                import mlx.core as mx
+                self.state = (mx.zeros((1, 1)), mx.zeros((1, 1)))
+
+        cache_list = [MockCache()]
+
+        _save_cache_to_disk(cache_list, "test_hash", "/test/model")
+
+        # Find the created cache directory
+        cache_dirs = [d for d in tmp_path.iterdir() if d.is_dir()]
+        assert len(cache_dirs) == 1
+
+        # Check metadata
+        with open(cache_dirs[0] / "metadata.json", "r") as f:
+            metadata = json.load(f)
+
+        assert "quantized" in metadata
+        assert metadata["quantized"] == _ENABLE_QUANTIZATION
+
+    def test_load_cache_with_quantized_flag(self, tmp_path, monkeypatch):
+        """Test loading respects quantized flag in metadata"""
+        from mlx_worker.inference import _load_cache_from_disk, _get_cache_filename
+        from unittest.mock import MagicMock, patch
+        import json
+        import mlx.core as mx
+
+        # Get the actual cache directory name that will be looked up
+        cache_name = _get_cache_filename("abc123", "/model")
+        cache_dir = tmp_path / cache_name.replace(".safetensors", "")
+        cache_dir.mkdir(parents=True)
+
+        # Create metadata with quantized=True
+        metadata = {
+            "system_hash": "abc123",
+            "model_path": "/model",
+            "num_layers": 1,
+            "quantized": True,
+            "last_access": 0
+        }
+        with open(cache_dir / "metadata.json", "w") as f:
+            json.dump(metadata, f)
+
+        # Create a layer file with FP16 data
+        mx.save_safetensors(
+            str(cache_dir / "layer_0.safetensors"),
+            {"keys": mx.zeros((1, 1), dtype=mx.float16), "values": mx.zeros((1, 1), dtype=mx.float16)}
+        )
+
+        monkeypatch.setattr('mlx_worker.inference._CACHE_DIR', tmp_path)
+
+        # Mock model and make_prompt_cache
+        mock_model = MagicMock()
+        mock_cache_obj = MagicMock()
+        mock_cache_obj.state = (mx.zeros((1, 1)), mx.zeros((1, 1)))
+
+        with patch('mlx_worker.inference.make_prompt_cache', return_value=[mock_cache_obj]):
+            result = _load_cache_from_disk(mock_model, "abc123", "/model")
+
+        # Should successfully load
+        assert result is not None
+
+    def test_config_env_vars_max_size(self, monkeypatch):
+        """Test _MAX_CACHE_SIZE_GB can be configured via env var"""
+        import importlib
+        import mlx_worker.inference as inference_module
+
+        monkeypatch.setenv("ANYCLAUDE_KV_CACHE_MAX_SIZE_GB", "10.5")
+        importlib.reload(inference_module)
+
+        from mlx_worker.inference import _MAX_CACHE_SIZE_GB
+        assert _MAX_CACHE_SIZE_GB == 10.5
+
+    def test_config_env_vars_quantize(self, monkeypatch):
+        """Test _ENABLE_QUANTIZATION can be configured via env var"""
+        import importlib
+        import mlx_worker.inference as inference_module
+
+        monkeypatch.setenv("ANYCLAUDE_KV_CACHE_QUANTIZE", "false")
+        importlib.reload(inference_module)
+
+        from mlx_worker.inference import _ENABLE_QUANTIZATION
+        assert _ENABLE_QUANTIZATION is False
+
+    def test_config_env_vars_mmap(self, monkeypatch):
+        """Test _ENABLE_MMAP can be configured via env var"""
+        import importlib
+        import mlx_worker.inference as inference_module
+
+        monkeypatch.setenv("ANYCLAUDE_KV_CACHE_MMAP", "false")
+        importlib.reload(inference_module)
+
+        from mlx_worker.inference import _ENABLE_MMAP
+        assert _ENABLE_MMAP is False
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '--tb=short'])

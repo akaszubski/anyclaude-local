@@ -101,7 +101,10 @@ export function cleanupServerProcess(): void {
  */
 export function isDockerAvailable(): boolean {
   try {
-    const result = spawnSync("docker", ["info"], { encoding: "utf8", timeout: 5000 });
+    const result = spawnSync("docker", ["info"], {
+      encoding: "utf8",
+      timeout: 5000,
+    });
     return result.status === 0;
   } catch {
     return false;
@@ -176,7 +179,10 @@ export async function startSearxNGContainer(): Promise<boolean> {
   // Start Docker if not running (auto-starts OrbStack or Docker Desktop)
   const dockerReady = await startDockerDaemon();
   if (!dockerReady) {
-    debug(1, "[server-launcher] Docker not available, skipping SearXNG auto-start");
+    debug(
+      1,
+      "[server-launcher] Docker not available, skipping SearXNG auto-start"
+    );
     return false;
   }
 
@@ -220,7 +226,10 @@ export async function startSearxNGContainer(): Promise<boolean> {
   );
 
   if (!fs.existsSync(composeFile)) {
-    debug(1, `[server-launcher] SearXNG compose file not found: ${composeFile}`);
+    debug(
+      1,
+      `[server-launcher] SearXNG compose file not found: ${composeFile}`
+    );
     return false;
   }
 
@@ -243,7 +252,9 @@ export async function startSearxNGContainer(): Promise<boolean> {
     const ready = await waitForSearxNGReady();
     return ready;
   } else {
-    console.error(`[anyclaude] Failed to start SearXNG: ${composeResult.stderr}`);
+    console.error(
+      `[anyclaude] Failed to start SearXNG: ${composeResult.stderr}`
+    );
     return false;
   }
 }
@@ -657,13 +668,19 @@ export function startVLLMMLXServer(config: ServerLauncherConfig): void {
     architecture = "mistral";
   }
 
-  // Build command for mistral.rs
+  // Build args for mistral.rs (avoiding shell interpretation for security)
   // Use 'plain' subcommand for pre-quantized models (no additional ISQ needed)
-  const command = `"${mistralrsBin}" --port ${port} --token-source none plain --model-id "${modelPath}" --arch ${architecture} 2>&1`;
-
-  const serverProcess = spawn("bash", ["-c", command], {
+  // Security: Using array-based spawn prevents shell injection (CWE-78)
+  const serverProcess = spawn(mistralrsBin, [
+    "--port", String(port),
+    "--token-source", "none",
+    "plain",
+    "--model-id", modelPath,
+    "--arch", architecture
+  ], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
+    shell: false, // Security: explicitly disable shell interpretation
     env: {
       ...process.env,
     },

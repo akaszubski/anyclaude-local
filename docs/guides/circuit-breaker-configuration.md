@@ -7,12 +7,14 @@ A complete guide to configuring and monitoring circuit breaker behavior for auto
 The circuit breaker implements the classic 3-state pattern for resilient service communication. It protects your application from cascading failures when backend services become unavailable or experience degradation.
 
 **What it does:**
+
 - Automatically detects service failures and stops sending requests
 - Monitors latency and can open circuit if responses become too slow
 - Automatically tests service recovery at intervals
 - Provides detailed metrics for monitoring and alerting
 
 **When to use it:**
+
 - Any critical service that needs failover capability
 - Services with occasional transient failures
 - Backend systems that might become unavailable during updates
@@ -94,27 +96,27 @@ Number of consecutive failures before opening the circuit.
 ```typescript
 // Strict - trip quickly on 2 failures
 const config = {
-  failureThreshold: 2,  // Open after 2 failures
+  failureThreshold: 2, // Open after 2 failures
 };
 
 // Normal - tolerate some transient failures
 const config = {
-  failureThreshold: 5,  // Open after 5 failures (recommended)
+  failureThreshold: 5, // Open after 5 failures (recommended)
 };
 
 // Lenient - allow service to degrade gracefully
 const config = {
-  failureThreshold: 10,  // Open after 10 failures
+  failureThreshold: 10, // Open after 10 failures
 };
 ```
 
 **When to adjust:**
 
-| Value | Use Case | Notes |
-|-------|----------|-------|
-| 2-3 | Unstable services | Trip quickly, fail fast |
-| 5 | Normal case | Balances protection with tolerance |
-| 8-10 | Flaky services | Tolerate occasional failures |
+| Value | Use Case          | Notes                              |
+| ----- | ----------------- | ---------------------------------- |
+| 2-3   | Unstable services | Trip quickly, fail fast            |
+| 5     | Normal case       | Balances protection with tolerance |
+| 8-10  | Flaky services    | Tolerate occasional failures       |
 
 #### successThreshold
 
@@ -127,17 +129,17 @@ Number of consecutive successes in HALF_OPEN state before closing the circuit.
 ```typescript
 // Fast recovery
 const config = {
-  successThreshold: 1,  // Close after 1 success (risky)
+  successThreshold: 1, // Close after 1 success (risky)
 };
 
 // Balanced (recommended)
 const config = {
-  successThreshold: 2,  // Close after 2 successes
+  successThreshold: 2, // Close after 2 successes
 };
 
 // Conservative
 const config = {
-  successThreshold: 3,  // Close after 3 successes (safer)
+  successThreshold: 3, // Close after 3 successes (safer)
 };
 ```
 
@@ -164,33 +166,33 @@ Maximum acceptable latency. If a request exceeds this, it counts as a "high late
 ```typescript
 // Disable latency monitoring
 const config = {
-  latencyThresholdMs: 0,  // Disabled
+  latencyThresholdMs: 0, // Disabled
 };
 
 // Monitor for 5-second threshold (typical APIs)
 const config = {
-  latencyThresholdMs: 5000,  // 5 seconds
+  latencyThresholdMs: 5000, // 5 seconds
 };
 
 // Strict 1-second SLA
 const config = {
-  latencyThresholdMs: 1000,  // 1 second
+  latencyThresholdMs: 1000, // 1 second
 };
 
 // Very strict 100ms for local services
 const config = {
-  latencyThresholdMs: 100,  // 100ms
+  latencyThresholdMs: 100, // 100ms
 };
 ```
 
 **Typical Values:**
 
-| Service | Threshold | Notes |
-|---------|-----------|-------|
-| Local (same machine) | 100-500ms | Very fast, low latency |
-| Regional API | 500-2000ms | Some network latency |
-| Internet API | 2000-5000ms | Expect variable latency |
-| Disabled | 0 | Only use failure detection |
+| Service              | Threshold   | Notes                      |
+| -------------------- | ----------- | -------------------------- |
+| Local (same machine) | 100-500ms   | Very fast, low latency     |
+| Regional API         | 500-2000ms  | Some network latency       |
+| Internet API         | 2000-5000ms | Expect variable latency    |
+| Disabled             | 0           | Only use failure detection |
 
 #### latencyConsecutiveChecks
 
@@ -208,7 +210,7 @@ const config = {
 
 // Balanced - allow some latency spikes
 const config = {
-  latencyConsecutiveChecks: 3,  // Recommended
+  latencyConsecutiveChecks: 3, // Recommended
 };
 
 // Tolerant - only react to sustained slowness
@@ -241,21 +243,22 @@ Rolling time window for latency samples. Only samples within this window are con
 ```typescript
 // 1-second window (default)
 const config = {
-  latencyWindowMs: 1000,  // Last 1 second of samples
+  latencyWindowMs: 1000, // Last 1 second of samples
 };
 
 // 5-second window for smoothing
 const config = {
-  latencyWindowMs: 5000,  // Last 5 seconds of samples
+  latencyWindowMs: 5000, // Last 5 seconds of samples
 };
 
 // 10-second window for trending
 const config = {
-  latencyWindowMs: 10000,  // Last 10 seconds of samples
+  latencyWindowMs: 10000, // Last 10 seconds of samples
 };
 ```
 
 **Impact:**
+
 - Smaller window: More responsive to latency spikes, noisier metrics
 - Larger window: Smoother metrics, slower to react to degradation
 
@@ -269,21 +272,23 @@ Automatically check latency threshold each time a sample is recorded.
 ```typescript
 // Manual checking
 const config = {
-  autoCheckLatency: false,  // Check explicitly with checkLatencyThreshold()
+  autoCheckLatency: false, // Check explicitly with checkLatencyThreshold()
 };
 
 // Automatic checking
 const config = {
-  autoCheckLatency: true,   // Check on every recordLatency() call
+  autoCheckLatency: true, // Check on every recordLatency() call
 };
 ```
 
 **When to enable:**
+
 - Real-time latency monitoring required
 - Can handle overhead of checks
 - Want automatic circuit opens on latency
 
 **When to disable:**
+
 - Batch checking in monitoring thread
 - Performance sensitive operations
 - Want control over check timing
@@ -302,28 +307,28 @@ Time to wait in OPEN state before transitioning to HALF_OPEN and attempting reco
 ```typescript
 // Aggressive recovery (retry quickly)
 const config = {
-  retryTimeout: 10000,  // Try again after 10 seconds
+  retryTimeout: 10000, // Try again after 10 seconds
 };
 
 // Standard (default)
 const config = {
-  retryTimeout: 30000,  // Try again after 30 seconds
+  retryTimeout: 30000, // Try again after 30 seconds
 };
 
 // Conservative (give service time to recover)
 const config = {
-  retryTimeout: 60000,  // Try again after 1 minute
+  retryTimeout: 60000, // Try again after 1 minute
 };
 ```
 
 **Typical Values:**
 
-| Service | Timeout | Rationale |
-|---------|---------|-----------|
-| Local development | 5-10 seconds | Quick feedback |
-| Regional service | 30 seconds | Standard case |
-| Critical service | 60 seconds | Avoid thundering herd |
-| Cloud service | 90-120 seconds | Account for deployment |
+| Service           | Timeout        | Rationale              |
+| ----------------- | -------------- | ---------------------- |
+| Local development | 5-10 seconds   | Quick feedback         |
+| Regional service  | 30 seconds     | Standard case          |
+| Critical service  | 60 seconds     | Avoid thundering herd  |
+| Cloud service     | 90-120 seconds | Account for deployment |
 
 #### requestTimeout
 
@@ -336,17 +341,17 @@ Maximum time to wait for a request before considering it failed.
 ```typescript
 // Fast timeout (strict)
 const config = {
-  requestTimeout: 2000,  // 2 second timeout
+  requestTimeout: 2000, // 2 second timeout
 };
 
 // Standard (default)
 const config = {
-  requestTimeout: 5000,  // 5 second timeout
+  requestTimeout: 5000, // 5 second timeout
 };
 
 // Generous (slow services)
 const config = {
-  requestTimeout: 10000,  // 10 second timeout
+  requestTimeout: 10000, // 10 second timeout
 };
 ```
 
@@ -358,14 +363,14 @@ const config = {
 
 ```typescript
 const config = {
-  failureThreshold: 2,        // Strict - fail fast
-  successThreshold: 1,        // Fast recovery
-  retryTimeout: 10000,        // Quick retry
-  requestTimeout: 5000,       // Standard timeout
-  latencyThresholdMs: 1000,   // 1 second SLA
-  latencyConsecutiveChecks: 2,// Sensitive to slowness
-  latencyWindowMs: 1000,      // 1 second window
-  autoCheckLatency: true,     // Real-time monitoring
+  failureThreshold: 2, // Strict - fail fast
+  successThreshold: 1, // Fast recovery
+  retryTimeout: 10000, // Quick retry
+  requestTimeout: 5000, // Standard timeout
+  latencyThresholdMs: 1000, // 1 second SLA
+  latencyConsecutiveChecks: 2, // Sensitive to slowness
+  latencyWindowMs: 1000, // 1 second window
+  autoCheckLatency: true, // Real-time monitoring
 };
 ```
 
@@ -373,14 +378,14 @@ const config = {
 
 ```typescript
 const config = {
-  failureThreshold: 5,        // Tolerate transient failures
-  successThreshold: 2,        // Verify recovery
-  retryTimeout: 30000,        // Standard retry
-  requestTimeout: 10000,      // Give it time
-  latencyThresholdMs: 5000,   // 5 second SLA
-  latencyConsecutiveChecks: 3,// Tolerate some slowness
-  latencyWindowMs: 5000,      // 5 second window
-  autoCheckLatency: false,    // Batch checking
+  failureThreshold: 5, // Tolerate transient failures
+  successThreshold: 2, // Verify recovery
+  retryTimeout: 30000, // Standard retry
+  requestTimeout: 10000, // Give it time
+  latencyThresholdMs: 5000, // 5 second SLA
+  latencyConsecutiveChecks: 3, // Tolerate some slowness
+  latencyWindowMs: 5000, // 5 second window
+  autoCheckLatency: false, // Batch checking
 };
 ```
 
@@ -388,12 +393,12 @@ const config = {
 
 ```typescript
 const config = {
-  failureThreshold: 5,        // Standard
-  successThreshold: 2,        // Standard
-  retryTimeout: 30000,        // Standard
-  requestTimeout: 5000,       // Standard
-  latencyThresholdMs: 0,      // Disabled
-  autoCheckLatency: false,    // Not needed
+  failureThreshold: 5, // Standard
+  successThreshold: 2, // Standard
+  retryTimeout: 30000, // Standard
+  requestTimeout: 5000, // Standard
+  latencyThresholdMs: 0, // Disabled
+  autoCheckLatency: false, // Not needed
 };
 ```
 
@@ -401,14 +406,14 @@ const config = {
 
 ```typescript
 const config = {
-  failureThreshold: 3,        // Strict
-  successThreshold: 3,        // High confidence
-  retryTimeout: 60000,        // Long wait
-  requestTimeout: 3000,       // Short timeout
-  latencyThresholdMs: 500,    // Strict 500ms SLA
-  latencyConsecutiveChecks: 2,// React quickly
-  latencyWindowMs: 2000,      // 2 second window
-  autoCheckLatency: true,     // Real-time
+  failureThreshold: 3, // Strict
+  successThreshold: 3, // High confidence
+  retryTimeout: 60000, // Long wait
+  requestTimeout: 3000, // Short timeout
+  latencyThresholdMs: 500, // Strict 500ms SLA
+  latencyConsecutiveChecks: 2, // React quickly
+  latencyWindowMs: 2000, // 2 second window
+  autoCheckLatency: true, // Real-time
 };
 ```
 
@@ -421,11 +426,13 @@ The circuit breaker exposes a metrics endpoint for monitoring and alerting.
 Returns complete circuit breaker metrics in JSON format.
 
 **Request:**
+
 ```bash
 curl http://localhost:8080/v1/circuit-breaker/metrics
 ```
 
 **Response:**
+
 ```json
 {
   "state": "CLOSED",
@@ -446,26 +453,26 @@ curl http://localhost:8080/v1/circuit-breaker/metrics
 
 ### Metrics Field Reference
 
-| Field | Type | Meaning |
-|-------|------|---------|
-| `state` | `CLOSED\|OPEN\|HALF_OPEN` | Current circuit state |
-| `failureCount` | number | Total failures recorded |
-| `successCount` | number | Total successes recorded |
-| `avgLatencyMs` | number | Average latency in milliseconds |
-| `latencySamples` | number | Number of latency samples in current window |
-| `minLatencyMs` | number | Minimum latency observed |
-| `maxLatencyMs` | number | Maximum latency observed |
-| `p50LatencyMs` | number | 50th percentile (median) latency |
-| `p95LatencyMs` | number | 95th percentile latency (SLA level) |
-| `p99LatencyMs` | number | 99th percentile latency (worst case) |
-| `consecutiveHighLatency` | number | Current consecutive high-latency count |
-| `nextAttempt` | string\|null | ISO timestamp of next HALF_OPEN attempt (null if CLOSED) |
-| `timestamp` | string | Metrics collection timestamp |
+| Field                    | Type                      | Meaning                                                  |
+| ------------------------ | ------------------------- | -------------------------------------------------------- |
+| `state`                  | `CLOSED\|OPEN\|HALF_OPEN` | Current circuit state                                    |
+| `failureCount`           | number                    | Total failures recorded                                  |
+| `successCount`           | number                    | Total successes recorded                                 |
+| `avgLatencyMs`           | number                    | Average latency in milliseconds                          |
+| `latencySamples`         | number                    | Number of latency samples in current window              |
+| `minLatencyMs`           | number                    | Minimum latency observed                                 |
+| `maxLatencyMs`           | number                    | Maximum latency observed                                 |
+| `p50LatencyMs`           | number                    | 50th percentile (median) latency                         |
+| `p95LatencyMs`           | number                    | 95th percentile latency (SLA level)                      |
+| `p99LatencyMs`           | number                    | 99th percentile latency (worst case)                     |
+| `consecutiveHighLatency` | number                    | Current consecutive high-latency count                   |
+| `nextAttempt`            | string\|null              | ISO timestamp of next HALF_OPEN attempt (null if CLOSED) |
+| `timestamp`              | string                    | Metrics collection timestamp                             |
 
 ### Monitoring in Code
 
 ```typescript
-import { CircuitBreaker, CircuitState } from './src/circuit-breaker';
+import { CircuitBreaker, CircuitState } from "./src/circuit-breaker";
 
 const breaker = new CircuitBreaker({
   failureThreshold: 5,
@@ -474,7 +481,9 @@ const breaker = new CircuitBreaker({
 
 // Set up state change listener
 breaker.onStateChangeListener((newState, reason) => {
-  console.log(`Circuit state changed to ${newState}${reason ? ` (${reason})` : ''}`);
+  console.log(
+    `Circuit state changed to ${newState}${reason ? ` (${reason})` : ""}`
+  );
 
   // Trigger alerts, log events, etc.
   if (newState === CircuitState.OPEN) {
@@ -505,7 +514,7 @@ console.log(`P95 latency: ${metrics.p95LatencyMs}ms`);
 ### Basic Protection
 
 ```typescript
-import { CircuitBreaker } from './src/circuit-breaker';
+import { CircuitBreaker } from "./src/circuit-breaker";
 
 const breaker = new CircuitBreaker({
   failureThreshold: 5,
@@ -533,7 +542,9 @@ async function callService(request: Request): Promise<Response> {
 ### With Latency Monitoring
 
 ```typescript
-async function callServiceWithLatencyMonitoring(request: Request): Promise<Response> {
+async function callServiceWithLatencyMonitoring(
+  request: Request
+): Promise<Response> {
   if (!breaker.shouldAllowRequest()) {
     return getFallbackResponse();
   }
@@ -544,7 +555,7 @@ async function callServiceWithLatencyMonitoring(request: Request): Promise<Respo
     const latency = Date.now() - start;
 
     breaker.recordSuccess();
-    breaker.recordLatency(latency);  // Automatically checks threshold if enabled
+    breaker.recordLatency(latency); // Automatically checks threshold if enabled
 
     return response;
   } catch (error) {
@@ -578,6 +589,7 @@ breaker.onStateChangeListener((newState, reason) => {
 **Symptom:** Circuit remains OPEN indefinitely.
 
 **Diagnosis:**
+
 ```typescript
 const metrics = breaker.getMetrics();
 if (metrics.state === CircuitState.OPEN) {
@@ -587,6 +599,7 @@ if (metrics.state === CircuitState.OPEN) {
 ```
 
 **Solutions:**
+
 1. Verify underlying service is healthy
 2. Check `retryTimeout` isn't too large
 3. Manually reset: `breaker.reset()`
@@ -597,6 +610,7 @@ if (metrics.state === CircuitState.OPEN) {
 **Symptom:** Circuit opens too frequently.
 
 **Solutions:**
+
 1. Increase `failureThreshold`: `failureThreshold: 5` → `failureThreshold: 8`
 2. Increase `successThreshold` to require more successes before recovery
 3. Increase `retryTimeout` to give service longer to recover
@@ -607,6 +621,7 @@ if (metrics.state === CircuitState.OPEN) {
 **Symptom:** Circuit opens due to latency spikes that are normal.
 
 **Solutions:**
+
 1. Increase `latencyThresholdMs` (e.g., 1000 → 2000)
 2. Increase `latencyConsecutiveChecks` (e.g., 2 → 5)
 3. Increase `latencyWindowMs` for smoothing
@@ -617,6 +632,7 @@ if (metrics.state === CircuitState.OPEN) {
 **Symptom:** Metrics show latency percentiles growing.
 
 **Analysis:**
+
 ```typescript
 const metrics = breaker.getMetrics();
 console.log(`P50: ${metrics.p50LatencyMs}ms (median)`);
@@ -626,11 +642,12 @@ console.log(`P99: ${metrics.p99LatencyMs}ms (worst 1% see this)`);
 // If P95 is much higher than P50, service is degrading
 const degradationFactor = metrics.p95LatencyMs / metrics.p50LatencyMs;
 if (degradationFactor > 5) {
-  console.warn('Service latency distribution is degrading');
+  console.warn("Service latency distribution is degrading");
 }
 ```
 
 **Solutions:**
+
 1. Adjust latency threshold based on your SLA
 2. Investigate root cause (scaling, overload, etc.)
 3. Consider lowering `latencyThresholdMs` to catch issues earlier

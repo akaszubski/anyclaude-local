@@ -1,6 +1,7 @@
 import { encoding_for_model } from "tiktoken";
 import type { AnthropicMessage } from "./anthropic-api-types";
 import { debug, isDebugEnabled } from "./debug";
+import { warnDeprecation } from "./utils/deprecation-warnings";
 
 // Context window sizes for common models
 const MODEL_CONTEXT_LIMITS: Record<string, number> = {
@@ -78,7 +79,7 @@ function estimateTokens(text: string): number {
 /**
  * Get context limit for a model
  * Priority:
- * 1. Environment variable override (LMSTUDIO_CONTEXT_LENGTH)
+ * 1. Environment variable override (LOCAL_CONTEXT_LENGTH)
  * 2. LMStudio API query (loaded_context_length)
  * 3. Known model table lookup
  * 4. Conservative default (32K)
@@ -88,10 +89,19 @@ export function getContextLimit(
   lmstudioContextLength?: number
 ): number {
   // 1. Check for environment variable override (highest priority)
-  const envLimit = process.env.LMSTUDIO_CONTEXT_LENGTH;
+  // Try LOCAL_CONTEXT_LENGTH first, then fall back to LMSTUDIO_CONTEXT_LENGTH (deprecated)
+  const envLimit = process.env.LOCAL_CONTEXT_LENGTH || process.env.LMSTUDIO_CONTEXT_LENGTH;
   if (envLimit) {
     const limit = parseInt(envLimit, 10);
     if (!isNaN(limit) && limit > 0) {
+      // Show deprecation warning if using LMSTUDIO_CONTEXT_LENGTH and LOCAL_CONTEXT_LENGTH is not set
+      if (!process.env.LOCAL_CONTEXT_LENGTH && process.env.LMSTUDIO_CONTEXT_LENGTH) {
+        warnDeprecation(
+          'LMSTUDIO_CONTEXT_LENGTH',
+          'LOCAL_CONTEXT_LENGTH',
+          'Environment variable LMSTUDIO_CONTEXT_LENGTH is deprecated, use LOCAL_CONTEXT_LENGTH instead'
+        );
+      }
       debug(1, `[Context] Using env override: ${limit} tokens`);
       return limit;
     }
@@ -107,11 +117,13 @@ export function getContextLimit(
   }
 
   // 3. Check known models (case-insensitive, partial match)
-  const lowerModel = modelName.toLowerCase();
-  for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
-    if (lowerModel.includes(key.toLowerCase())) {
-      debug(1, `[Context] Using model table lookup (${key}): ${limit} tokens`);
-      return limit;
+  if (modelName) {
+    const lowerModel = modelName.toLowerCase();
+    for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
+      if (lowerModel.includes(key.toLowerCase())) {
+        debug(1, `[Context] Using model table lookup (${key}): ${limit} tokens`);
+        return limit;
+      }
     }
   }
 
@@ -151,9 +163,18 @@ function countMessageTokens(messages: AnthropicMessage[]): number {
 
 /**
  * Count tokens in system prompt
+ * Handles both string and array formats
  */
-function countSystemTokens(system?: { text: string }[]): number {
-  if (!system || system.length === 0) return 0;
+function countSystemTokens(system?: string | { text: string }[]): number {
+  if (!system) return 0;
+
+  // Handle string format
+  if (typeof system === "string") {
+    return estimateTokens(system);
+  }
+
+  // Handle array format
+  if (system.length === 0) return 0;
   const text = system.map((s) => s.text).join("\n");
   return estimateTokens(text);
 }
@@ -172,7 +193,7 @@ function countToolTokens(tools?: any[]): number {
  */
 export function calculateContextStats(
   messages: AnthropicMessage[],
-  system?: { text: string }[],
+  system?: string | { text: string }[],
   tools?: any[],
   modelName: string = "current-model",
   lmstudioContextLength?: number
@@ -233,7 +254,7 @@ export function truncateMessages(
   if (availableForMessages <= 0) {
     throw new Error(
       `System prompt and tools alone exceed context limit (${fixedTokens} > ${stats.contextLimit}). ` +
-        `Consider reducing tool count or increasing LMSTUDIO_CONTEXT_LENGTH.`
+        `Consider reducing tool count or increasing LOCAL_CONTEXT_LENGTH.`
     );
   }
 
@@ -289,7 +310,7 @@ export function truncateMessages(
  */
 export function logContextWarning(
   stats: ContextStats,
-  mode?: "claude" | "lmstudio" | "mlx" | "openrouter" | "mlx-cluster"
+  mode?: "claude" | "local" | "lmstudio" | "mlx" | "openrouter" | "mlx-cluster"
 ): void {
   // Skip warnings for cloud models with large context windows
   if (mode === "claude" || mode === "openrouter") {
@@ -305,7 +326,7 @@ export function logContextWarning(
         `   RECOMMENDED ACTION:\n` +
         `   1. Save your work and start a new Claude Code conversation\n` +
         `   2. Or: Use a model with larger context (32K+ recommended)\n` +
-        `   3. Or: Set LMSTUDIO_CONTEXT_LENGTH higher if your model supports it\n`
+        `   3. Or: Set LOCAL_CONTEXT_LENGTH higher if your model supports it\n`
       : `   ⚠️  CONTEXT APPROACHING LIMIT:\n` +
         `   Consider starting a new Claude Code conversation soon to avoid\n` +
         `   running out of context space.\n`;
@@ -323,3 +344,390 @@ export function logContextWarning(
     );
   }
 }
+
+// ============================================================================
+// MULTI-TURN CONTEXT MANAGEMENT (Issue #36)
+// ============================================================================
+
+/**
+ * Configuration for the ContextManager
+ */
+export interface ContextManagerConfig {
+  /** Trigger compression when context reaches this percentage (0.75 = 75%) */
+  compressAt: number;
+  /** Number of recent turns to keep verbatim (not compressed) */
+  keepRecentTurns: number;
+  /** Maximum tokens for tool results before truncation */
+  toolResultMaxTokens: number;
+  /** Enable conversation summarization (requires extra processing) */
+  enableSummarization: boolean;
+  /** Enable observation masking (replace old tool outputs with placeholders) */
+  enableObservationMasking: boolean;
+}
+
+/**
+ * Detailed context usage breakdown
+ */
+export interface ContextUsage {
+  /** Total tokens used */
+  tokens: number;
+  /** Percentage of context limit used */
+  percent: number;
+  /** Token breakdown by category */
+  breakdown: {
+    system: number;
+    tools: number;
+    messages: number;
+    compressed: number;
+  };
+}
+
+/**
+ * Result of context management operation
+ */
+export interface ContextManagementResult {
+  /** Processed messages */
+  messages: AnthropicMessage[];
+  /** Whether compression was applied */
+  compressed: boolean;
+  /** Whether summarization was applied */
+  summarized: boolean;
+  /** Whether truncation was applied */
+  truncated: boolean;
+  /** Final token count */
+  finalTokens: number;
+  /** Reduction percentage from original */
+  reductionPercent: number;
+}
+
+/** Default configuration values */
+const DEFAULT_CONFIG: ContextManagerConfig = {
+  compressAt: 0.75,
+  keepRecentTurns: 3,
+  toolResultMaxTokens: 500,
+  enableSummarization: false,
+  enableObservationMasking: true,
+};
+
+/**
+ * Compress a tool result to fit within token limit
+ */
+export function compressToolResult(content: string, maxTokens: number): string {
+  if (!content || typeof content !== "string") {
+    return "[Invalid tool result]";
+  }
+
+  const currentTokens = estimateTokens(content);
+  if (currentTokens <= maxTokens) {
+    return content;
+  }
+
+  // Calculate target character length (roughly 4 chars per token)
+  const targetChars = maxTokens * 4;
+
+  // Truncate safely
+  let truncated = content.slice(0, targetChars);
+
+  // Try to avoid cutting mid-word or mid-JSON
+  const lastNewline = truncated.lastIndexOf("\n");
+  const lastSpace = truncated.lastIndexOf(" ");
+  const cutPoint = Math.max(lastNewline, lastSpace);
+
+  if (cutPoint > targetChars * 0.8) {
+    truncated = truncated.slice(0, cutPoint);
+  }
+
+  return `${truncated}\n\n[... Output truncated: ${currentTokens} → ${maxTokens} tokens]`;
+}
+
+/**
+ * Partition messages into recent (verbatim) and older (compressible)
+ */
+export function partitionMessages(
+  messages: AnthropicMessage[],
+  keepRecent: number
+): { recent: AnthropicMessage[]; older: AnthropicMessage[] } {
+  if (messages.length <= keepRecent) {
+    return { recent: [...messages], older: [] };
+  }
+
+  const splitPoint = messages.length - keepRecent;
+  return {
+    recent: messages.slice(splitPoint),
+    older: messages.slice(0, splitPoint),
+  };
+}
+
+/**
+ * ContextManager class for multi-turn context management
+ *
+ * Provides intelligent context management with:
+ * - Tool result compression
+ * - Observation masking
+ * - Priority-based retention
+ * - Configurable thresholds
+ */
+export class ContextManager {
+  public readonly config: ContextManagerConfig;
+  private readonly modelName: string;
+  private readonly lmstudioContextLength?: number;
+
+  constructor(
+    config: Partial<ContextManagerConfig> = {},
+    modelName: string = "current-model",
+    lmstudioContextLength?: number
+  ) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.modelName = modelName;
+    this.lmstudioContextLength = lmstudioContextLength;
+  }
+
+  /**
+   * Get detailed context usage statistics
+   */
+  getUsage(
+    messages: AnthropicMessage[],
+    system?: { text: string }[],
+    tools?: any[]
+  ): ContextUsage {
+    const stats = calculateContextStats(
+      messages,
+      system,
+      tools,
+      this.modelName,
+      this.lmstudioContextLength
+    );
+
+    return {
+      tokens: stats.totalTokens,
+      percent: stats.percentUsed / 100,
+      breakdown: {
+        system: stats.systemTokens,
+        tools: stats.toolTokens,
+        messages: stats.messageTokens,
+        compressed: 0, // Will be updated after compression
+      },
+    };
+  }
+
+  /**
+   * Compress messages by truncating large tool results
+   * and applying observation masking
+   */
+  compress(messages: AnthropicMessage[]): AnthropicMessage[] {
+    const { recent, older } = partitionMessages(
+      messages,
+      this.config.keepRecentTurns
+    );
+
+    // Compress older messages
+    const compressedOlder = older.map((msg) => this.compressMessage(msg, true));
+
+    // Keep recent messages mostly intact, but still compress very large tool results
+    const compressedRecent = recent.map((msg) =>
+      this.compressMessage(msg, false)
+    );
+
+    return [...compressedOlder, ...compressedRecent];
+  }
+
+  /**
+   * Create a summary of older messages
+   * Note: This is a simplified implementation that creates a condensed version
+   * For LLM-based summarization, this would need to call an external API
+   */
+  summarize(messages: AnthropicMessage[]): string {
+    if (!this.config.enableSummarization || messages.length === 0) {
+      return "";
+    }
+
+    const summaryParts: string[] = [];
+    let toolCallCount = 0;
+    let userRequestCount = 0;
+
+    for (const msg of messages) {
+      for (const content of msg.content) {
+        if (content.type === "text" && msg.role === "user") {
+          userRequestCount++;
+          // Extract key information from user messages
+          const text = content.text.slice(0, 100);
+          summaryParts.push(`User request ${userRequestCount}: ${text}...`);
+        } else if (content.type === "tool_use") {
+          toolCallCount++;
+        }
+      }
+    }
+
+    if (summaryParts.length === 0) {
+      return "";
+    }
+
+    return (
+      `[Conversation Summary: ${userRequestCount} user requests, ` +
+      `${toolCallCount} tool calls]\n` +
+      summaryParts.join("\n")
+    );
+  }
+
+  /**
+   * Manage context by applying compression, summarization, and truncation as needed
+   */
+  manageContext(
+    messages: AnthropicMessage[],
+    system?: { text: string }[],
+    tools?: any[]
+  ): ContextManagementResult {
+    const initialUsage = this.getUsage(messages, system, tools);
+    const initialTokens = initialUsage.tokens;
+
+    let currentMessages = messages;
+    let compressed = false;
+    let summarized = false;
+    let truncated = false;
+
+    // Step 1: Check if compression is needed
+    if (initialUsage.percent >= this.config.compressAt) {
+      debug(
+        2,
+        `[Context] Usage at ${(initialUsage.percent * 100).toFixed(1)}%, ` +
+          `triggering compression (threshold: ${this.config.compressAt * 100}%)`
+      );
+
+      // Apply compression
+      currentMessages = this.compress(currentMessages);
+      compressed = true;
+
+      const afterCompression = this.getUsage(currentMessages, system, tools);
+      debug(
+        2,
+        `[Context] After compression: ${afterCompression.tokens} tokens ` +
+          `(${(afterCompression.percent * 100).toFixed(1)}%)`
+      );
+
+      // Step 2: Apply summarization if still over threshold and enabled
+      if (
+        afterCompression.percent >= this.config.compressAt &&
+        this.config.enableSummarization
+      ) {
+        const { older } = partitionMessages(
+          currentMessages,
+          this.config.keepRecentTurns
+        );
+        const summary = this.summarize(older);
+
+        if (summary) {
+          // Replace older messages with summary as a user message
+          const summaryMessage: AnthropicMessage = {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `[Previous context summary]\n${summary}`,
+                cache_control: undefined,
+              },
+            ],
+          };
+
+          const { recent } = partitionMessages(
+            currentMessages,
+            this.config.keepRecentTurns
+          );
+          currentMessages = [summaryMessage, ...recent];
+          summarized = true;
+
+          debug(2, `[Context] Applied summarization`);
+        }
+      }
+
+      // Step 3: Truncate if still exceeding limit
+      const afterSummarization = calculateContextStats(
+        currentMessages,
+        system,
+        tools,
+        this.modelName,
+        this.lmstudioContextLength
+      );
+
+      if (afterSummarization.exceedsLimit) {
+        const result = truncateMessages(
+          currentMessages,
+          system,
+          tools,
+          this.modelName,
+          this.lmstudioContextLength
+        );
+        currentMessages = result.messages;
+        truncated = result.truncated;
+
+        debug(
+          2,
+          `[Context] Applied truncation, removed ${result.removedCount} messages`
+        );
+      }
+    }
+
+    const finalUsage = this.getUsage(currentMessages, system, tools);
+    const reductionPercent =
+      initialTokens > 0
+        ? ((initialTokens - finalUsage.tokens) / initialTokens) * 100
+        : 0;
+
+    return {
+      messages: currentMessages,
+      compressed,
+      summarized,
+      truncated,
+      finalTokens: finalUsage.tokens,
+      reductionPercent,
+    };
+  }
+
+  /**
+   * Compress a single message
+   */
+  private compressMessage(
+    message: AnthropicMessage,
+    applyMasking: boolean
+  ): AnthropicMessage {
+    const compressedContent = message.content.map((content) => {
+      if (content.type === "tool_result") {
+        // Compress tool result content
+        const originalContent =
+          typeof content.content === "string"
+            ? content.content
+            : JSON.stringify(content.content);
+
+        // Apply observation masking for older messages
+        if (applyMasking && this.config.enableObservationMasking) {
+          const tokens = estimateTokens(originalContent);
+          if (tokens > this.config.toolResultMaxTokens) {
+            return {
+              ...content,
+              content: `[Tool output cached - ${tokens} tokens]`,
+            };
+          }
+        }
+
+        // Apply compression for large results
+        const compressed = compressToolResult(
+          originalContent,
+          this.config.toolResultMaxTokens
+        );
+
+        return {
+          ...content,
+          content: compressed,
+        };
+      }
+      return content;
+    });
+
+    return {
+      ...message,
+      content: compressedContent,
+    } as AnthropicMessage;
+  }
+}
+
+// Export for external use
+export { estimateTokens, MODEL_CONTEXT_LIMITS };

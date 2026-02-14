@@ -125,7 +125,10 @@ async function test_get_models_error() {
     await client.getModels();
     assert.fail("Should throw error on API failure");
   } catch (error) {
-    assert.ok(error.message.includes("Backend API error"), "Should throw backend API error");
+    assert.ok(
+      error.message.includes("Backend API error"),
+      "Should throw backend API error"
+    );
   }
 
   restoreFetch();
@@ -217,7 +220,11 @@ async function test_get_model_info_mlx_context_length() {
 
   assert.ok(result, "Result should exist");
   assert.strictEqual(result.name, "mlx-model", "Model name should match");
-  assert.strictEqual(result.context, 8192, "Should extract context_length value");
+  assert.strictEqual(
+    result.context,
+    8192,
+    "Should extract context_length value"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() extracts MLX context_length correctly");
@@ -243,7 +250,11 @@ async function test_get_model_info_mlx_large_context() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, 131072, "Should handle large context values");
+  assert.strictEqual(
+    result.context,
+    131072,
+    "Should handle large context values"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() handles large context values correctly");
@@ -269,14 +280,20 @@ async function test_get_model_info_missing_context_length() {
 
   assert.ok(result, "Result should exist");
   assert.strictEqual(result.name, "basic-model", "Model name should match");
-  assert.strictEqual(result.context, null, "Should return null when context_length missing");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null when context_length missing"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() returns null for missing context_length");
 }
 
 async function test_get_model_info_invalid_context_string() {
-  console.log("Testing: getModelInfo() with invalid context_length (string)...");
+  console.log(
+    "Testing: getModelInfo() with invalid context_length (string)..."
+  );
 
   const mockData = {
     object: "list",
@@ -295,7 +312,11 @@ async function test_get_model_info_invalid_context_string() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, null, "Should return null for non-numeric context_length");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for non-numeric context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() returns null for string context_length");
@@ -321,7 +342,11 @@ async function test_get_model_info_invalid_context_zero() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, null, "Should return null for zero context_length");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for zero context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() returns null for zero context_length");
@@ -347,7 +372,11 @@ async function test_get_model_info_invalid_context_negative() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, null, "Should return null for negative context_length");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for negative context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() returns null for negative context_length");
@@ -373,7 +402,11 @@ async function test_get_model_info_invalid_context_nan() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, null, "Should return null for NaN context_length");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for NaN context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() returns null for NaN context_length");
@@ -424,7 +457,11 @@ async function test_get_model_info_lmstudio_loaded_context() {
 
   assert.ok(result, "Result should exist");
   assert.strictEqual(result.name, "lmstudio-model", "Model name should match");
-  assert.strictEqual(result.context, 32768, "Should extract loaded_context_length");
+  assert.strictEqual(
+    result.context,
+    32768,
+    "Should extract loaded_context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() supports LMStudio loaded_context_length");
@@ -450,7 +487,11 @@ async function test_get_model_info_lmstudio_max_context_fallback() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, 8192, "Should fall back to max_context_length");
+  assert.strictEqual(
+    result.context,
+    8192,
+    "Should fall back to max_context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() falls back to max_context_length");
@@ -461,7 +502,9 @@ async function test_get_model_info_lmstudio_max_context_fallback() {
 // ============================================================================
 
 async function test_get_model_info_priority_loaded_over_context() {
-  console.log("Testing: getModelInfo() prioritizes loaded_context_length over context_length...");
+  console.log(
+    "Testing: getModelInfo() prioritizes loaded_context_length over context_length..."
+  );
 
   const mockData = {
     object: "list",
@@ -489,11 +532,15 @@ async function test_get_model_info_priority_loaded_over_context() {
   );
 
   restoreFetch();
-  console.log("✓ getModelInfo() prioritizes loaded_context_length > context_length");
+  console.log(
+    "✓ getModelInfo() prioritizes loaded_context_length > context_length"
+  );
 }
 
 async function test_get_model_info_priority_context_over_max() {
-  console.log("Testing: getModelInfo() prioritizes context_length over max_context_length...");
+  console.log(
+    "Testing: getModelInfo() prioritizes context_length over max_context_length..."
+  );
 
   const mockData = {
     object: "list",
@@ -520,11 +567,15 @@ async function test_get_model_info_priority_context_over_max() {
   );
 
   restoreFetch();
-  console.log("✓ getModelInfo() prioritizes context_length > max_context_length");
+  console.log(
+    "✓ getModelInfo() prioritizes context_length > max_context_length"
+  );
 }
 
 async function test_get_model_info_priority_all_three() {
-  console.log("Testing: getModelInfo() priority with all three context fields...");
+  console.log(
+    "Testing: getModelInfo() priority with all three context fields..."
+  );
 
   const mockData = {
     object: "list",
@@ -579,7 +630,11 @@ async function test_get_model_info_null_context_field() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, null, "Should return null for null context_length");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for null context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() handles null context_length");
@@ -605,7 +660,11 @@ async function test_get_model_info_undefined_context_field() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, null, "Should return null for undefined context_length");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for undefined context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() handles undefined context_length");
@@ -663,7 +722,11 @@ async function test_get_model_info_infinity_context() {
   const result = await client.getModelInfo();
 
   assert.ok(result, "Result should exist");
-  assert.strictEqual(result.context, null, "Should return null for Infinity context_length");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for Infinity context_length"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() returns null for Infinity context_length");
@@ -708,7 +771,9 @@ async function test_get_model_info_real_mlx_response() {
 }
 
 async function test_get_model_info_real_openai_response() {
-  console.log("Testing: getModelInfo() with OpenAI-style response (no context)...");
+  console.log(
+    "Testing: getModelInfo() with OpenAI-style response (no context)..."
+  );
 
   // OpenAI /v1/models response (no context_length field)
   const mockData = {
@@ -730,7 +795,11 @@ async function test_get_model_info_real_openai_response() {
 
   assert.ok(result, "Result should exist");
   assert.strictEqual(result.name, "gpt-3.5-turbo", "Model name should match");
-  assert.strictEqual(result.context, null, "Should return null for OpenAI models without context");
+  assert.strictEqual(
+    result.context,
+    null,
+    "Should return null for OpenAI models without context"
+  );
 
   restoreFetch();
   console.log("✓ getModelInfo() handles OpenAI-style response correctly");

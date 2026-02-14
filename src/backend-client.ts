@@ -8,9 +8,9 @@ export interface BackendModelInfo {
   object: string;
   created?: number;
   owned_by?: string;
-  context_length?: number;         // MLX support
-  loaded_context_length?: number;  // LMStudio support
-  max_context_length?: number;     // Fallback
+  context_length?: number; // MLX support
+  loaded_context_length?: number; // LMStudio support
+  max_context_length?: number; // Fallback
 }
 
 export interface BackendModelsResponse {

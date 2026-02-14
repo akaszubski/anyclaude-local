@@ -10,11 +10,13 @@ The simplest setup requires just a configuration file:
 
 ```json
 {
-  "backend": "mlx-lm"
+  "backend": "local"
 }
 ```
 
-This will use mlx-lm with default settings (http://localhost:8081/v1).
+This will use the local backend with default settings (http://localhost:8081/v1).
+
+> **Note**: Old backend names (`lmstudio`, `mlx-lm`, `mlx`, `mlx-textgen`) still work but are deprecated. Use `local` for any OpenAI-compatible local server.
 
 ### Full Configuration
 
@@ -22,29 +24,32 @@ For complete control, create `.anyclauderc.json` in your project root:
 
 ```json
 {
-  "backend": "mlx-lm",
+  "backend": "local",
   "debug": {
     "level": 1,
     "enableTraces": false,
     "enableStreamLogging": false
   },
   "backends": {
-    "lmstudio": {
+    "local": {
       "enabled": true,
-      "port": 8082,
-      "baseUrl": "http://localhost:8082/v1",
-      "apiKey": "lm-studio",
-      "model": "current-model",
-      "compatibility": "legacy",
-      "description": "LMStudio local model server"
-    },
-    "mlx-lm": {
-      "enabled": true,
-      "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "mlx-lm",
+      "apiKey": "local",
       "model": "current-model",
-      "description": "MLX Language Model with native KV cache"
+      "modelPath": "/path/to/mlx/model",
+      "autoStartServer": true,
+      "description": "Local MLX Worker with auto-start"
+    },
+    "openrouter": {
+      "enabled": false,
+      "apiKey": "sk-or-v1-YOUR_API_KEY",
+      "model": "google/gemini-2.5-flash"
+    },
+    "claude": {
+      "enabled": false
+    },
+    "mlx-cluster": {
+      "enabled": false
     }
   }
 }
@@ -60,85 +65,57 @@ Place `.anyclauderc.json` in your project root (same directory where you run `an
 
 ```typescript
 interface AnyclaudeConfig {
-  // Primary backend to use (required if no env var/CLI flag)
-  backend?: "lmstudio" | "mlx-lm" | "claude";
+  // Primary backend to use
+  backend?: "local" | "openrouter" | "claude" | "mlx-cluster";
 
-  // Debug configuration (optional)
+  // Debug configuration
   debug?: {
     level?: 0 | 1 | 2 | 3; // 0=off, 1=basic, 2=verbose, 3=trace
-    enableTraces?: boolean; // Save request/response traces
-    enableStreamLogging?: boolean; // Log streaming events
+    enableTraces?: boolean;
+    enableStreamLogging?: boolean;
   };
 
-  // Backend configurations (optional if using defaults)
+  // Web search configuration
+  webSearch?: {
+    localSearxngUrl?: string;
+    preferLocal?: boolean;
+    enableFallback?: boolean;
+  };
+
+  // Backend configurations
   backends?: {
-    lmstudio?: {
-      enabled?: boolean;
-      port?: number;
-      baseUrl?: string;
-      apiKey?: string;
-      model?: string;
-      compatibility?: string;
-      description?: string;
-    };
-    "mlx-lm"?: {
-      enabled?: boolean;
-      port?: number;
-      baseUrl?: string;
-      apiKey?: string;
-      model?: string;
-      description?: string;
-    };
-    claude?: {
-      enabled?: boolean;
-      description?: string;
-    };
+    local?: LocalBackendConfig;
+    openrouter?: OpenRouterConfig;
+    claude?: ClaudeConfig;
+    "mlx-cluster"?: ClusterConfig;
   };
 }
 ```
 
-### Backend-Specific Options
+## Backend Configurations
 
-#### LMStudio Configuration
+### Local Backend (MLX Worker, LMStudio, etc.)
 
-```json
-{
-  "backends": {
-    "lmstudio": {
-      "enabled": true,
-      "port": 8082,
-      "baseUrl": "http://localhost:8082/v1",
-      "apiKey": "lm-studio",
-      "model": "current-model",
-      "compatibility": "legacy",
-      "description": "LMStudio local model server - fast iteration, good compatibility"
-    }
-  }
-}
-```
-
-**Options:**
-
-- `enabled` - Whether this backend is available
-- `port` - LMStudio server port (default: 8082)
-- `baseUrl` - LMStudio API endpoint (default: `http://localhost:8082/v1`)
-- `apiKey` - API key for LMStudio (default: `lm-studio`)
-- `model` - Model identifier (default: `current-model` - uses whatever is loaded in LMStudio)
-- `compatibility` - OpenAI compatibility mode (default: `legacy`)
-- `description` - User-friendly description
-
-#### MLX-LM Configuration
+The `local` backend works with any OpenAI-compatible server:
 
 ```json
 {
   "backends": {
-    "mlx-lm": {
+    "local": {
       "enabled": true,
-      "port": 8081,
       "baseUrl": "http://localhost:8081/v1",
-      "apiKey": "mlx-lm",
+      "apiKey": "local",
       "model": "current-model",
-      "description": "MLX Language Model with native KV cache - best performance for follow-up requests"
+      "modelPath": "/path/to/mlx/model",
+      "autoStartServer": true,
+      "startupTimeout": 120000,
+      "safeSystemFilter": true,
+      "filterTier": "auto",
+      "smartPromptMode": "simple",
+      "truncateSystemPrompt": false,
+      "systemPromptMaxTokens": 2000,
+      "localSearch": true,
+      "description": "Local MLX Worker with auto-start and web search"
     }
   }
 }
@@ -146,14 +123,49 @@ interface AnyclaudeConfig {
 
 **Options:**
 
-- `enabled` - Whether this backend is available
-- `port` - MLX-LM server port (default: 8081)
-- `baseUrl` - MLX-LM API endpoint (default: `http://localhost:8081/v1`)
-- `apiKey` - API key for MLX-LM (default: `mlx-lm`)
-- `model` - Model identifier (default: `current-model`)
-- `description` - User-friendly description
+| Option                  | Default                    | Description                                                                   |
+| ----------------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| `enabled`               | `true`                     | Whether this backend is available                                             |
+| `baseUrl`               | `http://localhost:8081/v1` | OpenAI-compatible API endpoint                                                |
+| `apiKey`                | `local`                    | API key (most local servers ignore this)                                      |
+| `model`                 | `current-model`            | Model identifier                                                              |
+| `modelPath`             | -                          | Path to MLX model for auto-start                                              |
+| `autoStartServer`       | `true`                     | Auto-start MLX Worker when using localhost                                    |
+| `startupTimeout`        | `120000`                   | Server startup timeout in ms                                                  |
+| `safeSystemFilter`      | `true`                     | Enable intelligent prompt optimization                                        |
+| `filterTier`            | `auto`                     | Filter aggressiveness: `auto`, `minimal`, `moderate`, `aggressive`, `extreme` |
+| `smartPromptMode`       | `simple`                   | Prompt mode: `simple`, `balanced`, `aggressive`                               |
+| `truncateSystemPrompt`  | `false`                    | Simple size-based truncation (fallback)                                       |
+| `systemPromptMaxTokens` | `2000`                     | Max tokens for truncation                                                     |
+| `localSearch`           | `false`                    | Auto-start SearXNG Docker container                                           |
 
-#### Claude API Configuration
+### OpenRouter Configuration
+
+```json
+{
+  "backends": {
+    "openrouter": {
+      "enabled": true,
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-YOUR_API_KEY_HERE",
+      "model": "google/gemini-2.5-flash",
+      "description": "OpenRouter - 400+ models, 88% cheaper than Claude"
+    }
+  }
+}
+```
+
+**Popular Models:**
+
+| Model                         | Cost (per 1M tokens) | Notes                                       |
+| ----------------------------- | -------------------- | ------------------------------------------- |
+| `google/gemini-2.5-flash`     | $0.30/$2.50          | **Recommended** - thinking mode, 1M context |
+| `google/gemini-2.0-flash-001` | $0.10/$0.40          | Fastest, cheapest                           |
+| `z-ai/glm-4.6`                | $0.60/$2.00          | 200K context, excellent for coding          |
+| `qwen/qwen-2.5-72b-instruct`  | $0.35/$0.70          | Best value for basic coding                 |
+| `anthropic/claude-3.5-sonnet` | $3/$15               | Highest quality                             |
+
+### Claude API Configuration
 
 ```json
 {
@@ -166,104 +178,127 @@ interface AnyclaudeConfig {
 }
 ```
 
-**Options:**
+Requires `ANTHROPIC_API_KEY` environment variable.
 
-- `enabled` - Whether this backend is available
-- `description` - User-friendly description
+### MLX Cluster Configuration
 
-Note: Requires `ANTHROPIC_API_KEY` environment variable.
+```json
+{
+  "backends": {
+    "mlx-cluster": {
+      "enabled": true,
+      "discovery": {
+        "mode": "static",
+        "nodes": [
+          { "id": "mac-studio-1", "url": "http://192.168.1.100:8081" },
+          { "id": "macbook-pro-1", "url": "http://192.168.1.101:8081" }
+        ]
+      },
+      "routing": {
+        "strategy": "cache-aware"
+      }
+    }
+  }
+}
+```
+
+See [docs/architecture/mlx-cluster-system.md](../architecture/mlx-cluster-system.md) for full cluster documentation.
 
 ## Environment Variables
 
 ### Mode Selection
 
-Override the configured backend at runtime:
-
 ```bash
-# Use MLX-LM mode (overrides config file)
-export ANYCLAUDE_MODE=mlx-lm
+# Use local backend (MLX Worker, LMStudio, etc.)
+export ANYCLAUDE_MODE=local
 
-# Use LMStudio mode
-export ANYCLAUDE_MODE=lmstudio
+# Use OpenRouter
+export ANYCLAUDE_MODE=openrouter
 
-# Use Claude API mode
+# Use Claude API
 export ANYCLAUDE_MODE=claude
+
+# Use MLX Cluster
+export ANYCLAUDE_MODE=mlx-cluster
 ```
 
-### LMStudio Configuration
+### Local Backend Configuration
 
 ```bash
-# LMStudio endpoint
-export LMSTUDIO_URL=http://localhost:8082/v1
-
-# Model name (LMStudio uses whatever is loaded)
-export LMSTUDIO_MODEL=current-model
-
-# API key
-export LMSTUDIO_API_KEY=lm-studio
+# Local endpoint (default: http://localhost:8081/v1)
+export LOCAL_URL=http://localhost:8081/v1
 
 # Context length (override auto-detection)
-export LMSTUDIO_CONTEXT_LENGTH=32768
+export LOCAL_CONTEXT_LENGTH=32768
+
+# Model path for auto-start
+export MLX_MODEL_PATH=/path/to/model
 ```
 
-### MLX-LM Configuration
+### OpenRouter Configuration
 
 ```bash
-# MLX-LM endpoint
-export MLX_LM_URL=http://localhost:8081/v1
-
-# Model name
-export MLX_LM_MODEL=current-model
-
-# API key
-export MLX_LM_API_KEY=mlx-lm
+export OPENROUTER_API_KEY=sk-or-v1-xxxxx
+export OPENROUTER_MODEL=google/gemini-2.5-flash
 ```
 
 ### Claude API Configuration
 
 ```bash
-# Anthropic API key (required for Claude mode)
 export ANTHROPIC_API_KEY=sk-ant-xxxxx
-
-# Enable trace logging (saves requests/responses)
-export ANYCLAUDE_DEBUG=1
 ```
 
 ### Debug Options
 
 ```bash
-# Disable debug logging (default)
-export ANYCLAUDE_DEBUG=0
-
-# Basic debug info (requests, responses, timing)
-export ANYCLAUDE_DEBUG=1
-
-# Verbose debug info (includes full request/response bodies)
-export ANYCLAUDE_DEBUG=2
-
-# Trace debug info (includes tool calls)
-export ANYCLAUDE_DEBUG=3
+export ANYCLAUDE_DEBUG=0  # Off (default)
+export ANYCLAUDE_DEBUG=1  # Basic info
+export ANYCLAUDE_DEBUG=2  # Verbose
+export ANYCLAUDE_DEBUG=3  # Trace (full prompts)
 ```
 
-### Other Options
+### Web Search
 
 ```bash
-# Proxy-only mode (for testing, doesn't spawn Claude Code)
-export PROXY_ONLY=true
-
-# Test model compatibility
-anyclaude --test-model
+# Enable local SearXNG
+export SEARXNG_URL=http://localhost:8080
 ```
+
+### KV Cache Persistence (MLX Worker)
+
+Configure disk-based KV cache for faster MLX worker startup:
+
+```bash
+# Cache directory (default: ~/.cache/anyclaude/kv-cache)
+export ANYCLAUDE_KV_CACHE_DIR=~/.cache/anyclaude/kv-cache
+
+# Max cache size in GB before LRU eviction (default: 5.0)
+export ANYCLAUDE_KV_CACHE_MAX_SIZE_GB=5.0
+
+# Enable FP16 quantization for 2x smaller cache files (default: true)
+export ANYCLAUDE_KV_CACHE_QUANTIZE=true
+
+# Enable memory-mapped loading for zero-copy performance (default: true)
+export ANYCLAUDE_KV_CACHE_MMAP=true
+
+# Minimum tokens to cache (prompts shorter than this skip disk cache)
+export ANYCLAUDE_KV_CACHE_MIN_TOKENS=1024
+```
+
+**Performance Impact:**
+- First request (cold): 30-45s → <5s (loads from disk cache)
+- Cache file size: ~26MB → ~13MB (with FP16 quantization)
+- Memory on load: Full cache size → Near-zero (with mmap)
 
 ## CLI Flags
 
-CLI flags take the highest priority:
+CLI flags have highest priority:
 
 ```bash
-# Select mode via CLI
-anyclaude --mode=mlx-lm
-anyclaude --mode=lmstudio
+anyclaude --mode=local
+anyclaude --mode=openrouter
 anyclaude --mode=claude
+anyclaude --mode=mlx-cluster
 
 # Test model compatibility
 anyclaude --test-model
@@ -271,68 +306,50 @@ anyclaude --test-model
 
 ## Configuration Priority
 
-AnyClaude checks settings in this order (highest to lowest priority):
+Settings are applied in this order (highest to lowest priority):
 
-1. **CLI flags** (`anyclaude --mode=mlx-lm`)
-2. **Environment variables** (`export ANYCLAUDE_MODE=lmstudio`)
+1. **CLI flags** (`anyclaude --mode=local`)
+2. **Environment variables** (`ANYCLAUDE_MODE=local`)
 3. **Configuration file** (`.anyclauderc.json`)
-4. **Defaults** (mode: `lmstudio`, endpoints use default ports)
-
-**Example:**
-
-```bash
-# .anyclauderc.json says: backend = "lmstudio"
-# Environment says: export ANYCLAUDE_MODE=mlx-lm
-# CLI says: anyclaude --mode=claude
-
-# Result: Claude mode is used (CLI has highest priority)
-```
+4. **Defaults** (mode: `local`)
 
 ## Common Configurations
 
-### Development (Fast Iterations)
-
-Use MLX-LM for fast follow-ups:
+### Development (Auto-Start MLX)
 
 ```json
 {
-  "backend": "mlx-lm",
-  "debug": {
-    "level": 1
-  },
+  "backend": "local",
+  "debug": { "level": 1 },
   "backends": {
-    "mlx-lm": {
-      "baseUrl": "http://localhost:8081/v1"
+    "local": {
+      "modelPath": "/path/to/mlx/model",
+      "autoStartServer": true,
+      "localSearch": true
     }
   }
 }
 ```
 
-### Testing (Full Features)
-
-Use LMStudio for all tools:
+### Cloud (OpenRouter)
 
 ```json
 {
-  "backend": "lmstudio",
-  "debug": {
-    "level": 1
-  },
+  "backend": "openrouter",
   "backends": {
-    "lmstudio": {
-      "baseUrl": "http://localhost:8082/v1"
+    "openrouter": {
+      "apiKey": "sk-or-v1-xxxxx",
+      "model": "google/gemini-2.5-flash"
     }
   }
 }
 ```
 
-### Debugging (Trace Tool Calls)
-
-Capture everything for analysis:
+### Debugging (Trace Everything)
 
 ```json
 {
-  "backend": "mlx-lm",
+  "backend": "local",
   "debug": {
     "level": 3,
     "enableTraces": true,
@@ -341,145 +358,42 @@ Capture everything for analysis:
 }
 ```
 
-### Production (Real Claude API)
+## Deprecated Backend Names
 
-Use Anthropic's API with trace logging:
+For backward compatibility, these old names still work but will show deprecation warnings:
 
-```json
-{
-  "backend": "claude",
-  "debug": {
-    "level": 0,
-    "enableTraces": true
-  }
-}
-```
+| Old Name      | Maps To |
+| ------------- | ------- |
+| `lmstudio`    | `local` |
+| `mlx-lm`      | `local` |
+| `mlx`         | `local` |
+| `mlx-textgen` | `local` |
 
-And set environment variable:
+**Migration:** Change `"backend": "lmstudio"` to `"backend": "local"` in your config.
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-xxxxx
-anyclaude
-```
+## Troubleshooting
 
-### Remote Server
-
-Connect to LMStudio on another machine:
-
-```json
-{
-  "backend": "lmstudio",
-  "backends": {
-    "lmstudio": {
-      "baseUrl": "http://192.168.1.100:1234/v1"
-    }
-  }
-}
-```
-
-## Debugging Configuration Issues
-
-### Verify Configuration is Loaded
+### Verify Configuration
 
 ```bash
-# Proxy-only mode shows active configuration
 PROXY_ONLY=true anyclaude
-
-# Output will show:
-# [anyclaude] Mode: MLX-LM
-# [anyclaude] Config: .anyclauderc.json
-# [anyclaude] MLX-LM endpoint: http://localhost:8081/v1
-```
-
-### Test Backend Connection
-
-```bash
-# Test proxy without spawning Claude Code
-PROXY_ONLY=true ANYCLAUDE_MODE=mlx-lm anyclaude
-
-# If successful:
-# [anyclaude] Proxy URL: http://localhost:3000
+# Shows active configuration
 ```
 
 ### Check Environment Variables
 
 ```bash
-# See which variables are set
-env | grep -E "ANYCLAUDE|LMSTUDIO|MLX_LM|ANTHROPIC"
+env | grep -E "ANYCLAUDE|LOCAL|OPENROUTER|ANTHROPIC|SEARXNG"
 ```
 
 ### Enable Debug Logging
 
 ```bash
-# See detailed configuration loading and request/response info
 ANYCLAUDE_DEBUG=1 anyclaude
-```
-
-## File Organization
-
-When using configuration files, keep your project clean:
-
-```
-your-project/
-├── .anyclauderc.json      # AnyClaude configuration
-├── src/
-├── tests/
-└── README.md
-```
-
-The `.anyclauderc.json` file is **not** gitignored by default, but you may want to gitignore it if it contains local-specific paths:
-
-```bash
-# .gitignore
-.anyclauderc.json         # If using local paths
-```
-
-## Troubleshooting
-
-### Configuration File Not Found
-
-```bash
-# Error: No configuration found
-# Solution: Make sure .anyclauderc.json is in the right directory
-
-ls -la .anyclauderc.json   # Should show the file
-pwd                         # Should match where you run anyclaude from
-```
-
-### Wrong Backend Selected
-
-```bash
-# Error: Config says mlx-lm but trying to connect to lmstudio
-
-# Check priority: CLI > env var > config file > default
-env | grep ANYCLAUDE_MODE  # Check environment
-anyclaude --mode=mlx-lm    # Use CLI flag to override
-```
-
-### Port Already in Use
-
-```bash
-# Error: EADDRINUSE localhost:8081
-
-# Option 1: Configure different port in .anyclauderc.json
-# Option 2: Stop process using port
-lsof -i :8081              # Find process
-kill <PID>                 # Kill it
-```
-
-### Invalid Configuration File
-
-```bash
-# Error: JSON parse error in .anyclauderc.json
-
-# Validate JSON syntax
-npx jsonlint .anyclauderc.json
-
-# Or use an online validator: https://jsonlint.com
 ```
 
 ## See Also
 
-- [README.md](README.md) - Quick start and overview
-- [PROJECT.md](PROJECT.md) - Architecture and design
-- [CLAUDE.md](CLAUDE.md) - Claude Code integration
+- [README.md](../../README.md) - Quick start
+- [PROJECT.md](../../PROJECT.md) - Architecture
+- [web-search-local.md](web-search-local.md) - Local web search setup
