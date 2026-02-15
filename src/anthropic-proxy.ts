@@ -1269,12 +1269,12 @@ export const createAnthropicProxy = ({
           }
         }
 
-        // Suppress Qwen3 thinking mode to avoid wasting decode tokens
-        // Qwen3 models generate <think> blocks by default which are verbose and slow
-        if (system && /qwen3/i.test(model || "")) {
+        // Suppress thinking mode for models that generate <think> blocks by default
+        // Qwen3 and MiniMax-M2 both support /no_think to disable verbose reasoning
+        if (system && /qwen3|minimax/i.test(model || "")) {
           system = system + "\n\n/no_think";
           if (isDebugEnabled()) {
-            debug(1, `[Qwen3] Appended /no_think to suppress thinking mode`);
+            debug(1, `[Think Suppression] Appended /no_think for model: ${model}`);
           }
         }
 
