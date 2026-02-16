@@ -968,7 +968,7 @@ export const createAnthropicProxy = ({
               selectedNode.id
             );
             if (!clusterProvider) {
-              throw new Error(`Provider not found for node ${selectedNode.id}`);
+              throw new Error(`Provider not found for node ${selectedNode.id} (${selectedNode.url || "no URL"}). Check cluster configuration in mlx-cluster.json`);
             }
 
             // Override provider and model for cluster routing
@@ -1014,7 +1014,7 @@ export const createAnthropicProxy = ({
             : providers[providerName];
 
         if (!provider) {
-          throw new Error(`Provider not configured: ${providerName}`);
+          throw new Error(`Provider not configured: '${providerName}'. Valid providers: local, openrouter, claude, mlx-cluster. Check ANYCLAUDE_MODE in .anyclauderc.json`);
         }
 
         // Check prompt cache for metrics tracking only (don't modify request)
@@ -1795,7 +1795,7 @@ export const createAnthropicProxy = ({
                 // There should only be one message.
                 const message = response.messages[0];
                 if (!message) {
-                  throw new Error("No message found");
+                  throw new Error(`No message found in response from ${model || "unknown model"} via ${providerName || "unknown provider"}. Backend may have returned an empty response.`);
                 }
 
                 const prompt = convertToAnthropicMessagesPrompt({
@@ -1805,7 +1805,7 @@ export const createAnthropicProxy = ({
                 });
                 const promptMessage = prompt.prompt.messages[0];
                 if (!promptMessage) {
-                  throw new Error("No prompt message found");
+                  throw new Error(`No prompt message found after conversion for model ${model || "unknown"}. This may indicate a message format incompatibility.`);
                 }
 
                 let contentToSend: typeof promptMessage.content =

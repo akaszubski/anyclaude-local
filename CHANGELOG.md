@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Issues #80-81: Improved Error Messages** - Enhanced error messages with diagnostic hints and actionable guidance for connection, API, and configuration issues.
+
+  **Issue #80 - Backend Error Messages** (src/backend-client.ts):
+  - Backend connection errors: Added "Is the server running?" hint and reference to `LOCAL_URL` configuration
+  - Backend API errors: Categorized by HTTP status (404 vs 503) with specific hints
+  - Backend timeout errors: Added guidance on increasing timeout in `.anyclauderc.json`
+
+  **Issue #81 - Proxy Error Messages** (src/anthropic-proxy.ts):
+  - Provider configuration errors: List valid providers (local, openrouter, claude, mlx-cluster) and reference config file
+  - MLX cluster errors: Include node URL in error message and point to `mlx-cluster.json`
+  - Message conversion errors: Include model and provider info to help debug format issues
+  - Think mode suppression: Extended to MiniMax models, improved debug logging
+
+  **Files Modified**:
+  - src/backend-client.ts - Connection, timeout, and API error messages
+  - src/anthropic-proxy.ts - Provider, cluster, conversion, and suppression errors
+
 - **Issues #56-59: KV Cache Optimizations** - Comprehensive disk-based KV cache persistence for MLX worker with significant performance improvements.
 
   **Issue #56 - Disk-Based Persistence**:
