@@ -32,13 +32,34 @@ export class BackendClient {
    */
   async getModels(): Promise<BackendModelsResponse> {
     const url = `${this.baseUrl}/v1/models`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(
-        `Backend API error: ${response.status} ${response.statusText} (${url})`
-      );
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        const hint = response.status === 404
+          ? " Check model name and endpoint path."
+          : response.status === 503
+          ? " Backend may be overloaded or model still loading."
+          : "";
+        throw new Error(
+          `Backend API error (${response.status} ${response.statusText}): ${url}.${hint}`
+        );
+      }
+      return (await response.json()) as BackendModelsResponse;
+    } catch (error: any) {
+      // Connection errors (ECONNREFUSED, timeout, network issues)
+      if (error.cause?.code === "ECONNREFUSED" || error.message?.includes("ECONNREFUSED")) {
+        throw new Error(
+          `Backend connection failed: Cannot connect to ${url}. Is the server running? Check LOCAL_URL in .anyclauderc.json`
+        );
+      }
+      if (error.name === "AbortError" || error.message?.includes("timeout")) {
+        throw new Error(
+          `Backend request timeout: No response from ${url}. For large models, increase timeout in .anyclauderc.json`
+        );
+      }
+      // Re-throw if it's already our formatted error
+      throw error;
     }
-    return (await response.json()) as BackendModelsResponse;
   }
 
   /**
