@@ -264,6 +264,30 @@ export ANYCLAUDE_DEBUG=3  # Trace (full prompts)
 export SEARXNG_URL=http://localhost:8080
 ```
 
+### Proxy Port Configuration
+
+Configure the port where anyclaude proxy listens:
+
+```bash
+# Proxy listening port (default: 49152 - first port in dynamic/private range)
+export ANYCLAUDE_PORT=49152
+
+# Or set in config file
+# {
+#   "port": 49152
+# }
+
+# Set Claude Code to point at the proxy
+export ANTHROPIC_BASE_URL=http://localhost:49152
+```
+
+**Priority:** `ANYCLAUDE_PORT` env var > `config.port` > default 49152
+
+**Why 49152?**
+- First port in IANA dynamic/private range (49152-65535)
+- Reliably available without conflicts on most systems
+- No special privileges required
+
 ### KV Cache Persistence (MLX Worker)
 
 Configure disk-based KV cache for faster MLX worker startup:

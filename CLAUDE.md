@@ -13,7 +13,7 @@ This file provides guidance to Claude Code when working in this repository.
 ```bash
 bun install          # Install dependencies
 bun run build        # Build (creates dist/main.js)
-bun run ./dist/main.js  # Run the built binary
+bun run ./dist/main.js  # Run the built binary (auto-creates .anyclauderc.json on first run)
 npm test             # Run all tests
 ```
 
@@ -48,8 +48,9 @@ Key source files:
 
 ```bash
 ANYCLAUDE_MODE=local|openrouter|claude|mlx-cluster
-ANYCLAUDE_DEBUG=1  # Basic  |  2 = Verbose  |  3 = Trace
-PROXY_ONLY=true    # Test proxy without Claude Code
+ANYCLAUDE_PORT=49152              # Proxy listening port (default: 49152)
+ANYCLAUDE_DEBUG=1                 # Basic  |  2 = Verbose  |  3 = Trace
+PROXY_ONLY=true                   # Test proxy without Claude Code
 ```
 
 ## Quick Reference

@@ -26,6 +26,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - src/backend-client.ts - Connection, timeout, and API error messages
   - src/anthropic-proxy.ts - Provider, cluster, conversion, and suppression errors
 
+- **Issues #75-78: New User Onboarding** - Streamlined first-run experience for new users.
+
+  **Issue #75 - Auto-Create Config**:
+  - `.anyclauderc.json` automatically created from `.anyclauderc.example.json` on first run
+  - Minimal default configuration with local backend enabled
+  - Users edit existing file instead of starting from scratch
+  - Reduces setup friction for new deployments
+
+  **Issue #76 - PATH Resilience**:
+  - Resolve docker and bun executables from known paths
+  - Checks `/usr/local/bin`, `/opt/homebrew/bin`, `~/.bun/bin`
+  - Handles systems where executable not in standard PATH
+  - Fallback to bare command name if not found
+  - File: `src/utils/executable-resolver.ts`
+
+  **Issue #77 - Fixed Default Port**:
+  - Changed default proxy port from 8000 to **49152** (first port in dynamic/private range)
+  - More reliable to avoid port conflicts with other services
+  - Configurable via `ANYCLAUDE_PORT` environment variable or `config.port`
+  - Priority: `ANYCLAUDE_PORT` env var > `config.port` > default 49152
+
+  **Issue #78 - README TL;DR**:
+  - Added quickstart section showing first-run flow
+  - Demonstrates auto-config creation and port usage
+  - Commands: `bun install && bun run build && bun run ./dist/main.js`
+  - Shows how to point Claude Code at proxy via `ANTHROPIC_BASE_URL`
+
 - **Issues #56-59: KV Cache Optimizations** - Comprehensive disk-based KV cache persistence for MLX worker with significant performance improvements.
 
   **Issue #56 - Disk-Based Persistence**:

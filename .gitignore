@@ -88,6 +88,9 @@ Thumbs.db
 test-output/
 debug-logs/
 
+# GenAI test cache
+tests/genai/.genai_cache/
+
 # Temporary/experimental files
 test-model-detection.js
 AUTONOMOUS-DEV-ENHANCEMENTS.md
