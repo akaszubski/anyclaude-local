@@ -81,8 +81,13 @@ Thumbs.db
 # Traces (contains prompts/responses - can be large)
 .anyclaude/
 
-# Claude Code config (autonomous-dev - user-specific)
-.claude/
+# Claude Code - track plugin infrastructure, ignore local/transient files
+.claude/local/
+.claude/logs/
+.claude/artifacts/
+.claude/batch_state.json
+.claude/session_state.json
+.claude/plugins/
 
 # Test outputs
 test-output/
@@ -174,4 +179,3 @@ request-logs/
 *.avi
 *.mkv
 *.webm
-.claude/
