@@ -142,6 +142,16 @@ async function runAllTests() {
     //   file: path.join(__dirname, "unit", "test_mode_detection.js"),
     //   description: "Mode Detection Unit Tests",
     // },
+    // Claude Code env var injection tests (#82)
+    {
+      file: path.join(__dirname, "unit", "test_claudecode_env_injection.js"),
+      description: "Claude Code Env Var Injection Tests (#82)",
+    },
+    // Tool allowlist filter tests (#83)
+    {
+      file: path.join(__dirname, "unit", "test_tool_allowlist_filter.js"),
+      description: "Tool Allowlist Filter Tests (#83)",
+    },
   ];
 
   console.log("\n");

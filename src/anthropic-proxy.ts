@@ -62,6 +62,7 @@ import {
   isInternalMessage,
 } from "./server-side-tool-handler";
 import { CircuitBreaker, type CircuitBreakerConfig } from "./circuit-breaker";
+import { filterToolsByAllowlist } from "./tool-allowlist-filter";
 
 // Security: Maximum request body size (10MB) to prevent DoS attacks
 // Claude Code requests are typically 1-5MB, so 10MB provides headroom
@@ -425,6 +426,7 @@ export type CreateAnthropicProxyOptions = {
   safeSystemFilter?: boolean; // Enable/disable safe filtering
   filterTier?: "auto" | "minimal" | "moderate" | "aggressive" | "extreme"; // Optimization tier
   stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
+  toolAllowlist?: string[]; // Only forward these tool names to local models (Issue #83)
   circuitBreakerConfig?: CircuitBreakerUserConfig; // Circuit breaker configuration per mode
 };
 
@@ -444,6 +446,7 @@ export const createAnthropicProxy = ({
   safeSystemFilter = false,
   filterTier = "auto",
   stubToolDescriptions = false,
+  toolAllowlist,
   circuitBreakerConfig,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
@@ -1337,6 +1340,20 @@ export const createAnthropicProxy = ({
               `[Cache Control] Caching ${toolsToUse.length} tools for future requests`
             );
           }
+        }
+
+        // Tool allowlist: filter to only configured tools (Issue #83)
+        // Runs after cache restore so restored tools are also filtered
+        if (toolAllowlist && toolsToUse && toolsToUse.length > 0) {
+          // Note: empty allowlist [] intentionally blocks all tools — see filterToolsByAllowlist contract
+          const { filtered, removedCount } = filterToolsByAllowlist(toolsToUse, toolAllowlist);
+          if (isDebugEnabled()) {
+            debug(
+              1,
+              `[Tool Allowlist] ${toolsToUse.length} → ${filtered.length} tools (${removedCount} filtered)`
+            );
+          }
+          toolsToUse = filtered;
         }
 
         // Adaptive Tool Context: capture skills and stub descriptions

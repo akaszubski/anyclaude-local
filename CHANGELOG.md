@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Issue #83: Tool Allowlist Filter** - Added `toolAllowlist` config option for the `local` (and deprecated `lmstudio`) backend. When set, only the listed tools are forwarded to the local model; all others are silently dropped before the request is sent. Matching is case-insensitive. Omitting the key passes all tools through unchanged; an empty array passes no tools.
+
+  Reduces token usage when Claude Code sends a large tool list but only a subset is needed for a given workflow. Filtering 50 tools to 6 typically saves 10–40K tokens per request.
+
+  **Files Modified**:
+  - `src/tool-allowlist-filter.ts` — new filter module (`filterToolsByAllowlist`)
+  - `src/anthropic-proxy.ts` — applies filter after tool list is assembled
+  - `src/main.ts` — passes `toolAllowlist` from config to proxy options
+  - `docs/guides/configuration.md` — new "Tool Allowlist" section under local backend options
+  - `README.md` — `toolAllowlist` listed in local backend config example
+
+- **Issue #82: Claude Code Environment Variable Auto-Injection** - When running in `local` or `mlx-cluster` mode, anyclaude now automatically injects three environment variables into the Claude Code process so it behaves correctly with local models.
+
+  **Auto-injected variables** (user-set values are never overwritten):
+  - `MODEL_CONTEXT_WINDOW` — set to `LOCAL_CONTEXT_LENGTH` if provided, otherwise falls back to `131072` (128K). Tells Claude Code the actual context window of the local model.
+  - `CLAUDE_CODE_DISABLE_THINKING` — set to `true`. Prevents Claude Code from requesting thinking blocks that local models do not support.
+  - `CLAUDE_CODE_MAX_OUTPUT_TOKENS` — set to `8192`. Caps output tokens to a value local models can reliably produce.
+
+  Cloud modes (`openrouter`, `claude`) are unaffected — those APIs handle context and thinking natively.
+
+  **Files Modified**:
+  - `src/main.ts` — env injection in Claude Code spawn env
+  - `docs/guides/configuration.md` — new "Claude Code Environment Variables" section
+  - `README.md` — env vars added to quick-reference table
+  - `tests/unit/test_claudecode_env_injection.js` — new unit tests
+
 - **Issues #80-81: Improved Error Messages** - Enhanced error messages with diagnostic hints and actionable guidance for connection, API, and configuration issues.
 
   **Issue #80 - Backend Error Messages** (src/backend-client.ts):

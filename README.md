@@ -151,7 +151,14 @@ OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_MODEL=z-ai/glm-4.6
 ANYCLAUDE_DEBUG=1             # Debug level (1=basic, 2=verbose, 3=trace)
 PROXY_ONLY=true               # Test proxy without launching Claude Code
+
+# Claude Code env vars (auto-injected for local/mlx-cluster; override if needed)
+MODEL_CONTEXT_WINDOW=131072           # Actual context window of your local model
+CLAUDE_CODE_DISABLE_THINKING=true     # Disable thinking blocks (local models don't support them)
+CLAUDE_CODE_MAX_OUTPUT_TOKENS=8192    # Cap output tokens for local models
 ```
+
+> **Auto-injection**: In `local` and `mlx-cluster` modes, `MODEL_CONTEXT_WINDOW`, `CLAUDE_CODE_DISABLE_THINKING`, and `CLAUDE_CODE_MAX_OUTPUT_TOKENS` are automatically set unless you've already exported them. See [docs/guides/configuration.md](docs/guides/configuration.md#claude-code-environment-variables-auto-injected-for-local-modes) for full details.
 
 ### Config File (.anyclauderc.json)
 

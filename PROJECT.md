@@ -37,7 +37,7 @@ anyclaude performs bidirectional format translation (Anthropic ↔ OpenAI), stre
 3. **Prompt size** — Claude Code sends ~18K tokens per request. Safe system filter reduces this with configurable tiers; tool stubbing cuts descriptions by 86%.
 4. **Slow model timeouts** — SSE keepalive pings prevent client timeout during long inference.
 
-## Source Files (58 TypeScript files, ~21K lines)
+## Source Files (59 TypeScript files, ~21K lines)
 
 ### Core Translation
 
@@ -59,6 +59,7 @@ anyclaude performs bidirectional format translation (Anthropic ↔ OpenAI), stre
 | `src/prompt-section-parser.ts` | System prompt section extraction |
 | `src/critical-sections.ts` | Identifies must-keep prompt sections |
 | `src/tool-context-manager.ts` | Tool description stubbing + skill-based expansion |
+| `src/tool-allowlist-filter.ts` | Tool allowlist filter — drops unlisted tools before forwarding to local models |
 
 ### Model Adapters
 
@@ -137,6 +138,7 @@ Hierarchical: CLI flags > env vars > `.anyclauderc.json` > defaults.
 Key config options for local backend:
 - `safeSystemFilter` / `filterTier` — prompt optimization tier
 - `stubToolDescriptions` — tool description stubbing
+- `toolAllowlist` — restrict which tools are forwarded to the local model
 - `autoStartServer` / `modelPath` — MLX Worker auto-launch
 - `circuitBreaker` — failure handling configuration
 

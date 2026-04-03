@@ -65,6 +65,7 @@ interface AnyclaudeConfig {
       safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
+      toolAllowlist?: string[]; // Only forward these tool names to local model (Issue #83)
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
     lmstudio?: {
@@ -84,6 +85,7 @@ interface AnyclaudeConfig {
       safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
+      toolAllowlist?: string[]; // Only forward these tool names to local model (Issue #83)
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
     claude?: {
@@ -862,6 +864,11 @@ if (process.env.NODE_ENV !== "test") {
           ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
               ?.stubToolDescriptions ?? false)
           : false,
+      // Tool allowlist: only forward listed tools to local model (Issue #83)
+      toolAllowlist:
+        mode === "local"
+          ? getMigratedBackendConfig(config.backends, "local", "lmstudio")?.toolAllowlist
+          : undefined,
       // Circuit breaker configuration
       circuitBreakerConfig: config.circuitBreaker,
     });
@@ -981,9 +988,28 @@ if (process.env.NODE_ENV !== "test") {
         .slice(2)
         .filter((arg) => !arg.startsWith("--mode="));
 
+      // Auto-inject Claude Code env vars for local model modes so Claude Code
+      // knows the actual context window size and avoids thinking-block config
+      // that local models don't support. User-set values always win (??).
+      const isLocalMode = mode === "local" || mode === "mlx-cluster";
+      const claudeCodeEnvDefaults = isLocalMode
+        ? {
+            MODEL_CONTEXT_WINDOW:
+              process.env.MODEL_CONTEXT_WINDOW ??
+              String(
+                Number(process.env.LOCAL_CONTEXT_LENGTH) || 131072
+              ),
+            CLAUDE_CODE_DISABLE_THINKING:
+              process.env.CLAUDE_CODE_DISABLE_THINKING ?? "true",
+            CLAUDE_CODE_MAX_OUTPUT_TOKENS:
+              process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ?? "8192",
+          }
+        : {};
+
       const proc = spawn("claude", claudeArgs, {
         env: {
           ...process.env,
+          ...claudeCodeEnvDefaults,
           ANTHROPIC_BASE_URL: proxyURL,
         },
         // Fix for piped stdin (e.g., when using `2>&1 | tee`):

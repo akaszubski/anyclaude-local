@@ -138,6 +138,28 @@ The `local` backend works with any OpenAI-compatible server:
 | `truncateSystemPrompt`  | `false`                    | Simple size-based truncation (fallback)                                       |
 | `systemPromptMaxTokens` | `2000`                     | Max tokens for truncation                                                     |
 | `localSearch`           | `false`                    | Auto-start SearXNG Docker container                                           |
+| `stubToolDescriptions`  | `false`                    | Replace tool descriptions with compact stubs to reduce token usage            |
+| `toolAllowlist`         | -                          | Array of tool names to forward. Omit to allow all tools (see below)           |
+
+#### Tool Allowlist
+
+`toolAllowlist` limits which tools are sent to the local model. This can significantly reduce token usage when Claude Code sends a large tool list but only a subset is useful for your workflow.
+
+```json
+{
+  "backends": {
+    "local": {
+      "toolAllowlist": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
+    }
+  }
+}
+```
+
+- **Omit the key** (default): all tools are forwarded unchanged.
+- **Empty array `[]`**: no tools are forwarded (model runs without tools).
+- **Named list**: only the listed tools are forwarded; others are silently dropped.
+- Matching is **case-insensitive** (`"bash"` matches `"Bash"`).
+- Token savings depend on tool count. Filtering 50 tools to 6 typically saves 10–40K tokens per request.
 
 ### OpenRouter Configuration
 
@@ -287,6 +309,34 @@ export ANTHROPIC_BASE_URL=http://localhost:49152
 - First port in IANA dynamic/private range (49152-65535)
 - Reliably available without conflicts on most systems
 - No special privileges required
+
+### Claude Code Environment Variables (Auto-Injected for Local Modes)
+
+When running in `local` or `mlx-cluster` mode, anyclaude automatically injects the following environment variables into the Claude Code process. These tell Claude Code about the local model's capabilities so it behaves correctly.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MODEL_CONTEXT_WINDOW` | `LOCAL_CONTEXT_LENGTH` or `131072` | Tells Claude Code the actual context window size of the local model |
+| `CLAUDE_CODE_DISABLE_THINKING` | `true` | Prevents Claude Code from requesting thinking blocks, which local models don't support |
+| `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | `8192` | Caps output tokens to a value local models can reliably produce |
+
+**User-set values always win.** If you export any of these variables before running anyclaude, your value is used as-is.
+
+**These are NOT injected for `openrouter` or `claude` modes**, since cloud APIs handle context and thinking natively.
+
+```bash
+# Override defaults — your values take precedence
+export MODEL_CONTEXT_WINDOW=65536          # Your model's actual context window
+export CLAUDE_CODE_DISABLE_THINKING=false  # Re-enable if your model supports thinking
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS=4096  # Lower cap for faster responses
+anyclaude --mode=local
+```
+
+**Context window default logic:**
+
+1. If `MODEL_CONTEXT_WINDOW` is set — use it directly
+2. Else if `LOCAL_CONTEXT_LENGTH` is set — derive from it
+3. Else — fall back to 131072 (128K)
 
 ### KV Cache Persistence (MLX Worker)
 
