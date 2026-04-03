@@ -34,7 +34,6 @@ import {
 import type { ValidationResult as BaseValidationResult } from "./critical-sections";
 import { parseIntoSections, reconstructPrompt } from "./prompt-section-parser";
 import type { PromptSection } from "./prompt-section-parser";
-import { deduplicatePrompt } from "./prompt-templates";
 
 /**
  * Optimization tiers from least to most aggressive
@@ -397,23 +396,6 @@ function filterSections(
 }
 
 /**
- * Apply deduplication to a prompt
- */
-function applyDeduplication(prompt: string): string {
-  try {
-    const result = deduplicatePrompt(prompt);
-    // Only use deduplicated version if it's actually shorter
-    if (result.optimized.length < prompt.length) {
-      return result.optimized;
-    }
-    return prompt;
-  } catch (error) {
-    // If deduplication fails, return original prompt
-    return prompt;
-  }
-}
-
-/**
  * Condense examples in a prompt (for MODERATE tier)
  */
 function condenseExamples(prompt: string): string {
@@ -460,9 +442,6 @@ function applyTierTransformations(
   tier: OptimizationTier
 ): string {
   let result = prompt;
-
-  // All tiers get deduplication
-  result = applyDeduplication(result);
 
   // MODERATE and above: condense examples
   if (

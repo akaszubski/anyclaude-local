@@ -112,8 +112,6 @@ The `local` backend works with any OpenAI-compatible server:
       "safeSystemFilter": true,
       "filterTier": "auto",
       "smartPromptMode": "simple",
-      "truncateSystemPrompt": false,
-      "systemPromptMaxTokens": 2000,
       "localSearch": true,
       "description": "Local MLX Worker with auto-start and web search"
     }
@@ -135,8 +133,6 @@ The `local` backend works with any OpenAI-compatible server:
 | `safeSystemFilter`      | `true`                     | Enable intelligent prompt optimization                                        |
 | `filterTier`            | `auto`                     | Filter aggressiveness: `auto`, `minimal`, `moderate`, `aggressive`, `extreme` |
 | `smartPromptMode`       | `simple`                   | Prompt mode: `simple`, `balanced`, `aggressive`                               |
-| `truncateSystemPrompt`  | `false`                    | Simple size-based truncation (fallback)                                       |
-| `systemPromptMaxTokens` | `2000`                     | Max tokens for truncation                                                     |
 | `localSearch`           | `false`                    | Auto-start SearXNG Docker container                                           |
 | `stubToolDescriptions`  | `false`                    | Replace tool descriptions with compact stubs to reduce token usage            |
 | `toolAllowlist`         | -                          | Array of tool names to forward. Omit to allow all tools (see below)           |

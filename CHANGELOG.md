@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Issues #84-#87: Dead code removal** — Deleted `src/adapters/` (model-specific prompt adapters for Qwen, Mistral, Llama, and a generic base), `src/prompt-adapter.ts`, `src/prompt-templates.ts`, `src/prompt-cache.ts`, and 7 related test files (~5,568 lines). These modules were not called by any active code path. Removed `truncateSystemPrompt` / `systemPromptMaxTokens` config options from `src/main.ts` (superseded by `context-manager.ts`); removed `deduplicatePrompt` call from `src/safe-system-filter.ts`; cleaned up associated imports in `src/anthropic-proxy.ts`.
+
 ### Added
 
 - **Issue #83: Tool Allowlist Filter** - Added `toolAllowlist` config option for the `local` (and deprecated `lmstudio`) backend. When set, only the listed tools are forwarded to the local model; all others are silently dropped before the request is sent. Matching is case-insensitive. Omitting the key passes all tools through unchanged; an empty array passes no tools.

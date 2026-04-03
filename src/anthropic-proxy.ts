@@ -40,7 +40,6 @@ import {
   getCacheTracker,
   displayCacheMetricsOnExit,
 } from "./cache-metrics";
-import { getCachedPrompt, getCacheStats } from "./prompt-cache";
 import { getCacheMonitor } from "./cache-monitor-dashboard";
 import { extractMarkers } from "./cache-control-extractor";
 import { getTimeoutConfig } from "./timeout-config";
@@ -242,19 +241,16 @@ function mapTierConfig(
  * Get the optimization strategy being used
  *
  * Determines which prompt optimization strategy applies based on config options.
- * Priority order: smart > safe > truncate > passthrough
+ * Priority order: smart > safe > passthrough
  *
  * @param options - Proxy configuration options
- * @returns Active strategy: 'safe' (filtered), 'truncate' (size-limited), or 'passthrough' (no optimization)
+ * @returns Active strategy: 'safe' (filtered) or 'passthrough' (no optimization)
  */
 function getOptimizationStrategy(
   options: CreateAnthropicProxyOptions
-): "safe" | "truncate" | "passthrough" {
+): "safe" | "passthrough" {
   if (shouldUseSafeFilter(options)) {
     return "safe";
-  }
-  if (options.truncateSystemPrompt === true) {
-    return "truncate";
   }
   return "passthrough";
 }
@@ -371,19 +367,13 @@ function optimizeSystemPrompt(
         return { strategy: "safe", prompt: result.filteredPrompt };
       }
 
-      // Fallback to truncate if validation fails
-      if (options.truncateSystemPrompt) {
-        return { strategy: "truncate", prompt };
-      }
+      // Validation failed - fall through to passthrough
     } catch (error) {
-      // On error, fallback to truncate or passthrough
-      if (options.truncateSystemPrompt) {
-        return { strategy: "truncate", prompt };
-      }
+      // On error, fall through to passthrough
     }
   }
 
-  return { strategy, prompt };
+  return { strategy: "passthrough", prompt };
 }
 
 /**
@@ -421,8 +411,6 @@ export type CreateAnthropicProxyOptions = {
   defaultModel: string;
   mode: AnyclaudeMode;
   backendUrl?: string; // URL of the active backend for model queries
-  truncateSystemPrompt?: boolean; // Truncate system prompt for LMStudio
-  systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
   safeSystemFilter?: boolean; // Enable/disable safe filtering
   filterTier?: "auto" | "minimal" | "moderate" | "aggressive" | "extreme"; // Optimization tier
   stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
@@ -441,8 +429,6 @@ export const createAnthropicProxy = ({
   defaultModel,
   mode,
   backendUrl,
-  truncateSystemPrompt = false,
-  systemPromptMaxTokens = 2000,
   safeSystemFilter = false,
   filterTier = "auto",
   stubToolDescriptions = false,
@@ -1020,25 +1006,6 @@ export const createAnthropicProxy = ({
           throw new Error(`Provider not configured: '${providerName}'. Valid providers: local, openrouter, claude, mlx-cluster. Check ANYCLAUDE_MODE in .anyclauderc.json`);
         }
 
-        // Check prompt cache for metrics tracking only (don't modify request)
-        const cachedPrompt = getCachedPrompt(
-          body.system || [],
-          body.tools || []
-        );
-        if (cachedPrompt.cached && isVerboseDebugEnabled()) {
-          debug(
-            2,
-            `[Prompt Cache] HIT - Skipping ${
-              body.system && Array.isArray(body.system)
-                ? body.system.reduce(
-                    (sum: number, s: any) => sum + (s.text?.length || 0),
-                    0
-                  )
-                : 0
-            } characters of system prompt`
-          );
-        }
-
         let system: string | undefined;
         if (body.system) {
           // Handle both string and array formats for system prompt
@@ -1065,18 +1032,16 @@ export const createAnthropicProxy = ({
 
         // Priority 1: Safe system filter (safeSystemFilter)
         // Rule-based: removes optional sections while preserving critical tool calling instructions
-        // Validates filtered prompt matches expected patterns (has fallback to truncate)
+        // Validates filtered prompt matches expected patterns (has fallback to passthrough)
         let safeFilterApplied = false;
         if (
           shouldUseSafeFilter({
             mode,
             safeSystemFilter,
-            truncateSystemPrompt,
             filterTier,
             providers,
             defaultProvider,
             defaultModel,
-            systemPromptMaxTokens,
           } as CreateAnthropicProxyOptions) &&
           system
         ) {
@@ -1084,12 +1049,10 @@ export const createAnthropicProxy = ({
             const filterResult = applySafeSystemFilter(system, {
               mode,
               safeSystemFilter,
-              truncateSystemPrompt,
               filterTier,
               providers,
               defaultProvider,
               defaultModel,
-              systemPromptMaxTokens,
             } as CreateAnthropicProxyOptions);
 
             // When filterTier is explicitly set (not "auto"), always apply the filter
@@ -1130,102 +1093,19 @@ export const createAnthropicProxy = ({
                 });
               }
             } else {
-              // Validation failed - fall through to truncate
+              // Validation failed - fall through to passthrough
               debug(
                 2,
-                `[Safe Filter] Validation failed, falling back to truncate. Missing patterns:`,
+                `[Safe Filter] Validation failed, falling back to passthrough. Missing patterns:`,
                 filterResult.validation.missingPatterns
               );
             }
           } catch (error) {
-            // Filter error - fall through to truncate
+            // Filter error - fall through to passthrough
             debug(
               2,
               `[Safe Filter] Error applying filter, falling back:`,
               error instanceof Error ? error.message : String(error)
-            );
-          }
-        }
-
-        // Priority 3: Simple truncation (fallback when safe filter fails or is disabled)
-        // Preserves important sections (first 100 lines, marked sections) up to token limit
-        // Falls back to passthrough if truncation disabled
-        if (
-          truncateSystemPrompt &&
-          system &&
-          !safeFilterApplied
-        ) {
-          const originalLength = system.length;
-          // Rough estimate: 1 token ≈ 4 characters
-          const maxChars = systemPromptMaxTokens * 4;
-
-          if (originalLength > maxChars) {
-            // Smart truncation: Extract complete sections, not just headers
-            const lines = system.split("\n");
-            const truncatedLines: string[] = [];
-            let charCount = 0;
-
-            // Critical sections to preserve WITH their content
-            const importantSections = [
-              "You are Claude Code",
-              "# Tone and style",
-              "# Tool usage policy",
-              "# Doing tasks",
-              "# Task Management",
-              "# Asking questions",
-              "# Code References",
-              "IMPORTANT:",
-              "VERY IMPORTANT:",
-              "Usage notes:",
-              "Usage:",
-            ];
-
-            let inImportantSection = false;
-            let sectionStartIdx = -1;
-
-            for (let i = 0; i < lines.length; i++) {
-              const line = lines[i]!;
-
-              // Check if this line starts an important section
-              const startsSection = importantSections.some((sec) =>
-                line.includes(sec)
-              );
-
-              if (startsSection) {
-                inImportantSection = true;
-                sectionStartIdx = i;
-              }
-
-              // Check if we're exiting a section (new # header or blank line after content)
-              const isNewSection =
-                line.startsWith("#") && sectionStartIdx !== i;
-              if (
-                inImportantSection &&
-                isNewSection &&
-                i > sectionStartIdx + 5
-              ) {
-                inImportantSection = false;
-              }
-
-              // Always include first 100 lines OR important section content
-              const shouldInclude = i < 100 || inImportantSection;
-
-              if (shouldInclude && charCount + line.length < maxChars) {
-                truncatedLines.push(line);
-                charCount += line.length;
-              }
-
-              // Stop if we exceed max chars
-              if (charCount >= maxChars) break;
-            }
-
-            system = truncatedLines.join("\n");
-            system +=
-              "\n\n[System prompt truncated to reduce cache pressure. Core instructions preserved.]";
-
-            debug(
-              1,
-              `[System Prompt] Truncated from ${originalLength} to ${system.length} characters (~${Math.floor(originalLength / 4)} → ~${Math.floor(system.length / 4)} tokens)`
             );
           }
         }
@@ -2639,17 +2519,8 @@ export const createAnthropicProxy = ({
     })
     .listen(port ?? 0);
 
-  // Display cache stats on exit
+  // Display cache monitoring dashboard on exit
   process.on("exit", () => {
-    const cacheStats = getCacheStats();
-    if (cacheStats.size > 0 && isDebugEnabled()) {
-      debug(1, `[Prompt Cache] Final stats: ${cacheStats.size} cached prompts`);
-      if (isVerboseDebugEnabled()) {
-        debug(2, `[Prompt Cache] Cached entries:`, cacheStats.entries);
-      }
-    }
-
-    // Display cache monitoring dashboard
     const monitor = getCacheMonitor();
     monitor.save();
     monitor.displayReport();

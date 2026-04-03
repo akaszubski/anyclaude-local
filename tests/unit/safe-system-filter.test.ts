@@ -1272,25 +1272,4 @@ describe("Integration with Dependencies", () => {
     });
   });
 
-  describe("prompt-templates.ts integration", () => {
-    test("should use deduplicatePrompt for MINIMAL tier", () => {
-      const result = filterSystemPrompt(FULL_CLAUDE_PROMPT, {
-        tier: OptimizationTier.MINIMAL,
-      });
-
-      // MINIMAL tier should apply deduplication
-      expect(result.stats.reductionPercent).toBeGreaterThanOrEqual(0);
-    });
-
-    test("should apply deduplication to other tiers as well", () => {
-      const result = filterSystemPrompt(FULL_CLAUDE_PROMPT, {
-        tier: OptimizationTier.MODERATE,
-      });
-
-      // All tiers should deduplicate
-      expect(result.stats.filteredTokens).toBeLessThanOrEqual(
-        result.stats.originalTokens
-      );
-    });
-  });
 });

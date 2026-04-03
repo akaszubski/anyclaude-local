@@ -60,8 +60,6 @@ interface AnyclaudeConfig {
       description?: string;
       autoStartServer?: boolean; // Auto-start MLX worker when using localhost (default: true)
       startupTimeout?: number; // Server startup timeout in ms (default: 120000)
-      truncateSystemPrompt?: boolean; // Truncate Claude Code system prompt to reduce cache pressure
-      systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
       safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
@@ -80,8 +78,6 @@ interface AnyclaudeConfig {
       description?: string;
       autoStartServer?: boolean; // Auto-start MLX worker when using localhost (default: true)
       startupTimeout?: number; // Server startup timeout in ms (default: 120000)
-      truncateSystemPrompt?: boolean; // Truncate Claude Code system prompt to reduce cache pressure
-      systemPromptMaxTokens?: number; // Max tokens for system prompt (default: 2000)
       safeSystemFilter?: boolean; // Enable safe system filter for intelligent prompt optimization
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
@@ -835,18 +831,6 @@ if (process.env.NODE_ENV !== "test") {
           : mode === "openrouter"
             ? openrouterConfig?.baseURL
             : undefined,
-      // Truncate for local backend as fallback when safe filter validation fails
-      // Default: true (acts as safety net for local models with limited context)
-      truncateSystemPrompt:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.truncateSystemPrompt ?? true)
-          : false,
-      systemPromptMaxTokens:
-        mode === "local"
-          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
-              ?.systemPromptMaxTokens ?? 2000)
-          : 0,
       // Safe system filter (Issue #21)
       safeSystemFilter:
         mode === "local"

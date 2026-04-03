@@ -37,7 +37,7 @@ anyclaude performs bidirectional format translation (Anthropic ↔ OpenAI), stre
 3. **Prompt size** — Claude Code sends ~18K tokens per request. Safe system filter reduces this with configurable tiers; tool stubbing cuts descriptions by 86%.
 4. **Slow model timeouts** — SSE keepalive pings prevent client timeout during long inference.
 
-## Source Files (59 TypeScript files, ~21K lines)
+## Source Files (53 TypeScript files, ~21K lines)
 
 ### Core Translation
 
@@ -55,22 +55,15 @@ anyclaude performs bidirectional format translation (Anthropic ↔ OpenAI), stre
 | File | Purpose |
 |------|---------|
 | `src/safe-system-filter.ts` | Rule-based system prompt reduction (5 tiers) |
-| `src/prompt-templates.ts` | Prompt deduplication |
 | `src/prompt-section-parser.ts` | System prompt section extraction |
 | `src/critical-sections.ts` | Identifies must-keep prompt sections |
 | `src/tool-context-manager.ts` | Tool description stubbing + skill-based expansion |
 | `src/tool-allowlist-filter.ts` | Tool allowlist filter — drops unlisted tools before forwarding to local models |
 
-### Model Adapters
+### Capability Detection
 
 | File | Purpose |
 |------|---------|
-| `src/prompt-adapter.ts` | Adapter interface, validation, model detection |
-| `src/adapters/base-adapter.ts` | Shared boilerplate (validation, metadata, error handling) |
-| `src/adapters/qwen-adapter.ts` | Bullet points, tool hints, 200-char description limit |
-| `src/adapters/mistral-adapter.ts` | Imperative style, verbose removal, 100-char descriptions |
-| `src/adapters/llama-adapter.ts` | Numbered steps, schema flattening (depth ≤ 2) |
-| `src/adapters/generic-adapter.ts` | Pass-through for unknown models |
 | `src/capability-detector.ts` | Runtime probing: tool calling, streaming support |
 
 ### Reliability & Observability
@@ -121,7 +114,6 @@ anyclaude performs bidirectional format translation (Anthropic ↔ OpenAI), stre
 | `src/streaming-json-parser.ts` | Incremental JSON parsing for streaming |
 | `src/tool-schema-converter.ts` | Tool schema format conversion |
 | `src/tool-response-parser.ts` | Tool response parsing |
-| `src/prompt-cache.ts` | Prompt caching |
 | `src/data-content.ts` | Data content handling |
 | `src/detect-mimetype.ts` | MIME type detection |
 | `src/split-data-url.ts` | Data URL parsing |

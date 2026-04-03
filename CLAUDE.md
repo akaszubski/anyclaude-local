@@ -6,7 +6,7 @@ This file provides guidance to Claude Code when working in this repository.
 
 **anyclaude** is a translation proxy that lets Claude Code use local models (MLX Worker, LMStudio, any OpenAI-compatible server) or cloud models (OpenRouter) through the Anthropic API format.
 
-58 TypeScript source files, ~21K lines. 4 backends: local, openrouter, claude, mlx-cluster.
+53 TypeScript source files, ~21K lines. 4 backends: local, openrouter, claude, mlx-cluster.
 
 ## Development Commands
 
@@ -31,7 +31,6 @@ Key source files:
 - `src/convert-to-anthropic-stream.ts` — OpenAI SSE → Anthropic SSE stream translation
 - `src/safe-system-filter.ts` — System prompt optimization (filtering tiers)
 - `src/capability-detector.ts` — Runtime backend capability probing
-- `src/adapters/` — Model-specific prompt formatting (Qwen, Mistral, Llama, generic)
 - `src/cluster/` — MLX distributed cluster support
 
 ## File Organization
