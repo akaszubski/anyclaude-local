@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Issue #89: Strip Plugin Instructions** — Added `stripPluginInstructions` config option for the `local` (and deprecated `lmstudio`) backend. When enabled, the autonomous-dev plugin content injected via `.claude/CLAUDE.md` is removed from the system prompt before it is forwarded to the local model. This reduces token usage when the plugin-level agent instructions are irrelevant to the model's task.
+
+  **Files Modified**:
+  - `src/safe-system-filter.ts` — new `stripPluginInstructions()` function
+  - `src/anthropic-proxy.ts` — applies pre-filter when option is enabled
+  - `src/main.ts` — passes `stripPluginInstructions` from config to proxy options
+  - `docs/guides/configuration.md` — `stripPluginInstructions` listed in local backend options table
+  - `tests/unit/test_strip_plugin_instructions.js` — 12 new unit tests
+
+### Changed
+
+- **Issue #88: Simplify tool-context-manager** — `src/tool-context-manager.ts` was refactored from a 564-line class with a sub-skill system and file I/O into two lightweight standalone functions: `stubTools()` and `simplifySchema()`. The sub-skill demand-expansion system was removed; tool description stubbing now requires no persistent state or disk access. Existing `stubToolDescriptions` config behaviour is unchanged.
+
+  **Files Modified**:
+  - `src/tool-context-manager.ts` — rewritten as pure functions (~120 lines)
+  - `src/anthropic-proxy.ts` — removed `captureAndUpdateSkills`, `extractLastToolCalls`, and skill injection block; now calls `stubTools()` directly
+  - `tests/unit/test_tool_context_manager.js` — 28 new unit tests
+
 ### Removed
 
 - **Issues #84-#87: Dead code removal** — Deleted `src/adapters/` (model-specific prompt adapters for Qwen, Mistral, Llama, and a generic base), `src/prompt-adapter.ts`, `src/prompt-templates.ts`, `src/prompt-cache.ts`, and 7 related test files (~5,568 lines). These modules were not called by any active code path. Removed `truncateSystemPrompt` / `systemPromptMaxTokens` config options from `src/main.ts` (superseded by `context-manager.ts`); removed `deduplicatePrompt` call from `src/safe-system-filter.ts`; cleaned up associated imports in `src/anthropic-proxy.ts`.

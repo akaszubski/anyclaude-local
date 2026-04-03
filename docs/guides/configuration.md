@@ -134,8 +134,9 @@ The `local` backend works with any OpenAI-compatible server:
 | `filterTier`            | `auto`                     | Filter aggressiveness: `auto`, `minimal`, `moderate`, `aggressive`, `extreme` |
 | `smartPromptMode`       | `simple`                   | Prompt mode: `simple`, `balanced`, `aggressive`                               |
 | `localSearch`           | `false`                    | Auto-start SearXNG Docker container                                           |
-| `stubToolDescriptions`  | `false`                    | Replace tool descriptions with compact stubs to reduce token usage            |
-| `toolAllowlist`         | -                          | Array of tool names to forward. Omit to allow all tools (see below)           |
+| `stubToolDescriptions`     | `false`  | Replace tool descriptions with compact stubs to reduce token usage            |
+| `toolAllowlist`            | -        | Array of tool names to forward. Omit to allow all tools (see below)           |
+| `stripPluginInstructions`  | `false`  | Strip autonomous-dev plugin content (`.claude/CLAUDE.md`) from the system prompt before forwarding to the local model. Reduces token usage when the plugin instructions are not relevant to the local model's task. |
 
 #### Tool Allowlist
 

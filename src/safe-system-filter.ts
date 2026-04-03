@@ -213,6 +213,65 @@ export interface FilterResult {
 }
 
 /**
+ * Strip the plugin CLAUDE.md section from a system prompt.
+ *
+ * The autonomous-dev plugin injects its own CLAUDE.md into the system prompt
+ * under a heading like:
+ *
+ *   Contents of /path/to/project/.claude/CLAUDE.md (project instructions...)
+ *
+ * This section is only useful to the orchestrating LLM, not to the downstream
+ * local model. Stripping it reduces prompt size by several thousand tokens.
+ *
+ * Matching rules:
+ * - Target:   path contains `/.claude/CLAUDE.md` (sub-directory `.claude`)
+ * - Excluded: project root `CLAUDE.md` — path does NOT contain `/.claude/`
+ * - Excluded: global `~/.claude/CLAUDE.md` — same pattern but `~/.claude/` prefix
+ *
+ * Paths are distinguished by depth: a project-level `.claude` directory has at
+ * least 3 path segments before `.claude/` (e.g. `/Users/alice/Dev/project`),
+ * while the global `~/.claude` has only 2 segments (e.g. `/Users/alice`).
+ * We require at least 3 forward-slash-separated segments before `/.claude/`
+ * to avoid matching the global config file.
+ *
+ * @param prompt - System prompt text to process
+ * @returns Prompt with the plugin CLAUDE.md section removed (or unchanged if
+ *   no matching section is found)
+ */
+export function stripPluginInstructions(prompt: string): string {
+  // Match a "Contents of" line whose path contains /.claude/CLAUDE.md
+  // We require at least 3 path segments before /.claude/ to distinguish the
+  // project-level plugin config (e.g. /Users/alice/Dev/project/.claude/)
+  // from the global home-dir config (e.g. /Users/alice/.claude/).
+  const sectionStartRegex =
+    /^Contents of [^\n]*\/[^/\n]+\/[^/\n]+\/[^/\n]+\/.claude\/CLAUDE\.md[^\n]*\n/m;
+
+  const startMatch = sectionStartRegex.exec(prompt);
+  if (!startMatch) {
+    return prompt;
+  }
+
+  const sectionStart = startMatch.index;
+  const afterStartLine = sectionStart + startMatch[0].length;
+
+  // Find the next "Contents of" marker that starts a new section
+  const nextSectionRegex = /^Contents of /m;
+  const rest = prompt.substring(afterStartLine);
+  const nextMatch = nextSectionRegex.exec(rest);
+
+  if (nextMatch) {
+    // Strip from start of section up to (but not including) the next section
+    return (
+      prompt.substring(0, sectionStart) +
+      prompt.substring(afterStartLine + nextMatch.index)
+    );
+  }
+
+  // No next section — strip to end of string
+  return prompt.substring(0, sectionStart);
+}
+
+/**
  * Estimate tokens using 1 token ≈ 4 characters heuristic
  *
  * Fast approximation useful for deciding which optimization tier to apply

@@ -43,15 +43,13 @@ import {
 import { getCacheMonitor } from "./cache-monitor-dashboard";
 import { extractMarkers } from "./cache-control-extractor";
 import { getTimeoutConfig } from "./timeout-config";
-import {
-  getToolContextManager,
-  extractLastToolCalls,
-} from "./tool-context-manager";
+import { stubTools } from "./tool-context-manager";
 import { createHash } from "crypto";
 import {
   filterSystemPrompt,
   OptimizationTier,
   type FilterResult,
+  stripPluginInstructions as stripPluginInstructionsFn,
 } from "./safe-system-filter";
 import { getClusterManager } from "./cluster/cluster-manager";
 import type { MLXNode } from "./cluster/cluster-types";
@@ -415,6 +413,7 @@ export type CreateAnthropicProxyOptions = {
   filterTier?: "auto" | "minimal" | "moderate" | "aggressive" | "extreme"; // Optimization tier
   stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
   toolAllowlist?: string[]; // Only forward these tool names to local models (Issue #83)
+  stripPluginInstructions?: boolean; // Strip autonomous-dev plugin CLAUDE.md from system prompt (Issue #89)
   circuitBreakerConfig?: CircuitBreakerUserConfig; // Circuit breaker configuration per mode
 };
 
@@ -433,6 +432,7 @@ export const createAnthropicProxy = ({
   filterTier = "auto",
   stubToolDescriptions = false,
   toolAllowlist,
+  stripPluginInstructions = false,
   circuitBreakerConfig,
 }: CreateAnthropicProxyOptions): string => {
   // Log debug status on startup
@@ -1026,6 +1026,13 @@ export const createAnthropicProxy = ({
           system = system.replace(/^x-anthropic-billing-header:[^\n]*\n?/, "");
         }
 
+        // Strip autonomous-dev plugin CLAUDE.md section from system prompt (Issue #89)
+        // The plugin injects its own CLAUDE.md which is only useful to the orchestrating LLM,
+        // not to the downstream local model. Stripping it reduces prompt size significantly.
+        if (stripPluginInstructions && system) {
+          system = stripPluginInstructionsFn(system);
+        }
+
         // Optimization chain: safe filter → truncate → passthrough
         // Each strategy is mutually exclusive (early return prevents fallthrough).
         // Safe filter includes fallback: if validation fails, falls back to truncate.
@@ -1118,40 +1125,6 @@ export const createAnthropicProxy = ({
         //   system = system.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
         // }
 
-        // Inject expanded tool skills based on context
-        if (stubToolDescriptions && system) {
-          const toolCtx = getToolContextManager();
-          const lastToolCalls = extractLastToolCalls(body.messages);
-
-          // Extract user message for keyword matching
-          let userMsg = "";
-          const lastMsg = body.messages[body.messages.length - 1];
-          if (typeof lastMsg?.content === "string") {
-            userMsg = lastMsg.content;
-          } else if (Array.isArray(lastMsg?.content)) {
-            for (const block of lastMsg.content) {
-              if (block && "text" in block && block.text) {
-                userMsg = block.text;
-                break;
-              }
-            }
-          }
-
-          const skillContext = toolCtx.getSkillsToInject(
-            lastToolCalls,
-            userMsg
-          );
-          if (skillContext) {
-            system = system + "\n\n" + skillContext;
-            if (isDebugEnabled()) {
-              debug(
-                1,
-                `[Tool Context] Injected skill context (${skillContext.length} chars)`
-              );
-            }
-          }
-        }
-
         // Suppress thinking mode for models that generate <think> blocks by default
         // Qwen3 and MiniMax-M2 both support /no_think to disable verbose reasoning
         if (system && /qwen3|minimax/i.test(model || "")) {
@@ -1236,12 +1209,10 @@ export const createAnthropicProxy = ({
           toolsToUse = filtered;
         }
 
-        // Adaptive Tool Context: capture skills and stub descriptions
+        // Adaptive Tool Context: stub descriptions to reduce token count
         // This reduces tool description tokens from ~15K to ~2-4K
         if (stubToolDescriptions && toolsToUse && toolsToUse.length > 0) {
-          const toolCtx = getToolContextManager();
-          toolCtx.captureAndUpdateSkills(toolsToUse);
-          toolsToUse = toolCtx.stubTools(toolsToUse);
+          toolsToUse = stubTools(toolsToUse);
 
           if (isDebugEnabled()) {
             debug(

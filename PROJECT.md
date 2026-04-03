@@ -57,7 +57,7 @@ anyclaude performs bidirectional format translation (Anthropic ↔ OpenAI), stre
 | `src/safe-system-filter.ts` | Rule-based system prompt reduction (5 tiers) |
 | `src/prompt-section-parser.ts` | System prompt section extraction |
 | `src/critical-sections.ts` | Identifies must-keep prompt sections |
-| `src/tool-context-manager.ts` | Tool description stubbing + skill-based expansion |
+| `src/tool-context-manager.ts` | Tool description stubbing and JSON schema simplification (standalone functions) |
 | `src/tool-allowlist-filter.ts` | Tool allowlist filter — drops unlisted tools before forwarding to local models |
 
 ### Capability Detection

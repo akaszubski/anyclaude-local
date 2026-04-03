@@ -125,11 +125,6 @@ anyclaude --mode=claude
 - **Cache metrics** — hit rate tracking and monitoring dashboard
 - **Prometheus metrics** — `/v1/metrics` endpoint (JSON + Prometheus format)
 
-### Model Adapters
-- **Per-model prompt formatting** — Qwen (bullet points + tool hints), Mistral (imperative/concise), Llama (numbered steps + flat schemas)
-- **Adaptive capability detection** — probes backend at startup for tool calling and streaming support
-- **Base adapter pattern** — shared validation and error handling, models add only their specific transforms
-
 ### MLX Cluster
 - Distributed inference across multiple Apple Silicon Macs
 - Intelligent load balancing (round-robin, least-loaded, cache-aware, latency-based)
@@ -252,7 +247,7 @@ Claude Code sends ~18K tokens per request (system prompt + 16 tool schemas). Wit
 
 Enhanced fork of [anyclaude](https://github.com/coder/anyclaude) by **Coder Technologies Inc.** (MIT License).
 
-**This fork adds**: MLX auto-launch, OpenRouter integration, prompt optimization (safe filter, tool stubbing, billing header stripping), adaptive capability detection, model-specific adapters, circuit breaker, comprehensive test suite.
+**This fork adds**: MLX auto-launch, OpenRouter integration, prompt optimization (safe filter, tool stubbing, billing header stripping), adaptive capability detection, circuit breaker, comprehensive test suite.
 
 **Core proxy architecture** (API translation, SSE streaming, tool calling) from the original project.
 

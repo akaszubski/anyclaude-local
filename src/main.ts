@@ -64,6 +64,7 @@ interface AnyclaudeConfig {
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
       toolAllowlist?: string[]; // Only forward these tool names to local model (Issue #83)
+      stripPluginInstructions?: boolean; // Strip autonomous-dev plugin CLAUDE.md from system prompt (Issue #89)
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
     lmstudio?: {
@@ -82,6 +83,7 @@ interface AnyclaudeConfig {
       filterTier?: "minimal" | "moderate" | "aggressive" | "extreme" | "auto"; // Filter aggressiveness
       stubToolDescriptions?: boolean; // Replace tool descriptions with stubs, expand as skills on demand
       toolAllowlist?: string[]; // Only forward these tool names to local model (Issue #83)
+      stripPluginInstructions?: boolean; // Strip autonomous-dev plugin CLAUDE.md from system prompt (Issue #89)
       localSearch?: boolean; // Auto-start SearXNG Docker container for local web search
     };
     claude?: {
@@ -853,6 +855,12 @@ if (process.env.NODE_ENV !== "test") {
         mode === "local"
           ? getMigratedBackendConfig(config.backends, "local", "lmstudio")?.toolAllowlist
           : undefined,
+      // Strip autonomous-dev plugin CLAUDE.md from system prompt (Issue #89)
+      stripPluginInstructions:
+        mode === "local"
+          ? (getMigratedBackendConfig(config.backends, "local", "lmstudio")
+              ?.stripPluginInstructions ?? false)
+          : false,
       // Circuit breaker configuration
       circuitBreakerConfig: config.circuitBreaker,
     });

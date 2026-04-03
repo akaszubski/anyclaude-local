@@ -152,6 +152,16 @@ async function runAllTests() {
       file: path.join(__dirname, "unit", "test_tool_allowlist_filter.js"),
       description: "Tool Allowlist Filter Tests (#83)",
     },
+    // Tool context manager simplified tests (#88)
+    {
+      file: path.join(__dirname, "unit", "test_tool_context_manager.js"),
+      description: "Tool Context Manager Tests (#88)",
+    },
+    // Strip plugin instructions tests (#89)
+    {
+      file: path.join(__dirname, "unit", "test_strip_plugin_instructions.js"),
+      description: "Strip Plugin Instructions Tests (#89)",
+    },
   ];
 
   console.log("\n");
